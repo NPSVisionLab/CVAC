@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools
+END
+colorSegments.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/colorSegments.m
+END
+plotBoundingBoxLine.m
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/plotBoundingBoxLine.m
+END
+singleScaleJointDetector.m
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/singleScaleJointDetector.m
+END
+plotBoundingBoxArrow.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/plotBoundingBoxArrow.m
+END
+distance.m
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/distance.m
+END
+PlotCircle.m
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/PlotCircle.m
+END
+singleScaleBoostedDetector.m
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/singleScaleBoostedDetector.m
+END
+PlotCompass.m
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/PlotCompass.m
+END
+zeroPad.m
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/zeroPad.m
+END
+convCrossConv.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/convCrossConv.m
+END
+singleScaleJointDetectorOrig.m
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/singleScaleJointDetectorOrig.m
+END
+read_file.m
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/read_file.m
+END
+plotBoundingBoxColor.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/plotBoundingBoxColor.m
+END
+LMprecisionRecallText.m
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/LMprecisionRecallText.m
+END
+plotBoundingBox.m
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/plotBoundingBox.m
+END
+removeBorders.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/removeBorders.m
+END
+zeroBoundary.m
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/MultiBoost/!svn/ver/29/trunk/MultiBoostMatlab/tools/zeroBoundary.m
+END

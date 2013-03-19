@@ -1,0 +1,13 @@
+K 10
+svn:ignore
+V 100
+Services.h
+cmake_install.cmake
+CTestTestfile.cmake
+Data.cpp
+Services.cpp
+Data.h
+CMakeFiles
+Makefile
+
+END

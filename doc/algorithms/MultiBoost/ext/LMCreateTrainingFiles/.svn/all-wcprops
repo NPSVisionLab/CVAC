@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/MultiBoost/!svn/ver/25/trunk/LMCreateTrainingFiles
+END
+LMCreateTrainingFiles_hand.m
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/MultiBoost/!svn/ver/25/trunk/LMCreateTrainingFiles/LMCreateTrainingFiles_hand.m
+END
+LMCreateTrainingFiles_skull.m
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/MultiBoost/!svn/ver/25/trunk/LMCreateTrainingFiles/LMCreateTrainingFiles_skull.m
+END
+LM2OpenCV2.m
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/MultiBoost/!svn/ver/6/trunk/LMCreateTrainingFiles/LM2OpenCV2.m
+END
+LMCreateMasks.m
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/MultiBoost/!svn/ver/6/trunk/LMCreateTrainingFiles/LMCreateMasks.m
+END
+LMCreateTrainingFiles.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/MultiBoost/!svn/ver/25/trunk/LMCreateTrainingFiles/LMCreateTrainingFiles.m
+END
+test_features.m
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/MultiBoost/!svn/ver/6/trunk/LMCreateTrainingFiles/test_features.m
+END

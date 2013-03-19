@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/MultiBoost/MultiBoostTrainerService
+END
+MultiBoostDetectorTrainerI.h
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/MultiBoost/MultiBoostTrainerService/MultiBoostDetectorTrainerI.h
+END
+MultiBoostTrainerServiceI.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/MultiBoost/MultiBoostTrainerService/MultiBoostTrainerServiceI.cpp
+END
+config.service
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/CVAC/!svn/ver/87/trunk/Algorithms/MultiBoost/MultiBoostTrainerService/config.service
+END
+MultiBoostTrainerServiceI.h
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/MultiBoost/MultiBoostTrainerService/MultiBoostTrainerServiceI.h
+END
+MultiBoostDetectorTrainerI.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/MultiBoost/MultiBoostTrainerService/MultiBoostDetectorTrainerI.cpp
+END
+readme.txt
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/CVAC/!svn/ver/87/trunk/Algorithms/MultiBoost/MultiBoostTrainerService/readme.txt
+END
+config.admin
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/CVAC/!svn/ver/87/trunk/Algorithms/MultiBoost/MultiBoostTrainerService/config.admin
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/CVAC/!svn/ver/428/trunk/Algorithms/MultiBoost/MultiBoostTrainerService/CMakeLists.txt
+END
+config.icebox
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/CVAC/!svn/ver/87/trunk/Algorithms/MultiBoost/MultiBoostTrainerService/config.icebox
+END

@@ -1,0 +1,42 @@
+PROJECT (MultiBoostTrainerService)
+
+WRAP_SLICE(SLICE_FILES
+           ${CVAC_ROOT_DIR}/src/Services.ice
+           ${CVAC_ROOT_DIR}/src/Data.ice
+)
+
+SET(SOURCE_FILES
+    readme.txt
+    MultiBoostTrainerServiceI.cpp
+    MultiBoostDetectorTrainerI.cpp
+    )
+
+SET(HEADER_FILES
+   MultiBoostTrainerServiceI.h
+   MultiBoostDetectorTrainerI.h
+)
+
+
+SET(INCLUDE_DIRS
+    .
+    ${CVAC_INCLUDE_DIR}
+    ${ICE_INCLUDE}
+    ${CMAKE_CURRENT_BINARY_DIR}#for the generated slice files
+)
+
+INCLUDE_DIRECTORIES(${INCLUDE_DIRS})
+
+ADD_LIBRARY(MultiBoostTrainerService SHARED
+            ${SOURCE_FILES}
+            ${HEADER_FILES}
+            ${SLICE_FILES}
+            )
+
+TARGET_LINK_LIBRARIES(MultiBoostTrainerService
+    ${ICE_LIBRARIES}
+    ${MULTIBOOST_LIBRARIES}
+    ${MULTIBOOST_TRAINER_LIBRARIES}
+    ${OpenCV_LIBS}
+    utils
+)
+

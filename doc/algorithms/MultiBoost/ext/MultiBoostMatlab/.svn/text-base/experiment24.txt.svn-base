@@ -1,0 +1,4 @@
+Experiment 24:
+
+This experiment is to detect four head orientations: 0, 90, 270, 180.
+It is like Experiment 21, but using a different video sequence. Using MOV01B_seq

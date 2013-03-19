@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/Bow/bowCV_source
+END
+bowCV.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/Bow/bowCV_source/bowCV.cpp
+END
+bowCV.h
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/Bow/bowCV_source/bowCV.h
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/CVAC/!svn/ver/428/trunk/Algorithms/Bow/bowCV_source/CMakeLists.txt
+END

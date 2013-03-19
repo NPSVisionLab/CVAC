@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/CVAC/!svn/ver/633/trunk/Algorithms/SBD/SBDICEServerTrain
+END
+SBDICETrainI.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/CVAC/!svn/ver/633/trunk/Algorithms/SBD/SBDICEServerTrain/SBDICETrainI.cpp
+END
+SBDICEServiceTrainI.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/CVAC/!svn/ver/633/trunk/Algorithms/SBD/SBDICEServerTrain/SBDICEServiceTrainI.cpp
+END
+config.service
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/CVAC/!svn/ver/250/trunk/Algorithms/SBD/SBDICEServerTrain/config.service
+END
+SBDICETrainI.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/SBD/SBDICEServerTrain/SBDICETrainI.h
+END
+SBDICEServiceTrainI.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/SBD/SBDICEServerTrain/SBDICEServiceTrainI.h
+END
+readme.txt
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/CVAC/!svn/ver/189/trunk/Algorithms/SBD/SBDICEServerTrain/readme.txt
+END
+config.admin
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/CVAC/!svn/ver/189/trunk/Algorithms/SBD/SBDICEServerTrain/config.admin
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/CVAC/!svn/ver/472/trunk/Algorithms/SBD/SBDICEServerTrain/CMakeLists.txt
+END
+config.icebox
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/CVAC/!svn/ver/189/trunk/Algorithms/SBD/SBDICEServerTrain/config.icebox
+END

@@ -1,0 +1,10 @@
+K 10
+svn:ignore
+V 80
+cmake_install.cmake
+CTestTestfile.cmake
+CMakeFiles
+Makefile
+.CMakeLists.txt.swp
+
+END

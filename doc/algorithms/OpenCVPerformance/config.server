@@ -1,0 +1,51 @@
+#
+# The server creates an object adapter with the name
+# "CVAC_OpenCV_Detector.Server". The following line sets the endpoints for this
+# adapter.
+#
+CVAC_OpenCV_Detector.Endpoints=default -p 10002
+CVAC_OpenCV_Trainer.Endpoints=tcp -p 10007:udp -p 10007
+#
+# Warn about connection exceptions
+#
+#Ice.Warn.Connections=1
+
+CVAC.DataDir=C:/Users/jcschmid/Documents/NetBeansProjects/MediaAnalyst_New/proxy/data
+
+#
+# Network Tracing
+#
+# 0 = no network tracing
+# 1 = trace connection establishment and closure
+# 2 = like 1, but more detailed
+# 3 = like 2, but also trace data transfer
+#
+#Ice.Trace.Network=2
+#Ice.Trace.Slicing=1
+#
+# Protocol Tracing
+#
+# 0 = no protocol tracing
+# 1 = trace protocol messages
+#
+#Ice.Trace.Protocol=1
+
+#
+# Security Tracing
+#
+# 0 = no security tracing
+# 1 = trace messages
+#
+#IceSSL.Trace.Security=1
+
+#
+# SSL Configuration
+#
+#Ice.Plugin.IceSSL=IceSSL:createIceSSL
+#IceSSL.DefaultDir=.
+#IceSSL.CertAuthFile=cacert.pem
+#IceSSL.CertFile=s_rsa1024_pub.pem
+#IceSSL.KeyFile=s_rsa1024_priv.pem
+
+# Set maximum message size (not packet size, units in KBs)
+Ice.MessageSizeMax=100000

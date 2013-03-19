@@ -1,0 +1,16 @@
+from distutils.core import setup, Extension
+
+module1 = Extension('cvac',
+                    include_dirs = ['../include'],
+                    #                    libraries = ['cvac'],
+                    library_dirs = ['../lib'],
+                    sources = ['cvacmodule.c']
+    )
+
+setup (name = 'cvac',
+       version = '${PACKAGE_VERSION}',  # configured from CMake
+       description = 'Easy connection to native CVAC',
+       url = 'http://vision.movesinstitute.org',
+       package_dir = { '': '$CMAKE_CURRENT_SOURCE_DIR' },
+       ext_modules = [module1]
+    )

@@ -1,0 +1,727 @@
+*** comparing LeftHalfCascade01_000_14.xml
+*** comparing trainResult.xml
+*** comparing CVAC_cvPeformanceTrainer.cpp
+*** comparing CVAC_haartraining.cpp
+*** comparing cvboost.cpp
+*** comparing cvcommon.cpp
+*** comparing cvhaarclassifier.cpp
+*** comparing cvhaartraining.cpp
+*** comparing cvsamples.cpp
+48c48
+< 
+---
+> #include "cvhaartraining.h"
+*** comparing haartraining.cpp
+54c54
+< #include "CVAC_cvhaartraining.h"
+---
+> #include "cvhaartraining.h"
+*** comparing performance.cpp
+47,55c47,51
+< #include <Ice/Ice.h>
+< #include <IceBox/IceBox.h>
+< #include <IceUtil/UUID.h>
+< #include <DetectorI.h>
+< #include <CVACUtil/processRunSet.h>
+< #include <CVACUtil/FileUtils.h>
+< #include <CVACUtil/DetectorDataArchive.h>
+< #include "opencv2/opencv.hpp"
+< #include "opencv2/highgui/highgui.hpp"
+---
+> #include "opencv2/core/core.hpp"
+> #include "opencv2/core/internal.hpp"
+> 
+> #include "cv.h"
+> #include "highgui.h"
+60,63d55
+< #include <stdio.h>
+< #include <iostream>
+< #include <stdlib.h>
+< #include <string.h>
+66c58
+< /* use clock() function instead of time() */
+---
+> /* use clock() function insted of time() */
+70,72d61
+< using namespace Ice;
+< using namespace cvac;
+< 
+89c78
+<     int neighbors;
+---
+>     int neghbors;
+92c81,85
+< //===========================================================================
+---
+> int main( int argc, char* argv[] )
+> {
+>     int i, j;
+>     char* classifierdir = NULL;
+>     //char* samplesdir    = NULL;
+94c87,90
+< static const char *configFile = "config.server";
+---
+>     int saveDetected = 1;
+>     double scale_factor = 1.2;
+>     float maxSizeDiff = 1.5F;
+>     float maxPosDiff  = 0.3F;
+96c92,93
+< //===========================================================================
+---
+>     /* number of stages. if <=0 all stages are used */
+>     int nos = -1, nos0;
+98,106c95,96
+< // For Use with IceBox service
+< class CVAC_OpenCV_Detector : public ::IceBox::Service
+< {
+< private:
+<     Ice::ObjectAdapterPtr _adapter;
+<     std::string mName;
+< public:
+<     CVAC_OpenCV_Detector()
+<     {
+---
+>     int width  = 24;
+>     int height = 24;
+108,117c98
+<     }
+<     virtual ~CVAC_OpenCV_Detector()
+<     {
+<     }
+<     virtual void start(const std::string& name,
+<         const Ice::CommunicatorPtr &communicator,
+<         const Ice::StringSeq &args)
+<     {
+<         mName = name;
+<         _adapter = communicator->createObjectAdapter(name);
+---
+>     int rocsize;
+119,123c100,105
+<         DetectorI* detect = new DetectorI("opencv_ak-47",
+<                                           "OpenCV HAAR detector for AK-47",
+<                                           "LeftHalfCascade01_000_14.xml");
+<         _adapter->add(detect, communicator->stringToIdentity("CVAC_OpenCV_Detector"));
+<         _adapter->activate();
+---
+>     FILE* info;
+>     char* infoname;
+>     char fullname[PATH_MAX];
+>     char detfilename[PATH_MAX];
+>     char* filename;
+>     char detname[] = "det-";
+125,126c107,109
+<         std::cout << "|Service started|: " << mName << std::endl;
+<     }
+---
+>     CvHaarClassifierCascade* cascade;
+>     CvMemStorage* storage;
+>     CvSeq* objects;
+128c111,115
+<     virtual void stop()
+---
+>     double totaltime;
+> 
+>     infoname = (char*)"";
+>     rocsize = 40;
+>     if( argc == 1 )
+130,131c117,130
+<         std::cout << "|Service stopped|: " << mName << std::endl;
+<         _adapter->destroy();
+---
+>         printf( "Usage: %s\n  -data <classifier_directory_name>\n"
+>                 "  -info <collection_file_name>\n"
+>                 "  [-maxSizeDiff <max_size_difference = %f>]\n"
+>                 "  [-maxPosDiff <max_position_difference = %f>]\n"
+>                 "  [-sf <scale_factor = %f>]\n"
+>                 "  [-ni]\n"
+>                 "  [-nos <number_of_stages = %d>]\n"
+>                 "  [-rs <roc_size = %d>]\n"
+>                 "  [-w <sample_width = %d>]\n"
+>                 "  [-h <sample_height = %d>]\n",
+>                 argv[0], maxSizeDiff, maxPosDiff, scale_factor, nos, rocsize,
+>                 width, height );
+> 
+>         return 0;
+133,137c132,133
+< };
+< // factory function for IceBox server
+< extern "C"
+< {
+<     ICE_DECLSPEC_EXPORT IceBox::Service* create(Ice::CommunicatorPtr communicator)
+---
+> 
+>     for( i = 1; i < argc; i++ )
+139c135,174
+<         return new CVAC_OpenCV_Detector();
+---
+>         if( !strcmp( argv[i], "-data" ) )
+>         {
+>             classifierdir = argv[++i];
+>         }
+>         else if( !strcmp( argv[i], "-info" ) )
+>         {
+>             infoname = argv[++i];
+>         }
+>         else if( !strcmp( argv[i], "-maxSizeDiff" ) )
+>         {
+>             maxSizeDiff = (float) atof( argv[++i] );
+>         }
+>         else if( !strcmp( argv[i], "-maxPosDiff" ) )
+>         {
+>             maxPosDiff = (float) atof( argv[++i] );
+>         }
+>         else if( !strcmp( argv[i], "-sf" ) )
+>         {
+>             scale_factor = atof( argv[++i] );
+>         }
+>         else if( !strcmp( argv[i], "-ni" ) )
+>         {
+>             saveDetected = 0;
+>         }
+>         else if( !strcmp( argv[i], "-nos" ) )
+>         {
+>             nos = atoi( argv[++i] );
+>         }
+>         else if( !strcmp( argv[i], "-rs" ) )
+>         {
+>             rocsize = atoi( argv[++i] );
+>         }
+>         else if( !strcmp( argv[i], "-w" ) )
+>         {
+>             width = atoi( argv[++i] );
+>         }
+>         else if( !strcmp( argv[i], "-h" ) )
+>         {
+>             height = atoi( argv[++i] );
+>         }
+141,143d175
+< }
+< //===========================================================================
+< 
+144a177,180
+>     cascade = cvLoadHaarClassifierCascade( classifierdir, cvSize( width, height ) );
+>     if( cascade == NULL )
+>     {
+>         printf( "Unable to load classifier from %s\n", classifierdir );
+146,156c182,183
+< class OpenCVPerformanceServer : public Ice::Application
+< {
+< public:
+<     virtual int run(int, char*[]);
+< };
+< 
+< int main( int argc, char* argv[] )
+< {
+<      OpenCVPerformanceServer app;
+<      return app.main(argc, argv, configFile);
+< }
+---
+>         return 1;
+>     }
+158,160c185,187
+< int OpenCVPerformanceServer::run( int argc, char* [] )
+< {
+<     if(argc > 1)
+---
+>     int* numclassifiers = new int[cascade->count];
+>     numclassifiers[0] = cascade->stage_classifier[0].count;
+>     for( i = 1; i < cascade->count; i++ )
+162,163c189
+<         std::cerr << appName() << ": too many arguments" << std::endl;
+<         return EXIT_FAILURE;
+---
+>         numclassifiers[i] = numclassifiers[i-1] + cascade->stage_classifier[i].count;
+166,201c192
+<     Ice::ObjectAdapterPtr adapter =
+<            communicator()->createObjectAdapter("CVAC_OpenCV_Detector.Server");
+< 
+< 
+<   /*Ice::Identity alID = communicator()->stringToIdentity(IceUtil::generateUUID());
+<     CVAlgorithmPrx alProx = CVAlgorithmPrx::uncheckedCast(adapter->createProxy(alID));
+<     adapter->add(algor, alID);*/
+< 
+<     DetectorI* detect = new DetectorI("opencv_ak-47",
+<                               "OpenCV HAAR detector for AK-47",
+<                                "LeftHalfCascade01_000_14.xml");
+<     adapter->add(detect,
+<                  communicator()->stringToIdentity("CVAC_OpenCV_Detector"));
+< 
+<     adapter->activate();
+< 
+<     communicator()->waitForShutdown();
+<     return EXIT_SUCCESS;
+< }
+< 
+< //===========================================================================
+< 
+< ResultSetV2 detectFile(DetectorPtr detector, const char *fname)
+< {
+<    ResultSetV2 resultSet;
+< 
+<    IplImage* img;
+<    double scale_factor = 1.2;
+<    int i;
+<    DetectorI *detectI = dynamic_cast<DetectorI*>(detector.get());
+< 
+<    img = cvLoadImage( fname );
+<    if( !img )
+<    {
+<       return resultSet;
+<    }
+---
+>     storage = cvCreateMemStorage();
+203,208c194,196
+<    CvMemStorage *storage = detectI->getStorage();
+<    CvHaarClassifierCascade *cascade = detectI->getCascade();
+<    cvClearMemStorage(storage);
+<    CvSeq *objects;
+<    objects = cvHaarDetectObjects(img, cascade, storage, scale_factor, 1 );
+<    cascade->count = detectI->getNOS();
+---
+>     nos0 = cascade->count;
+>     if( nos <= 0 )
+>         nos = nos0;
+210,261c198,204
+<    int detcount = ( objects ? objects->total : 0);
+< 
+<    Result newResult;
+<    newResult.original = new Labelable();
+<    newResult.original->sub.isImage = true;
+<    newResult.original->sub.path.filename = std::string(fname);
+<    newResult.original->sub.path.directory.relativePath = cvac::getCurrentWorkingDirectory();
+< 
+< 
+<    //res.filename = std::string(fname);
+< 
+<    //ResultRect rect;
+<    //std::vector<ResultRect> *detections =
+<       //new std::vector<ResultRect>(detcount);
+<    for( i = 0; i < detcount; i++ )
+<    {
+<       CvAvgComp r = *((CvAvgComp*) cvGetSeqElem( objects, i ));
+< 
+<       BBox* box = new BBox();
+<       box->x = r.rect.x;
+<       box->y = r.rect.y;
+<       box->width = r.rect.width;
+<       box->height = r.rect.height;
+< 
+<       LabeledLocation* newLocation = new LabeledLocation();
+<       newLocation->loc = box;
+< 
+<       newResult.foundLabels.push_back(newLocation);
+<       //detections->push_back(rect);
+<    }
+< 
+<    resultSet.results.push_back(newResult);
+< 
+<    //res.filename = std::string(fname);
+<    //res.detections = *detections;
+< 
+<    cvReleaseImage( &img );
+< 
+<    return resultSet;
+< }
+< 
+< /*
+< ResultSetV1 detectFile(DetectorPtr detector, const char *fname)
+< {
+<     ResultSetV1 res;
+<     IplImage* img;
+<     double scale_factor = 1.2;
+<     int i;
+<     DetectorI *detectI = dynamic_cast<DetectorI*>(detector.get());
+< 
+<     img = cvLoadImage( fname );
+<     if( !img )
+---
+>     strcpy( fullname, infoname );
+>     filename = strrchr( fullname, '\\' );
+>     if( filename == NULL )
+>     {
+>         filename = strrchr( fullname, '/' );
+>     }
+>     if( filename == NULL )
+263c206
+<         return res;
+---
+>         filename = fullname;
+265,278c208
+<     CvMemStorage *storage = detectI->getStorage();
+<     CvHaarClassifierCascade *cascade = detectI->getCascade();
+<     cvClearMemStorage(storage);
+<     CvSeq *objects;
+<     objects = cvHaarDetectObjects(img, cascade, storage, scale_factor, 1 );
+<     cascade->count = detectI->getNOS();
+< 
+<     int detcount = ( objects ? objects->total : 0);
+< 
+<     res.filename = std::string(fname);
+<     ResultRect rect;
+<      std::vector<ResultRect> *detections =
+<                          new std::vector<ResultRect>(detcount);
+<     for( i = 0; i < detcount; i++ )
+---
+>     else
+280,286c210
+<         CvAvgComp r = *((CvAvgComp*) cvGetSeqElem( objects, i ));
+<         rect.x = r.rect.x;
+<         rect.y = r.rect.y;
+<         rect.width = r.rect.width;
+<         rect.height = r.rect.height;
+<         rect.confidence = 0;
+<         detections->push_back(rect);
+---
+>         filename++;
+289,290c213,222
+<     res.filename = std::string(fname);
+<     res.detections = *detections;
+---
+>     info = fopen( infoname, "r" );
+>     totaltime = 0.0;
+>     if( info != NULL )
+>     {
+>         int x, y;
+>         IplImage* img;
+>         int hits, missed, falseAlarms;
+>         int totalHits, totalMissed, totalFalseAlarms;
+>         int found;
+>         float distance;
+292c224,228
+<     cvReleaseImage( &img );
+---
+>         int refcount;
+>         ObjectPos* ref;
+>         int detcount;
+>         ObjectPos* det;
+>         int error=0;
+294,296c230,231
+<     return res;
+< }
+< */
+---
+>         int* pos;
+>         int* neg;
+298,306c233,235
+< //===========================================================================
+< DetectorI::DetectorI(std::string name, std::string desc, std::string cascade)
+< {
+<     _cascadeString = cascade;
+<     _name = name;
+<     _description = desc;
+<     _is_initialized = false;
+<     _verbosity = 0;
+< }
+---
+>         pos = (int*) cvAlloc( rocsize * sizeof( *pos ) );
+>         neg = (int*) cvAlloc( rocsize * sizeof( *neg ) );
+>         for( i = 0; i < rocsize; i++ ) { pos[i] = neg[i] = 0; }
+308,325c237,239
+< const char *tempSavedCascade = "mycascade";  // temp binary file name
+< #ifdef WIN32
+< const char *openStr = "w+b";
+< #else
+< const char *openStr = "w+";
+< #endif
+< 
+< void DetectorI::initialize(int verbosity,
+<                            const ::cvac::DetectorData& ddata,
+<                            const Ice::Current &current)
+< {
+<     bool newCascade = false;
+<     _verbosity = verbosity;
+<     _ddata = ddata;
+<     _storage = cvCreateMemStorage();
+<     int size = ddata.data.size();
+<     std::string arg1;
+<     ::FILE *xml;
+---
+>         printf( "+================================+======+======+======+\n" );
+>         printf( "|            File Name           | Hits |Missed| False|\n" );
+>         printf( "+================================+======+======+======+\n" );
+327,383c241,244
+<     if (size > 0) // A file was received
+<     {
+<       if(cvac::FILE == ddata.type) 
+<       {
+<         // Use utils un-compression to get file names
+<         std::string zipFileName = ddata.file.filename;
+<         std::vector<std::string> fileNameStrings =  expandSeq_fromFile(zipFileName);
+< 
+<         // Expecting 1 argument
+<         int numFilesInVector = (int)fileNameStrings.size();
+<         if(1 != numFilesInVector) {
+<           std::cerr << "Expected 1 xml file from zip, (plus one txt file), got: " << numFilesInVector << std::endl;
+<           std::cerr << "Not inititializing. " << std::endl;
+<         }
+<         arg1 = fileNameStrings.back();
+<         std::cout << "Got filename from zip of:  " << arg1 << std::endl;
+<       }
+<       else if(cvac::BYTES == ddata.type)
+<       {
+<         xml = fopen(tempSavedCascade, openStr);
+< 
+<         if (NULL == xml)
+<         {
+<           std::cerr << "Error in 'DetectorI::initialize(..', failed to create xml cascade on disk from ddata." << std::endl;
+<           return;
+<         }
+<       }
+<       else if(cvac::FILE == ddata.type)
+<       {
+<         xml = fopen(arg1.c_str(), openStr);
+< 
+<         if (NULL == xml)
+<         {
+<           std::cerr << "Error in 'DetectorI::initialize(..', failed to open xml cascade from zip." << std::endl;
+<           return;
+<         }
+<       }
+< 
+<       // Proceed to access XML
+<       char *buff = new char[size];
+<       int i;
+<       for (i = 0; i < size; i++)
+<         buff[i] = ddata.data[i];
+<       int res = fwrite(buff, 1, size, xml);
+<       delete buff;
+<       if (res != size)
+<       {
+<         //GenericError e;
+<         //e.reason = "Could not write temporary cascade file";
+<         //throw e;
+< 
+<         std::cerr << "Error in 'DetectorI::initialize(..',  '(res != size)', 'Could not write temporary cascade file'." << std::endl;
+<         return;
+<       }
+<       fflush(xml);
+<       fclose(xml);
+<       newCascade = true;
+---
+>         totalHits = totalMissed = totalFalseAlarms = 0;
+>         while( !feof( info ) )
+>         {
+>             if( fscanf( info, "%s %d", filename, &refcount ) != 2 || refcount <= 0 ) break;
+385,388c246,247
+<     }
+<     else {
+<       std::cerr << "Error in 'DetectorI::initialize(..', Received 'ddata' stream with size of 0." << std::endl;
+<     }
+---
+>             img = cvLoadImage( fullname );
+>             if( !img ) continue;
+390,406c249,337
+<     if (_cascadeString.size() > 0 && newCascade == false)
+<     {
+<       _cascade = cvLoadHaarClassifierCascade(
+<         _cascadeString.c_str(), cvSize( DetectorI::SCAN_WIDTH,
+<         DetectorI::SCAN_HEIGHT ) );
+<     }else
+<     {
+<       _cascade = cvLoadHaarClassifierCascade(
+<         tempSavedCascade, cvSize( DetectorI::SCAN_WIDTH,
+<         DetectorI::SCAN_HEIGHT ) );
+<     }
+<     if (NULL != _cascade)
+<     {
+<       _nos = _cascade->count;
+<       _is_initialized = true;
+<     }
+< }
+---
+>             ref = (ObjectPos*) cvAlloc( refcount * sizeof( *ref ) );
+>             for( i = 0; i < refcount; i++ )
+>             {
+>                 int w, h;
+>                 error = (fscanf( info, "%d %d %d %d", &x, &y, &w, &h ) != 4);
+>                 if( error ) break;
+>                 ref[i].x = 0.5F * w  + x;
+>                 ref[i].y = 0.5F * h + y;
+>                 ref[i].width = sqrtf( 0.5F * (w * w + h * h) );
+>                 ref[i].found = 0;
+>                 ref[i].neghbors = 0;
+>             }
+>             if( !error )
+>             {
+>                 cvClearMemStorage( storage );
+> 
+>                 cascade->count = nos;
+>                 totaltime -= time( 0 );
+>                 objects = cvHaarDetectObjects( img, cascade, storage, scale_factor, 1 );
+>                 totaltime += time( 0 );
+>                 cascade->count = nos0;
+> 
+>                 detcount = ( objects ? objects->total : 0);
+>                 det = (detcount > 0) ?
+>                     ( (ObjectPos*)cvAlloc( detcount * sizeof( *det )) ) : NULL;
+>                 hits = missed = falseAlarms = 0;
+>                 for( i = 0; i < detcount; i++ )
+>                 {
+>                     CvAvgComp r = *((CvAvgComp*) cvGetSeqElem( objects, i ));
+>                     det[i].x = 0.5F * r.rect.width  + r.rect.x;
+>                     det[i].y = 0.5F * r.rect.height + r.rect.y;
+>                     det[i].width = sqrtf( 0.5F * (r.rect.width * r.rect.width +
+>                                                   r.rect.height * r.rect.height) );
+>                     det[i].neghbors = r.neighbors;
+> 
+>                     if( saveDetected )
+>                     {
+>                         cvRectangle( img, cvPoint( r.rect.x, r.rect.y ),
+>                             cvPoint( r.rect.x + r.rect.width, r.rect.y + r.rect.height ),
+>                             CV_RGB( 255, 0, 0 ), 3 );
+>                     }
+> 
+>                     found = 0;
+>                     for( j = 0; j < refcount; j++ )
+>                     {
+>                         distance = sqrtf( (det[i].x - ref[j].x) * (det[i].x - ref[j].x) +
+>                                           (det[i].y - ref[j].y) * (det[i].y - ref[j].y) );
+>                         if( (distance < ref[j].width * maxPosDiff) &&
+>                             (det[i].width > ref[j].width / maxSizeDiff) &&
+>                             (det[i].width < ref[j].width * maxSizeDiff) )
+>                         {
+>                             ref[j].found = 1;
+>                             ref[j].neghbors = MAX( ref[j].neghbors, det[i].neghbors );
+>                             found = 1;
+>                         }
+>                     }
+>                     if( !found )
+>                     {
+>                         falseAlarms++;
+>                         neg[MIN(det[i].neghbors, rocsize - 1)]++;
+>                     }
+>                 }
+>                 for( j = 0; j < refcount; j++ )
+>                 {
+>                     if( ref[j].found )
+>                     {
+>                         hits++;
+>                         pos[MIN(ref[j].neghbors, rocsize - 1)]++;
+>                     }
+>                     else
+>                     {
+>                         missed++;
+>                     }
+>                 }
+> 
+>                 totalHits += hits;
+>                 totalMissed += missed;
+>                 totalFalseAlarms += falseAlarms;
+>                 printf( "|%32.32s|%6d|%6d|%6d|\n", filename, hits, missed, falseAlarms );
+>                 printf( "+--------------------------------+------+------+------+\n" );
+>                 fflush( stdout );
+> 
+>                 if( saveDetected )
+>                 {
+>                     strcpy( detfilename, detname );
+>                     strcat( detfilename, filename );
+>                     strcpy( filename, detfilename );
+>                     cvvSaveImage( fullname, img );
+>                 }
+408,412c339,340
+< ///////////////////////////////////////////////////////////////////////////////
+< cvac::DetectorData DetectorI::createCopyOfDetectorData(const ::Ice::Current& current)
+< {
+<    return _ddata;
+< }
+---
+>                 if( det ) { cvFree( &det ); det = NULL; }
+>             } /* if( !error ) */
+414,416c342,345
+< DetectorI::~DetectorI()
+< {
+< }
+---
+>             cvReleaseImage( &img );
+>             cvFree( &ref );
+>         }
+>         fclose( info );
+417a347,352
+>         printf( "|%32.32s|%6d|%6d|%6d|\n", "Total",
+>                 totalHits, totalMissed, totalFalseAlarms );
+>         printf( "+================================+======+======+======+\n" );
+>         printf( "Number of stages: %d\n", nos );
+>         printf( "Number of weak classifiers: %d\n", numclassifiers[nos - 1] );
+>         printf( "Total time: %f\n", totaltime );
+419,426c354,366
+< void DetectorI::destroy(const Ice::Current &current)
+< {
+<     _is_initialized = false;
+<     if (NULL != _storage)
+<         cvReleaseMemStorage( &_storage );
+<     if (NULL != _cascade)
+<         cvReleaseHaarClassifierCascade( &_cascade );
+< }
+---
+>         /* print ROC to stdout */
+>         for( i = rocsize - 1; i > 0; i-- )
+>         {
+>             pos[i-1] += pos[i];
+>             neg[i-1] += neg[i];
+>         }
+>         fprintf( stderr, "%d\n", nos );
+>         for( i = 0; i < rocsize; i++ )
+>         {
+>             fprintf( stderr, "\t%d\t%d\t%f\t%f\n", pos[i], neg[i],
+>                 ((float)pos[i]) / (totalHits + totalMissed),
+>                 ((float)neg[i]) / (totalHits + totalMissed) );
+>         }
+427a368,370
+>         cvFree( &pos );
+>         cvFree( &neg );
+>     }
+429,436c372
+< void DetectorI::process(const DetectorCallbackHandlerPrx &client,
+<                         const RunSet &run,
+<                         const Ice::Current &)
+< {
+<     _callback = client;
+<     DoDetectFunc func = detectFile;
+<     processRunSet(this, client, func, run);
+< }
+---
+>     delete[] numclassifiers;
+438,441c374,375
+< DetectorPropertiesPrx DetectorI::getDetectorProperties(const Ice::Current &)
+< {
+<     return NULL;
+< }
+---
+>     cvReleaseHaarClassifierCascade( &cascade );
+>     cvReleaseMemStorage( &storage );
+443,445c377
+< bool DetectorI::isInitialized(const Ice::Current &)
+< {
+<     return _is_initialized;
+---
+>     return 0;
+448,460d379
+< 
+< std::string DetectorI::getName( const Ice::Current &)
+< {
+<     return _name;
+< }
+< std::string DetectorI::getDescription(const Ice::Current &)
+< {
+<     return _description;
+< }
+< void DetectorI::setVerbosity(int verbosity, const Ice::Current &)
+< {
+<     _verbosity = verbosity;
+< }
+*** comparing perf_ICEServiceTrainI.cpp
+*** comparing perf_ICETrainI.cpp
+*** comparing CVAC_cvclassifier.h
+*** comparing CVAC_cvcommon.h
+*** comparing CVAC_cvhaartraining.h
+*** comparing CVAC_cvPerformanceTrainer.h
+*** comparing cvclassifier.h
+*** comparing cvhaartraining.h
+*** comparing cvPerf_ICEServiceTrainI.h
+*** comparing cvPerf_ICETrainI.h
+*** comparing DetectorI.h
+*** comparing file_open_options.h
+*** comparing perf_ICETrainI.h
+*** comparing _cvcommon.h
+*** comparing _cvhaartraining.h
+*** comparing run.bat

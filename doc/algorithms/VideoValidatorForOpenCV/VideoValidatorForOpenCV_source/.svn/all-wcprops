@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/VideoValidatorForOpenCV/VideoValidatorForOpenCV_source
+END
+VideoValidatorForOpenCV.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/VideoValidatorForOpenCV/VideoValidatorForOpenCV_source/VideoValidatorForOpenCV.cpp
+END
+VideoValidatorForOpenCV.h
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/VideoValidatorForOpenCV/VideoValidatorForOpenCV_source/VideoValidatorForOpenCV.h
+END
+readme.txt
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/CVAC/!svn/ver/297/trunk/Algorithms/VideoValidatorForOpenCV/VideoValidatorForOpenCV_source/readme.txt
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/CVAC/!svn/ver/428/trunk/Algorithms/VideoValidatorForOpenCV/VideoValidatorForOpenCV_source/CMakeLists.txt
+END

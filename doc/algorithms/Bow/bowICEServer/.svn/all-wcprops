@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/CVAC/!svn/ver/633/trunk/Algorithms/Bow/bowICEServer
+END
+BowICEI.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/CVAC/!svn/ver/633/trunk/Algorithms/Bow/bowICEServer/BowICEI.cpp
+END
+BowICEServiceI.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/CVAC/!svn/ver/633/trunk/Algorithms/Bow/bowICEServer/BowICEServiceI.cpp
+END
+config.service
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/CVAC/!svn/ver/360/trunk/Algorithms/Bow/bowICEServer/config.service
+END
+BowICEI.h
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/Bow/bowICEServer/BowICEI.h
+END
+BowICEServiceI.h
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/CVAC/!svn/ver/627/trunk/Algorithms/Bow/bowICEServer/BowICEServiceI.h
+END
+readme.txt
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/CVAC/!svn/ver/88/trunk/Algorithms/Bow/bowICEServer/readme.txt
+END
+config.admin
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/CVAC/!svn/ver/67/trunk/Algorithms/Bow/bowICEServer/config.admin
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/CVAC/!svn/ver/592/trunk/Algorithms/Bow/bowICEServer/CMakeLists.txt
+END
+config.icebox
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/CVAC/!svn/ver/83/trunk/Algorithms/Bow/bowICEServer/config.icebox
+END

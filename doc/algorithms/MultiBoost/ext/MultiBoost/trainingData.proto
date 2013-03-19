@@ -1,0 +1,46 @@
+package trainingData;
+
+message Data {
+    required int32 objsizeW = 5;
+    required int32 objsizeH = 4;
+
+    message AvgSize {
+        required float avgsizeH = 1;
+        required float avgsizeW = 2; 
+    }
+
+    message Location {
+        repeated float x = 1 [packed=true];
+        repeated float y = 2 [packed=true];
+    }
+
+    message Dictionary {
+        required int32 filterIndex = 1;
+        repeated float patch = 2 [packed=true];
+        required Location location = 3;
+        required int32 patchRo = 4;
+        required int32 patchCo = 5;
+        required int32 imagendx = 6;
+    }
+
+    message Filter {
+        repeated float filterData = 1 [packed=true];
+    }
+    
+    repeated AvgSize avgsize = 3;
+    repeated Filter filters = 2;
+    repeated Dictionary dictionary = 1;
+
+    message Detector {
+        required float a = 1;
+        required float b = 2;
+        required float th = 3;
+        required int32 bestnode = 4;
+        required int32 featureNdx = 5;
+        repeated double b0 = 6 [packed=true];
+        repeated int32 sharing = 7 [packed=true];
+    }
+
+    repeated Detector detector = 6;
+
+}

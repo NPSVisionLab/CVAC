@@ -1,0 +1,17 @@
+K 10
+svn:ignore
+V 189
+cmake_install.cmake
+CTestTestfile.cmake
+CMakeFiles
+Makefile
+Data.cpp
+Data.h
+Services.cpp
+Services.h
+.performance.cpp.swp
+.CMakeLists.txt.swp
+.getImage.swp
+.CVAC_cvPeformanceTrainer.cpp.swp
+
+END
