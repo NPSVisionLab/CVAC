@@ -1,9 +1,0 @@
-K 10
-svn:ignore
-V 60
-cmake_install.cmake
-CTestTestfile.cmake
-CMakeFiles
-Makefile
-
-END

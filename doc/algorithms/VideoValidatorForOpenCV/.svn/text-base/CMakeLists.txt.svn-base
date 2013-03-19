@@ -1,3 +1,0 @@
-INCLUDE_DIRECTORIES( ${VideoValidatorForOpenCV_INCLUDE_DIR})
-ADD_SUBDIRECTORY(VideoValidatorForOpenCV_source)
-ADD_SUBDIRECTORY(VideoValidatorForOpenCVServer)
