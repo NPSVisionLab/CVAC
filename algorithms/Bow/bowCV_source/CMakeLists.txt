@@ -1,0 +1,26 @@
+PROJECT (bowCVSource)
+
+SET(SOURCE_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/bowCV.cpp
+)
+
+SET(HEADER_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/bowCV.h
+)
+
+SET(INCLUDE_DIRS
+    .
+    ${OpenCV_INCLUDE_DIRS}
+)
+
+INCLUDE_DIRECTORIES(${INCLUDE_DIRS})
+
+ADD_LIBRARY(bowCVSource SHARED
+            ${SOURCE_FILES}
+            ${HEADER_FILES}
+            )
+
+TARGET_LINK_LIBRARIES(bowCVSource
+    ${OpenCV_LIBS}
+    )
+
