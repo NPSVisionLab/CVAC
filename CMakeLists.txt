@@ -5,13 +5,11 @@ ENABLE_TESTING()
 
 PROJECT(CVAC)
 
-#OPTION(BUILD_WITH_MULTIBOOST "Enables the projects that depend on the MultiBoost library" OFF)
+INCLUDE (UserCMakeLists.txt OPTIONAL)
+
 OPTION(BUILD_WITH_BOW "Enables the projects that depend on the bow library" OFF)
-#OPTION(BUILD_WITH_SBD "Enables the projects that depend on the SBD library" OFF)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Enables the projects that depend on the OpencvPerformance library" OFF)
-#OPTION(BUILD_WITH_WIREDIAGRAM "Enables building a wiring diagram detector" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
-#OPTION(BUILD_WITH_VIDEOVALIDATORFOROPENCV "Enables the projects that depend on the VideoValidatorForOpenCV library" OFF)
 
 # where the Find*.cmake files are
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules
@@ -75,7 +73,6 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive)
-FIND_PACKAGE(UnitTest++)
 
 IF(BUILD_WITH_MULTIBOOST OR BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW OR BUILD_WITH_SBD OR BUILD_WITH_VIDEOVALIDATORFOROPENCV)
   FIND_PACKAGE( OpenCV REQUIRED core imgproc highgui ml features2d nonfree objdetect calib3d PATHS ../CVAC_extras/OpenCV-2.4.2)
@@ -89,3 +86,7 @@ IF( BUILD_WITH_TESTS)
   SET( BUILD_UNIT_TESTS ON )
   ADD_SUBDIRECTORY(test)
 ENDIF( BUILD_WITH_TESTS )
+
+IF( BUILD_UNIT_TESTS)
+  FIND_PACKAGE(UnitTest++)
+ENDIF( BUILD_UNIT_TESTS )
