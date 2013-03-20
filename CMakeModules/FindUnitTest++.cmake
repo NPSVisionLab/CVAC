@@ -3,17 +3,15 @@
 
   
 FIND_LIBRARY(UNITTEST++_LIBRARY
-             NAMES UnitTest++ UnitTest++.vsnet
-             HINTS
-              ${CMAKE_SOURCE_DIR}/../CVAC_extras/lib
-              ${CMAKE_SOURCE_DIR}/../UnitTest++/Release
+             NAMES UnitTest++ UnitTest++.vsnet2005
+             PATHS
+              ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Release
              )
 
 FIND_LIBRARY(UNITTEST++_LIBRARY_DEBUG
-             NAMES UnitTest++D UnitTest++.vsnet 
-             HINTS
-              ${CMAKE_SOURCE_DIR}/../CVAC_extras/lib
-              ${CMAKE_SOURCE_DIR}/../UnitTest++/Debug
+             NAMES UnitTest++D UnitTest++.vsnet2005
+             PATHS
+              ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Debug
              )
 
 IF (NOT UNITTEST++_LIBRARY_DEBUG)
@@ -25,8 +23,7 @@ ENDIF()
 
 FIND_PATH(UNITTEST++_INCLUDE_DIR UnitTest++.h
           HINTS
-           ${CMAKE_SOURCE_DIR}/../CVAC_extras/inc
-           ${CMAKE_SOURCE_DIR}/../UnitTest++/src
+           ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/src
           )
 
 # handle the QUIETLY and REQUIRED arguments and set UNITTEST++_FOUND to TRUE if 
