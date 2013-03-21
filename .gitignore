@@ -1,3 +1,13 @@
+# CVAC-specific #
+#################
+src/util/Data.*
+src/util/Services.*
+test/UnitTests/Data.*
+test/UnitTests/Services.*
+Testing
+bin/*
+UserCMakeLists.txt
+
 # Compiled source #
 ###################
 *.com
