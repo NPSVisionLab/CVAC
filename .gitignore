@@ -6,6 +6,7 @@ test/UnitTests/Data.*
 test/UnitTests/Services.*
 Testing
 bin/*
+UserCMakeLists.txt
 
 # Compiled source #
 ###################
