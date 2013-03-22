@@ -37,12 +37,12 @@
  *****************************************************************************/
 #include <UnitTest++.h>
 #include <stdio.h>
+#include <iostream>
 
 
 int main(int argc, char **argv)
 {
    int allTests_rtn = UnitTest::RunAllTests();
-   
    getchar();
    return allTests_rtn;
 }
