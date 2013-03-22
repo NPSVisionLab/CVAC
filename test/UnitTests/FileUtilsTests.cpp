@@ -136,7 +136,7 @@ SUITE(UnitTests_cvac)
 
     if(!testSuccess) {        // Explain failure in making symlink
             printf("\n");
-            printf("UnitTest could not find link target:  '%s' \n", tgtFile );
+            printf("UnitTest could not find link target:  '%s' \n", tgtFile.c_str() );
             printf("subfolder of CWD.\n");
             printSymlinkHintsPerPlatform(callSuccess);
     }
