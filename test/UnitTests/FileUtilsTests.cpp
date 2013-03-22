@@ -104,8 +104,9 @@ SUITE(UnitTests_cvac)
   TEST(makeSymlinkFile) {  // Note path to target file must be Absolute, at least was true on Windows development machine
     fstream linkOutputFile, linkSourceFile;
     std::string linkDir = std::string(getCurrentWorkingDirectory().c_str());
-    std::string linkFullPath = linkDir + "/testLink/linkOutputFile.txt";
-    std::string tgtFile = linkDir + "../../test/UnitTests/sourceLinkFile.txt";  // Relative to CVAC/bin
+    std::string tempDir = "../test/temp/testLink";
+    std::string linkPath = tempDir + "/linkOutputFile.txt";
+    std::string tgtFile = linkDir + "/../test/data/sourceLinkFile.txt";  // Relative to CVAC/bin
 
     // Test checks access to source file
     linkSourceFile.open(tgtFile.c_str(), ios::in);
@@ -121,27 +122,28 @@ SUITE(UnitTests_cvac)
     // Check Paths
     cout << endl << "######### Make Symlink File        ##################################" << endl;
     cout << "Target at " << tgtFile << endl;
-    cout << "Link Dir is " << linkDir << endl;
-    cout << "linkFile at: " << linkFullPath << endl;
-    makeDirectory(linkDir + "/testLink");
+    cout << "linkFile at: " << linkPath << endl;
+    // In case its still around after a failure delete it and the link.
+    deleteDirectory(tempDir);
+    makeDirectory(tempDir);
 
 
     // Verify input file exists
-    bool callSuccess = makeSymlinkFile(linkFullPath, tgtFile);
-    linkOutputFile.open(linkFullPath.c_str(), ios::in);
+    bool callSuccess = makeSymlinkFile(linkPath, tgtFile);
+    linkOutputFile.open(linkPath.c_str(), ios::in);
     bool testSuccess = linkOutputFile.is_open();
 
 
     if(!testSuccess) {        // Explain failure in making symlink
             printf("\n");
-            printf("UnitTest could not find link target: 'linkOutputFile.txt' in 'testLink' \n");
+            printf("UnitTest could not find link target:  '%s' \n", tgtFile );
             printf("subfolder of CWD.\n");
             printSymlinkHintsPerPlatform(callSuccess);
     }
     else {  // Clear dir and link file
       printf("Test found output symlink file.\n");
       linkOutputFile.close();
-      deleteDirectory(linkDir + "/testLink");
+      deleteDirectory(tempDir);
     }
 
     // Found expected Symlink file on disk?
@@ -160,8 +162,9 @@ SUITE(UnitTests_cvac)
     neg_background.ptype = NEGATIVE;
     std::string tgtFilename, path, input_fullPath, symlinkFullPath = "";
     tgtFilename = "A a.jpg";
-    path = std::string(getCurrentWorkingDirectory().c_str());
-    input_fullPath = (path + std::string("/../test/UnitTests/") + tgtFilename);
+    std::string dir = getCurrentWorkingDirectory().c_str(); // c_str needed to properly size the string.
+    input_fullPath = dir + std::string("/../test/data/");
+    input_fullPath += tgtFilename;
     cout << "Target at " << input_fullPath << endl;
 
     // Verify input file exists
@@ -177,7 +180,7 @@ SUITE(UnitTests_cvac)
     
     // Get symlink path for the illegal input path
     bool newSymlink, callSuccess;
-    std::string dir = getCurrentWorkingDirectory();
+    
 #ifdef WIN32
     char *tempName = _tempnam(dir.c_str(), NULL);
 #else
@@ -185,8 +188,9 @@ SUITE(UnitTests_cvac)
 #endif /* WIN32 */
     std::string tempString = tempName;
     FilePath fpath;
-    fpath.filename = input_fullPath;
-    symlinkFullPath = getLegalPath(tempName, fpath, newSymlink);  // Sets boolean flags
+    fpath.directory.relativePath = "test\\data";
+    fpath.filename = tgtFilename;
+    symlinkFullPath = getLegalPath(tempName, fpath, newSymlink);  
     callSuccess = makeSymlinkFile(symlinkFullPath, input_fullPath);
 
     // Verify symlink file exists
@@ -252,15 +256,19 @@ SUITE(UnitTests_cvac)
     printf("TEST: cvacLibArchiveExpand\n");
     // Test: with subfolder
     // Expand files from source archive
-    std::string archiveFileName1("../data/CvPerformance_testDetectors/LeftHalfCascade01_000_14.tar");
-    std::vector<std::string> fileNameStrings = expandSeq_fromFile(archiveFileName1, "/expandedFiles");
+    std::string expandDir = "testtemp";
+    std::string detectZip = "TrainUSKOJI.zip";
+    std::string archiveFileName1("../data/DefaultDetectors/" + detectZip);
+    // wipe out any old directory we will expand into
+    deleteDirectory(expandDir);
+    std::vector<std::string> fileNameStrings = expandSeq_fromFile(archiveFileName1, expandDir);
 
     // Check for expanded files
     ifstream testForXml;
     std::string CWD = getCurrentWorkingDirectory();
     std::string trimmedCWD = CWD.c_str();
-    std::string pathToClear = (trimmedCWD + "/expandedFiles");
-    std::string checkFilePath = (pathToClear + "/LeftHalfCascade01_000_14.xml");
+    std::string pathToClear = (trimmedCWD + expandDir);
+    std::string checkFilePath = (pathToClear + "logTrain_svm.xml.gz");
     testForXml.open(checkFilePath.c_str(), ifstream::in);
 
     // File exists after extraction
@@ -268,34 +276,10 @@ SUITE(UnitTests_cvac)
     printf("Success opening expanded file (from subfolder).");
 
     // Clear
-    deleteDirectory(pathToClear);
+    deleteDirectory("." + expandDir);
   }
 
-    // Libarchive's wrapper uses a default subfolder, since CVAC is missing a
-    // platform-independent way to clear files that aren't in a subfolder.
-  TEST(cvacLibArchiveExpand_defaultSubfolder) {
-
-    // Test: no subfolder
-    // Expand files from source archive
-    std::string archiveFileName("../data/CvPerformance_testDetectors/LeftHalfCascade01_000_14.tar");
-    std::vector<std::string> fileNameStrings = expandSeq_fromFile(archiveFileName);  // No specified folder
-
-    // Check for expanded files
-    ifstream testForXml;
-    std::string CWD = getCurrentWorkingDirectory();
-    std::string trimmedCWD = CWD.c_str();
-    std::string pathToClear = (trimmedCWD + ""); // No subfolder
-    std::string checkFilePath = (pathToClear + "/LeftHalfCascade01_000_14.xml");
-    testForXml.open(checkFilePath.c_str(), ifstream::in);
-
-    // File exists after extraction
-    CHECK(true == (0 != testForXml));
-    printf("Success opening expanded file (without subfolder).");
-
-    // Clear
-    deleteDirectory(pathToClear);
-  }
-
+ 
 
   void printSymlinkHintsPerPlatform(bool callSuccess) {
 
