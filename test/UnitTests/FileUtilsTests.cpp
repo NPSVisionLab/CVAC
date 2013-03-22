@@ -267,8 +267,8 @@ SUITE(UnitTests_cvac)
     ifstream testForXml;
     std::string CWD = getCurrentWorkingDirectory();
     std::string trimmedCWD = CWD.c_str();
-    std::string pathToClear = (trimmedCWD + expandDir);
-    std::string checkFilePath = (pathToClear + "logTrain_svm.xml.gz");
+    std::string pathToClear = (trimmedCWD + "/." + expandDir);
+    std::string checkFilePath = (pathToClear + "/logTrain_svm.xml.gz");
     testForXml.open(checkFilePath.c_str(), ifstream::in);
 
     // File exists after extraction
