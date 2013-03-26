@@ -143,5 +143,5 @@ namespace cvac
    * @param const std::string prefix string to prepend
    */
    std::string expandFilename(std::string fileName, std::string prefixDir);
-}
+};
 #endif // FILEUTILS_H__
