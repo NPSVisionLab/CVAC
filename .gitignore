@@ -7,6 +7,7 @@ test/UnitTests/Services.*
 Testing
 bin/*
 UserCMakeLists.txt
+/3rdparty
 
 # Compiled source #
 ###################
@@ -46,7 +47,3 @@ nbproject
 Icon?
 ehthumbs.db
 Thumbs.db
-<<<<<<< HEAD
-/3rdparty
-=======
->>>>>>> 3c550bd448aab9c5c4acae72ff62f7c9b542838e
