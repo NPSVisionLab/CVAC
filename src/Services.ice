@@ -133,6 +133,7 @@ module cvac {
      */
     void initialize(int verbosity, DetectorData data);
 
+#if 0
     /** Get a copy of the DetectorData used by this Detector. The
      *  returned DetectorData could be saved
      *  locally, or modified and passed back to the Detector via initialize()
@@ -140,8 +141,8 @@ module cvac {
      *   This might or might not be heeded.
      *  @see initialize()
      */
-    //idempotent DetectorData createCopyOfDetectorData( DetectorDataType how );
-
+    idempotent DetectorData createCopyOfDetectorData( DetectorDataType how );
+#endif
 
     /** This call will block until after completedProcessing was called on
      *  the CallbackHandler (which needs to be of type DetectorCallbackHandler)
