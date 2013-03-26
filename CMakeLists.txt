@@ -73,11 +73,23 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 #
 FIND_PACKAGE( Doxygen )
 IF( DOXYGEN_FOUND )
+    # this is the list of directories that doxygen will search for input files;
+    # see Doxygen.in for a list of file types (basically, C, Java, and ICE files)
+    set( CMAKE_DOXYGEN_INPUT_LIST
+		${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/util
+		${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/util
+         )		
+    string(REGEX REPLACE ";" " " CMAKE_DOXYGEN_INPUT_LIST "${CMAKE_DOXYGEN_INPUT_LIST}")
+
+    # customize the "Doxyfile", the configuration for doxygen
+    set( CMAKE_DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/doc )
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+
+    # create the Makefile target
     ADD_CUSTOM_TARGET( doc
-    		       ${DOXYGEN_EXECUTABLE} src/Doxyfile
+    		       ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
 		       COMMENT "Generating API documentation with Doxygen" VERBATIM
 		       )
-    ADD_SUBDIRECTORY( src )
 ENDIF( DOXYGEN_FOUND )
 
 FIND_PACKAGE(Ice REQUIRED)
