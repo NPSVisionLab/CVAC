@@ -1,4 +1,4 @@
-#ifndef FILEUTILS_H__
+
 /****
  *CVAC Software Disclaimer
  *
@@ -36,6 +36,7 @@
  *(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****/
+#ifndef FILEUTILS_H__
 #define FILEUTILS_H__
 #include <string>
 #include <Data.h>  // Ice classes must be available for 'addFile_toRunSet..' definitions
