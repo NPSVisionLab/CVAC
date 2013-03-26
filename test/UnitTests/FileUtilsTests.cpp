@@ -125,7 +125,7 @@ SUITE(UnitTests_cvac)
     cout << "linkFile at: " << linkPath << endl;
     // In case its still around after a failure delete it and the link.
     deleteDirectory(tempDir);
-    makeDirectory(tempDir);
+    makeDirectories(tempDir);
 
 
     // Verify input file exists
