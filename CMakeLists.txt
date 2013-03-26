@@ -68,6 +68,18 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
+#
+# add a Makefile target "doc" to generate API documentation with Doxygen
+#
+FIND_PACKAGE( Doxygen )
+IF( DOXYGEN_FOUND )
+    ADD_CUSTOM_TARGET( doc
+    		       ${DOXYGEN_EXECUTABLE} src/Doxyfile
+		       COMMENT "Generating API documentation with Doxygen" VERBATIM
+		       )
+    ADD_SUBDIRECTORY( src )
+ENDIF( DOXYGEN_FOUND )
+
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive)
 
