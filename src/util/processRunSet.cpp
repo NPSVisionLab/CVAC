@@ -366,7 +366,7 @@ std::string cvac::getSymlinkSubstitution(const std::string& illegalFileName) {
 /**
  * Insure that the directories exist and that they don't have any illegal chars
  */
-static std::string _makeDirectories(std::string tempName, DirectoryPath dirPath)
+static std::string makeDirectories(std::string tempName, DirectoryPath dirPath)
 { 
     std::string result = std::string(tempName);
     if (dirPath.relativePath.empty())
@@ -428,7 +428,7 @@ std::string cvac::getLegalPath(std::string tempName, FilePath filePath, bool &ne
       // To insure that we don't have any conflicts we will follow the same directory structure but use the
       // tempname as the root dir.
       makeDirectory(tempName);
-      std::string directories = _makeDirectories(tempName, filePath.directory);
+      std::string directories = makeDirectories(tempName, filePath.directory);
       newSymlink = true;
       std::string fullName = directories + "/" + filePath.filename;
       std::string linkFileName_withPath = getSymlinkSubstitution(fullName);  // cvac procedure to make symlink
