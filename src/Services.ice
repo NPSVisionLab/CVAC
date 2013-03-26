@@ -136,7 +136,7 @@ module cvac {
     /** Get a copy of the DetectorData used by this Detector. The
      *  returned DetectorData could be saved
      *  locally, or modified and passed back to the Detector via initialize()
-     *  @how requests a certain type: ByteSeq, file, or provider via proxy.  
+     *  @param how requests a certain type: ByteSeq, file, or provider via proxy.  
      *   This might or might not be heeded.
      *  @see initialize()
      */
