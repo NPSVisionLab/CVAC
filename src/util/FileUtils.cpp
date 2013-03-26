@@ -142,6 +142,75 @@ std::string cvac::getCurrentWorkingDirectory()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+bool cvac::makeDirectories(const std::string& dirPath)
+{ 
+    std::string result;
+    if (dirPath.empty())
+        return false;
+    int lastIdx = 0;
+#ifdef WIN32
+    int idx = dirPath.find(':', 1);
+    if (idx != -1)
+    {
+        // We have a drive letter, lets ignore this
+        lastIdx = idx + 1;
+    }
+    if (dirPath[lastIdx] == '\\')
+         lastIdx++;   // ignore a first backslash
+    idx = dirPath.find('\\', lastIdx);
+    if (idx == -1)
+         idx = dirPath.find('/', lastIdx); // try forward slash
+#else
+    if (dirPath[lastIdx] == '/')
+         lastIdx++;   // ignore a first slash
+    int idx =  dirPath.find('/', lastIdx);
+#endif /* WIN32 */
+    std::string substr;
+    if (idx > 0)
+    {
+        std::string substr = dirPath.substr(0, idx - lastIdx);
+        if (!makeDirectory(substr))
+            return false;    
+        result += substr; 
+    }
+    lastIdx = idx+1;
+#ifdef WIN32
+    idx = dirPath.find('\\', lastIdx);
+    if (idx == -1)
+         idx = dirPath.find('/', lastIdx); // try forward slash
+#else
+    idx = dirPath.find('/', lastIdx);
+#endif /* WIN32 */
+    while (idx != -1)
+    {
+        substr = dirPath.substr(lastIdx, idx - lastIdx); 
+        result += "/";
+        result += substr;
+        if (!makeDirectory(result))
+            return false;
+        lastIdx = idx+1;
+#ifdef WIN32
+        idx = dirPath.find('\\', lastIdx);
+        if (idx == -1)
+             idx = dirPath.find('/', lastIdx); // try forward slash
+#else
+        idx = dirPath.find('/', lastIdx);
+#endif /* WIN32 */
+    }
+    int len = dirPath.length();
+    if (lastIdx + 1 < len)
+    { // We have a directory at the end
+        
+        std::string last = dirPath.substr(lastIdx, len - lastIdx);
+        result += "/";
+        result += last;
+        if (!makeDirectory(result))
+            return false;
+    }
+    return true;
+}
+///////////////////////////////////////////////////////////////////////////////
 bool cvac::makeDirectory(const std::string& path)
 {
    if (path.empty())
