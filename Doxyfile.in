@@ -42,6 +42,7 @@ WARN_LOGFILE           =
 
 INPUT                  = README.md @CMAKE_DOXYGEN_INPUT_LIST@
 FILE_PATTERNS          = *.cpp *.h* *.java *.ice
+EXTENSION_MAPPING      = ice=C++
 RECURSIVE              = NO
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
@@ -62,6 +63,14 @@ FILTER_PATTERNS        =
 FILTER_SOURCE_FILES    = NO
 FILTER_SOURCE_PATTERNS =
 USE_MDFILE_AS_MAINPAGE = README.md
+
+#
+# For parsing ICE files well:
+#
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED             = "extends=:public"
 
 #---------------------------------------------------------------------------
 # configuration options related to source browsing
@@ -85,6 +94,7 @@ VERBATIM_HEADERS       = YES
 #---------------------------------------------------------------------------
 
 GENERATE_HTML          = YES
+HAVE_DOT	       = YES
 
 #---------------------------------------------------------------------------
 # configuration options related to the LaTeX output

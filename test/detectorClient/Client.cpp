@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
 		std::string configstr = "config.client"; // Assumed to run from CVAC root, or use optional argument to specify
 		app.m_detectorName = std::string(argv[1]);
 
-		if(app.m_detectorName == "BagOfWordsUSKOJI")
+		if(app.m_detectorName == "BagOfWordsUSKOCA")
 		{
 			appData.multiclassDetection = true;
 		}

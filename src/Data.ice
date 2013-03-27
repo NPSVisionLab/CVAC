@@ -10,6 +10,11 @@ module cvac {
     int classID = 0; // if MULTICLASS
   };
 
+  /** A superclass for PurposedDirectory and PurposedLabelableSeq,
+  * both of which contain a collection of Labelable artifacts.
+  * PurposedList gives these collections a Purpose for a particular
+  * detector or trainer run.
+  */
   class PurposedList {
     Purpose pur;
   };
@@ -54,7 +59,9 @@ module cvac {
     string filename;      // just the filename, such as image.jpg
   };
 
-  /** the image or video, formerly called ImageModel
+  /** The image or video.  Apologies for the ugly name, but
+   * other options are too generic and commonly used for other
+   * purposes: image, media, file, ...
    */
   struct Substrate {
     bool isImage = true;
@@ -65,11 +72,30 @@ module cvac {
     int height = 0;
   };
 
+  /** LabelProperties are name-value pairs that can
+   *  specify such aspects of Labelable image artifacts as
+   *  their orientation towards the camera
+   *  "face_orientation = frontal" or simply a collection of
+   *  properties such as "hairy" "purrs" "has_claws" etc.
+   */
   dictionary<string, string> LabelProperties;
+  /** Semantics serve to give meaning to label names.  The URL,
+   *  if present, should link to a site that somehow attaches meaning to
+   *  names.  For example, a Label with the name "Europa" could have a
+   *  link to a Wikipedia page to disambiguate its meaning:
+   *  http://en.wikipedia.org/wiki/Europa_(moon)
+   *  Or, as another example, many labels could link to WordNet
+   *  (http://wordnet.princeton.edu/) to help with explaining their meaning.
+   */
   struct Semantics {
     string url;
   };
 
+  /** A label.  A Labelable image artifact can have a single name, such
+   * as "pedestrian" or it can have a series of name-value pair
+   * LabelProperties.  The Semantics refer to a URL that specifies the
+   * meaning of the name strings.
+   */
   struct Label {
     bool hasLabel;
     string name;
@@ -80,9 +106,10 @@ module cvac {
   /** Any image or video artifact that can have a label.
    * This is intended to be data that gets copied between client and server,
    * not interfaces with method calls.
+   * A confidence of 0 indicates "surely not" and a 1 indicates "for sure."
    */
   class Labelable {
-    float confidence;
+    float confidence;  // = 0.0  should be default value but Ice 3.4.2 has a C++ bug
     Label lab;
     Substrate sub;
   };

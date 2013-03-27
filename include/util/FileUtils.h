@@ -36,8 +36,8 @@
  *(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****/
-#ifndef FILEUTILS_H__
-#define FILEUTILS_H__
+#ifndef __FILEUTILS_H_INCLUDED__
+#define __FILEUTILS_H_INCLUDED__
 #include <string>
 #include <Data.h>  // Ice classes must be available for 'addFile_toRunSet..' definitions
 #include <Services.h>
@@ -150,4 +150,4 @@ namespace cvac
    */
    std::string expandFilename(std::string fileName, std::string prefixDir);
 };
-#endif // FILEUTILS_H__
+#endif // __FILEUTILS_H_INCLUDED__
