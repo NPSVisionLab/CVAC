@@ -257,8 +257,8 @@ SUITE(UnitTests_cvac)
     // Test: with subfolder
     // Expand files from source archive
     std::string expandDir = "testtemp";
-    std::string detectZip = "TrainUSKOJI.zip";
-    std::string archiveFileName1("../data/DefaultDetectors/" + detectZip);
+    std::string detectZip = "bowUSKOCA.zip";
+    std::string archiveFileName1("../data/detectors/" + detectZip);
     // wipe out any old directory we will expand into
     deleteDirectory(expandDir);
     std::vector<std::string> fileNameStrings = expandSeq_fromFile(archiveFileName1, expandDir);
