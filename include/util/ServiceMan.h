@@ -129,7 +129,7 @@ namespace cvac
         /*
          * Get the config.service defined data directory
          */
-        std::string cvac::ServiceManager::getDataDir();
+        std::string getDataDir();
 
     private:
         ::Ice::ObjectAdapterPtr         mAdapter;
