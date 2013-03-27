@@ -8,6 +8,8 @@ Testing
 bin/*
 UserCMakeLists.txt
 /3rdparty
+/doc/html
+/Doxyfile
 
 # Compiled source #
 ###################
