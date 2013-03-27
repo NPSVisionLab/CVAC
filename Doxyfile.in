@@ -94,7 +94,9 @@ VERBATIM_HEADERS       = YES
 #---------------------------------------------------------------------------
 
 GENERATE_HTML          = YES
-HAVE_DOT	       = YES
+HAVE_DOT	       = @DOXYGEN_DOT_FOUND@
+MSCGEN_PATH	       = @DOXYGEN_DOT_PATH@
+DOT_PATH	       = @DOXYGEN_DOT_PATH@
 
 #---------------------------------------------------------------------------
 # configuration options related to the LaTeX output
