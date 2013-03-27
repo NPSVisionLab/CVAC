@@ -176,7 +176,7 @@ void cvac::processRunSet(DetectorPtr detector,
     char *tempName = tempnam(dir.c_str(), NULL);
 #endif /* WIN32 */
     std::string tempString = tempName;
-   
+    sman->setStoppable();
 
     // Step through the Runset doing a detect for each item
     std::vector<PurposedListPtr>::iterator it;
@@ -287,6 +287,7 @@ void cvac::processRunSet(DetectorPtr detector,
                         dirptr->recursive);
         }
     }
+    sman->clearStop();
     // The client should create a class derived from Ice::Shared to be get the completion
     // callback.  http://doc.zeroc.com/pages/viewpage.action?pageId=13173000
     //client->completedProcessing();

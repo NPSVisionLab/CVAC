@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
-//#include <util/FileUtils.h>
+#include <util/ServiceMan.h>
 
 #include <opencv2/opencv.hpp>
 // #include <opencv2/opencv.hpp>
@@ -77,7 +77,8 @@ public:
 	bool			train_parseTrainList(const string& _filepathTrain,const string& _filenameTrainList);
 	void			train_stackTrainImage(const string& _fullpath,const int& _classID);	
 	void			train_stackTrainImage(const string& _fullpath,const int& _classID,const int& _x,const int& _y,const int& _width,const int& _height);
-	bool			train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult);
+	bool			train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult, 
+                              cvac::ServiceManager *);
 
 	bool			detect_initialize(const string& _filepath,const string& _filename);	
 	bool			detect_setParameter(const string& _detectorName,const string& _extractorName,const string& _matcherName);	
