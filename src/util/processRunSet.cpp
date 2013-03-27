@@ -56,20 +56,24 @@ private:
     DetectorPtr _detect;
     const DetectorCallbackHandlerPrx &_callback;
     DoDetectFunc _detectFunc;
+    ServiceManager *_serviceMan;
 public:
     DirectoryWalker(DetectorPtr detect, DoDetectFunc detectFunc,
-                   const DetectorCallbackHandlerPrx &callback);
+                   const DetectorCallbackHandlerPrx &callback,
+                   ServiceManager *sman);
     void walk(const char *fname, const char* suffixes[], bool recursive);
 
 };
 //---------------------------------------------------------------------------
 
 DirectoryWalker::DirectoryWalker(DetectorPtr detect, DoDetectFunc detectFunc,
-                                 const DetectorCallbackHandlerPrx &callback)
+                                 const DetectorCallbackHandlerPrx &callback,
+                                 ServiceManager *sMan)
    : _callback(callback)
 {
     _detect = detect;
     _detectFunc = detectFunc;
+    _serviceMan = sMan;
 }
 //---------------------------------------------------------------------------
 
@@ -87,9 +91,9 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
     while ((walker = readdir(dir)) != NULL)
     {
 
-        if (stopRequested(getServiceName()))
+        if (_serviceMan->stopRequested())
         {
-            stopCompleted(getServiceName());
+            _serviceMan->stopCompleted();
             break;
         }
         if (strcmp(walker->d_name, "..") == 0 ||
@@ -125,7 +129,7 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
 
 /*
 // Check for any chars within the string that make the file inappropriate for the detector
-bool shouldIgnore(FilePath filePath) {
+static bool shouldIgnore(FilePath filePath) {
   
   std::string ignoreToken = ".svn";
   unsigned result = filePath.directory.relativePath.find(ignoreToken);
@@ -158,14 +162,14 @@ bool cvac::containsIllegalChars(FilePath filePath) {
 void cvac::processRunSet(DetectorPtr detector,
                          const DetectorCallbackHandlerPrx &client,
                          DoDetectFunc detectFunc, const RunSet &run,
-                         const std::string &pathPrefix)
+                         const std::string &pathPrefix,
+                         ServiceManager *sman)
 {
-    DirectoryWalker walker(detector, detectFunc, client);
+    DirectoryWalker walker(detector, detectFunc, client, sman);
     // Fetch a temp directory to store symbolic links as needed
     std::string dir = getCurrentWorkingDirectory();
     localAndClientMsg(VLogger::DEBUG_2, client, "processRunSet-cwd: %s\n", dir.c_str());
     localAndClientMsg(VLogger::DEBUG_2, client, "processRunSet-prefix: %s\n", pathPrefix.c_str());
-    runningStoppableService(getServiceName());
 #ifdef WIN32
     char *tempName = _tempnam(dir.c_str(), NULL);
 #else
@@ -192,9 +196,9 @@ void cvac::processRunSet(DetectorPtr detector,
             std::vector<LabelablePtr> llist = sp->labeledArtifacts;
             for (lIt = llist.begin(); lIt < llist.end(); lIt++)
             {
-                if (stopRequested(getServiceName()))
+                if (sman->stopRequested())
                 {
-                    stopCompleted(getServiceName());
+                    sman->stopCompleted();
                     break;
                 }
                 LabelablePtr lptr = *lIt;
@@ -283,7 +287,6 @@ void cvac::processRunSet(DetectorPtr detector,
                         dirptr->recursive);
         }
     }
-     clearStop(getServiceName());
     // The client should create a class derived from Ice::Shared to be get the completion
     // callback.  http://doc.zeroc.com/pages/viewpage.action?pageId=13173000
     //client->completedProcessing();
