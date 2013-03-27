@@ -43,11 +43,12 @@ WARN_LOGFILE           =
 INPUT                  = @CMAKE_DOXYGEN_INPUT_LIST@
 FILE_PATTERNS          = *.cpp *.h* *.java *.ice
 EXTENSION_MAPPING      = ice=C++
+STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@
 RECURSIVE              = NO
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
-EXCLUDE_SYMBOLS        = __F__* IceDelegate* IceProxy*
+EXCLUDE_SYMBOLS        = __F__* IceDelegate* IceProxy* __*
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
@@ -95,7 +96,6 @@ VERBATIM_HEADERS       = YES
 
 GENERATE_HTML          = YES
 HAVE_DOT	       = @DOXYGEN_DOT_FOUND@
-MSCGEN_PATH	       = @DOXYGEN_DOT_PATH@
 DOT_PATH	       = @DOXYGEN_DOT_PATH@
 
 #---------------------------------------------------------------------------
