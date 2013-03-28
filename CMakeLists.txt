@@ -46,7 +46,8 @@ ELSE()
 ENDIF()
 ENDFOREACH()
 
-#CONFIGURE_FILE(runIcebox_sh.in, runIcebox.sh)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIcebox.sh.in  ${CMAKE_SOURCE_DIR}/runIcebox.sh)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/stopIcebox.sh.in  ${CMAKE_SOURCE_DIR}/stopIcebox.sh)
 
 
 IF (WIN32)
