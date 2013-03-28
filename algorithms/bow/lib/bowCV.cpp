@@ -267,7 +267,7 @@ void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID,co
 }
 
 
-bool bowCV::train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult)
+bool bowCV::train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult, cvac::ServiceManager *)
 {
 	if(!flagName)
 	{
@@ -444,6 +444,8 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass)
 	bowExtractor->compute(_img, _keypoints, _descriptors);
 
 	_bestClass = classifierSVM.predict(_descriptors);
+
+    cout << "best class is " << _bestClass << std::endl;
 
 	if (-1 == _bestClass) // no class found
 		return false;
