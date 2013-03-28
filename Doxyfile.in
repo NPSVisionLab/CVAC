@@ -48,7 +48,9 @@ RECURSIVE              = NO
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
-EXCLUDE_SYMBOLS        = __F__* IceDelegate* IceProxy* __*
+EXCLUDE_SYMBOLS        = __* \
+                         IceDelegate* IceProxy* \
+                         Callback_* CallbackNC_*
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
@@ -71,7 +73,8 @@ USE_MDFILE_AS_MAINPAGE = README.md
 ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
-PREDEFINED             = "extends=:public"
+PREDEFINED             = "extends=:public" \
+                         "module=namespace"
 
 #---------------------------------------------------------------------------
 # configuration options related to source browsing
