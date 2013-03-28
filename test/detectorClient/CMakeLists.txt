@@ -47,10 +47,14 @@ SET_TARGET_PROPERTIES(${APP_NAME} PROPERTIES DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFI
 #         ${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} CvFaces testImg ${CVAC_ROOT_DIR}/config.client
 #        )
 
+ADD_TEST(startIceBox
+        ${CMAKE_SOURCE_DIR}/runIcebox.sh)
 ADD_TEST(detectorClient_BowDetector
          ${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} BagOfWordsUSKOCA testImg ${CVAC_ROOT_DIR}/config.client
          )
 
+ADD_TEST(stopIceBox
+        ${CMAKE_SOURCE_DIR}/stopIcebox.sh)
 
 ## Positive-Image Live-Verification for Detectors ###
 #ADD_TEST(Ice_Box_Test_Client_cvPerformanceDetector_Verify

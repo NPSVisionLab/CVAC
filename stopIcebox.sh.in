@@ -1,0 +1,5 @@
+export PATH=$PATH:/opt/local/bin
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${CVAC_ROOT_DIR}/lib"
+${ICE_BOX_ADMIN} --Ice.Config=config.admin shutdown
+echo CVAC services stopped
+exit

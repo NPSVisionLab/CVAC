@@ -70,6 +70,12 @@ FIND_PROGRAM( ICE_BOX_EXECUTABLE
                  PATHS ${ICE_ROOT}/bin
                )
 
+FIND_PROGRAM( ICE_BOX_ADMIN
+                 NAMES iceboxadmin
+                 PATHS ${ICE_ROOT}/bin
+               )
+
+
 IF (MSVC10)
    FIND_PROGRAM( ICE_SLICE_EXECUTABLE
                  NAMES slice2cpp
