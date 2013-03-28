@@ -267,7 +267,7 @@ void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID,co
 }
 
 
-bool bowCV::train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult, cvac::ServiceManager *sman)
+bool bowCV::train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult)
 {
 	if(!flagName)
 	{
@@ -300,11 +300,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 			cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
 			return false;
 		}
-		if (sman->stopRequested())
-        {
-            sman->stopCompleted();
-            return false;
-        }
+		
 		_rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
 		if((_rect.width != 0) && (_rect.height != 0))
 			_img = _img(_rect);
@@ -362,11 +358,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 		
 		if(_classID==-1)
 			continue;
-        if (sman->stopRequested())
-        {
-            sman->stopCompleted();
-            return false;
-        }
+
 		_img = imread(_fullFilePathImg);
 		
 		_rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
@@ -440,6 +432,15 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass)
 	}
 
 	fDetector->detect(_img, _keypoints);
+	//////////////////////////////////////////////////////////////////////////
+	//lekomin_debug_bow
+	std::string _debugName = _fullfilename.substr(0,_fullfilename.rfind(".")) + "_feature.txt";	
+	FileStorage fs( _debugName, FileStorage::WRITE );
+	if( fs.isOpened() )
+		fs << "keypoints" << _keypoints;
+	//////////////////////////////////////////////////////////////////////////
+
+
 	bowExtractor->compute(_img, _keypoints, _descriptors);
 
 	_bestClass = classifierSVM.predict(_descriptors);
@@ -496,7 +497,14 @@ bool bowCV::detect_readTrainResult(const string& _filepath,const string& _filena
 	_fullpath = _filepath + "/" + _inputString;	
 	
 	if(detect_readVocabulary(_fullpath,mVocabulary))
+	{
 		bowExtractor->setVocabulary(mVocabulary);
+		//////////////////////////////////////////////////////////////////////////
+		//lekomin_debug_bow
+		std::string _debugName = _fullpath.substr(0,_fullpath.rfind(".")) + "_loadedTrainingData.txt";	
+		train_writeVocabulary(_debugName,mVocabulary);
+		//////////////////////////////////////////////////////////////////////////
+	}
 	else
 		return false;
 	
