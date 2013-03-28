@@ -45,6 +45,8 @@ ELSE()
 ENDIF()
 ENDFOREACH()
 
+#CONFIGURE_FILE(runIcebox_sh.in, runIcebox.sh)
+
 
 IF (WIN32)
    SET(CMAKE_DEBUG_POSTFIX  "d")
