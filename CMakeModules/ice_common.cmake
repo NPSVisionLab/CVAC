@@ -40,6 +40,8 @@ MACRO(WRAP_SLICE outfiles)
     ENDFOREACH(it)
 ENDMACRO(WRAP_SLICE)
 
+# note: Other than slice2cpp, slice2java automatically places generated files into
+# the respective namespace directory. So the output dir is just 'java' not 'java/<namespace>'
 MACRO(WRAP_SLICE2JAVA outfiles cpout package)
     EXTRACT_OPTIONS(slice_files options ${ARGN})
     
