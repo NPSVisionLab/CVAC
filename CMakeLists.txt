@@ -46,10 +46,6 @@ ELSE()
 ENDIF()
 ENDFOREACH()
 
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIcebox.sh.in  ${CMAKE_SOURCE_DIR}/runIcebox.sh)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/stopIcebox.sh.in  ${CMAKE_SOURCE_DIR}/stopIcebox.sh)
-
-
 IF (WIN32)
    SET(CMAKE_DEBUG_POSTFIX  "d")
 
@@ -101,6 +97,9 @@ ENDIF( BUILD_DOCUMENTATION )
 
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive)
+
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIcebox.sh.in  ${CMAKE_SOURCE_DIR}/runIcebox.sh)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/stopIcebox.sh.in  ${CMAKE_SOURCE_DIR}/stopIcebox.sh)
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   FIND_PACKAGE( OpenCV REQUIRED core imgproc highgui ml features2d nonfree objdetect calib3d PATHS ../CVAC_extras/OpenCV-2.4.2)
