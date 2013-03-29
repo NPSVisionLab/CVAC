@@ -83,25 +83,12 @@ public:
 			const ::Result& result = resultSet.results[resultIndex];
 			int numLabelsFound = result.foundLabels.size();
 			localAndClientMsg(VLogger::INFO, NULL, "Found %d labels in %s\n", numLabelsFound, result.original->sub.path.filename.c_str());
+            std::string className;
             if (result.foundLabels.size() > 0)
-			{
-				std::string className = result.foundLabels[0]->lab.name;
+            {
+				className = result.foundLabels[0]->lab.name;
 				localAndClientMsg(VLogger::DEBUG_1, NULL, "Class name: %s\n", className.c_str());
 			}
-			// Regression Test Verification
-			if(appDataRef->isVerification)
-			{
-				// Signal detection for positive image in /CTest
-				if(numLabelsFound >= 1)
-				{
-				   appDataRef->detectionsVerified.push_back(true);
-				}
-				else
-				{
-				   appDataRef->detectionsVerified.push_back(false);
-				}
-			}
-
 			// Print Video labels if found
 			for (int labelIdx = 0; labelIdx < numLabelsFound; labelIdx++)
 			{
@@ -112,6 +99,42 @@ public:
 					localAndClientMsg(VLogger::INFO, NULL, "Frame number: %d\n", vid->start.time);
 				}
 			}
+			// Regression Test Verification
+			if(appDataRef->isVerification)
+			{
+				// Signal detection for positive image in /CTest
+				if(numLabelsFound >= 1)
+				{
+                   if (appDataRef->multiclassDetection) 
+                   {
+                       // class has to match the picture
+                       int expectedClass;
+                       // Class number is last char of filename followed by a 3 char extension
+                       //debug
+                       std::cout << result.original->sub.path.filename << std::endl;
+                       int idx = result.original->sub.path.filename.length() - 5;
+                       std::string eClassNum = result.original->sub.path.filename.substr(idx, 1);
+                       std::cout << eClassNum << std::endl;
+                       expectedClass = atoi(eClassNum.c_str());
+                       if (expectedClass == atoi(className.c_str()))
+                       {
+                           appDataRef->detectionsVerified.push_back(true);
+                       }else
+                       {
+
+                           localAndClientMsg(VLogger::INFO, NULL, "Found class: %d did not match expected %d\n", 
+                                             atoi(className.c_str()), expectedClass);
+                           appDataRef->detectionsVerified.push_back(false);
+                       }
+                   }else
+                       appDataRef->detectionsVerified.push_back(true);
+				}
+				else
+				{
+				   appDataRef->detectionsVerified.push_back(false);
+				}
+			}
+
 		}
 	};
 

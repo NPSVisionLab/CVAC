@@ -1,5 +1,6 @@
 export PATH=$PATH:/opt/local/bin
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_ROOT_DIR}/lib"
+cd ${CVAC_ROOT_DIR}
 ${ICE_BOX_EXECUTABLE} --Ice.Config=config.icebox &
 echo CVAC services launched
 exit
