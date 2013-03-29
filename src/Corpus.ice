@@ -17,7 +17,7 @@ module cvac {
   class Corpus {
     string name;
     string description;
-    URL    homepage;
+    string homepageURL  ;
     bool   isImmutableMirror;
   };
 
@@ -35,10 +35,15 @@ module cvac {
       * @param taskname For example, "downloading".
       * @param details  For example, "45MB of 375MB at 2.3MB/sec".
       * @param percentCompleted A percentage between 0.0 and 1.0, concerning
-                      only the current task. 
-    void corpusMirrorProgress( Corpus corpus, 
+                      only the current task.
+    */
+    void corpusMirrorProgress( Corpus corp, 
             int numtasks, int currtask, string taskname, string details,
             float percentCompleted );
+
+    /** Called once the createLocalMirror function has completed.
+     */
+    void corpusMirrorCompleted( Corpus corp );
   };
 
 
@@ -64,24 +69,24 @@ module cvac {
 
     /** Write Corpus to a metadata file. 
      */
-    void saveCorpus( Corpus corpus, FilePath file );
+    void saveCorpus( Corpus corp, FilePath file );
 
     /** Download, extract, and keep caller informed via CorpusCallback.
       * A mirror can contain the actual files or just enough metadata about
       * the files so as to construct a LabelableList.
       */
-    void createLocalMirror( Corpus corpus, CorpusCallback cb );
+    void createLocalMirror( Corpus corp, CorpusCallback cb );
 
     /** Obtain the actual data items in the corpus.  This will fail if
      *  the Corpus isImmutableMirror and createLocalMirror has not been
      *  completed.
      */
-    LabelableList getDataSet( Corpus corpus );
+    LabelableList getDataSet( Corpus corp );
 
     /** Add a labeled or unlabeled artifact(s) to the Corpus.  This method will
      *  fail if the Corpus isImmutableMirror.
      */
-    void addLabelable( Corpus corpus, LabelableList addme );
+    void addLabelable( Corpus corp, LabelableList addme );
   };
 };
 
