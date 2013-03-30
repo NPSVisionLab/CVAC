@@ -7,7 +7,6 @@ INCLUDE (UserCMakeLists.txt OPTIONAL)
 OPTION(BUILD_WITH_BOW "Enables the projects that depend on the bow library" OFF)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Enables the projects that depend on the OpencvPerformance library" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
-OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" ON)
 
 # where the Find*.cmake files are
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules
@@ -69,39 +68,12 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-#
-# add a Makefile target "doc" to generate API documentation with Doxygen
-#
-IF( BUILD_DOCUMENTATION )
-  FIND_PACKAGE( Doxygen )
-  IF( DOXYGEN_FOUND )
-      # this is the list of directories that doxygen will search for input files;
-      # see Doxygen.in for a list of file types (basically, C, Java, and ICE files)
-      set( CMAKE_DOXYGEN_INPUT_LIST
-                ${CMAKE_SOURCE_DIR}/README.md
-                ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/util
-                ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/util
-           )		
-      string(REGEX REPLACE ";" " " CMAKE_DOXYGEN_INPUT_LIST "${CMAKE_DOXYGEN_INPUT_LIST}")
-
-      # customize the "Doxyfile", the configuration for doxygen
-      set( CMAKE_DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/doc )
-      CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-
-      # create the Makefile target
-      ADD_CUSTOM_TARGET( doc
-                         ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-                         COMMENT "Generating API documentation with Doxygen" VERBATIM
-                        )
-  ENDIF( DOXYGEN_FOUND )
-ENDIF( BUILD_DOCUMENTATION )
-
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive)
 
-IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+IF(BUILD_WITH_MULTIBOOST OR BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW OR BUILD_WITH_SBD OR BUILD_WITH_VIDEOVALIDATORFOROPENCV)
   FIND_PACKAGE( OpenCV REQUIRED core imgproc highgui ml features2d nonfree objdetect calib3d PATHS ../CVAC_extras/OpenCV-2.4.2)
-ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+ENDIF (BUILD_WITH_MULTIBOOST OR BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW OR BUILD_WITH_SBD OR BUILD_WITH_VIDEOVALIDATORFOROPENCV)
 
 ADD_SUBDIRECTORY(src/util)
 IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
@@ -113,6 +85,8 @@ IF( BUILD_WITH_TESTS)
   SET( BUILD_UNIT_TESTS ON )
   ADD_SUBDIRECTORY(test)
 ENDIF( BUILD_WITH_TESTS )
+
+ADD_SUBDIRECTORY(src/convert)
 
 IF( BUILD_UNIT_TESTS)
   FIND_PACKAGE(UnitTest++)
