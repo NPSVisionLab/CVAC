@@ -7,11 +7,13 @@ WRAP_SLICE(SLICE_FILES
            )
 
 SET(SOURCE_FILES
-    ${CMAKE_SOURCE_DIR}/src/convert/convertVatic.cpp
+    ${CMAKE_SOURCE_DIR}/src/convert/ConvertVatic.cpp
+    ${CMAKE_SOURCE_DIR}/src/convert/ConvertUtils.cpp
     )
 
 SET(HEADER_FILES
-    ${CVAC_INCLUDE_DIR}/convert/convertVatic.h
+    ${CVAC_INCLUDE_DIR}/convert/ConvertVatic.h
+    ${CVAC_INCLUDE_DIR}/convert/ConvertUtils.h
     )
 
 INCLUDE_DIRECTORIES(${CVAC_INCLUDE_DIR} ${ICE_INCLUDE}
@@ -19,7 +21,7 @@ INCLUDE_DIRECTORIES(${CVAC_INCLUDE_DIR} ${ICE_INCLUDE}
                     )
 
 
-ADD_LIBRARY(convertVatic
+ADD_LIBRARY(convertVaticLib
             ${SOURCE_FILES}
             ${HEADER_FILES}
             ${SLICE_FILES}
