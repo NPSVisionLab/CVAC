@@ -36,8 +36,13 @@ TARGET_LINK_LIBRARIES(${APP_NAME}
 SET_TARGET_PROPERTIES(${APP_NAME} PROPERTIES DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}")
 
 
-
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIceTest.sh.in  ${CMAKE_SOURCE_DIR}/runIceTest.sh)
+IF (WIN32)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIceTest.bat.in  ${CMAKE_SOURCE_DIR}/runIceTest.bat)
+    SET (SCRIPT_EXT ".bat")
+ELSE (WIN32)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIceTest.sh.in  ${CMAKE_SOURCE_DIR}/runIceTest.sh)
+    SET (SCRIPT_EXT ".sh")
+ENDIF (WIN32)
 
 # Ice Box Test Client CTest Suite:
 # To get debug output go to visualStudio directory and run ctest --verbose
@@ -47,7 +52,7 @@ CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIceTest.sh.in  ${CMAKE_SOURCE_DIR}/runIceT
 
 
 ADD_TEST(detectorClient_BowDetector
-         ${CVAC_ROOT_DIR}/runIceTest.sh BagOfWordsUSKOCA
+         ${CVAC_ROOT_DIR}/runIceTest${SCRIPT_EXT} BagOfWordsUSKOCA
          )
 
 
@@ -57,6 +62,6 @@ ADD_TEST(detectorClient_BowDetector
 #         )
          
 ADD_TEST(detectorClient_BowDetector_Verify
-         ${CVAC_ROOT_DIR}/runIceTest.sh CTest BagOfWordsUSKOCA
+         ${CVAC_ROOT_DIR}/runIceTest${SCRIPT_EXT} CTest BagOfWordsUSKOCA
          )
 

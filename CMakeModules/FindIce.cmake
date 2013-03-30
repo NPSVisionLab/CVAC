@@ -66,7 +66,7 @@ IF (NOT ICE_BOX_LIBRARY_DEBUG)
 ENDIF()
 
 FIND_PROGRAM( ICE_BOX_EXECUTABLE
-                 NAMES icebox
+                 NAMES icebox${CMAKE_DEBUG_POSTFIX}
                  PATHS ${ICE_ROOT}/bin
                )
 
