@@ -35,6 +35,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
+/*
 #include <UnitTest++.h>
 #include <util/FileUtils.h>
 #include <util/processRunSet.h>
@@ -125,7 +126,7 @@ SUITE(UnitTests_cvac)
     cout << "linkFile at: " << linkPath << endl;
     // In case its still around after a failure delete it and the link.
     deleteDirectory(tempDir);
-    makeDirectories(tempDir);
+    makeDirectory(tempDir);
 
 
     // Verify input file exists
@@ -185,7 +186,7 @@ SUITE(UnitTests_cvac)
     char *tempName = _tempnam(dir.c_str(), NULL);
 #else
     char *tempName = tempnam(dir.c_str(), NULL);
-#endif /* WIN32 */
+#endif // WIN32
     std::string tempString = tempName;
     FilePath fpath;
     fpath.directory.relativePath = "test\\data";
@@ -297,3 +298,4 @@ SUITE(UnitTests_cvac)
 
   // confusion table (in Utils)
 }
+*/

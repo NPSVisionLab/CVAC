@@ -11,6 +11,7 @@ SET (CVAC_APP_SOURCE_FILES
       Data.cpp
       Services.cpp
       ConfusionMatrixTests.cpp
+	  ConvertVaticTests.cpp
      )
 
 SET(HEADER_FILES
@@ -33,6 +34,7 @@ SET(LIBS
     ${APP_NAME}
     optimized ${UNITTEST++_LIBRARY} debug ${UNITTEST++_LIBRARY_DEBUG}
     utils
+    convertVaticLib
     ${ICE_LIBRARIES}
     ${OpenCV_LIBS}
 )
