@@ -81,12 +81,6 @@ namespace cvac
      */
    std::string getCurrentWorkingDirectory();
 
-   /** Make each directory based on the supplied path as required. 
-     * @param path The directory tree to create.
-     * @return True if the command was successful, false otherwise
-     */
-   bool makeDirectories(const std::string& path);
-
    /** Make a directory based on the supplied path. This will only create one
      * level of directory (i.e., it won't create every directory in the path).
      * @param path The directory to create (assumes the path's parent exists)
@@ -149,5 +143,5 @@ namespace cvac
    * @param const std::string prefix string to prepend
    */
    std::string expandFilename(std::string fileName, std::string prefixDir);
-};
+}
 #endif // FILEUTILS_H__

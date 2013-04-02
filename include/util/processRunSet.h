@@ -41,7 +41,6 @@
  * routine to process each file of the RunSet.
  */
 #include <util/FileUtils.h>
-#include <util/ServiceMan.h>
 #include <Data.h>
 #include <Services.h>
 #include <iostream>
@@ -51,6 +50,7 @@
 #if defined(WIN32)
   #include <winbase.h>
 #endif
+
 
 namespace cvac
 {
@@ -74,8 +74,7 @@ namespace cvac
                       const cvac::DetectorCallbackHandlerPrx &client,
                       DoDetectFunc detectFunc, 
                       const cvac::RunSet &run, 
-                      const std::string &pathPrefix,
-                      cvac::ServiceManager *servMan);
+                      const std::string &pathPrefix);
 
    // Check for any chars within the string that could upset the detector
    bool containsIllegalChars(cvac::FilePath filePath);

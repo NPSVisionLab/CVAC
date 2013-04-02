@@ -284,7 +284,7 @@ public class RunSetWrapper implements Iterable {
     }
    
     /** iterate only over samples with the "constraint" purpose
-     * @param constraint for example, only positive samples
+     * @param constraint, for example, only positive samples
      * @return 
      */
     public Iterator<Labelable> iterator( Purpose constraint )

@@ -38,9 +38,6 @@
 #include <util/ConfusionMatrix.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-/**
- * Default constructor for a ConfusionMatrix
- */
 ConfusionMatrix::ConfusionMatrix() {}
 ConfusionMatrix::ConfusionMatrix(RunSet runSet) {
   initialize(runSet);
