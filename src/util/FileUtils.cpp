@@ -140,9 +140,8 @@ std::string cvac::getCurrentWorkingDirectory()
 
    return currentDir;
 }
-
+/*
 ///////////////////////////////////////////////////////////////////////////////
-
 bool cvac::makeDirectories(const std::string& dirPath)
 { 
     std::string result;
@@ -165,7 +164,7 @@ bool cvac::makeDirectories(const std::string& dirPath)
     if (dirPath[lastIdx] == '/')
          lastIdx++;   // ignore a first slash
     int idx =  dirPath.find('/', lastIdx);
-#endif /* WIN32 */
+#endif // WIN32
     std::string substr;
     if (idx > 0)
     {
@@ -181,7 +180,7 @@ bool cvac::makeDirectories(const std::string& dirPath)
          idx = dirPath.find('/', lastIdx); // try forward slash
 #else
     idx = dirPath.find('/', lastIdx);
-#endif /* WIN32 */
+#endif // WIN32
     while (idx != -1)
     {
         substr = dirPath.substr(lastIdx, idx - lastIdx); 
@@ -196,7 +195,7 @@ bool cvac::makeDirectories(const std::string& dirPath)
              idx = dirPath.find('/', lastIdx); // try forward slash
 #else
         idx = dirPath.find('/', lastIdx);
-#endif /* WIN32 */
+#endif // WIN32
     }
     int len = dirPath.length();
     if (lastIdx + 1 < len)
@@ -209,8 +208,9 @@ bool cvac::makeDirectories(const std::string& dirPath)
             return false;
     }
     return true;
-}
+} */
 ///////////////////////////////////////////////////////////////////////////////
+
 bool cvac::makeDirectory(const std::string& path)
 {
    if (path.empty())

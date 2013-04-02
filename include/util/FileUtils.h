@@ -1,4 +1,3 @@
-
 /****
  *CVAC Software Disclaimer
  *
@@ -36,6 +35,7 @@
  *(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****/
+
 #ifndef FILEUTILS_H__
 #define FILEUTILS_H__
 #include <string>
@@ -81,18 +81,17 @@ namespace cvac
      */
    std::string getCurrentWorkingDirectory();
 
-   /** Make each directory based on the supplied path as required. 
-     * @param path The directory tree to create.
-     * @return True if the command was successful, false otherwise
-     */
-   bool makeDirectories(const std::string& path);
-
    /** Make a directory based on the supplied path. This will only create one
      * level of directory (i.e., it won't create every directory in the path).
      * @param path The directory to create (assumes the path's parent exists)
      * @return True if the command was successful, false otherwise
      */
    bool makeDirectory(const std::string& path);
+
+   /** Create directory on disk based on path
+   Was used in unit test: 'makeSymlinkFile'
+   */
+   //bool makeDirectories(const std::string& dirPath);
 
    /**  Get the file name, excluding the path.
      *  @code getFileName("/temp/myfile.tar.gz") //returns "myfile.tar.gz"
@@ -149,5 +148,5 @@ namespace cvac
    * @param const std::string prefix string to prepend
    */
    std::string expandFilename(std::string fileName, std::string prefixDir);
-};
+}
 #endif // FILEUTILS_H__

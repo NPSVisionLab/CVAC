@@ -49,3 +49,10 @@ nbproject
 Icon?
 ehthumbs.db
 Thumbs.db
+
+lib/convertvaticlibd.idb
+lib/convertVaticLibd.lib
+lib/convertvaticlibd.pdb
+lib/utilsd.idb
+lib/utilsd.lib
+lib/utilsd.pdb
