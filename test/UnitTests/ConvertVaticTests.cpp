@@ -17,10 +17,13 @@ SUITE(ConvertVaticTests)
      cout << "## Convert Vatic Test Suite ##" << endl;
 	 
 	 std::string CWD = std::string(getCurrentWorkingDirectory().c_str());
-	 cout << "Cwd: " << CWD.c_str() << endl;
-	 convert("../data/annotation/vaticVideo.txt");
+	 //cout << "Cwd: " << CWD.c_str() << endl;
+	 LabelableList* videoAnn = convert("../data/annotation/vaticVideo.txt");
 
-	 // Verify return values
+	 //Labelable firstLine = (videoAnn[0]); // how to reference
+	 //assert(firstLine.sub.isVideo);
+
+	 // Verify 1st line values:
 	 //0 21 234 46 306 0 1 0 0 "person"
   }
 }
