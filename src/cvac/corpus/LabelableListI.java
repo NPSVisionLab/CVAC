@@ -12,6 +12,8 @@ import cvac.Substrate;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+
+import cvacslice.Corpus;
 //import mediaanalyst.GUI_Desktop.Constants;
 
 //class Corpus {};
@@ -116,10 +118,10 @@ public class LabelableListI extends ArrayList<Labelable> {
     public class ImageNameFilter implements FilenameFilter {
         public boolean accept (File dir, String name)
         {
-            int len = Corpus.IMAGE_SUFFIXES.length;
+            int len = CorpusI.IMAGE_SUFFIXES.length;
             int i;
             for (i = 0; i < len; i++){
-                String suffix = Corpus.IMAGE_SUFFIXES[i];
+                String suffix = CorpusI.IMAGE_SUFFIXES[i];
                 if (name.toLowerCase().endsWith(suffix)) {
                     return true;
                 }
@@ -130,10 +132,10 @@ public class LabelableListI extends ArrayList<Labelable> {
     public class VideoNameFilter implements FilenameFilter {
         public boolean accept (File dir, String name)
         {
-            int len = Corpus.VIDEO_SUFFIXES.length;
+            int len = CorpusI.VIDEO_SUFFIXES.length;
             int i;
             for (i = 0; i < len; i++){
-                String suffix = Corpus.VIDEO_SUFFIXES[i];
+                String suffix = CorpusI.VIDEO_SUFFIXES[i];
                 if (name.toLowerCase().endsWith(suffix)) {
                     return true;
                 }

@@ -3,8 +3,7 @@
 
 #include "Data.ice"
 
-module cvac {
-
+module cvacslice {
 
   /** A Corpus, which describes the metadata for a collection of
     * images or videos.
@@ -65,11 +64,11 @@ module cvac {
     /** Opens the Corpus from a metadata file.  This does not download,
      *  extract, or otherwise prepare the Corpus, just create a Corpus object.
      */
-    Corpus openCorpus( FilePath file );
+    Corpus openCorpus( cvac::FilePath file );
 
     /** Write Corpus to a metadata file. 
      */
-    void saveCorpus( Corpus corp, FilePath file );
+    void saveCorpus( Corpus corp, cvac::FilePath file );
 
     /** Download, extract, and keep caller informed via CorpusCallback.
       * A mirror can contain the actual files or just enough metadata about
@@ -81,12 +80,12 @@ module cvac {
      *  the Corpus isImmutableMirror and createLocalMirror has not been
      *  completed.
      */
-    LabelableList getDataSet( Corpus corp );
+    cvac::LabelableList getDataSet( Corpus corp );
 
     /** Add a labeled or unlabeled artifact(s) to the Corpus.  This method will
      *  fail if the Corpus isImmutableMirror.
      */
-    void addLabelable( Corpus corp, LabelableList addme );
+    void addLabelable( Corpus corp, cvac::LabelableList addme );
   };
 };
 

@@ -17,6 +17,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import cvacslice.Corpus;
+
 /*
 import mediaanalyst.GUI_Desktop.Constants;
 import mediaanalyst.Main;
@@ -29,7 +32,7 @@ import mediaanalyst.utility_code.Data_IO_Utils;
  * often annotated with labels.
  * @author tomb, jcs, matz
  */
-abstract public class Corpus {
+abstract public class CorpusI extends Corpus {
     public static final String[] IMAGE_SUFFIXES = {".jpg",".jpeg",".png", ".pgm"};
     public static final String[] VIDEO_SUFFIXES = {".3g2", ".3gp", ".4xm", ".ajp", ".amc", ".amv", ".asf", ".ass", ".avi", ".bik", ".dpg", ".dsv", ".dv", ".dvf", ".dvx", ".flc", ".flv", ".gvi", ".hdmov", ".hdv", ".heu", ".ivf", ".k3g", ".m2p", ".m2ts", ".mjp", ".mkv", ".mmv", ".mod", ".modd", ".moff", ".mov", ".mp4", ".mpb", ".mpg", ".mswmm", ".mvb", ".mve", ".mxf", ".nsv", ".ogv", ".pva", ".rm", ".rms", ".rv", ".s2k", ".scm", ".smk", ".smv", ".sol", ".srt", ".ssa", ".str", ".sub", ".svi", ".tod", ".tp", ".ts", ".vc1", ".vid", ".vod", ".vp6", ".vp7", ".vqa", ".wm", ".wma", ".wmdb", ".wmv", ".xas", ".xma"};
 
@@ -46,7 +49,7 @@ abstract public class Corpus {
     private boolean                   m_spacesUsed = false;
     private boolean errorShown = false;
     
-    public Corpus() {
+    public CorpusI() {
         m_images = new HashMap<String, LabelableListI>();
 //        m_loader_thread = null;
     }

@@ -65,7 +65,8 @@ MESSAGE ( STATUS "${CMAKE_Java_ARCHIVE} ${JAR_ARGS}" )
 
 
 SET(SOURCE_FILES
-    cvac/corpus/Corpus.java
+    cvac/corpus/CorpusI.java
+    cvac/corpus/CorpusServer.java
     cvac/corpus/LabelableListI.java
     #util/RunSetWrapper.java
 )
