@@ -56,24 +56,20 @@ private:
     DetectorPtr _detect;
     const DetectorCallbackHandlerPrx &_callback;
     DoDetectFunc _detectFunc;
-    ServiceManager *_serviceMan;
 public:
     DirectoryWalker(DetectorPtr detect, DoDetectFunc detectFunc,
-                   const DetectorCallbackHandlerPrx &callback,
-                   ServiceManager *sman);
+                   const DetectorCallbackHandlerPrx &callback);
     void walk(const char *fname, const char* suffixes[], bool recursive);
 
 };
 //---------------------------------------------------------------------------
 
 DirectoryWalker::DirectoryWalker(DetectorPtr detect, DoDetectFunc detectFunc,
-                                 const DetectorCallbackHandlerPrx &callback,
-                                 ServiceManager *sMan)
+                                 const DetectorCallbackHandlerPrx &callback)
    : _callback(callback)
 {
     _detect = detect;
     _detectFunc = detectFunc;
-    _serviceMan = sMan;
 }
 //---------------------------------------------------------------------------
 
@@ -91,9 +87,9 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
     while ((walker = readdir(dir)) != NULL)
     {
 
-        if (_serviceMan->stopRequested())
+        if (stopRequested(getServiceName()))
         {
-            _serviceMan->stopCompleted();
+            stopCompleted(getServiceName());
             break;
         }
         if (strcmp(walker->d_name, "..") == 0 ||
@@ -129,7 +125,7 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
 
 /*
 // Check for any chars within the string that make the file inappropriate for the detector
-static bool shouldIgnore(FilePath filePath) {
+bool shouldIgnore(FilePath filePath) {
   
   std::string ignoreToken = ".svn";
   unsigned result = filePath.directory.relativePath.find(ignoreToken);
@@ -162,14 +158,14 @@ bool cvac::containsIllegalChars(FilePath filePath) {
 void cvac::processRunSet(DetectorPtr detector,
                          const DetectorCallbackHandlerPrx &client,
                          DoDetectFunc detectFunc, const RunSet &run,
-                         const std::string &pathPrefix,
-                         ServiceManager *sman)
+                         const std::string &pathPrefix)
 {
-    DirectoryWalker walker(detector, detectFunc, client, sman);
+    DirectoryWalker walker(detector, detectFunc, client);
     // Fetch a temp directory to store symbolic links as needed
     std::string dir = getCurrentWorkingDirectory();
     localAndClientMsg(VLogger::DEBUG_2, client, "processRunSet-cwd: %s\n", dir.c_str());
     localAndClientMsg(VLogger::DEBUG_2, client, "processRunSet-prefix: %s\n", pathPrefix.c_str());
+    runningStoppableService(getServiceName());
 #ifdef WIN32
     char *tempName = _tempnam(dir.c_str(), NULL);
 #else
@@ -196,9 +192,9 @@ void cvac::processRunSet(DetectorPtr detector,
             std::vector<LabelablePtr> llist = sp->labeledArtifacts;
             for (lIt = llist.begin(); lIt < llist.end(); lIt++)
             {
-                if (sman->stopRequested())
+                if (stopRequested(getServiceName()))
                 {
-                    sman->stopCompleted();
+                    stopCompleted(getServiceName());
                     break;
                 }
                 LabelablePtr lptr = *lIt;
@@ -287,6 +283,7 @@ void cvac::processRunSet(DetectorPtr detector,
                         dirptr->recursive);
         }
     }
+     clearStop(getServiceName());
     // The client should create a class derived from Ice::Shared to be get the completion
     // callback.  http://doc.zeroc.com/pages/viewpage.action?pageId=13173000
     //client->completedProcessing();
@@ -369,7 +366,7 @@ std::string cvac::getSymlinkSubstitution(const std::string& illegalFileName) {
 /**
  * Insure that the directories exist and that they don't have any illegal chars
  */
-static std::string _makeDirectories(std::string tempName, DirectoryPath dirPath)
+static std::string makeDirectories(std::string tempName, DirectoryPath dirPath)
 { 
     std::string result = std::string(tempName);
     if (dirPath.relativePath.empty())
@@ -431,7 +428,7 @@ std::string cvac::getLegalPath(std::string tempName, FilePath filePath, bool &ne
       // To insure that we don't have any conflicts we will follow the same directory structure but use the
       // tempname as the root dir.
       makeDirectory(tempName);
-      std::string directories = _makeDirectories(tempName, filePath.directory);
+      std::string directories = makeDirectories(tempName, filePath.directory);
       newSymlink = true;
       std::string fullName = directories + "/" + filePath.filename;
       std::string linkFileName_withPath = getSymlinkSubstitution(fullName);  // cvac procedure to make symlink

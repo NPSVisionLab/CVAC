@@ -37,122 +37,115 @@
  *****************************************************************************/
 #include <util/ServiceMan.h>
 #include <util/Timing.h>
-#include <util/FileUtils.h>
 
-///////////////////////////////////////////////////////////////////////////////
-cvac::ServiceManager::ServiceManager()
+#include <map>
+
+typedef std::map<std::string, int> ServiceMapType;
+/* int values 1 = requested stop, 2 = stop complete  */
+static ServiceMapType *stopServices = NULL;
+
+void cvac::stopService(std::string service)
 {
-    mService = NULL;
-    mAdapter = NULL;
-    mStopState = None;
+    if (stopServices == NULL)
+    {
+        stopServices = new ServiceMapType();
+    }
+    ServiceMapType::iterator it = stopServices->find(service);
+    if (it != stopServices->end())
+    {
+        it->second = 1;
+    }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::setService(cvac::CVAlgorithmService *serv,
-                      std::string serviceName)
+void cvac::runningStoppableService(std::string service)
 {
-    mService = serv;
-    mServiceName = serviceName;
+    if (stopServices == NULL)
+    {
+        stopServices = new ServiceMapType();
+    }
+    ServiceMapType::iterator it = stopServices->find(service);
+    if (it == stopServices->end())
+    {
+        stopServices->insert(make_pair(service, 0));
+    }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::start(const ::std::string& name,const 
-                  ::Ice::CommunicatorPtr& communicator,const 
-                  ::Ice::StringSeq&)
+void cvac::waitForStopService(std::string service)
 {
-    localAndClientMsg(VLogger::INFO, NULL, "%s: starting\n", mServiceName.c_str());
-	mIceName = name;
-	clearStop();
-	mAdapter = communicator->createObjectAdapter(name);
-	mAdapter->add(mService, communicator->stringToIdentity(mServiceName));
-	mAdapter->activate();
-	localAndClientMsg(VLogger::INFO, NULL, "Service started: %s\n", 
-                mServiceName.c_str());
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::stop()
-{
-    localAndClientMsg(VLogger::INFO, NULL, "Stopping Service: %s\n", 
-                     mServiceName.c_str());
-    mAdapter->deactivate();
-    waitForStopService();
-	localAndClientMsg(VLogger::INFO, NULL, "Service stopped: %s\n",
-                     mServiceName.c_str());
-}
-
-///////////////////////////////////////////////////////////////////////////////
-std::string cvac::ServiceManager::getDataDir()
-{
-	Ice::PropertiesPtr props = (mAdapter->getCommunicator()->getProperties());
-	vLogger.setLocalVerbosityLevel(props->getProperty("CVAC.ServicesVerbosity"));
-
-	// Load the CVAC property: 'CVAC.DataDir'.  Used for the xml filename path, and to provide a prefix to Runset paths
-	std::string dataDir = props->getProperty("CVAC.DataDir");
-	if(dataDir.empty()) 
-	{
-		localAndClientMsg(VLogger::WARN, NULL, "Unable to locate CVAC Data directory, specified: 'CVAC.DataDir = path/to/dataDir' in </CVAC_Services/config.service>\n");
-	}
-	localAndClientMsg(VLogger::DEBUG, NULL, "CVAC Data directory configured as: %s \n", dataDir.c_str());
-    return dataDir;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::stopService()
-{
-    mStopState = Stopping;
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::waitForStopService()
-{
-    stopService();
-    while (isStopCompleted() == false)
+    cvac::stopService(service);
+    while (cvac::isStopCompleted(service) == false)
     {
         cvac::sleep(100);
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-bool cvac::ServiceManager::stopRequested()
+bool cvac::stopRequested(std::string service)
 {
-    if (mStopState == Stopping)
-        return true;
-    else 
+    if (stopServices == NULL)
+    {
         return false;
+    }
+    ServiceMapType::iterator it = stopServices->find(service);
+    if (it != stopServices->end())
+    {
+        if (it->second == 1 || it->second == 2)
+            return true;
+    }
+    return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::clearStop()
+void cvac::clearStop(std::string service)
 {
-    mStopState = None;
+    if (stopServices == NULL)
+    {
+        return;
+    }
+    ServiceMapType::iterator it = stopServices->find(service);
+    if (it != stopServices->end())
+    {
+        stopServices->erase(it);
+    }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::stopCompleted()
+void cvac::stopCompleted(std::string service)
 {
-    mStopState = Stopped;
+    if (stopServices == NULL)
+    {
+        return;
+    }
+    ServiceMapType::iterator it = stopServices->find(service);
+    if (it != stopServices->end())
+    {
+        it->second = 2;
+    }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-bool cvac::ServiceManager::isStopCompleted()
+bool cvac::isStopCompleted(std::string service)
 {
-    if (mStopState != Stopping)
+    if (stopServices == NULL)
+    {
         return true;
-    else
-        return false;
+    }
+    ServiceMapType::iterator it = stopServices->find(service);
+    if (it != stopServices->end())
+    {
+        if (it->second == 2)
+            return true;
+        else
+            return false;
+    }
+    return true; // service not running
 }
 
+static std::string curServiceName;
 
-///////////////////////////////////////////////////////////////////////////////
-std::string cvac::ServiceManager::getServiceName()
+void cvac::setServiceName(std::string name)
 {
-    return mServiceName;
+    curServiceName = name;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-std::string cvac::ServiceManager::getIceName()
+std::string cvac::getServiceName()
 {
-    return mIceName;
+    return curServiceName;
 }
+

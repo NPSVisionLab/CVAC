@@ -10,7 +10,7 @@
 
 namespace cvac
 {
-	int getTest();
+	void addTrack(LabelableList* curList, FrameLocation& frloc);
 }
 
 #endif
