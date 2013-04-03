@@ -1,0 +1,32 @@
+#!/bin/bash
+# Usage: runIceTest [ctest] det1 det2 ..."
+#
+#export PATH=$PATH:/opt/local/bin
+#export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_ROOT_DIR}/lib"
+if [ "$#" == "0" ]; then
+    echo "Pass in the detectors run"
+    exit 1
+fi
+CTEST="testImg"
+VERIFY=""
+if [ "$1" == "CTest" ]; then
+    CTEST=$1
+    VERIFY="verifyresults"
+    shift;
+fi
+${CMAKE_SOURCE_DIR}/runIcebox.sh
+sleep 1
+echo "runIcebox returned"
+while (( "$#" ));do
+    echo "Running detector $1"
+    ${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} $1 $CTEST ${CVAC_ROOT_DIR}/config.client $VERIFY
+    if [ "$?" == "1" ]; then
+        echo "Detector $1 failed"
+	${CMAKE_SOURCE_DIR}/stopIcebox.sh
+        exit 1
+    fi
+    shift
+done
+echo "Stopping icebox"
+${CMAKE_SOURCE_DIR}/stopIcebox.sh
+exit 0
