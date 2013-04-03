@@ -66,9 +66,15 @@ IF (NOT ICE_BOX_LIBRARY_DEBUG)
 ENDIF()
 
 FIND_PROGRAM( ICE_BOX_EXECUTABLE
-                 NAMES icebox
+                 NAMES icebox${CMAKE_DEBUG_POSTFIX}
                  PATHS ${ICE_ROOT}/bin
                )
+
+FIND_PROGRAM( ICE_BOX_ADMIN
+                 NAMES iceboxadmin
+                 PATHS ${ICE_ROOT}/bin
+               )
+
 
 IF (MSVC10)
    FIND_PROGRAM( ICE_SLICE_EXECUTABLE

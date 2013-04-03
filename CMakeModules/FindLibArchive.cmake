@@ -19,3 +19,23 @@ FIND_LIBRARY(LIBARCHIVE_LIBRARY NAMES archive
                 "C:/Program Files (x86)/libarchive/lib"
              DOC "Library directory for libarchive"
             )
+
+IF (WIN32)
+# We need path to the archive and zlib dlls
+FIND_PATH(LIBARCHIVE_BIN_DIR NAMES archive.dll
+             HINTS
+                ../CVAC_extras/bin
+                ${LIBARCHIVE_INCLUDE}/../bin
+             PATHS 
+                "C:/Program Files (x86)/libarchive/bin"
+             DOC "BIN directory for libarchive"
+            )
+FIND_PATH(LIBZIP_BIN_DIR NAMES zlibd.dll
+             HINTS
+                ../CVAC_extras/bin
+                ${LIBARCHIVE_INCLUDE}/../zlib/bin
+             PATHS 
+                "C:/Program Files (x86)/zlib/bin"
+             DOC "BIN directory for libarchive"
+            )
+ENDIF (WIN32)

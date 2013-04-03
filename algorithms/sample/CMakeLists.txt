@@ -1,0 +1,3 @@
+ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(detectorService)
+ADD_SUBDIRECTORY(trainerService)
