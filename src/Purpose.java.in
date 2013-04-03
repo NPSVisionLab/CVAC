@@ -1,0 +1,2 @@
+#error This file should never be compiled.
+// it exists only as a placeholder until the slice2java operation overwrites it

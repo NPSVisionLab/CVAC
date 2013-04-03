@@ -18,7 +18,7 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import cvacslice.Corpus;
+import cvac.Corpus;
 
 /*
 import mediaanalyst.GUI_Desktop.Constants;

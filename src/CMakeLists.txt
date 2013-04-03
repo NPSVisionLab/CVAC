@@ -18,6 +18,14 @@ SET ( SLICE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/sliced )
 SET ( JAVA_OUTPUT_CLASSPATH ${CMAKE_CURRENT_BINARY_DIR}/cp )
 MAKE_DIRECTORY ( ${SLICE_OUTPUT_PATH} )
 MAKE_DIRECTORY ( ${JAVA_OUTPUT_CLASSPATH} )
+# create a dummy .java file in the sliced directory, so that CMake
+# doesn't complain about no *.java files being present
+IF ( NOT EXISTS  ${SLICE_OUTPUT_PATH}/cvac/Purpose.java )
+  CONFIGURE_FILE( ${CVAC_ROOT_DIR}/src/Purpose.java.in ${SLICE_OUTPUT_PATH}/cvac/Purpose.java COPYONLY )
+ENDIF()
+#IF ( NOT EXISTS  ${SLICE_OUTPUT_PATH}/cvacslice/Corpus.java )
+#  CONFIGURE_FILE( ${CVAC_ROOT_DIR}/src/Purpose.java.in ${SLICE_OUTPUT_PATH}/cvacslice/Corpus.java COPYONLY )
+#ENDIF()
 
 #
 # Command to run slice2java to produce all .java files
@@ -87,7 +95,8 @@ SET( CMAKE_JAVA_INCLUDE_PATH ${Ice.jar} ${JAVA_OUTPUT_CLASSPATH} ${CMAKE_CURRENT
 ADD_JAR( Corpus ${SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
 #         ${JAVA_OUTPUT_CLASSPATH}/cvac/${SLICE_TOKEN_CLASS}.class
          ${SLICE_OUTPUT_PATH}/cvac/*.java
-         DEPENDS 
+#         ${SLICE_OUTPUT_PATH}/cvacslice/*.java
+        DEPENDS 
             ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
             ${JAVA_OUTPUT_CLASSPATH}/cvac/${SLICE_TOKEN_CLASS}.class 
             ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_INTERFACE_JAR}

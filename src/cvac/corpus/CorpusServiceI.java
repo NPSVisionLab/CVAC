@@ -4,16 +4,17 @@
 
 package cvac.corpus;
 
-import cvacslice.CorpusService;
-import cvacslice.CorpusCallback;
-import cvacslice.Corpus;
+import cvac.CorpusService;
+import cvac.CorpusCallback;
+import cvac.Corpus;
+import cvac._CorpusServiceDisp;
 
 /**
  * Implementation for the CorpusService
  *
  * @author matz
  */
-public class CorpusServiceI extends cvacslice._CorpusServiceDisp {
+public class CorpusServiceI extends _CorpusServiceDisp {
     /**
      * Opens the Corpus from a metadata file.  This does not download,
      * extract, or otherwise prepare the Corpus, just create a Corpus object.
@@ -21,7 +22,7 @@ public class CorpusServiceI extends cvacslice._CorpusServiceDisp {
      **/
     public Corpus openCorpus(cvac.FilePath file, Ice.Current __current) 
     {
-        return new cvacslice.Corpus();
+        return new Corpus();
     }
 
     /**

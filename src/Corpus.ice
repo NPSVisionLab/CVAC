@@ -3,7 +3,7 @@
 
 #include "Data.ice"
 
-module cvacslice {
+module cvac {
 
   /** A Corpus, which describes the metadata for a collection of
     * images or videos.

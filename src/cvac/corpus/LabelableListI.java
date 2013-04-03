@@ -13,11 +13,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 
-import cvacslice.Corpus;
-//import mediaanalyst.GUI_Desktop.Constants;
-
-//class Corpus {};
-
+import cvac.Corpus;
 
 /**
  * LabelableListI is either a category of images within a DataSet (such as "dolphins"
