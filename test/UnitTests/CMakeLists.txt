@@ -1,5 +1,7 @@
 SET(APP_NAME UnitTests) 
-     
+
+ADD_SUBDIRECTORY( python )
+
 WRAP_SLICE(SLICE_FILES
            ${CVAC_ROOT_DIR}/src/Data.ice
            ${CVAC_ROOT_DIR}/src/Services.ice

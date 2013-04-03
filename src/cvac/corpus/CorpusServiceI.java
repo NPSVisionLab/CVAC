@@ -22,6 +22,7 @@ public class CorpusServiceI extends _CorpusServiceDisp {
      **/
     public Corpus openCorpus(cvac.FilePath file, Ice.Current __current) 
     {
+        System.out.println("request for openCorpus( " + file.filename + " )");
         return new Corpus();
     }
 

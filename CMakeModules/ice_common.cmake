@@ -40,6 +40,23 @@ MACRO(WRAP_SLICE outfiles)
     ENDFOREACH(it)
 ENDMACRO(WRAP_SLICE)
 
+MACRO(WRAP_SLICE2PY outfiles)
+    EXTRACT_OPTIONS(slice_files options ${ARGN})
+    
+    FOREACH(it ${slice_files})
+        GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
+        GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
+        SET(py_src ${CMAKE_CURRENT_BINARY_DIR}/${outfile}_ice.py)
+        ADD_CUSTOM_COMMAND(OUTPUT ${py_src}
+          COMMAND ${ICE_SLICE2PY_EXECUTABLE}
+          ARGS --output-dir ${CMAKE_CURRENT_BINARY_DIR} -I${ICE_ROOT}/slice ${infile}
+          MAIN_DEPENDENCY ${infile})
+
+        SET(${outfiles} ${${outfiles}} ${py_src})
+
+    ENDFOREACH(it)
+ENDMACRO(WRAP_SLICE2PY)
+
 # note: Other than slice2cpp, slice2java automatically places generated files into
 # the respective namespace directory. So the output dir is just 'java' not 'java/<namespace>'
 MACRO(WRAP_SLICE2JAVA outfiles cpout package)
