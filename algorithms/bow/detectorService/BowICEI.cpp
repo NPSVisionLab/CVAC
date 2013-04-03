@@ -61,7 +61,7 @@ extern "C"
         ServiceManager *sMan = new ServiceManager();
         BowICEI *bow = new BowICEI(sMan);
         sMan->setService(bow, "bowTest");
-        return sMan;
+        return (::IceBox::Service*) sMan->getIceService();
 	}
 }
 
