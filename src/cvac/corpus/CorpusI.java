@@ -20,13 +20,6 @@ import java.util.logging.Logger;
 
 import cvac.Corpus;
 
-/*
-import mediaanalyst.GUI_Desktop.Constants;
-import mediaanalyst.Main;
-import mediaanalyst.dataset.DataSetMirror.DataSetLocType;
-import mediaanalyst.utility_code.Code_Utils;
-import mediaanalyst.utility_code.Data_IO_Utils;
-*/
 /**
  * A corpus represents a set of images, videos, or other media,
  * often annotated with labels.
@@ -39,23 +32,22 @@ abstract public class CorpusI extends Corpus {
     protected static Logger logger = Logger.getLogger(Corpus.class.getName());
     public static void setLogger( Logger lg ) { logger = lg; }
     
-    protected String                  m_name,
-                                      m_description,
-                                      m_dataSetFolder;     // Top-Level containing folder for DataSet
-    protected String                  m_homepage;
+    protected String                  m_dataSetFolder;     // Top-Level containing folder for DataSet
     
 //    private LoaderThread              m_loader_thread;
     protected Map<String, LabelableListI> m_images;
     private boolean                   m_spacesUsed = false;
     private boolean errorShown = false;
     
-    public CorpusI() {
+    public CorpusI(String name, String description, String homepageURL, boolean isImmutableMirror)
+    {
+        super( name, description, homepageURL, isImmutableMirror );
         m_images = new HashMap<String, LabelableListI>();
 //        m_loader_thread = null;
     }
     
     public String getHomepage() {
-        return m_homepage;
+        return homepageURL;
     }
 
     public boolean pathsUseSpaces() {
@@ -73,26 +65,32 @@ abstract public class CorpusI extends Corpus {
 //        return (null!=m_loader_thread && m_loader_thread.isAlive());
     }
 
-    abstract public void setName(String n);
+    public void setName(String n)
+    {
+        this.name = n;
+    }
 
     public String getName() {
-        return m_name;
+        return name;
     }
 
     public void setDescription(String d){
-        m_description = d;
         if (null==d)
         {
-            m_description = "";
+            description = "";
+        }
+        else
+        {
+            description = d;
         }
     }
 
     public String getDescription() {
-        return m_description;
+        return description;
     }
     
     void setHomepage(String homepage) {
-        m_homepage = homepage;
+        homepageURL = homepage;
     }
     
     public String getDatasetFolder() {
@@ -417,4 +415,7 @@ abstract public class CorpusI extends Corpus {
     }
 */
     abstract public Properties getProperties();
+    
+    // TODO: should be void function throwing a parsing exception
+    abstract public boolean configureFromProperties(Properties config);
 }
