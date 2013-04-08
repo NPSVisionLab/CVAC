@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -25,25 +26,28 @@ import java.util.zip.GZIPInputStream;
  * @author matz
  */
 public class CommonDataSet extends CorpusI {
-
-//    protected DataSet_Metadata        m_metadata;
     
+    private File m_metaDataFolder, // '../.meta' sub-folder of root
+                 m_expansionFolder,
+                 m_metaTxtFile;   // File: 'status.txt'
+    //private CommonDataSet m_parent; //?
+
     public CommonDataSet(String name, String description, String homepageURL, boolean isImmutableMirror)
     {
         super( name, description, homepageURL, isImmutableMirror );
-//        m_metadata = null; // needs m_dataSetFolder to be set
+        m_metaDataFolder = new File(m_dataSetFolder);
     }
-//    
-//    public void setName(String n) {
-//
-//        m_name = n;
-//        
-//        m_dataSetFolder = (Main.getEngine().getDataDir() + File.separator + m_name);
-//        m_metadata = new DataSet_Metadata(this);        
-//    }
-//    
+  
+    @Override
+    public void setName(String n) {
+
+        name = n;
+        
+        m_dataSetFolder = (m_dataSetFolder + File.separator + name);
+    }
+    
 //    public void loadDataSet(DataSetMirror from_mirror) {
-//        m_metadata.loadDataSet(from_mirror);
+//        loadDataSet(from_mirror);
 //    }
 //
 //    /*
@@ -51,7 +55,7 @@ public class CommonDataSet extends CorpusI {
 //     */
 //    public void loadSamplesFromRemoteMirror( DataSetMirror mirror )
 //    {
-//        String fileName = m_metadata.getMirrorListFile( mirror );
+//        String fileName = getMirrorListFile( mirror );
 //        File listFile = new File(fileName);
 //
 //         // Read back resulting detected rectangles
@@ -70,7 +74,7 @@ public class CommonDataSet extends CorpusI {
 //        if ('/' == folder.charAt(len - 1)){
 //            folder = folder.substring(0, len - 1);  
 //        }
-//        loadSampleFromRemoteMirrorFile(m_name, folder, rlist, null);
+//        loadSampleFromRemoteMirrorFile(name, folder, rlist, null);
 //        
 //       
 //    }
@@ -90,7 +94,7 @@ public class CommonDataSet extends CorpusI {
 //
 //        File tarOutput;
 //        if(DataSetMirror.CompressionType.GZIP == uncompressType) {  // Unzipping GZip Produces (.tar) in /expansion/ folder
-//            tarOutput = new File( m_metadata.getSubfolderPath() + 
+//            tarOutput = new File( getSubfolderPath() + 
 //                                  File.separatorChar + "expansion" +
 //                                  File.separatorChar + decompressedOutputName ); 
 //
@@ -150,7 +154,7 @@ public class CommonDataSet extends CorpusI {
 //                                  "Compressed Source: " + compressedFileSrc.getPath() + "\n" +
 //                                  "Destination File: "  + destFile.getPath()    + "\n" + e.toString());
 //                    logger.warning(msg);
-//                    m_metadata.removeMetaFlg();
+//                    removeMetaFlg();
 //                }
 //                    catch(Exception e) {
 //                    String msg = ("Error while extracting from Gzip-Input-Stream." + e.toString());
@@ -160,11 +164,11 @@ public class CommonDataSet extends CorpusI {
 //
 //            default:
 //                logger.warning("De-compression type not yet supported.  Usable types include: 'GZIP' (Gnu-Gunzip).  ");
-//                m_metadata.removeMetaFlg();
+//                removeMetaFlg();
 //        }
 //    }
 //
-//    // Creates a new folder using the Dataset's m_name String to create folder containing all dataset content
+//    // Creates a new folder using the Dataset's name String to create folder containing all dataset content
 //    private void unpackArchiveBelow(File archiveFile, File dsTargetFolder, DataSetMirror.ArchiveType archiveType) {
 //        
 //        Data_IO_Utils.dieRuntime_IfNull(dsTargetFolder, 
@@ -181,7 +185,7 @@ public class CommonDataSet extends CorpusI {
 //                {
 //                    String msg = "Exception creating Input Stream with 'archiveFile' \n" + fileIOEx.toString();
 //                    logger.warning(msg);
-//                    m_metadata.removeMetaFlg();
+//                    removeMetaFlg();
 //                }
 //                
 //                TarEntry entry;
@@ -204,7 +208,7 @@ public class CommonDataSet extends CorpusI {
 //                                    String msg = "Error creating Directory with method 'createDir_orFile(..)'" + 
 //                                                 "Path for 'newDir': " + newDir.getPath();
 //                                    logger.warning(msg);
-//                                    m_metadata.removeMetaFlg();
+//                                    removeMetaFlg();
 //                                }
 //                            }
 //                        }
@@ -218,7 +222,7 @@ public class CommonDataSet extends CorpusI {
 //                                                 "Path for 'newUnarchived': " + newUnarchived.getPath() + " \n" +
 //                                                 "Filename: " + newUnarchived.getName();
 //                                    logger.warning(msg);
-//                                    m_metadata.removeMetaFlg();
+//                                    removeMetaFlg();
 //                            }
 //
 //                            BufferedOutputStream dest = null;
@@ -230,7 +234,7 @@ public class CommonDataSet extends CorpusI {
 //                                             "Path for wrapped 'newUnarchived' File: " + newUnarchived.getPath() + " \n" +
 //                                             "Wrapped filename: " + newUnarchived.getName();
 //                                logger.warning(msg);
-//                                m_metadata.removeMetaFlg();
+//                                removeMetaFlg();
 //                            }
 //
 //                            try {
@@ -245,7 +249,7 @@ public class CommonDataSet extends CorpusI {
 //
 //                                String msg = "Error transferring Bytes of data into Output from Tar-Input Stream.";
 //                                logger.warning(msg);                                
-//                                m_metadata.removeMetaFlg();
+//                                removeMetaFlg();
 //                            }
 //                        }
 //                    }
@@ -253,7 +257,7 @@ public class CommonDataSet extends CorpusI {
 //                catch(Exception e) {
 //                    String msg = "Error attempting to get next Entry from Tar Stream.'  \n" + e.toString();
 //                    logger.warning(msg);
-//                    m_metadata.removeMetaFlg();
+//                    removeMetaFlg();
 //                }
 //                
 //                try {
@@ -262,16 +266,17 @@ public class CommonDataSet extends CorpusI {
 //                catch(Exception e) {
 //                    String msg = "Error closing Tar Input Stream.'  \n" + e.toString();
 //                    logger.warning(msg);
-//                    m_metadata.removeMetaFlg();
+//                    removeMetaFlg();
 //                }
 //                break;
 //                
 //            default:
 //                logger.warning("Un-Archive type not yet supported.  Usable types include: 'TAR' (unix tarball)");
-//                m_metadata.removeMetaFlg();
+//                removeMetaFlg();
 //        }        
 //    }
 
+    @Override
     public void addCategory(LabelableListI samples)
     {
         m_images.put(samples.getName(), samples);
@@ -291,7 +296,7 @@ public class CommonDataSet extends CorpusI {
             String key = (String)kit.next();
             if (key.equals(category)){
                 
-                 // We found the list with that m_name.
+                 // We found the list with that name.
                  sl.add(sam);
                  found = true;
             }
