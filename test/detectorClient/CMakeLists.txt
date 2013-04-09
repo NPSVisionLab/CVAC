@@ -50,18 +50,17 @@ ENDIF (WIN32)
 # CTest treats any non-zero return as FAILURE
 #MESSAGE("/CVAC_GENERATED_OUTPUT_DIR/Testing/Temporary/LastTest.log")    #Display path to test-log file
 
-
+IF (BUILD_WITH_BOW) 
 ADD_TEST(detectorClient_BowDetector
          ${CVAC_ROOT_DIR}/runIceTest${SCRIPT_EXT} BagOfWordsUSKOCA
          )
-
+ADD_TEST(detectorClient_BowDetector_Verify
+         ${CVAC_ROOT_DIR}/runIceTest${SCRIPT_EXT} CTest BagOfWordsUSKOCA
+         )
+ENDIF (BUILD_WITH_BOW)
 
 ## Positive-Image Live-Verification for Detectors ###
 #ADD_TEST(Ice_Box_Test_Client_cvPerformanceDetector_Verify
 #         ${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} CvFaces CTest ${CVAC_ROOT_DIR}/config.client verifyresults
 #         )
          
-ADD_TEST(detectorClient_BowDetector_Verify
-         ${CVAC_ROOT_DIR}/runIceTest${SCRIPT_EXT} CTest BagOfWordsUSKOCA
-         )
-

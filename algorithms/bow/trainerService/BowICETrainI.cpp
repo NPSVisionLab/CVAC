@@ -141,7 +141,7 @@ string BowICETrainI::processSingleImg(DetectorTrainerPtr trainer,string _filepat
 	BowICETrainI* _bowCV = static_cast<BowICETrainI*>(trainer.get());
 
 	std::string _resMsg;
-	if(_ploc == NULL)
+	if(_ploc.get() == NULL)
 		_bowCV->pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()));
 	else
 	{
