@@ -267,7 +267,7 @@ void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID,co
 }
 
 
-bool bowCV::train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult)
+bool bowCV::train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult, cvac::ServiceManager *sman)
 {
 	if(!flagName)
 	{
@@ -300,7 +300,11 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 			cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
 			return false;
 		}
-		
+		if (sman->stopRequested())
+        {
+            sman->stopCompleted();
+            return false;
+        }
 		_rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
 		if((_rect.width != 0) && (_rect.height != 0))
 			_img = _img(_rect);
@@ -358,7 +362,11 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 		
 		if(_classID==-1)
 			continue;
-
+        if (sman->stopRequested())
+        {
+            sman->stopCompleted();
+            return false;
+        }
 		_img = imread(_fullFilePathImg);
 		
 		_rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);

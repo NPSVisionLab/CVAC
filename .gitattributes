@@ -1,0 +1,27 @@
+# Set default behavior to convert text files to lf's in the repository
+
+* text=auto
+
+# Lets help git to know what a text file is
+
+*.c text
+*.h text
+*.cpp text
+*.hpp text
+*.cmake text
+*.txt   text
+*.java text
+*.cs text diff=csharp
+*.xaml text
+*.csproj text
+*.sln text
+*.tt text
+*.ps1 text
+*.cmd text
+*.msbuild text
+*.md text
+
+
+*.png binary
+*.jpg binary
+*.jpeg binary
