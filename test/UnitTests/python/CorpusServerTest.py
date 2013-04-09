@@ -1,6 +1,6 @@
 # test the CorpusServer
 # before calling "python CorpusServerTest.py", make sure this is set:
-# export PYTHONPATH=/opt/Ice-3.4.2/python
+# export PYTHONPATH="/opt/Ice-3.4.2/python:test/UnitTests/python"
 import sys, traceback, Ice
 import cvac
 import unittest
