@@ -199,3 +199,8 @@ src/cvac/TrainerPropertiesPrxHelper.java
 src/cvac/TrainerPropertiesPrxHolder.java
 src/cvac/VideoSeekTime.java
 src/cvac/VideoSeekTimeHolder.java
+desktop.ini
+lib/utilsd.idb
+lib/utilsd.lib
+lib/utilsd.pdb
+test/UnitTests/python/CorpusServerTest.py

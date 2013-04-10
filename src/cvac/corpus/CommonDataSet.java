@@ -280,7 +280,6 @@ public class CommonDataSet extends CorpusI {
     public void addCategory(LabelableListI samples)
     {
         m_images.put(samples.getName(), samples);
-   
     }
 
     @Override

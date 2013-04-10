@@ -25,7 +25,7 @@ public class CommonDataSetTest {
     CommonDataSet instance;
     File[] filesInOutputDir;
     private static String mediaRootDir = "C:/Users/LSO/Analyst_Media";
-    private static Class<?> tgtClass;
+    //private static Class<?> tgtClass;
     private String  Caltech101_URL =                                              // Caltech url used as test data set
                             "http://www.vision.caltech.edu/Image_Datasets/Caltech101/101_ObjectCategories.tar.gz",
                     Caltech256_URL = 
@@ -40,50 +40,52 @@ public class CommonDataSetTest {
     
     public CommonDataSetTest() {
     }
-    
+/*    
     @BeforeClass
     public static void setUpClass() throws Exception {
-        try {
-            tgtClass = Class.forName("mediaanalyst.dataset.DataSet");
-        } catch(Exception e) {
-            String msg = "Unable to set the 'tgtClass' pointer to the DataSet class. \n" +
-                         "Using  Class.forName('mediaanalyst.dataset.DataSet' " + e.toString();
-            System.out.println(msg);
-            throw(e);
-        }
     }
     
     @AfterClass
     public static void tearDownClass() {
     }
-
+*/
     
     @Before
     public void setUp() {
         
         //String name, String description, String homepageURL, boolean isImmutableMirror
-        //instance = new CommonDataSet();
-        instance = null; // Temp, init object
+        instance = new CommonDataSet("Caltech101", "Caltech101_URL", "http://www.vision.caltech.edu/Image_Datasets/Caltech101/101_ObjectCategories.tar.gz", true);
     }
     
     @After
     public void tearDown() {
+        instance = null;
     }
 
     // ***
     @Test
     public void testAddCategory() {
+        cvac.Labelable testLabel = new cvac.Labelable();
+        LabelableListI testSamples = new LabelableListI();
+        testSamples.add(testLabel);
+        
+        assert(instance.m_images.containsKey(testLabel));
     }
     
     // ***
-    @Test
-    public void testAddSample() {
-    }
+    //@Test
+    //public void testAddSample() {
+    //}
 
     // ***
     @Test
     public void testRemoveSample() {
-        // Assert that 'm_images' no longer contains the removed String: 'category'
+        
+        assert(instance.m_images.containsKey("category"));  // Must be there
+        
+        // Now assert 'm_images' no longer contains the removed String: "category"
+        instance.removeSample("category");
+        assert(false == instance.m_images.containsKey("category"));
     }
 
     @Test
@@ -92,6 +94,12 @@ public class CommonDataSetTest {
         
         assert(null != returnProps);
         // check for properties...
+        
+        Properties instProps = instance.getProperties();
+        String nameStr = instProps.getProperty("name");
+        assert(nameStr.equals("Caltech101"));
+        String descStr = instProps.getProperty("description");
+        assert(descStr.equals("Caltech101_URL"));
     }
 
 /*  // Nothing to test, currently
