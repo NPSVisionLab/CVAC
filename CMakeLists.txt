@@ -124,3 +124,89 @@ ENDIF( BUILD_WITH_TESTS )
 IF( BUILD_UNIT_TESTS)
   FIND_PACKAGE(UnitTest++)
 ENDIF( BUILD_UNIT_TESTS )
+
+# Package Properties
+set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
+set(CPACK_PACKAGE_NAME "CVAC_Package")
+set(CPACK_PACKAGE_VENDOR "NPS Vision Lab")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC component-based install package")
+set(CPACK_PACKAGE_VERSION "1.0.0")
+set(CPACK_PACKAGE_VERSION_MAJOR "1")
+set(CPACK_PACKAGE_VERSION_MINOR "0")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
+
+# Devel
+#INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/src/Corpus.jar
+#		DESTINATION Devel
+#		COMPONENT ExportJars
+#		)
+#INSTALL(FILES lib/utilsd.lib
+#		DESTINATION Devel
+#		COMPONENT ExportLibs
+#		)
+
+# SampleData
+#INSTALL(DIRECTORY data/testImg
+#		 DESTINATION SampleData/data
+#		 COMPONENT TestImagery
+#		)
+#INSTALL(DIRECTORY data/trainImg
+#		 DESTINATION SampleData/data
+#		 COMPONENT TrainImagery
+#		)
+    
+# ThirdPartyBin
+INSTALL(DIRECTORY   ${ICE_ROOT}  # Deep copy
+		 DESTINATION 3rdparty
+		 COMPONENT IceExt
+		)
+INSTALL(DIRECTORY   ${UNITTEST++_INCLUDE_DIR}
+		            ${UNITTEST++_LIBRARY_FOLDER}
+		 DESTINATION 3rdparty
+		 COMPONENT UnitTestPPExt
+		)
+INSTALL(DIRECTORY ${LIBARCHIVE_LIBRARY_FOLDER}
+		 DESTINATION 3rdparty
+		 COMPONENT LibArchiveExt
+		)
+INSTALL(DIRECTORY   ${OpenCV2_INCLUDE_DIRS}
+                    ${OpenCV_LIB_DIR}
+		 DESTINATION 3rdparty
+		 COMPONENT OpenCVExt
+		)
+
+# Select Generator by OS
+IF(WIN32)
+  SET(CPACK_GENERATOR "ZIP")
+ELSE()
+  SET(CPACK_GENERATOR "TGZ")
+ENDIF(WIN32)
+
+include(CPack)
+
+
+# Declare Third Party Group
+cpack_add_component_group (
+  ThirdPartyGrp
+  DISPLAY_NAME "3rdParty"
+  DESCRIPTION "Third party dependency.  (UnitTest++, etc)"
+)
+#Assign GROUP to COMPONENT
+cpack_add_component (
+  UnitTestPPExt
+  DISPLAY_NAME "Unit Test ++"
+  DESCRIPTION "Unit Test plus-plus framework."
+  GROUP ThirdPartyGrp
+)
+cpack_add_component (
+  LibArchiveExt
+  DISPLAY_NAME "LibArchive"
+  DESCRIPTION "LibArchive library for multi-format archival/unarchival."
+  GROUP ThirdPartyGrp
+)
+cpack_add_component (
+  OpenCVExt
+  DISPLAY_NAME "OpenCV"
+  DESCRIPTION "Open Computer Vision Library. (v2.4.2 packaged)"
+  GROUP ThirdPartyGrp
+)

@@ -2,21 +2,25 @@
 
 FIND_PATH(LIBARCHIVE_INCLUDE archive.h
           HINTS
-              ../CVAC_extras/include
+              ${CMAKE_SOURCE_DIR}/3rdparty/libarchive-3.1.2/libarchive
+              ${CMAKE_SOURCE_DIR}/3rdparty/libarchive-2.8.5/libarchive
           PATHS
               /opt/local
-              "C:/Program Files (x86)/libarchive/include"
+              "C:/Program Files (x86)/libarchive-3.1.2/libarchive"
+              "C:/Program Files (x86)/libarchive-2.8.5/libarchive"
           DOC "Include directory for libarchive"
          )
-           
+
 # search for the libarchive library, first in the CVAC_extras folder,
 # then in the location related to the include file, then in default locations
 FIND_LIBRARY(LIBARCHIVE_LIBRARY NAMES archive
              HINTS
-                ../CVAC_extras/lib
-                ${LIBARCHIVE_INCLUDE}/../lib
+                ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/libarchive/Release
+                ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/libarchive/Debug
+
              PATHS 
-                "C:/Program Files (x86)/libarchive/lib"
+                "C:/Program Files (x86)/libarchive/libarchive/Release"
+                "C:/Program Files (x86)/libarchive/libarchive/Debug"
              DOC "Library directory for libarchive"
             )
 
