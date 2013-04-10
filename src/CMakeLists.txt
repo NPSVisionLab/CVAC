@@ -10,10 +10,6 @@ SET( SLICE_FILES
     ${CVAC_ROOT_DIR}/src/Services.ice
     ${CVAC_ROOT_DIR}/src/Corpus.ice
 )
-INSTALL(  FILES 
-		  ${CVAC_ROOT_DIR}/src/Services.ice
-		  DESTINATION ${OUTPUT_BINDIR}/Services.ice
-		)
 
 # need to single out one class so we can address it explicitly instead of with *
 SET ( SLICE_TOKEN_CLASS RunSet )
