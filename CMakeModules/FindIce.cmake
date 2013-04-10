@@ -9,6 +9,7 @@ ENDIF(WIN32)
 FIND_PATH (ICE_ROOT slice
            HINTS
            $ENV{ICE_ROOT}
+           ${CVAC_ROOT_DIR}/3rdparty
            PATHS          
            ${ICE_INSTALLDIR}
            /opt/Ice-3.4
@@ -22,6 +23,7 @@ FIND_PATH (ICE_INCLUDE Slice
            PATH_SUFFIXES include
            HINTS
            ${ICE_ROOT}
+           ${CVAC_ROOT_DIR}/3rdparty
            PATHS
            $ENV{ICE_ROOT}
            /opt/Ice-3.4
@@ -100,6 +102,12 @@ ELSE (MSVC10)
                )
 ENDIF (MSVC10)
 MARK_AS_ADVANCED (ICE_SLICE2JAVA_EXECUTABLE)
+FIND_PROGRAM( ICE_SLICE2PY_EXECUTABLE
+              NAMES slice2py
+              PATHS ${ICE_ROOT}/bin
+                    ${ICE_ROOT}/bin/vc100
+            )
+MARK_AS_ADVANCED (ICE_SLICE2PY_EXECUTABLE)
 
 SET(ICE_LIBRARIES
     optimized ${ICE_LIBRARY} debug ${ICE_LIBRARY_DEBUG}

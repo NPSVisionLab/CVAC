@@ -10,7 +10,25 @@ FIND_PATH(UNITTEST++_INCLUDE_DIR UnitTest++.h
           PATH_SUFFIXES unittest++
           )
 
+# Needed for CPack INSTALL command, path to library containing-folder
+FIND_PATH(UNITTEST++_LIBRARY_FOLDER
+             HINTS
+                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Debug
+             PATHS
+                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Release
+          )
+
+# Needed for CPack INSTALL command, path to library containing-folder
+FIND_PATH(UNITTEST++_LIBRARY_FOLDER
+             HINTS
+                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Debug
+             PATHS
+                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Release
+          )
+
 FIND_LIBRARY(UNITTEST++_LIBRARY
+             HINTS
+                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Release
              NAMES UnitTest++ UnitTest++.vsnet2005
              PATHS
                 ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Release
@@ -19,6 +37,8 @@ FIND_LIBRARY(UNITTEST++_LIBRARY
 
 FIND_LIBRARY(UNITTEST++_LIBRARY_DEBUG
              NAMES UnitTest++D UnitTest++.vsnet2005
+             HINTS
+                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Debug
              PATHS
               ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Debug
              )
