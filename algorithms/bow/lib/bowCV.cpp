@@ -479,6 +479,13 @@ bool bowCV::detect_readTrainResult(const string& _filepath,const string& _filena
 			break;
 	}	
 	string _nameDetector(_inputString);
+
+#ifdef __APPLE__
+    if (_nameDetector.equals("SURF"))
+    {
+		cout << "WARNING!!! SURF detector may not run well on OSX" << endl;
+    }
+#endif __APPLE__
 	
 	infile.getline(_buf, 255);	
 	iss.clear();	iss.str(_buf);	iss >> _inputString;	
