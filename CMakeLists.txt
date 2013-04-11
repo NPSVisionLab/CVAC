@@ -125,17 +125,19 @@ IF( BUILD_UNIT_TESTS)
   FIND_PACKAGE(UnitTest++)
 ENDIF( BUILD_UNIT_TESTS )
 
-# Package Properties
+#
+# CPack Package Properties
+#
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
 set(CPACK_PACKAGE_NAME "CVAC_Package")
 set(CPACK_PACKAGE_VENDOR "NPS Vision Lab")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC component-based install package")
-set(CPACK_PACKAGE_VERSION "1.0.0")
-set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "0")
+set(CPACK_PACKAGE_VERSION_MAJOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "2")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 
-# Devel
+# Binary distribution of CVAC: only built files and binary dependencies
 #INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/src/Corpus.jar
 #		DESTINATION Devel
 #		COMPONENT ExportJars
@@ -155,25 +157,38 @@ set(CPACK_PACKAGE_VERSION_PATCH "0")
 #		 COMPONENT TrainImagery
 #		)
     
-# ThirdPartyBin
+# 3rdparty dependencies for building CVAC
 INSTALL(DIRECTORY   ${ICE_ROOT}  # Deep copy
-		 DESTINATION 3rdparty
-		 COMPONENT IceExt
-		)
+        DESTINATION 3rdparty
+        COMPONENT IceExt
+       )
 INSTALL(DIRECTORY   ${UNITTEST++_INCLUDE_DIR}
-		            ${UNITTEST++_LIBRARY_FOLDER}
-		 DESTINATION 3rdparty
-		 COMPONENT UnitTestPPExt
-		)
+        DESTINATION 3rdparty/UnitTest++/include
+        COMPONENT UnitTestPPExt
+       )
+INSTALL(FILES    ${UNITTEST++_LIBRARY}
+		 ${UNITTEST++_LIBRARY_DEBUG}
+        DESTINATION 3rdparty/UnitTest++/lib
+        COMPONENT UnitTestPPExt
+       )
+INSTALL(FILES ${LIBARCHIVE_INCLUDE}/archive.h
+              ${LIBARCHIVE_INCLUDE}/archive_entry.h
+        DESTINATION 3rdparty/libarchive/include
+        COMPONENT LibArchiveExt
+       )
+INSTALL(FILES ${LIBARCHIVE_LIBRARY}
+        DESTINATION 3rdparty/libarchive/lib
+        COMPONENT LibArchiveExt
+       )
 INSTALL(DIRECTORY ${LIBARCHIVE_LIBRARY_FOLDER}
-		 DESTINATION 3rdparty
-		 COMPONENT LibArchiveExt
-		)
+        DESTINATION 3rdparty
+        COMPONENT LibArchiveExt
+       )
 INSTALL(DIRECTORY   ${OpenCV2_INCLUDE_DIRS}
                     ${OpenCV_LIB_DIR}
-		 DESTINATION 3rdparty
-		 COMPONENT OpenCVExt
-		)
+        DESTINATION 3rdparty
+        COMPONENT OpenCVExt
+       )
 
 # Select Generator by OS
 IF(WIN32)
@@ -194,8 +209,8 @@ cpack_add_component_group (
 #Assign GROUP to COMPONENT
 cpack_add_component (
   UnitTestPPExt
-  DISPLAY_NAME "Unit Test ++"
-  DESCRIPTION "Unit Test plus-plus framework."
+  DISPLAY_NAME "UnitTest++"
+  DESCRIPTION "Unit test for C++ framework."
   GROUP ThirdPartyGrp
 )
 cpack_add_component (
@@ -207,6 +222,6 @@ cpack_add_component (
 cpack_add_component (
   OpenCVExt
   DISPLAY_NAME "OpenCV"
-  DESCRIPTION "Open Computer Vision Library. (v2.4.2 packaged)"
+  DESCRIPTION "Open Computer Vision Library."
   GROUP ThirdPartyGrp
 )

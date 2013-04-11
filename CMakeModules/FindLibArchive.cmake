@@ -2,8 +2,7 @@
 
 FIND_PATH(LIBARCHIVE_INCLUDE archive.h
           HINTS
-              ${CMAKE_SOURCE_DIR}/3rdparty/libarchive-3.1.2/libarchive
-              ${CMAKE_SOURCE_DIR}/3rdparty/libarchive-2.8.5/libarchive
+              ${CMAKE_SOURCE_DIR}/3rdparty/libarchive
           PATHS
               /opt/local
               "C:/Program Files (x86)/libarchive-3.1.2/libarchive"
@@ -15,8 +14,7 @@ FIND_PATH(LIBARCHIVE_INCLUDE archive.h
 # then in the location related to the include file, then in default locations
 FIND_LIBRARY(LIBARCHIVE_LIBRARY NAMES archive
              HINTS
-                ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/libarchive/Release
-                ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/libarchive/Debug
+                ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/lib
 
              PATHS 
                 "C:/Program Files (x86)/libarchive/libarchive/Release"
