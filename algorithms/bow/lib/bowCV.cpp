@@ -267,7 +267,7 @@ void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID,co
 }
 
 
-bool bowCV::train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult, cvac::ServiceManager *sman)
+bool bowCV::train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult)
 {
 	if(!flagName)
 	{
@@ -300,11 +300,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 			cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
 			return false;
 		}
-		if (sman->stopRequested())
-        {
-            sman->stopCompleted();
-            return false;
-        }
+		
 		_rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
 		if((_rect.width != 0) && (_rect.height != 0))
 			_img = _img(_rect);
@@ -362,11 +358,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 		
 		if(_classID==-1)
 			continue;
-        if (sman->stopRequested())
-        {
-            sman->stopCompleted();
-            return false;
-        }
+
 		_img = imread(_fullFilePathImg);
 		
 		_rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
@@ -440,8 +432,62 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass)
 	}
 
 	fDetector->detect(_img, _keypoints);
+	//////////////////////////////////////////////////////////////////////////
+	//lekomin_debug_bow
+	std::string _debugName = _fullfilename.substr(0,_fullfilename.rfind(".")) + "_feature.txt";	
+	FileStorage fs( _debugName, FileStorage::WRITE );
+	if( fs.isOpened() )
+		fs << "keypoints" << _keypoints;
+	fs.release();
+
+	std::string _debugName2 = _fullfilename.substr(0,_fullfilename.rfind(".")) + "_WillbeUsedTrainingData.txt";	
+	train_writeVocabulary(_debugName2,bowExtractor->getVocabulary());
+	//////////////////////////////////////////////////////////////////////////
+	
 	bowExtractor->compute(_img, _keypoints, _descriptors);
 
+	//////////////////////////////////////////////////////////////////////////
+	//lekomin_debug_bow
+	std::string _debugNamex = _fullfilename.substr(0,_fullfilename.rfind(".")) + "_descriptor.txt";	
+	FileStorage fsx( _debugNamex, FileStorage::WRITE );	
+	if( fsx.isOpened() )
+	{
+		fsx << "descriptor" << _descriptors;
+		fsx << "descriptor" << bowExtractor->descriptorType();
+		fsx << "descriptorSize" << bowExtractor->descriptorSize();
+	}
+
+	fsx.release();
+
+	std::string _debugName3 = _fullfilename.substr(0,_fullfilename.rfind(".")) + "_logTrain_svm.xml.gz";	
+	classifierSVM.save(_debugName3.c_str());
+	
+	std::string _debugName4 = _fullfilename.substr(0,_fullfilename.rfind(".")) + "_distance.txt";
+	ofstream out;
+	out.open(_debugName4.c_str());
+	out << classifierSVM.predict(_descriptors,true);
+	out.close();
+	//////////////////////////////////////////////////////////////////////////
+
+
+
+
+	/*
+	//////////////////////////////////////////////////////////////////////////
+	//lekomin_debug_bow
+	std::string _debugNamexx = "D:/testImg/testImg/TestKrFlag_descriptor.txt";	
+	FileStorage fsxx( _debugNamexx, FileStorage::READ );
+	if( fsxx.isOpened() )
+	{
+		Mat _matbd;
+		fsxx["descriptor"] >> _matbd;	//mFeature_Boundary;
+		_descriptors = _matbd;
+	}		
+	fsxx.release();
+	//////////////////////////////////////////////////////////////////////////
+	*/
+
+	
 	_bestClass = classifierSVM.predict(_descriptors);
 
 	if (-1 == _bestClass) // no class found
@@ -494,9 +540,28 @@ bool bowCV::detect_readTrainResult(const string& _filepath,const string& _filena
 	infile.getline(_buf, 255);	
 	iss.clear();	iss.str(_buf);	iss >> _inputString;
 	_fullpath = _filepath + "/" + _inputString;	
+
+	//////////////////////////////////////////////////////////////////////////
+	//lekomin_debug_bow
+	ofstream out;
+	std::string _paraName =_fullpath.substr(0,_fullpath.rfind(".")) + "_paraName.txt";
+	out.open(_paraName.c_str());
+	out << "Detector= " << _nameDetector <<endl;
+	out << "Extractor= " << _nameExtractor <<endl;
+	out << "Matcher= " << _nameMatcher <<endl;
+	out.close();
+	//////////////////////////////////////////////////////////////////////////
+
 	
 	if(detect_readVocabulary(_fullpath,mVocabulary))
+	{
 		bowExtractor->setVocabulary(mVocabulary);
+		//////////////////////////////////////////////////////////////////////////
+		//lekomin_debug_bow
+		std::string _debugName = _fullpath.substr(0,_fullpath.rfind(".")) + "_loadedTrainingData.txt";	
+		train_writeVocabulary(_debugName,mVocabulary);
+		//////////////////////////////////////////////////////////////////////////
+	}
 	else
 		return false;
 	
@@ -520,8 +585,10 @@ bool bowCV::train_writeVocabulary(const string& _filename,const Mat& _vocabulary
 	if( fs.isOpened() )
 	{
 		fs << "vocabulary" << _vocabulary;
+		fs.release();
 		return true;
 	}
+	fs.release();
 	cout << "Error - in Saving vocabulary...";	fflush(stdout);
 	return false;
 }
@@ -534,8 +601,10 @@ bool bowCV::detect_readVocabulary( const string& _filename, Mat& _vocabulary )
 	{
 		fs["vocabulary"] >> _vocabulary;
 		cout << "done" << endl;
+		fs.release();
 		return true;
 	}
+	fs.release();
 	cout << "Error - in Reading vocabulary...";	fflush(stdout);
 	return false;
 }

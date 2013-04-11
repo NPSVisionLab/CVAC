@@ -1,8 +1,9 @@
-package cvac.corpus;
+package cvac.CVACcorpus;
 
 import cvac.FilePath;
 import cvac.Labelable;
 import cvac.Substrate;
+import cvac.CVACcorpus.LabelableListI;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;

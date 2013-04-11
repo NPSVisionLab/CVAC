@@ -1,4 +1,4 @@
-package cvac.corpus;
+package cvac.CVACcorpus;
 
 //import com.ice.tar.TarEntry;
 //import com.ice.tar.TarInputStream;

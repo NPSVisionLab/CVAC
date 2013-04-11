@@ -1,4 +1,4 @@
-package cvac.corpus;
+package cvac.CVACcorpus;
 
 import com.mathworks.toolbox.javabuilder.MWCellArray;
 import com.mathworks.toolbox.javabuilder.MWArray;

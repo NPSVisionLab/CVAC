@@ -2,7 +2,7 @@
  * Implementation for the CorpusService
  */
 
-package cvac.corpus;
+package cvac.CVACcorpus;
 
 import cvac.CorpusService;
 import cvac.CorpusCallback;
@@ -14,7 +14,24 @@ import cvac._CorpusServiceDisp;
  *
  * @author matz
  */
-public class CorpusServiceI extends _CorpusServiceDisp {
+public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service 
+{
+    private Ice.ObjectAdapter mAdapter;
+    private CorpusService mService = null;
+    
+    public void start(String name, Ice.Communicator communicator, String[] args)
+    {
+        mAdapter = communicator.createObjectAdapter(name);
+        if (mService == null)
+            mService = new CorpusServiceI();
+        mAdapter.add(mService, communicator.stringToIdentity("CorpusServer"));
+        mAdapter.activate();
+    }
+    
+    public void stop()
+    {
+         mAdapter.deactivate();  
+    }
     /**
      * Opens the Corpus from a metadata file.  This does not download,
      * extract, or otherwise prepare the Corpus, just create a Corpus object.
