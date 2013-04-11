@@ -52,7 +52,8 @@ using namespace cvac;
  * Return the filenames and rectangles listed in artifacts.  If no artifacts
  * listed then have a single rectangle of the size of the image file.
  */
-int cvac::processLabelArtifactsToRects(LabelableList *artifacts, GetImageSizeFunction sfunc, std::vector<RectangleLabels> *result)
+int cvac::processLabelArtifactsToRects(LabelableList *artifacts, GetImageSizeFunction sfunc, 
+                                        std::vector<RectangleLabels> *result, bool square)
 {
     int count = 0;
     if (NULL == artifacts)
@@ -119,6 +120,27 @@ int cvac::processLabelArtifactsToRects(LabelableList *artifacts, GetImageSizeFun
                 lrect->y = miny;
                 lrect->width = maxx - minx + 1;
                 lrect->height = maxy - miny + 1; 
+                // If the detector only wants square rectangles then adjust the smallest 
+                // side to equal the largest and center the original rectangle.
+                if (square)
+                {
+                    if (lrect->width != lrect->height)
+                    {
+                        int diff;
+                        if (lrect->height > lrect->width)
+                        {
+                            diff = lrect->height - lrect->width;
+                            lrect->x = lrect->x - diff/2;
+                            lrect->width = lrect->width + diff;
+                        }else
+                        {
+                            diff = lrect->width - lrect->height;
+                            lrect->y = lrect->y - diff/2;
+                            lrect->height = lrect->height + diff;
+                        }
+                    }
+
+                }
                 rlabels.rects.push_back(lrect);  
                 continue;
             } 
