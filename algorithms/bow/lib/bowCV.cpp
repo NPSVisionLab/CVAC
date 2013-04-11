@@ -481,7 +481,7 @@ bool bowCV::detect_readTrainResult(const string& _filepath,const string& _filena
 	string _nameDetector(_inputString);
 
 #ifdef __APPLE__
-    if (_nameDetector.equals("SURF"))
+    if (_nameDetector.compare("SURF") == 0)
     {
 		cout << "WARNING!!! SURF detector may not run well on OSX" << endl;
     }
