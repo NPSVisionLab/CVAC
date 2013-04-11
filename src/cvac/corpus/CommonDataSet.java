@@ -41,7 +41,7 @@ public class CommonDataSet extends CorpusI {
         super( name, description, homepageURL, isImmutableMirror );
         
         if(null == m_dataSetFolder) {
-            m_dataSetFolder = "C:/Users/LSO/Analyst_Media";
+            m_dataSetFolder = "";
         }
         m_metaDataFolder = new File(m_dataSetFolder);
     }
