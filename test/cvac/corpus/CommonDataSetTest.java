@@ -24,8 +24,7 @@ public class CommonDataSetTest {
     
     CommonDataSet instance;
     File[] filesInOutputDir;
-    private static String mediaRootDir = "C:/Users/LSO/Analyst_Media";
-    //private static Class<?> tgtClass;
+    private static String mediaRootDir = "C:/Users/LSO/Analyst_Media";  // Default
     private String  Caltech101_URL =                                              // Caltech url used as test data set
                             "http://www.vision.caltech.edu/Image_Datasets/Caltech101/101_ObjectCategories.tar.gz",
                     Caltech256_URL = 
@@ -33,14 +32,9 @@ public class CommonDataSetTest {
                     unitTest_inputFileDir = (mediaRootDir + "/UnitTestData"),
                     web_decompress_unTar_OutputDir;
     
-    
-      // Select tests to use in Suite, the bottom two take a long time.
-    boolean run_simpleTests = false;
-    boolean run_Test_loadAsynch = true;
-    
     public CommonDataSetTest() {
     }
-/*    
+/**   
     @BeforeClass
     public static void setUpClass() throws Exception {
     }
@@ -62,32 +56,6 @@ public class CommonDataSetTest {
         instance = null;
     }
 
-    // ***
-    @Test
-    public void testAddCategory() {
-        cvac.Labelable testLabel = new cvac.Labelable();
-        LabelableListI testSamples = new LabelableListI();
-        testSamples.add(testLabel);
-        
-        assert(instance.m_images.containsKey(testLabel));
-    }
-    
-    // ***
-    //@Test
-    //public void testAddSample() {
-    //}
-
-    // ***
-    @Test
-    public void testRemoveSample() {
-        
-        assert(instance.m_images.containsKey("category"));  // Must be there
-        
-        // Now assert 'm_images' no longer contains the removed String: "category"
-        instance.removeSample("category");
-        assert(false == instance.m_images.containsKey("category"));
-    }
-
     @Test
     public void testGetProperties() {
         Properties returnProps = instance.getProperties();
@@ -101,10 +69,38 @@ public class CommonDataSetTest {
         String descStr = instProps.getProperty("description");
         assert(descStr.equals("Caltech101_URL"));
     }
-
-/*  // Nothing to test, currently
-    @Test
-    public void testConfigureFromProperties() {
-    }
-*/
 }
+
+
+
+//    // Nothing to test, currently
+//    @Test
+//    public void testConfigureFromProperties() {
+//    }
+//
+//    // ***
+//    @Test
+//    public void testAddSample() {
+//    }
+//
+//
+//    // ***
+//    @Test
+//    public void testAddCategory() {
+//        cvac.Labelable testLabel = new cvac.Labelable();
+//        LabelableListI testSamples = new LabelableListI();
+//        testSamples.add(testLabel);
+//        
+//        assert(instance.m_images.containsKey(testLabel));
+//    }
+//
+//    // ***
+//    @Test
+//    public void testRemoveSample() {
+//        
+//        assert(instance.m_images.containsKey("category"));  // Must be there
+//        
+//        // Now assert 'm_images' no longer contains the removed String: "category"
+//        instance.removeSample("category");
+//        assert(false == instance.m_images.containsKey("category"));
+//    }

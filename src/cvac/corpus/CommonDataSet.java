@@ -26,6 +26,10 @@ import java.util.zip.GZIPInputStream;
  * @author matz
  */
 public class CommonDataSet extends CorpusI {
+   
+    public enum DataSetLocType {LOCAL, URL, STREAMING, REMOTE, LABELME}
+    public enum CompressionType {GZIP, BZ2, Z, UNCOMPRESSED}
+    public enum ArchiveType {A, AR, CPIO, SHAR, LBR, ISO, TAR, UNARCHIVED} 
     
     private File m_metaDataFolder, // '../.meta' sub-folder of root
                  m_expansionFolder,
@@ -35,6 +39,10 @@ public class CommonDataSet extends CorpusI {
     public CommonDataSet(String name, String description, String homepageURL, boolean isImmutableMirror)
     {
         super( name, description, homepageURL, isImmutableMirror );
+        
+        if(null == m_dataSetFolder) {
+            m_dataSetFolder = "C:/Users/LSO/Analyst_Media";
+        }
         m_metaDataFolder = new File(m_dataSetFolder);
     }
   
@@ -82,7 +90,7 @@ public class CommonDataSet extends CorpusI {
 //    
 //      // Orchestrate entire unpacking sequence
 //    protected void expandDataset_toLocal( String webURL, File web_SavedFile, String decompressedOutputName,
-//                                          String expandBelow_Path, DataSetMirror.CompressionType uncompressType) throws MediaAnalystException {
+//                                          String expandBelow_Path, CompressionType uncompressType) throws MediaAnalystException {
 //        // Grab file to local disk
 //        try {
 //            DownloadUtils.URL_readToFile(webURL, web_SavedFile);
@@ -93,7 +101,7 @@ public class CommonDataSet extends CorpusI {
 //        }
 //
 //        File tarOutput;
-//        if(DataSetMirror.CompressionType.GZIP == uncompressType) {  // Unzipping GZip Produces (.tar) in /expansion/ folder
+//        if(CompressionType.GZIP == uncompressType) {  // Unzipping GZip Produces (.tar) in /expansion/ folder
 //            tarOutput = new File( getSubfolderPath() + 
 //                                  File.separatorChar + "expansion" +
 //                                  File.separatorChar + decompressedOutputName ); 
@@ -116,12 +124,12 @@ public class CommonDataSet extends CorpusI {
 //
 //        // TODO: why was there a new dataset created here?
 //        //DataSet dataSetInstance = new DataSet();
-//        //dataSetInstance.unpackArchiveBelow(tarOutput, targetDatasetFolder, DataSetMirror.ArchiveType.TAR);
-//        unpackArchiveBelow(tarOutput, targetDatasetFolder, DataSetMirror.ArchiveType.TAR);
+//        //dataSetInstance.unpackArchiveBelow(tarOutput, targetDatasetFolder, ArchiveType.TAR);
+//        unpackArchiveBelow(tarOutput, targetDatasetFolder, ArchiveType.TAR);
 //    }
 //    
 //    // Read source-File, uncompress and save into destination-File in the 'source' directory
-//    private void uncompressDataset(File compressedFileSrc, File destFile, String destFileDir, DataSetMirror.CompressionType in_type) throws IOException {
+//    private void uncompressDataset(File compressedFileSrc, File destFile, String destFileDir, CompressionType in_type) throws IOException {
 //        
 //          // Create new file if target !exists, or Uncompress over an existing target
 //        if ((null == destFile) || (!destFile.exists())) {
@@ -169,7 +177,7 @@ public class CommonDataSet extends CorpusI {
 //    }
 //
 //    // Creates a new folder using the Dataset's name String to create folder containing all dataset content
-//    private void unpackArchiveBelow(File archiveFile, File dsTargetFolder, DataSetMirror.ArchiveType archiveType) {
+//    private void unpackArchiveBelow(File archiveFile, File dsTargetFolder, ArchiveType archiveType) {
 //        
 //        Data_IO_Utils.dieRuntime_IfNull(dsTargetFolder, 
 //                                        "'contentFolder' File-object is not allowed to be null in 'unpackArchiveBelow(..)'");
