@@ -64,7 +64,7 @@ using namespace cvac;
 static VLogger vLogger();  // Compile-time default base-level
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::localAndClientMsg(VLogger::Levels rqLevel, const ::CallbackHandlerPrx& callbackHandler, const char* fmt, ...) {
+void cvac::localAndClientMsg(VLogger::Levels rqLevel, const CallbackHandlerPrx& callbackHandler, const char* fmt, ...) {
 
   va_list args;
   va_start(args, fmt);
