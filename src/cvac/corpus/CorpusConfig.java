@@ -1,4 +1,4 @@
-package cvac.CVACcorpus;
+package cvac.corpus;
 
 import java.util.logging.Logger;
 import java.util.logging.Level;

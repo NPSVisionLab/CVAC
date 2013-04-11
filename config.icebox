@@ -46,7 +46,7 @@ IceBox.Service.BOW_Trainer=bowICEServerTrain:create --Ice.Config=config.service
 #IceBox.Service.VideoValidatorForOpenCV=VideoValidatorForOpenCVServer:create --Ice.Config=config.service
 
 # CorpusServer
-IceBox.Service.CorpusService=CorpusServiceI --Ice.Config=config.service
+IceBox.Service.Corpus=CorpusServiceI --Ice.Config=config.service
 
 #
 # Warn about connection exceptions

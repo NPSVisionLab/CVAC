@@ -6,7 +6,7 @@
  * java -cp "src/Corpus.jar;c:\program files (x86)\zeroc\Ice-3.4.2\lib\Ice.jar" cvac.corpus.CorpusServer
  */
 
-package cvac.CVACcorpus;
+package cvac.corpus;
 
 //import Ice.Application;
 import Ice.InitializationData;

@@ -2,7 +2,7 @@
  * Implementation for the CorpusService
  */
 
-package cvac.CVACcorpus;
+package cvac.corpus;
 
 import cvac.CorpusService;
 import cvac.CorpusCallback;

@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package cvac.CVACcorpus;
+package cvac.corpus;
 
 import cvac.DirectoryPath;
 import cvac.FilePath;
