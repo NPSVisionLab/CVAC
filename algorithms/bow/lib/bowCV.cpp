@@ -300,11 +300,12 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 			cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
 			return false;
 		}
-		if (sman->stopRequested())
+        if (sman->stopRequested())
         {
             sman->stopCompleted();
             return false;
         }
+		
 		_rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
 		if((_rect.width != 0) && (_rect.height != 0))
 			_img = _img(_rect);
@@ -362,6 +363,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 		
 		if(_classID==-1)
 			continue;
+        
         if (sman->stopRequested())
         {
             sman->stopCompleted();
@@ -440,6 +442,7 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass)
 	}
 
 	fDetector->detect(_img, _keypoints);
+	
 	bowExtractor->compute(_img, _keypoints, _descriptors);
 
 	_bestClass = classifierSVM.predict(_descriptors);
@@ -476,6 +479,13 @@ bool bowCV::detect_readTrainResult(const string& _filepath,const string& _filena
 			break;
 	}	
 	string _nameDetector(_inputString);
+
+#ifdef __APPLE__
+    if (_nameDetector.compare("SURF") == 0)
+    {
+		cout << "WARNING!!! SURF detector may not run well on OSX" << endl;
+    }
+#endif __APPLE__
 	
 	infile.getline(_buf, 255);	
 	iss.clear();	iss.str(_buf);	iss >> _inputString;	
@@ -494,9 +504,11 @@ bool bowCV::detect_readTrainResult(const string& _filepath,const string& _filena
 	infile.getline(_buf, 255);	
 	iss.clear();	iss.str(_buf);	iss >> _inputString;
 	_fullpath = _filepath + "/" + _inputString;	
-	
+
 	if(detect_readVocabulary(_fullpath,mVocabulary))
+	{
 		bowExtractor->setVocabulary(mVocabulary);
+	}
 	else
 		return false;
 	
@@ -520,8 +532,10 @@ bool bowCV::train_writeVocabulary(const string& _filename,const Mat& _vocabulary
 	if( fs.isOpened() )
 	{
 		fs << "vocabulary" << _vocabulary;
+		fs.release();
 		return true;
 	}
+	fs.release();
 	cout << "Error - in Saving vocabulary...";	fflush(stdout);
 	return false;
 }
@@ -534,8 +548,10 @@ bool bowCV::detect_readVocabulary( const string& _filename, Mat& _vocabulary )
 	{
 		fs["vocabulary"] >> _vocabulary;
 		cout << "done" << endl;
+		fs.release();
 		return true;
 	}
+	fs.release();
 	cout << "Error - in Reading vocabulary...";	fflush(stdout);
 	return false;
 }
