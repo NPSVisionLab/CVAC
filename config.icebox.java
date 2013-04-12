@@ -39,11 +39,12 @@ Ice.Admin.Endpoints=tcp -p 9997 -h 127.0.0.1
 #IceBox.Service.MultiBoost=MultiBoostIceService:create --Ice.Config=config.service
 #IceBox.Service.CVAC_OpenCV_Detector=OpenCVPerformance:create --Ice.Config=config.service
 #IceBox.Service.CVAC_OpenCV_Trainer=OpenCVPerformance:createTrainer --Ice.Config=config.service
-IceBox.Service.BOW_Detector=bowICEServer:create --Ice.Config=config.service
-IceBox.Service.BOW_Trainer=bowICEServerTrain:create --Ice.Config=config.service
 #IceBox.Service.SBD_Trainer=SBDICEServerTrain:create --Ice.Config=config.service
 #IceBox.Service.SBDTest=SBDICEServerTest:create --Ice.Config=config.service
 #IceBox.Service.VideoValidatorForOpenCV=VideoValidatorForOpenCVServer:create --Ice.Config=config.service
+
+# CorpusServer
+IceBox.Service.CorpusService=cvac.corpus.CorpusServiceI --Ice.Config=config.service
 
 #
 # Warn about connection exceptions

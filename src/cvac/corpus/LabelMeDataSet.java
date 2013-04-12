@@ -494,9 +494,9 @@ public class LabelMeDataSet extends CorpusI
             return false;
         }
         // TODO: Move this to base class config
-        this.m_dataSetFolder = config.getProperty("DataRootDir");
+        this.m_dataSetFolder = config.getProperty("main_location");
         if (null == this.m_dataSetFolder){
-            logger.log(Level.WARNING, "No DataRootDir property");
+            logger.log(Level.WARNING, "main_location");
             return false;
         }
         return true;

@@ -17,14 +17,15 @@ import cvac._CorpusServiceDisp;
 public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service 
 {
     private Ice.ObjectAdapter mAdapter;
-    private CorpusService mService = null;
+    private CorpusConfig mCorpusConfig = null;
     
+ 
     public void start(String name, Ice.Communicator communicator, String[] args)
     {
+        if (mCorpusConfig == null)
+            mCorpusConfig = new CorpusConfig();
         mAdapter = communicator.createObjectAdapter(name);
-        if (mService == null)
-            mService = new CorpusServiceI();
-        mAdapter.add(mService, communicator.stringToIdentity("CorpusServer"));
+        mAdapter.add(this, communicator.stringToIdentity("CorpusServer"));
         mAdapter.activate();
     }
     
@@ -40,7 +41,14 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
     public Corpus openCorpus(cvac.FilePath file, Ice.Current __current) 
     {
         System.out.println("request for openCorpus( " + file.filename + " )");
-        return new Corpus();
+        String cfile;
+        if (file.directory.relativePath != null && file.directory.relativePath != "")
+            cfile = file.directory.relativePath + java.io.File.separator + file.filename;
+        else
+            cfile = file.filename;
+        CorpusI corpus = mCorpusConfig.createCorpusFromConfig(cfile);
+        mCorpusConfig.addDataSet(corpus);
+        return corpus;
     }
 
     /**
@@ -71,7 +79,13 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
      **/
     public cvac.Labelable[] getDataSet(Corpus corp, Ice.Current __current)
     {
-        return null;
+         CorpusI corpI = mCorpusConfig.findCorpus(corp.name);
+         if (corpI != null)
+         {
+             corpI.loadImageAssets();
+         }
+         //TODO get images into a Labelable array
+         return null;
     }
 
     /**

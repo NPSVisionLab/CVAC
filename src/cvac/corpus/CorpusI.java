@@ -39,6 +39,7 @@ abstract public class CorpusI extends Corpus {
     protected Map<String, LabelableListI> m_images;
     private boolean                   m_spacesUsed = false;
     private boolean errorShown = false;
+    private CorpusConfig corpusConfig = null;
     
     public CorpusI(String name, String description, String homepageURL, boolean isImmutableMirror)
     {
@@ -46,6 +47,7 @@ abstract public class CorpusI extends Corpus {
         m_images = new HashMap<String, LabelableListI>();
 //        m_loader_thread = null;
     }
+    
     
     public String getHomepage() {
         return homepageURL;
