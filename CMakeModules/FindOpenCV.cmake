@@ -51,7 +51,7 @@ set(OpenCV_USE_MANGLED_PATHS FALSE)
 # ======================================================
 FIND_PATH (OpenCV_ROOT_DIR  include/opencv2
            HINTS
-           ../CVAC_external/OpenCV-2.4.2 
+           ${CMAKE_SOURCE_DIR}/3rdparty/OpenCV-2.4.2 
            DOC "The OpenCV root folder"
            )
 
@@ -351,3 +351,12 @@ else()
   SET(OpenCV_LIB_DIR ${OpenCV_LIB_DIR_OPT} ${OpenCV_3RDPARTY_LIB_DIR_OPT})
 endif()
 set(OpenCV_LIBRARIES ${OpenCV_LIBS})
+
+# ==============================================================
+# handle the QUIETLY and REQUIRED arguments and set OpenCV_FOUND to TRUE if 
+# all listed variables are TRUE
+# ==============================================================
+INCLUDE(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(OpenCV DEFAULT_MSG OpenCV_INCLUDE_DIRS
+                                                  OpenCV_LIBRARIES
+                                                  )

@@ -41,3 +41,10 @@ FIND_PATH(LIBZIP_BIN_DIR NAMES zlibd.dll
              DOC "BIN directory for libarchive"
             )
 ENDIF (WIN32)
+
+# handle the QUIETLY and REQUIRED arguments and set LibArchive_FOUND to TRUE if 
+# all listed variables are TRUE
+INCLUDE(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibArchive DEFAULT_MSG LIBARCHIVE_INCLUDE
+                                                  LIBARCHIVE_LIBRARY
+                                                  )
