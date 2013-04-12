@@ -115,7 +115,7 @@ ENDIF (WIN32)
 # then try to create the include/version.h file that specifies the CVAC version,
 # as obtained from the version-control tag (major.minor) and the
 # number of commits since that tag (patch)
-if( NOT EXISTS ${CMAKE_SOURCE_DIR}/include/version.h AND EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
     EXECUTE_PROCESS( COMMAND git describe --long
               OUTPUT_VARIABLE CVAC_VERSION_GIT
               OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -132,7 +132,7 @@ if( NOT EXISTS ${CMAKE_SOURCE_DIR}/include/version.h AND EXISTS "${CMAKE_SOURCE_
      STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
      SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
      CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in  ${CMAKE_SOURCE_DIR}/include/version.h)
-endif( NOT EXISTS ${CMAKE_SOURCE_DIR}/include/version.h AND EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
 ADD_SUBDIRECTORY(src/util)
 IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
@@ -153,13 +153,20 @@ ENDIF( BUILD_UNIT_TESTS )
 # CPack Package Properties
 #
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
-set(CPACK_PACKAGE_NAME "CVAC_3rdparty")
-set(CPACK_PACKAGE_VENDOR "NPS Vision Lab")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC component-based install package")
+IF ( BUILD_3RDPARTY_PACKAGE )
+    set(CPACK_PACKAGE_NAME "CVAC_3rdparty")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC 3rdparty install package")
+ELSE( BUILD_3RDPARTY_PACKAGE )
+    set(CPACK_PACKAGE_NAME "CVAC_binary")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC binary install package")
+ENDIF( BUILD_3RDPARTY_PACKAGE )
+
+set(CPACK_PACKAGE_VENDOR "NPS Vision Lab") 
 set(CPACK_PACKAGE_VERSION_MAJOR ${CVAC_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${CVAC_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${CVAC_VERSION_PATCH})
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+set( CVAC_VERSION_DIR CVAC-${CVAC_VERSION} )
 
 # Binary distribution of CVAC: only built files and binary dependencies
 #INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/src/Corpus.jar
@@ -181,6 +188,7 @@ set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSIO
 #		 COMPONENT TrainImagery
 #		)
     
+IF (BUILD_3RDPARTY_PACKAGE)
 # 3rdparty dependencies for building CVAC
 INSTALL(DIRECTORY   ${ICE_ROOT}  # Deep copy
         DESTINATION 3rdparty
@@ -227,7 +235,6 @@ ENDIF(WIN32)
 
 include(CPack)
 
-
 # Declare Third Party Group
 cpack_add_component_group (
   ThirdPartyGrp
@@ -253,3 +260,23 @@ cpack_add_component (
   DESCRIPTION "Open Computer Vision Library."
   GROUP ThirdPartyGrp
 )
+ELSE( BUILD_3RDPARTY_PACKAGE )
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include
+       DESTINATION ${CVAC_VERSION_DIR}
+       COMPONENT IncludeExt
+       PATTERN version.h.in EXCLUDE
+      )
+include(CPack)
+# Declare Binary Group
+cpack_add_component_group (
+  BinaryGrp
+  DISPLAY_NAME "binary"
+  DESCRIPTION "Binary CVAC components"
+)
+ cpack_add_component (
+  IncludeExt
+  DISPLAY_NAME "include files"
+  DESCRIPTION "Required to use the CVAC API."
+  GROUP BinaryGrp
+)
+ENDIF( BUILD_3RDPARTY_PACKAGE )
