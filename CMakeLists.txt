@@ -116,13 +116,22 @@ ENDIF (WIN32)
 # as obtained from the version-control tag (major.minor) and the
 # number of commits since that tag (patch)
 if( NOT EXISTS ${CMAKE_SOURCE_DIR}/include/version.h AND EXISTS "${CMAKE_SOURCE_DIR}/.git" )
-execute_process(COMMAND git describe --abbrev=4 HEAD
-               COMMAND sed -e "s/-/./g"
-               OUTPUT_VARIABLE CVAC_VERSION
-               OUTPUT_STRIP_TRAILING_WHITESPACE)
-# remove leading "v"
-string(REGEX REPLACE "^v(.*)" "\\1" CVAC_VERSION ${CVAC_VERSION})
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in  ${CMAKE_SOURCE_DIR}/include/version.h)
+    EXECUTE_PROCESS( COMMAND git describe --long
+              OUTPUT_VARIABLE CVAC_VERSION_GIT
+              OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    # parse this kind of string v1.2-3-gkd3kdj4:
+    # CVAC_VERSION_MAJMIN is 1.2
+    # CVAC_VERSION_MAJOR is 1
+    # CVAC_VERSION_MINOR is 2
+    # CVAC_VERSION_PATCH is 3
+    # CVAC_VERSION is 1.2.3
+     STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
+     STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
+     STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
+     STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
+     SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in  ${CMAKE_SOURCE_DIR}/include/version.h)
 endif( NOT EXISTS ${CMAKE_SOURCE_DIR}/include/version.h AND EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
 ADD_SUBDIRECTORY(src/util)
@@ -147,9 +156,9 @@ set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
 set(CPACK_PACKAGE_NAME "CVAC_3rdparty")
 set(CPACK_PACKAGE_VENDOR "NPS Vision Lab")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC component-based install package")
-set(CPACK_PACKAGE_VERSION_MAJOR "0")
-set(CPACK_PACKAGE_VERSION_MINOR "2")
-set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_VERSION_MAJOR ${CVAC_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${CVAC_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${CVAC_VERSION_PATCH})
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 
 # Binary distribution of CVAC: only built files and binary dependencies
