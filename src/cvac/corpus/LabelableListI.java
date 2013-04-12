@@ -12,7 +12,6 @@ import cvac.Substrate;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
-
 import cvac.Corpus;
 
 /**
@@ -23,7 +22,6 @@ import cvac.Corpus;
  * @author tomb
  */
 public class LabelableListI extends ArrayList<Labelable> {
-
     /** user-given name of the Collection (which is a piece of the RunSet)
      */
     private String m_name;
