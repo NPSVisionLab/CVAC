@@ -99,7 +99,8 @@ FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
-  FIND_PACKAGE( OpenCV REQUIRED core imgproc highgui ml features2d nonfree objdetect calib3d )
+  FIND_PACKAGE( OpenCV 2.4.3 REQUIRED
+                            core imgproc highgui ml features2d nonfree objdetect calib3d )
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 IF (WIN32)
@@ -107,8 +108,22 @@ CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIcebox.bat.in  ${CMAKE_SOURCE_DIR}/runIceb
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/stopIcebox.bat.in  ${CMAKE_SOURCE_DIR}/stopIcebox.bat)
 ELSE (WIN32)
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIcebox.sh.in  ${CMAKE_SOURCE_DIR}/runIcebox.sh)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/stopIcebox.sh.in  ${CMAKE_SOURCE_DIR}/stopIcebox.sh)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/stopIcebox.sh.in  ${CMAKE_SOURCE_DIR}/stopIcebox.sh) 
 ENDIF (WIN32)
+
+# First see if there is a version file (included in release tarballs),
+# then try to create the include/version.h file that specifies the CVAC version,
+# as obtained from the version-control tag (major.minor) and the
+# number of commits since that tag (patch)
+if( NOT EXISTS ${CMAKE_SOURCE_DIR}/include/version.h AND EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+execute_process(COMMAND git describe --abbrev=4 HEAD
+               COMMAND sed -e "s/-/./g"
+               OUTPUT_VARIABLE CVAC_VERSION
+               OUTPUT_STRIP_TRAILING_WHITESPACE)
+# remove leading "v"
+string(REGEX REPLACE "^v(.*)" "\\1" CVAC_VERSION ${CVAC_VERSION})
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in  ${CMAKE_SOURCE_DIR}/include/version.h)
+endif( NOT EXISTS ${CMAKE_SOURCE_DIR}/include/version.h AND EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
 ADD_SUBDIRECTORY(src/util)
 IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
@@ -129,7 +144,7 @@ ENDIF( BUILD_UNIT_TESTS )
 # CPack Package Properties
 #
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
-set(CPACK_PACKAGE_NAME "CVAC_Package")
+set(CPACK_PACKAGE_NAME "CVAC_3rdparty")
 set(CPACK_PACKAGE_VENDOR "NPS Vision Lab")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC component-based install package")
 set(CPACK_PACKAGE_VERSION_MAJOR "0")
@@ -184,11 +199,15 @@ INSTALL(DIRECTORY ${LIBARCHIVE_LIBRARY_FOLDER}
         DESTINATION 3rdparty
         COMPONENT LibArchiveExt
        )
-INSTALL(DIRECTORY   ${OpenCV2_INCLUDE_DIRS}
-                    ${OpenCV_LIB_DIR}
-        DESTINATION 3rdparty
-        COMPONENT OpenCVExt
-       )
+INSTALL(DIRECTORY   ${OpenCV_ROOT_DIR}/include/opencv2
+      DESTINATION 3rdparty/opencv/include
+       COMPONENT OpenCVExt
+      )
+INSTALL(FILES ${OpenCV_LIBS_DBG} ${OpenCV_EXTRA_LIBS_DBG} 
+                       ${OpenCV_LIBS_OPT} ${OpenCV_EXTRA_LIBS_OPT}
+              DESTINATION 3rdparty/opencv/lib
+              COMPONENT OpenCVExt
+      )
 
 # Select Generator by OS
 IF(WIN32)

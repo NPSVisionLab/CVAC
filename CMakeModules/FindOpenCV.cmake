@@ -231,7 +231,10 @@ set(OpenCV_opencv_calib3d_EXTRA_DEPS_DBG )
 # ==============================================================
 #  Extra include directories, needed by OpenCV 2 new structure
 # ==============================================================
-SET(OpenCV2_INCLUDE_DIRS ${OpenCV_ROOT_DIR}/modules/core/include;${OpenCV_ROOT_DIR}/modules/imgproc/include;${OpenCV_ROOT_DIR}/modules/flann/include;${OpenCV_ROOT_DIR}/modules/highgui/include;${OpenCV_ROOT_DIR}/modules/features2d/include;${OpenCV_ROOT_DIR}/modules/calib3d/include;${OpenCV_ROOT_DIR}/modules/ml/include;${OpenCV_ROOT_DIR}/modules/video/include;${OpenCV_ROOT_DIR}/modules/objdetect/include;${OpenCV_ROOT_DIR}/modules/contrib/include;${OpenCV_ROOT_DIR}/modules/nonfree/include;${OpenCV_ROOT_DIR}/modules/gpu/include;${OpenCV_ROOT_DIR}/modules/legacy/include;${OpenCV_ROOT_DIR}/modules/photo/include;${OpenCV_ROOT_DIR}/modules/stitching/include;${OpenCV_ROOT_DIR}/modules/ts/include;${OpenCV_ROOT_DIR}/modules/videostab/include)
+# set to "modules/" if referencing an OpenCV in its source tree
+# rather than the installed location (which doesn't have "modules" in the path)
+SET(UNINSTALLED_INC "")
+SET(OpenCV2_INCLUDE_DIRS ${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}core/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}imgproc/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}flann/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}highgui/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}features2d/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}calib3d/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}ml/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}video/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}objdetect/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}contrib/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}nonfree/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}gpu/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}legacy/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}photo/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}stitching/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}ts/include;${OpenCV_ROOT_DIR}/${UNINSTALLED_INC}videostab/include)
 if(OpenCV2_INCLUDE_DIRS)
   include_directories(${OpenCV2_INCLUDE_DIRS})
   list(APPEND OpenCV_INCLUDE_DIRS ${OpenCV2_INCLUDE_DIRS})

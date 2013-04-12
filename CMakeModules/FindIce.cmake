@@ -12,9 +12,9 @@ FIND_PATH (ICE_ROOT slice
            ${CVAC_ROOT_DIR}/3rdparty
            PATHS          
            ${ICE_INSTALLDIR}
-           /opt/Ice-3.4
+           /opt/Ice-3.4.2
            /usr/include
-           /usr/share/Ice-3.4
+           /usr/share/Ice-3.4.2
 #           "C:\\Program Files (x86)\\ZeroC\\Ice-3.4.2"
            DOC "The ICE root folder"
            )
