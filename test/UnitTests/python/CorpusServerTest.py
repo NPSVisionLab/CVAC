@@ -1,12 +1,12 @@
 # test the CorpusServer
 # before calling "python CorpusServerTest.py", make sure this is set:
 # export PYTHONPATH="/opt/Ice-3.4.2/python:test/UnitTests/python"
-# export PYTHONPATH="/opt/Ice-3.4.2/python:test/UnitTests/python"
-
-# (windows)
-# SET PYTHONPATH="C:\Program Files (x86)\ZeroC_Ice\python";C:\Python33\python.exe CorpusServerTest.py
-
 import sys, traceback
+#sys.path.append('''c:\Program Files (x86)\Zeroc\Ice-3.4.2\python''')
+#sys.path.append('''C:\Users\tomb\Documents\nps\git\myCVAC\CVACvisualStudio\test\UnitTests\python''')
+#sys.path.append('''C:\Users\tomb\Documents\nps\git\myCVAC\CVACvisualStudio\test\UnitTests\python\cvac''')
+sys.path.append('''.''')
+import Ice
 if "C:\Program Files (x86)\ZeroC_Ice\python" not in sys.path:
     sys.path.append("C:\Program Files (x86)\ZeroC_Ice\python")
 import Ice

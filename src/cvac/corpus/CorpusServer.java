@@ -3,6 +3,7 @@
  *
  * For now, run from command line with:
  * java -cp "src/Corpus.jar:/opt/Ice-3.4.2/lib/Ice.jar" cvac.corpus.CorpusServer
+ * java -cp "src/Corpus.jar;c:\program files (x86)\zeroc\Ice-3.4.2\lib\Ice.jar" cvac.corpus.CorpusServer
  */
 
 package cvac.corpus;

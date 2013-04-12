@@ -1,0 +1,7 @@
+@echo off
+@setlocal
+set PATH=bin;${ICE_ROOT}/bin;${OpenCV_LIB_DIR_OPT}/../bin;${LIBARCHIVE_BIN_DIR};${LIBZIP_BIN_DIR};${OpenCV_DIR}/common/tbb/ia32/vc9;%PATH%
+chdir "${CVAC_ROOT_DIR}"
+start "CVAC Services" "${ICE_BOX_EXECUTABLE}" --Ice.Config=config.icebox
+echo CVAC services launched
+exit /b 0
