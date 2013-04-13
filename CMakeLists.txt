@@ -99,8 +99,11 @@ FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
-  FIND_PACKAGE( OpenCV 2.4.3 REQUIRED
-                            core imgproc highgui ml features2d nonfree objdetect calib3d )
+  FIND_PACKAGE( OpenCV 2.4 REQUIRED
+                            core imgproc highgui ml features2d nonfree objdetect calib3d
+             HINTS
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv
+)
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 IF (WIN32)
@@ -120,18 +123,21 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
               OUTPUT_VARIABLE CVAC_VERSION_GIT
               OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    # parse this kind of string v1.2-3-gkd3kdj4:
-    # CVAC_VERSION_MAJMIN is 1.2
-    # CVAC_VERSION_MAJOR is 1
-    # CVAC_VERSION_MINOR is 2
-    # CVAC_VERSION_PATCH is 3
-    # CVAC_VERSION is 1.2.3
-     STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
-     STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
-     STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
-     STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
-     SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
-     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in  ${CMAKE_SOURCE_DIR}/include/version.h)
+    if ( CVAC_VERSION_GIT )
+        # parse this kind of string v1.2-3-gkd3kdj4:
+	# CVAC_VERSION_MAJMIN is 1.2
+    	# CVAC_VERSION_MAJOR is 1
+    	# CVAC_VERSION_MINOR is 2
+    	# CVAC_VERSION_PATCH is 3
+    	# CVAC_VERSION is 1.2.3
+     	STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
+     	STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
+     	STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
+     	STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
+     	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+     	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
+                                   ${CMAKE_SOURCE_DIR}/include/version.h)
+    endif( CVAC_VERSION_GIT )
 endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
 ADD_SUBDIRECTORY(src/util)
@@ -153,6 +159,7 @@ ENDIF( BUILD_UNIT_TESTS )
 # CPack Package Properties
 #
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
+SET( BUILD_3RDPARTY_PACKAGE "TRUE" )
 IF ( BUILD_3RDPARTY_PACKAGE )
     set(CPACK_PACKAGE_NAME "CVAC_3rdparty")
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC 3rdparty install package")
@@ -192,6 +199,7 @@ IF (BUILD_3RDPARTY_PACKAGE)
 # 3rdparty dependencies for building CVAC
 INSTALL(DIRECTORY   ${ICE_ROOT}  # Deep copy
         DESTINATION 3rdparty
+        USE_SOURCE_PERMISSIONS
         COMPONENT IceExt
        )
 INSTALL(DIRECTORY   ${UNITTEST++_INCLUDE_DIR}
@@ -216,15 +224,15 @@ INSTALL(DIRECTORY ${LIBARCHIVE_LIBRARY_FOLDER}
         DESTINATION 3rdparty
         COMPONENT LibArchiveExt
        )
-INSTALL(DIRECTORY   ${OpenCV_ROOT_DIR}/include/opencv2
-      DESTINATION 3rdparty/opencv/include
+
+# OpenCV needs to be isolated in some staging area.  You need
+# to configure this CMake to pull OpenCV from there.
+# OpenCV_DIR points to the shared/OpenCV subdirectory.
+GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}/../.." REALPATH)
+INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}
+      DESTINATION 3rdparty
        COMPONENT OpenCVExt
-      )
-INSTALL(FILES ${OpenCV_LIBS_DBG} ${OpenCV_EXTRA_LIBS_DBG} 
-                       ${OpenCV_LIBS_OPT} ${OpenCV_EXTRA_LIBS_OPT}
-              DESTINATION 3rdparty/opencv/lib
-              COMPONENT OpenCVExt
-      )
+      ) 
 
 # Select Generator by OS
 IF(WIN32)

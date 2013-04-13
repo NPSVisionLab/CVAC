@@ -1,8 +1,8 @@
 #Locate the libArchive project
 
-FIND_PATH(LIBARCHIVE_INCLUDE archive.h
+FIND_PATH(LIBARCHIVE_INCLUDE archive.h archive_entry.h
           HINTS
-              ${CMAKE_SOURCE_DIR}/3rdparty/libarchive
+              ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/include
           PATHS
               /opt/local
               "C:/Program Files (x86)/libarchive-3.1.2/libarchive"

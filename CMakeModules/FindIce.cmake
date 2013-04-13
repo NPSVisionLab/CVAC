@@ -9,7 +9,7 @@ ENDIF(WIN32)
 FIND_PATH (ICE_ROOT slice
            HINTS
            $ENV{ICE_ROOT}
-           ${CVAC_ROOT_DIR}/3rdparty
+           ${CVAC_ROOT_DIR}/3rdparty/Ice-3.4.2
            PATHS          
            ${ICE_INSTALLDIR}
            /opt/Ice-3.4.2
