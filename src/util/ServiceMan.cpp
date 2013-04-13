@@ -38,12 +38,61 @@
 #include <util/ServiceMan.h>
 #include <util/Timing.h>
 #include <util/FileUtils.h>
+#include <Services.h>
+#include <Ice/Ice.h>
+#include <IceBox/IceBox.h>
+
+class cvac::ServiceManagerIceService : public ::IceBox::Service
+{
+public:
+    ServiceManagerIceService(cvac::ServiceManager *man, cvac::CVAlgorithmService* serv)
+    {
+        mManager = man;
+        mAdapter = NULL;
+        mService = serv;
+    }
+    /**
+     * The start function called by IceBox to start this service.
+     */
+    virtual void start(const ::std::string& name,
+                  const ::Ice::CommunicatorPtr& communicator,
+                  const ::Ice::StringSeq&)
+    {
+        localAndClientMsg(VLogger::INFO, NULL, "%s: starting\n", mManager->getServiceName().c_str());
+	    mManager->setIceName(name);
+	    mManager->clearStop();
+	    mAdapter = communicator->createObjectAdapter(name);
+	    mAdapter->add(mService, communicator->stringToIdentity(mManager->getServiceName()));
+	    mAdapter->activate();
+	    localAndClientMsg(VLogger::INFO, NULL, "Service started: %s\n", 
+                    mManager->getServiceName().c_str());
+    }
+    /**
+     * The stop function called by IceBox to stop this service.
+     */
+    virtual void stop()
+    {
+        localAndClientMsg(VLogger::INFO, NULL, "Stopping Service: %s\n", 
+                     mManager->getServiceName().c_str());
+        mAdapter->deactivate();
+        mManager->waitForStopService();
+        localAndClientMsg(VLogger::INFO, NULL, "Service stopped: %s\n",
+                     mManager->getServiceName().c_str());
+    }
+    
+    ::Ice::ObjectAdapterPtr  getAdapter() { return mAdapter; }
+
+private:
+    ::Ice::ObjectAdapterPtr         mAdapter;
+    cvac::CVAlgorithmService*       mService;
+    cvac::ServiceManager*           mManager;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 cvac::ServiceManager::ServiceManager()
 {
-    mService = NULL;
-    mAdapter = NULL;
+ 
+    mIceService = NULL;
     mStopState = None;
 }
 
@@ -51,40 +100,28 @@ cvac::ServiceManager::ServiceManager()
 void cvac::ServiceManager::setService(cvac::CVAlgorithmService *serv,
                       std::string serviceName)
 {
-    mService = serv;
     mServiceName = serviceName;
+    mIceService = new ServiceManagerIceService(this, serv);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::start(const ::std::string& name,const 
-                  ::Ice::CommunicatorPtr& communicator,const 
-                  ::Ice::StringSeq&)
-{
-    localAndClientMsg(VLogger::INFO, NULL, "%s: starting\n", mServiceName.c_str());
-	mIceName = name;
-	clearStop();
-	mAdapter = communicator->createObjectAdapter(name);
-	mAdapter->add(mService, communicator->stringToIdentity(mServiceName));
-	mAdapter->activate();
-	localAndClientMsg(VLogger::INFO, NULL, "Service started: %s\n", 
-                mServiceName.c_str());
-}
+//void cvac::ServiceManager::start(const ::std::string& name,const 
+//                  ::Ice::CommunicatorPtr& communicator,const 
+//                  ::Ice::StringSeq&)
+//{
+    
+//}
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::stop()
-{
-    localAndClientMsg(VLogger::INFO, NULL, "Stopping Service: %s\n", 
-                     mServiceName.c_str());
-    mAdapter->deactivate();
-    waitForStopService();
-	localAndClientMsg(VLogger::INFO, NULL, "Service stopped: %s\n",
-                     mServiceName.c_str());
-}
+//void cvac::ServiceManager::stop()
+//{
+  
+//}
 
 ///////////////////////////////////////////////////////////////////////////////
 std::string cvac::ServiceManager::getDataDir()
 {
-	Ice::PropertiesPtr props = (mAdapter->getCommunicator()->getProperties());
+	Ice::PropertiesPtr props = (mIceService->getAdapter()->getCommunicator()->getProperties());
 	vLogger.setLocalVerbosityLevel(props->getProperty("CVAC.ServicesVerbosity"));
 
 	// Load the CVAC property: 'CVAC.DataDir'.  Used for the xml filename path, and to provide a prefix to Runset paths
@@ -100,7 +137,10 @@ std::string cvac::ServiceManager::getDataDir()
 ///////////////////////////////////////////////////////////////////////////////
 void cvac::ServiceManager::stopService()
 {
-    mStopState = Stopping;
+    if (mStopState == Running)
+        mStopState = Stopping;
+    else
+        mStopState = Stopped;
 }
 
 
@@ -136,6 +176,11 @@ void cvac::ServiceManager::stopCompleted()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+void cvac::ServiceManager::setStoppable()
+{
+    mStopState = Running;
+}
+///////////////////////////////////////////////////////////////////////////////
 bool cvac::ServiceManager::isStopCompleted()
 {
     if (mStopState != Stopping)
@@ -155,4 +200,10 @@ std::string cvac::ServiceManager::getServiceName()
 std::string cvac::ServiceManager::getIceName()
 {
     return mIceName;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void cvac::ServiceManager::setIceName(std::string name)
+{
+    mIceName = name;
 }

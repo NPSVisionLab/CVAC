@@ -39,9 +39,11 @@
 #define __SERVICEMAN_H__
 
 #include <string>
-#include <Ice/Ice.h>
-#include <IceBox/IceBox.h>
-#include <Services.h>
+//#include <Ice/Ice.h>
+//#include <IceBox/IceBox.h>
+//#include <Services.h>
+
+
 
 /**
  * Functions to manage a CVAC service.  Programs that take a long time to
@@ -52,13 +54,16 @@
  */
 namespace cvac
 {
+    class ServiceManagerIceService; 
+    class CVAlgorithmService;
     /**
      * Class to manage the Ice Service functions
      */
-    class ServiceManager : public ::IceBox::Service
+    //class ServiceManager : public ::IceBox::Service
+    class ServiceManager
     {
     public:
-        typedef enum StopStateType {None, Stopping, Stopped};
+        typedef enum StopStateType {None, Running, Stopping, Stopped};
         /**
          * Constructor for creating a cvac Detector service.
          * Parms: The Detector instance to be served by this service.
@@ -69,23 +74,19 @@ namespace cvac
          * Set The Service that is to be served by this service.
          * NOTE: A ServiceManager can manage either a detector or
          * detectorTrainer but not both!
-         * Parms: The Detector instance to be served by this service.
+         * Parms: The Algorithm instance to be served by this service and its name.
          */
         void setService(cvac::CVAlgorithmService *service, std::string serviceName);
 
-        /**
-         * The start function called by IceBox to start this service.
-         */
-	    virtual void start(const ::std::string& name,
-                      const ::Ice::CommunicatorPtr& communicator,
-                      const ::Ice::StringSeq&);
-        /**
-         * The stop function called by IceBox to stop this service.
-         */
-	    virtual void stop();
+       
 
         /** 
          * Returns true if a stop has been requested for this service.
+         * The user needs to call this when running lengthly operations and
+         * stop the operation if it returns true.  If the user supports these functions 
+         * then he needs to call the setRunning call before the lengthly operation so the
+         * ServiceManager will wait for the stop to be completed.  After the lengthly
+         * operation the user should call clearStop.
          */
         bool stopRequested();
     
@@ -109,6 +110,11 @@ namespace cvac
          *  Requests that a given service be stopped.  
          */
         void stopService();
+
+        /** 
+         *  Tell ServiceManager that we are running and will listen for a stop request.  
+         */
+        void setStoppable();
     
         /** 
          *  Requests that the service be stopped.  And waits
@@ -126,17 +132,28 @@ namespace cvac
          */
         std::string getIceName();
 
+        /**
+         * Get the icebox name of this service
+         */
+        void setIceName(std::string name);
+
         /*
          * Get the config.service defined data directory
          */
         std::string getDataDir();
 
+        /*
+         * Return the ice service
+         */
+        void*         getIceService() { return mIceService; }
+
     private:
-        ::Ice::ObjectAdapterPtr         mAdapter;
-        cvac::CVAlgorithmService*       mService;
+        //::Ice::ObjectAdapterPtr         mAdapter;
+        //cvac::CVAlgorithmService*       mService;
         std::string                     mServiceName;
         std::string                     mIceName;
         int                             mStopState;
+        ServiceManagerIceService*       mIceService;
     };
 }
 

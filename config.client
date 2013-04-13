@@ -1,0 +1,70 @@
+## C#-Client Config:  Active Detector and Trainer instances read at initialization.
+## Names should be unique in the list, and reference capability and type
+## of each detector.
+###################################################################################
+
+#Ice.Default.EncodingVersion=1.0
+
+## Disable ACM on the client for bi-directional behavior
+Ice.ACM.Client=0
+
+## CVAC Services Config:
+CVAC.DataDir = data
+
+bowIceTrain.Proxy=bowTrain:tcp -p 10003
+
+# CVPerf Detector CvFaces
+#CvFaces.Proxy = CVAC_OpenCV_Detector:tcp -p 10002
+#CvFaces.DetectorFilename = OpencvFaces.zip
+
+# BOW Detector flags
+BagOfWordsUSKOCA.Proxy=bowTest:tcp -p 10004    				 
+BagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
+
+
+#Trainers
+BOWTrainer.Proxy = bowTrain:tcp -p 10003
+
+DetectorCallback.Client.Endpoints=default
+TrainerCallback.Client.Endpoints=default
+
+## Ice Config:
+# Warn about connection exceptions
+#
+Ice.Warn.Connections=1
+Ice.Warn.Dispatch=2
+
+#
+# Network Tracing
+#
+# 0 = no network tracing
+# 1 = trace connection establishment and closure
+# 2 = like 1, but more detailed
+# 3 = like 2, but also trace data transfer
+#
+#Ice.Trace.Network=1
+
+#
+# Protocol Tracing
+#
+# 0 = no protocol tracing
+# 1 = trace protocol messages
+#
+#Ice.Trace.Protocol=1
+
+#
+# Security Tracing
+#
+# 0 = no security tracing
+# 1 = trace messages
+#
+#IceSSL.Trace.Security=1
+
+#
+# SSL Configuration
+#
+#Ice.Plugin.IceSSL=IceSSL:createIceSSL
+#IceSSL.DefaultDir=../../../certs
+#IceSSL.CertAuthFile=cacert.pem
+#IceSSL.CertFile=c_rsa1024_pub.pem
+#IceSSL.KeyFile=c_rsa1024_priv.pem

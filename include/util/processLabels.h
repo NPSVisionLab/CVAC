@@ -68,9 +68,15 @@ namespace cvac
    * Process a LabelableList and fill the result data with the information.
    * If the LabelableList has no data but the sfunc is not null
    * then there will be a single rectangle that is the size of the image.
-   * This returns the number of added rectangles in the result vector. 
+   * @param artifacts - the image list containing images and ploygons.
+   * @param sfunc - The function to call to get the size of the image when LabelableList has no size data.
+   *                This can be null.
+   * @param result - vector of rectangles returned by the function.
+   * @param square - If the function should return rectangles that are square.  Default is false.
+   * @return the number of added rectangles in the result vector. 
    */
-   int processLabelArtifactsToRects(cvac::LabelableList* artifacts, GetImageSizeFunction sfunc, std::vector<RectangleLabels> *result);
+   int processLabelArtifactsToRects(cvac::LabelableList* artifacts, GetImageSizeFunction sfunc, 
+                                    std::vector<RectangleLabels> *result, bool square = false);
     
    /**
     * Cleanup the memory allocated inside the RectangleLabels but not the RectangleLabels itself

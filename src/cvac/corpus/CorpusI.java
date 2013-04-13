@@ -3,6 +3,7 @@ package cvac.corpus;
 import cvac.FilePath;
 import cvac.Labelable;
 import cvac.Substrate;
+import cvac.corpus.LabelableListI;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;

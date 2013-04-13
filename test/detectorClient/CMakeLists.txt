@@ -36,28 +36,31 @@ TARGET_LINK_LIBRARIES(${APP_NAME}
 SET_TARGET_PROPERTIES(${APP_NAME} PROPERTIES DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}")
 
 
+IF (WIN32)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIceTest.bat.in  ${CMAKE_SOURCE_DIR}/runIceTest.bat)
+    SET (SCRIPT_EXT ".bat")
+ELSE (WIN32)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIceTest.sh.in  ${CMAKE_SOURCE_DIR}/runIceTest.sh)
+    SET (SCRIPT_EXT ".sh")
+ENDIF (WIN32)
+
 # Ice Box Test Client CTest Suite:
 # To get debug output go to visualStudio directory and run ctest --verbose
 # All IceBoxClient tests return 0 on success ('EXIT_SUCCESS'), and 1 on failure ('EXIT_FAILURE')
 # CTest treats any non-zero return as FAILURE
 #MESSAGE("/CVAC_GENERATED_OUTPUT_DIR/Testing/Temporary/LastTest.log")    #Display path to test-log file
 
-
-#ADD_TEST(Ice_Box_Test_Client_cvPerformanceDetector
-#         ${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} CvFaces testImg ${CVAC_ROOT_DIR}/config.client
-#        )
-
-ADD_TEST(Ice_Box_Test_Client_BowDetector
-         ${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} BagOfWordsUSKOJI testImg ${CVAC_ROOT_DIR}/config.client
+IF (BUILD_WITH_BOW) 
+ADD_TEST(detectorClient_BowDetector
+         ${CVAC_ROOT_DIR}/runIceTest${SCRIPT_EXT} BagOfWordsUSKOCA
          )
-
+ADD_TEST(detectorClient_BowDetector_Verify
+         ${CVAC_ROOT_DIR}/runIceTest${SCRIPT_EXT} CTest BagOfWordsUSKOCA
+         )
+ENDIF (BUILD_WITH_BOW)
 
 ## Positive-Image Live-Verification for Detectors ###
 #ADD_TEST(Ice_Box_Test_Client_cvPerformanceDetector_Verify
 #         ${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} CvFaces CTest ${CVAC_ROOT_DIR}/config.client verifyresults
 #         )
          
-#ADD_TEST(Ice_Box_Test_Client_BowDetector_Verify
-#        ${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} BagOfWordsUSKOJI CTest ${CVAC_ROOT_DIR}/config.client verifyresults
-#         )
-

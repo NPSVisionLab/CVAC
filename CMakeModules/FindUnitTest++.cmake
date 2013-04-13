@@ -7,7 +7,7 @@ FIND_PATH(UNITTEST++_INCLUDE_DIR UnitTest++.h
            ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/src
           PATHS
            /opt/local
-          PATH_SUFFIXES unittest++ UnitTest++
+          PATH_SUFFIXES UnitTest++
           )
 
 FIND_LIBRARY(UNITTEST++_LIBRARY

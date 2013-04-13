@@ -60,7 +60,7 @@ extern "C"
         ServiceManager *sMan = new ServiceManager();
         BowICETrainI *bow = new BowICETrainI(sMan);
         sMan->setService(bow, bow->getName());
-        return sMan;
+        return (::IceBox::Service *) sMan->getIceService();
 
 	}
 }
@@ -141,7 +141,7 @@ string BowICETrainI::processSingleImg(DetectorTrainerPtr trainer,string _filepat
 	BowICETrainI* _bowCV = static_cast<BowICETrainI*>(trainer.get());
 
 	std::string _resMsg;
-	if(_ploc == NULL)
+	if(_ploc.get() == NULL)
 		_bowCV->pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()));
 	else
 	{
@@ -222,9 +222,11 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
 	}
 
 	localAndClientMsg(VLogger::INFO, _callback, "Training procedure is started.. \n");	//lekomin_suspended
-
-	pBowCV->train_run(_filepath, logfile_BowTrainResult);	
-
+    // Tell ServiceManager that we will listen for stop
+    mServiceMan->setStoppable();
+	pBowCV->train_run(_filepath, logfile_BowTrainResult, mServiceMan);	
+    // Tell ServiceManager that we are done listening for stop
+    mServiceMan->clearStop();
 	DetectorData detectorData;
 	// Method 1	
 	detectorData.type = ::cvac::FILE;
