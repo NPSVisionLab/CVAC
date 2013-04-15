@@ -216,14 +216,22 @@ INSTALL(FILES ${LIBARCHIVE_INCLUDE}/archive.h
         DESTINATION 3rdparty/libarchive/include
         COMPONENT LibArchiveExt
        )
-INSTALL(FILES ${LIBARCHIVE_LIBRARY}
+ADD_LIBRARY( libarchive SHARED IMPORTED src/util/ServiceMan.cpp)
+SET_PROPERTY( TARGET libarchive PROPERTY IMPORTED_LOCATION ${LIBARCHIVE_LIBRARY} )
+#INSTALL(FILES ${LIBARCHIVE_LIBRARY}
+ #       DESTINATION 3rdparty/libarchive/lib
+ #       COMPONENT LibArchiveExt
+ #      )
+#SET_PROPERTY( TARGET archive LIBARCHIVE_LIBRARY )
+INSTALL(TARGETS libarchive
         DESTINATION 3rdparty/libarchive/lib
         COMPONENT LibArchiveExt
-       )
-INSTALL(DIRECTORY ${LIBARCHIVE_LIBRARY_FOLDER}
-        DESTINATION 3rdparty
-        COMPONENT LibArchiveExt
-       )
+       ) 
+#INSTALL(DIRECTORY ${LIBARCHIVE_LIBRARY_FOLDER}
+#        DESTINATION 3rdparty
+#        COMPONENT LibArchiveExt
+#        PATTERN libarchive*
+#       )
 
 # OpenCV needs to be isolated in some staging area.  You need
 # to configure this CMake to pull OpenCV from there.
