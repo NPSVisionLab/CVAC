@@ -8,6 +8,8 @@ OPTION(BUILD_WITH_BOW "Enables the projects that depend on the bow library" OFF)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Enables the projects that depend on the OpencvPerformance library" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
 OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" ON)
+OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
+OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
 
 # where the Find*.cmake files are
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules
@@ -156,135 +158,11 @@ IF( BUILD_UNIT_TESTS)
 ENDIF( BUILD_UNIT_TESTS )
 
 #
-# CPack Package Properties
+# Packaging for binary or 3rdparty distribution
 #
-set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
-SET( BUILD_3RDPARTY_PACKAGE "TRUE" )
 IF ( BUILD_3RDPARTY_PACKAGE )
-    set(CPACK_PACKAGE_NAME "CVAC_3rdparty")
-    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC 3rdparty install package")
-ELSE( BUILD_3RDPARTY_PACKAGE )
-    set(CPACK_PACKAGE_NAME "CVAC_binary")
-    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC binary install package")
+    ADD_SUBDIRECTORY( etc/pack_3rdparty )
 ENDIF( BUILD_3RDPARTY_PACKAGE )
-
-set(CPACK_PACKAGE_VENDOR "NPS Vision Lab") 
-set(CPACK_PACKAGE_VERSION_MAJOR ${CVAC_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${CVAC_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${CVAC_VERSION_PATCH})
-set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-set( CVAC_VERSION_DIR CVAC-${CVAC_VERSION} )
-
-# Binary distribution of CVAC: only built files and binary dependencies
-#INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/src/Corpus.jar
-#		DESTINATION Devel
-#		COMPONENT ExportJars
-#		)
-#INSTALL(FILES lib/utilsd.lib
-#		DESTINATION Devel
-#		COMPONENT ExportLibs
-#		)
-
-# SampleData
-#INSTALL(DIRECTORY data/testImg
-#		 DESTINATION SampleData/data
-#		 COMPONENT TestImagery
-#		)
-#INSTALL(DIRECTORY data/trainImg
-#		 DESTINATION SampleData/data
-#		 COMPONENT TrainImagery
-#		)
-    
-IF (BUILD_3RDPARTY_PACKAGE)
-# 3rdparty dependencies for building CVAC
-INSTALL(DIRECTORY   ${ICE_ROOT}  # Deep copy
-        DESTINATION 3rdparty
-        USE_SOURCE_PERMISSIONS
-        COMPONENT IceExt
-       )
-INSTALL(DIRECTORY   ${UNITTEST++_INCLUDE_DIR}
-        DESTINATION 3rdparty/UnitTest++/include
-        COMPONENT UnitTestPPExt
-       )
-INSTALL(FILES    ${UNITTEST++_LIBRARY}
-		 ${UNITTEST++_LIBRARY_DEBUG}
-        DESTINATION 3rdparty/UnitTest++/lib
-        COMPONENT UnitTestPPExt
-       )
-INSTALL(FILES ${LIBARCHIVE_INCLUDE}/archive.h
-              ${LIBARCHIVE_INCLUDE}/archive_entry.h
-        DESTINATION 3rdparty/libarchive/include
-        COMPONENT LibArchiveExt
-       )
-
-# libarchive is a symlink, but we want the file:
-# CONFIGURE_FILE( ${LIBARCHIVE_LIBRARY} ${CMAKE_CURRENT_BINARY_DIR}/tmp/ COPYONLY)
-GET_FILENAME_COMPONENT( LIBARCHIVE_LIBRARY_REALPATH ${LIBARCHIVE_LIBRARY} REALPATH )
-INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
-       DESTINATION 3rdparty/libarchive/lib
-       COMPONENT LibArchiveExt
-      )
-
-# OpenCV needs to be isolated in some staging area.  You need
-# to configure this CMake to pull OpenCV from there.
-# OpenCV_DIR points to the shared/OpenCV subdirectory.
-GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}/../.." REALPATH)
-INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}
-      DESTINATION 3rdparty
-       COMPONENT OpenCVExt
-      ) 
-
-# Select Generator by OS
-IF(WIN32)
-  SET(CPACK_GENERATOR "ZIP")
-ELSE()
-  SET(CPACK_GENERATOR "TGZ")
-ENDIF(WIN32)
-
-include(CPack)
-
-# Declare Third Party Group
-cpack_add_component_group (
-  ThirdPartyGrp
-  DISPLAY_NAME "3rdParty"
-  DESCRIPTION "Third party dependency.  (UnitTest++, etc)"
-)
-#Assign GROUP to COMPONENT
-cpack_add_component (
-  UnitTestPPExt
-  DISPLAY_NAME "UnitTest++"
-  DESCRIPTION "Unit test for C++ framework."
-  GROUP ThirdPartyGrp
-)
-cpack_add_component (
-  LibArchiveExt
-  DISPLAY_NAME "LibArchive"
-  DESCRIPTION "LibArchive library for multi-format archival/unarchival."
-  GROUP ThirdPartyGrp
-)
-cpack_add_component (
-  OpenCVExt
-  DISPLAY_NAME "OpenCV"
-  DESCRIPTION "Open Computer Vision Library."
-  GROUP ThirdPartyGrp
-)
-ELSE( BUILD_3RDPARTY_PACKAGE )
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include
-       DESTINATION ${CVAC_VERSION_DIR}
-       COMPONENT IncludeExt
-       PATTERN version.h.in EXCLUDE
-      )
-include(CPack)
-# Declare Binary Group
-cpack_add_component_group (
-  BinaryGrp
-  DISPLAY_NAME "binary"
-  DESCRIPTION "Binary CVAC components"
-)
- cpack_add_component (
-  IncludeExt
-  DISPLAY_NAME "include files"
-  DESCRIPTION "Required to use the CVAC API."
-  GROUP BinaryGrp
-)
-ENDIF( BUILD_3RDPARTY_PACKAGE )
+IF ( BUILD_BINARY_PACKAGE )
+    ADD_SUBDIRECTORY( etc/pack_binary )
+ENDIF ( BUILD_BINARY_PACKAGE )

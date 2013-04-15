@@ -4,7 +4,7 @@
   
 FIND_PATH(UNITTEST++_INCLUDE_DIR UnitTest++.h
           HINTS
-           ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/src
+           ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/include
           PATHS
            /opt/local
           PATH_SUFFIXES UnitTest++
