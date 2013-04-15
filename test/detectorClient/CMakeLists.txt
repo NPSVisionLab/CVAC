@@ -41,12 +41,11 @@ INSTALL( TARGETS ${APP_NAME}
 
 
 IF (WIN32)
-    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIceTest.bat.in  ${CMAKE_SOURCE_DIR}/runIceTest.bat)
-    SET (SCRIPT_EXT ".bat")
+    SET (SCRIPT_EXT "bat")
 ELSE (WIN32)
-    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIceTest.sh.in  ${CMAKE_SOURCE_DIR}/runIceTest.sh)
-    SET (SCRIPT_EXT ".sh")
+    SET (SCRIPT_EXT "sh")
 ENDIF (WIN32)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/etc/runIceTest.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/runIceTest.${SCRIPT_EXT})
 
 # Ice Box Test Client CTest Suite:
 # To get debug output go to visualStudio directory and run ctest --verbose
@@ -56,10 +55,10 @@ ENDIF (WIN32)
 
 IF (BUILD_WITH_BOW) 
 ADD_TEST(detectorClient_BowDetector
-         ${CVAC_ROOT_DIR}/runIceTest${SCRIPT_EXT} BagOfWordsUSKOCA
+         ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT} BagOfWordsUSKOCA
          )
 ADD_TEST(detectorClient_BowDetector_Verify
-         ${CVAC_ROOT_DIR}/runIceTest${SCRIPT_EXT} CTest BagOfWordsUSKOCA
+         ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT} CTest BagOfWordsUSKOCA
          )
 ENDIF (BUILD_WITH_BOW)
 

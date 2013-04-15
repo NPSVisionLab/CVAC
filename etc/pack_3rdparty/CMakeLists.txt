@@ -52,6 +52,12 @@ INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}
        COMPONENT OpenCVExt
       ) 
 
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include
+       DESTINATION ${CVAC_VERSION_DIR}
+       COMPONENT IncludeExt
+       PATTERN version.h.in EXCLUDE
+      )
+      
 include(CPack)
 
 # Declare Third Party Group

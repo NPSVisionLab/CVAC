@@ -108,14 +108,6 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 )
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
-IF (WIN32)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIcebox.bat.in  ${CMAKE_SOURCE_DIR}/runIcebox.bat)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/stopIcebox.bat.in  ${CMAKE_SOURCE_DIR}/stopIcebox.bat)
-ELSE (WIN32)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIcebox.sh.in  ${CMAKE_SOURCE_DIR}/runIcebox.sh)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/stopIcebox.sh.in  ${CMAKE_SOURCE_DIR}/stopIcebox.sh) 
-ENDIF (WIN32)
-
 # First see if there is a version file (included in release tarballs),
 # then try to create the include/version.h file that specifies the CVAC version,
 # as obtained from the version-control tag (major.minor) and the
@@ -142,6 +134,7 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
     endif( CVAC_VERSION_GIT )
 endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
+ADD_SUBDIRECTORY( etc )
 ADD_SUBDIRECTORY(src/util)
 IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
   ADD_SUBDIRECTORY(algorithms)

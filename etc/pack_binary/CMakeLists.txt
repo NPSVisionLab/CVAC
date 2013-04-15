@@ -14,15 +14,12 @@ set(CPACK_PACKAGE_VERSION_PATCH ${CVAC_VERSION_PATCH})
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set( CVAC_VERSION_DIR CVAC-${CVAC_VERSION} )
 
-# Binary distribution of CVAC: only built files and binary dependencies
-#INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/src/Corpus.jar
-#		DESTINATION Devel
-#		COMPONENT ExportJars
-#		)
-#INSTALL(FILES lib/utilsd.lib
-#		DESTINATION Devel
-#		COMPONENT ExportLibs
-#		)
+# change the install prefix to CVAC-version, since CPack will install into a zip-style archive
+set(CPACK_SET_DESTDIR true)
+set(CPACK_INSTALL_PREFIX ${CVAC_VERSION_DIR} )
+
+# Binary distribution of CVAC: only built files, binary dependencies,
+# and some sample data
 
 # SampleData
 #INSTALL(DIRECTORY data/testImg
@@ -43,20 +40,14 @@ ENDIF(WIN32)
 
 include(CPack)
 
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include
-       DESTINATION ${CVAC_VERSION_DIR}
-       COMPONENT IncludeExt
-       PATTERN version.h.in EXCLUDE
-      )
-include(CPack)
-
 # Declare Binary Group
 cpack_add_component_group (
   BinaryGrp
   DISPLAY_NAME "binary"
   DESCRIPTION "Binary CVAC components"
 )
- cpack_add_component (
+
+cpack_add_component (
   IncludeExt
   DISPLAY_NAME "include files"
   DESCRIPTION "Required to use the CVAC API."

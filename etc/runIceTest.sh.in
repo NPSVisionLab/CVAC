@@ -14,7 +14,7 @@ if [ "$1" == "CTest" ]; then
     VERIFY="verifyresults"
     shift;
 fi
-${CMAKE_SOURCE_DIR}/runIcebox.sh
+${CMAKE_SOURCE_DIR}/bin/runIcebox.sh
 sleep 1
 echo "runIcebox returned"
 while (( "$#" ));do
@@ -22,11 +22,11 @@ while (( "$#" ));do
     ${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} $1 $CTEST ${CVAC_ROOT_DIR}/config.client $VERIFY
     if [ "$?" == "1" ]; then
         echo "Detector $1 failed"
-	${CMAKE_SOURCE_DIR}/stopIcebox.sh
+	${CMAKE_SOURCE_DIR}/bin/stopIcebox.sh
         exit 1
     fi
     shift
 done
 echo "Stopping icebox"
-${CMAKE_SOURCE_DIR}/stopIcebox.sh
+${CMAKE_SOURCE_DIR}/bin/stopIcebox.sh
 exit 0
