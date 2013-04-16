@@ -105,7 +105,8 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
                             core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv
-)
+  )
+  MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 # First see if there is a version file (included in release tarballs),
