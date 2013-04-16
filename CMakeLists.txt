@@ -8,6 +8,7 @@ OPTION(BUILD_WITH_BOW "Enables the projects that depend on the bow library" OFF)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Enables the projects that depend on the OpencvPerformance library" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
 OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" ON)
+OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
 
@@ -71,6 +72,73 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 #
+# What version of CVAC?
+#
+# Try to create the include/version.h file that specifies the CVAC version,
+# as obtained from the version-control tag (major.minor) and the
+# number of commits since that tag (patch)
+if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+    EXECUTE_PROCESS( COMMAND git describe --long --match "v[0-9]*.[0-9]*"
+              OUTPUT_VARIABLE CVAC_VERSION_GIT
+              OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if ( CVAC_VERSION_GIT )
+        # parse this kind of string v1.2-3-gkd3kdj4:
+	# CVAC_VERSION_MAJMIN is 1.2
+    	# CVAC_VERSION_MAJOR is 1
+    	# CVAC_VERSION_MINOR is 2
+    	# CVAC_VERSION_PATCH is 3
+    	# CVAC_VERSION is 1.2.3
+     	STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
+     	STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
+     	STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
+     	STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
+     	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+     	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
+                                   ${CMAKE_SOURCE_DIR}/include/version.h)
+    endif( CVAC_VERSION_GIT )
+endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+
+#
+# offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
+#
+IF( DOWNLOAD_3RDPARTY_PACKAGE )
+    IF( ${CMAKE_SYSTEM_NAME} equals "Windows" )
+        SET( 3RDPARTY_FILENAME CVAC_3rdparty-${CVAC_VERSION_MAJMIN}-${CMAKE_SYSTEM_NAME}.zip )
+    ELSE( ${CMAKE_SYSTEM_NAME} equals "Windows" )
+        SET( 3RDPARTY_FILENAME CVAC_3rdparty-${CVAC_VERSION_MAJMIN}-${CMAKE_SYSTEM_NAME}.tar.gz )
+    ENDIF( ${CMAKE_SYSTEM_NAME} equals "Windows" )
+    IF( NOT EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
+        SET( 3RDPARTY_SERVER http://www.movesinstitute.org/~kolsch/CVAC )
+        SET( 3RDPARTY_URL ${3RDPARTY_SERVER}/${3RDPARTY_FILENAME} )
+        FILE( DOWNLOAD ${3RDPARTY_URL} ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME}
+                INACTIVITY_TIMEOUT 30  # abort if n seconds of inactivity
+                STATUS status
+                SHOW_PROGRESS
+               )
+        list(GET status 0 status_code) 
+        list(GET status 1 status_string) 
+        IF( NOT status_code EQUAL 0)
+            FILE( REMOVE ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )  # this doesn't seem to work.
+            MESSAGE( ERROR "Could not download 3rd-party software package: ${status_string}" )
+      ENDIF( NOT status_code EQUAL 0) 
+    ENDIF( NOT EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
+    # add_custom_command(
+    #      OUTPUT ${3RDPARTY_DIRECTORY_UNPACKED}
+    #      COMMAND ${CMAKE_COMMAND} -E tar xzf ${3RDPARTY_FILENAME}
+    #      DEPENDS ${3RDPARTY_FILENAME}
+    #      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    #      COMMENT "Unpacking 3rd-party software package to ${CMAKE_SOURCE_DIR}/3rdparty"
+    #      VERBATIM
+    #  )
+    MESSAGE( STATUS "Unpacking 3rd-party software package to ${CMAKE_SOURCE_DIR}/3rdparty" )
+    EXECUTE_PROCESS( 
+         COMMAND ${CMAKE_COMMAND} -E tar xzf ${3RDPARTY_FILENAME}
+         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+     )
+ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
+
+#
 # add a Makefile target "doc" to generate API documentation with Doxygen
 #
 IF( BUILD_DOCUMENTATION )
@@ -108,32 +176,6 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   )
   MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
-
-# First see if there is a version file (included in release tarballs),
-# then try to create the include/version.h file that specifies the CVAC version,
-# as obtained from the version-control tag (major.minor) and the
-# number of commits since that tag (patch)
-if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
-    EXECUTE_PROCESS( COMMAND git describe --long
-              OUTPUT_VARIABLE CVAC_VERSION_GIT
-              OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    if ( CVAC_VERSION_GIT )
-        # parse this kind of string v1.2-3-gkd3kdj4:
-	# CVAC_VERSION_MAJMIN is 1.2
-    	# CVAC_VERSION_MAJOR is 1
-    	# CVAC_VERSION_MINOR is 2
-    	# CVAC_VERSION_PATCH is 3
-    	# CVAC_VERSION is 1.2.3
-     	STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
-     	STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
-     	STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
-     	STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
-     	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
-     	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
-                                   ${CMAKE_SOURCE_DIR}/include/version.h)
-    endif( CVAC_VERSION_GIT )
-endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
 ADD_SUBDIRECTORY( etc )
 ADD_SUBDIRECTORY(src/util)
