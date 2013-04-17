@@ -81,8 +81,11 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
     EXECUTE_PROCESS( COMMAND git describe --long --match "v[0-9]*.[0-9]*"
               OUTPUT_VARIABLE CVAC_VERSION_GIT
               OUTPUT_STRIP_TRAILING_WHITESPACE
+              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
-    if ( CVAC_VERSION_GIT )
+    MESSAGE( STATUS "got this version: ${CVAC_VERSION_GIT}" )
+    IF ( CVAC_VERSION_GIT )
+    MESSAGE( STATUS "will parse" )
         # parse this kind of string v1.2-3-gkd3kdj4:
 	# CVAC_VERSION_MAJMIN is 1.2
     	# CVAC_VERSION_MAJOR is 1
@@ -96,7 +99,7 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
      	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
      	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
                                    ${CMAKE_SOURCE_DIR}/include/version.h)
-    endif( CVAC_VERSION_GIT )
+    ENDIF( CVAC_VERSION_GIT )
 endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
 #
