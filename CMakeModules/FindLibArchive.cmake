@@ -10,11 +10,12 @@ FIND_PATH(LIBARCHIVE_INCLUDE archive.h archive_entry.h
           DOC "Include directory for libarchive"
          )
 
-# search for the libarchive library, first in the CVAC_extras folder,
+# search for the libarchive library, first in the CVAC/3rdparty folder,
 # then in the location related to the include file, then in default locations
 FIND_LIBRARY(LIBARCHIVE_LIBRARY NAMES archive
              HINTS
-                ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/lib
+#                ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/lib
+                ${LIBARCHIVE_INCLUDE}/../lib
 
              PATHS 
                 "C:/Program Files (x86)/libarchive/libarchive/Release"
@@ -26,7 +27,6 @@ IF (WIN32)
 # We need path to the archive and zlib dlls
 FIND_PATH(LIBARCHIVE_BIN_DIR NAMES archive.dll
              HINTS
-                ../CVAC_extras/bin
                 ${LIBARCHIVE_INCLUDE}/../bin
              PATHS 
                 "C:/Program Files (x86)/libarchive/bin"
@@ -34,7 +34,6 @@ FIND_PATH(LIBARCHIVE_BIN_DIR NAMES archive.dll
             )
 FIND_PATH(LIBZIP_BIN_DIR NAMES zlibd.dll
              HINTS
-                ../CVAC_extras/bin
                 ${LIBARCHIVE_INCLUDE}/../zlib/bin
              PATHS 
                 "C:/Program Files (x86)/zlib/bin"

@@ -83,9 +83,7 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
               OUTPUT_STRIP_TRAILING_WHITESPACE
               WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
-    MESSAGE( STATUS "got this version: ${CVAC_VERSION_GIT}" )
     IF ( CVAC_VERSION_GIT )
-    MESSAGE( STATUS "will parse" )
         # parse this kind of string v1.2-3-gkd3kdj4:
 	# CVAC_VERSION_MAJMIN is 1.2
     	# CVAC_VERSION_MAJOR is 1
@@ -97,6 +95,7 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
      	STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
      	STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
      	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+        MESSAGE( STATUS "successfully parsed version: CVAC-${CVAC_VERSION}" )
      	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
                                    ${CMAKE_SOURCE_DIR}/include/version.h)
     ENDIF( CVAC_VERSION_GIT )
