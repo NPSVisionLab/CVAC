@@ -290,7 +290,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 
 	Mat _descriptorRepository;		
 	Rect _rect;
-	for(int k=0;k<vFilenameTrain.size();k++)
+	for(unsigned int k=0;k<vFilenameTrain.size();k++)
 	{
 		_fullFilePathImg = vFilenameTrain[k];
 
@@ -356,7 +356,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 	int _classID;
 	
 
-	for(int k=0;k<vFilenameTrain.size();k++)
+	for(unsigned int k=0;k<vFilenameTrain.size();k++)
 	{
 		_fullFilePathImg = vFilenameTrain[k];
 		_classID = vClassIDTrain[k];
