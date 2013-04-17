@@ -123,15 +123,10 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
             MESSAGE( ERROR "Could not download 3rd-party software package: ${status_string}" )
       ENDIF( NOT status_code EQUAL 0) 
     ENDIF( NOT EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
-    # add_custom_command(
-    #      OUTPUT ${3RDPARTY_DIRECTORY_UNPACKED}
-    #      COMMAND ${CMAKE_COMMAND} -E tar xzf ${3RDPARTY_FILENAME}
-    #      DEPENDS ${3RDPARTY_FILENAME}
-    #      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    #      COMMENT "Unpacking 3rd-party software package to ${CMAKE_SOURCE_DIR}/3rdparty"
-    #      VERBATIM
-    #  )
-    MESSAGE( STATUS "Unpacking 3rd-party software package to ${CMAKE_SOURCE_DIR}/3rdparty" )
+
+    # untar or unzip the file;
+    # note: should use "jar xf" or 7zip on Windows
+    MESSAGE( STATUS "Unpacking 3rd-party software package to ${CMAKE_SOURCE_DIR}/3rdparty" )    
     EXECUTE_PROCESS( 
          COMMAND ${CMAKE_COMMAND} -E tar xzf ${3RDPARTY_FILENAME}
          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
