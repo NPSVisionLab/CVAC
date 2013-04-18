@@ -81,8 +81,9 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
     EXECUTE_PROCESS( COMMAND git describe --long --match "v[0-9]*.[0-9]*"
               OUTPUT_VARIABLE CVAC_VERSION_GIT
               OUTPUT_STRIP_TRAILING_WHITESPACE
+              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
-    if ( CVAC_VERSION_GIT )
+    IF ( CVAC_VERSION_GIT )
         # parse this kind of string v1.2-3-gkd3kdj4:
 	# CVAC_VERSION_MAJMIN is 1.2
     	# CVAC_VERSION_MAJOR is 1
@@ -94,20 +95,21 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
      	STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
      	STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
      	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+        MESSAGE( STATUS "successfully parsed version: CVAC-${CVAC_VERSION}" )
      	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
                                    ${CMAKE_SOURCE_DIR}/include/version.h)
-    endif( CVAC_VERSION_GIT )
+    ENDIF( CVAC_VERSION_GIT )
 endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
 #
 # offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
 #
 IF( DOWNLOAD_3RDPARTY_PACKAGE )
-    IF( ${CMAKE_SYSTEM_NAME} equals "Windows" )
+    IF( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
         SET( 3RDPARTY_FILENAME CVAC_3rdparty-${CVAC_VERSION_MAJMIN}-${CMAKE_SYSTEM_NAME}.zip )
-    ELSE( ${CMAKE_SYSTEM_NAME} equals "Windows" )
+    ELSE( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
         SET( 3RDPARTY_FILENAME CVAC_3rdparty-${CVAC_VERSION_MAJMIN}-${CMAKE_SYSTEM_NAME}.tar.gz )
-    ENDIF( ${CMAKE_SYSTEM_NAME} equals "Windows" )
+    ENDIF( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
     IF( NOT EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
         SET( 3RDPARTY_SERVER http://www.movesinstitute.org/~kolsch/CVAC )
         SET( 3RDPARTY_URL ${3RDPARTY_SERVER}/${3RDPARTY_FILENAME} )
