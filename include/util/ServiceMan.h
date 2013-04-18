@@ -63,7 +63,7 @@ namespace cvac
     class ServiceManager
     {
     public:
-        typedef enum StopStateType {None, Running, Stopping, Stopped};
+        typedef enum StopStateType {None, Running, Stopping, Stopped} StopState;
         /**
          * Constructor for creating a cvac Detector service.
          * Parms: The Detector instance to be served by this service.
