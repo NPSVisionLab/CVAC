@@ -18,8 +18,7 @@ FIND_LIBRARY(LIBARCHIVE_LIBRARY NAMES archive
                 ${LIBARCHIVE_INCLUDE}/../lib
 
              PATHS 
-                "C:/Program Files (x86)/libarchive/libarchive/Release"
-                "C:/Program Files (x86)/libarchive/libarchive/Debug"
+                "C:/Program Files (x86)/libarchive/lib"
              DOC "Library directory for libarchive"
             )
 
