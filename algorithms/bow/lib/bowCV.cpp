@@ -445,7 +445,17 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass)
 	
 	bowExtractor->compute(_img, _keypoints, _descriptors);
 
-	_bestClass = classifierSVM.predict(_descriptors);
+	// In the manual from OpenCV, it is written as follows:
+	// "If true (it is for the second argument of this function)
+	// and the problem is 2-class classification then the method
+	// returns the decision function value that is signed distance to the margin,
+	// else the function returns a class label (classification)
+	// or estimated function value (regression)."
+	// Since we're using it as a multi-class classification tool,
+	// we can safely cast to int.
+	float predicted = classifierSVM.predict(_descriptors);
+	assert( fabs( predicted-((int)predicted) ) < 0.000001 );
+	_bestClass = (int) predicted;
 
 	if (-1 == _bestClass) // no class found
 		return false;
