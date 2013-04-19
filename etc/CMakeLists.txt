@@ -16,4 +16,5 @@ INSTALL( PROGRAMS
                      ${CMAKE_SOURCE_DIR}/bin/startIcebox.${SCRIPT_EXT}
                      ${CMAKE_SOURCE_DIR}/bin/stopIcebox.${SCRIPT_EXT}
                DESTINATION bin
+               COMPONENT Runtime
              )

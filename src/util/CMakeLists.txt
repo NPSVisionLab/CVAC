@@ -47,4 +47,4 @@ TARGET_LINK_LIBRARIES(utils
                      )
 INSTALL( TARGETS utils
                 DESTINATION lib
-               COMPONENT binaryUtil )
+               COMPONENT Runtime )

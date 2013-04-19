@@ -48,13 +48,13 @@ include(CPack)
 # Declare Binary Group
 cpack_add_component_group (
   BinaryGrp
-  DISPLAY_NAME "binary"
-  DESCRIPTION "Binary CVAC components"
+  DISPLAY_NAME "Binary"
+  DESCRIPTION "Binary CVAC runtime components"
 )
 
 cpack_add_component (
   IncludeExt
-  DISPLAY_NAME "include files"
-  DESCRIPTION "Required to use the CVAC API."
+  DISPLAY_NAME "CVAC header files"
+  DESCRIPTION "Required to use the CVAC API"
   GROUP BinaryGrp
 )

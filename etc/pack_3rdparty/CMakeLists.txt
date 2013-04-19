@@ -14,6 +14,8 @@ set(CPACK_PACKAGE_VERSION_PATCH ${CVAC_VERSION_PATCH})
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}")
 set( CVAC_VERSION_DIR CVAC-${CVAC_VERSION} )
 
+set( CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE.txt )
+
 # 3rdparty dependencies for building CVAC
 INSTALL(DIRECTORY   ${ICE_ROOT}  # Deep copy
         DESTINATION 3rdparty
@@ -46,7 +48,7 @@ INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
 # OpenCV needs to be isolated in some staging area.  You need
 # to configure this CMake to pull OpenCV from there.
 # OpenCV_DIR points to the shared/OpenCV subdirectory.
-GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}/../.." REALPATH)
+GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}" REALPATH)
 INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}
       DESTINATION 3rdparty
        COMPONENT OpenCVExt
@@ -63,25 +65,31 @@ include(CPack)
 # Declare Third Party Group
 cpack_add_component_group (
   ThirdPartyGrp
-  DISPLAY_NAME "3rdParty"
-  DESCRIPTION "Third party dependency.  (UnitTest++, etc)"
+  DISPLAY_NAME "3rd Party"
+  DESCRIPTION "Third-party dependencies including ICE and OpenCV"
 )
 #Assign GROUP to COMPONENT
 cpack_add_component (
+  IceExt
+  DISPLAY_NAME "ICE"
+  DESCRIPTION "Internet Communication Engine"
+  GROUP ThirdPartyGrp
+)
+cpack_add_component (
   UnitTestPPExt
   DISPLAY_NAME "UnitTest++"
-  DESCRIPTION "Unit test for C++ framework."
+  DESCRIPTION "Unit test for C++ framework"
   GROUP ThirdPartyGrp
 )
 cpack_add_component (
   LibArchiveExt
   DISPLAY_NAME "LibArchive"
-  DESCRIPTION "LibArchive library for multi-format archival/unarchival."
+  DESCRIPTION "LibArchive library for multi-format archival/unarchival"
   GROUP ThirdPartyGrp
 )
 cpack_add_component (
   OpenCVExt
   DISPLAY_NAME "OpenCV"
-  DESCRIPTION "Open Computer Vision Library."
+  DESCRIPTION "Open Computer Vision Library"
   GROUP ThirdPartyGrp
 )

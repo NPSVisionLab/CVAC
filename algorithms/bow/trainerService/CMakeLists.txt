@@ -38,4 +38,5 @@ TARGET_LINK_LIBRARIES(bowICEServerTrain
 
 INSTALL( TARGETS bowICEServerTrain
                DESTINATION lib
+               COMPONENT Runtime
              )

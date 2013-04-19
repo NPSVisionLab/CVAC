@@ -37,6 +37,7 @@ SET_TARGET_PROPERTIES(${APP_NAME} PROPERTIES DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFI
 
 INSTALL( TARGETS ${APP_NAME}
                DESTINATION bin
+               COMPONENT Runtime
              )
 
 
@@ -62,6 +63,7 @@ ADD_TEST(detectorClient_BowDetector_Verify
          )
 INSTALL( FILES ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT}
                DESTINATION bin
+               COMPONENT Runtime
              )
 ENDIF (BUILD_WITH_BOW)
 
