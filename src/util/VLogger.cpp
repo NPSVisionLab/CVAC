@@ -66,7 +66,12 @@ void VLogger::setLocalVerbosityLevel(std::string verbosityStr) {
   } else {
     for (unsigned int lv=0; lv<levelText->size(); lv++)
       {
-	if (strcasecmp(levelText->at(lv).c_str(), verbosityStr.c_str())==0) {
+#ifdef WIN32
+	  if (_stricmp(levelText->at(lv).c_str(), verbosityStr.c_str())==0)
+#else // WIN32
+	  if (strcasecmp(levelText->at(lv).c_str(), verbosityStr.c_str())==0)
+#endif // WIN32
+	  {
 	  setLocalVerbosityLevel((VLogger::Levels)lv);
 	  return;
 	}
