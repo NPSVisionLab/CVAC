@@ -20,8 +20,8 @@ set( CVAC_VERSION_DIR CVAC-${CVAC_VERSION} )
 set( CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE.txt )
 
 # change the install prefix to CVAC-version, since CPack will install into a zip-style archive
-set(CPACK_SET_DESTDIR true)
-set(CPACK_INSTALL_PREFIX ${CVAC_VERSION_DIR} )
+# set(CPACK_SET_DESTDIR true)
+# set(CPACK_INSTALL_PREFIX ${CVAC_VERSION_DIR} )
 
 # Binary distribution of CVAC: only built files, binary dependencies,
 # and some sample data

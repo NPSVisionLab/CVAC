@@ -17,10 +17,11 @@ set( CVAC_VERSION_DIR CVAC-${CVAC_VERSION} )
 set( CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE.txt )
 
 # 3rdparty dependencies for building CVAC
-INSTALL(DIRECTORY   ${ICE_ROOT}  # Deep copy
-        DESTINATION 3rdparty
+INSTALL(DIRECTORY   ${ICE_ROOT}/bin ${ICE_ROOT}/lib ${ICE_ROOT}/slice 
+        DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT IceExt
+        PATTERN *.pdb EXCLUDE
        )
 INSTALL(DIRECTORY   ${UNITTEST++_INCLUDE_DIR}
         DESTINATION 3rdparty/UnitTest++/include
@@ -55,7 +56,7 @@ INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}
       ) 
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include
-       DESTINATION ${CVAC_VERSION_DIR}
+       DESTINATION .
        COMPONENT IncludeExt
        PATTERN version.h.in EXCLUDE
       )

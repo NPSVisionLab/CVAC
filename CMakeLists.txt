@@ -110,9 +110,12 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
     ELSE( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
         SET( 3RDPARTY_FILENAME CVAC_3rdparty-${CVAC_VERSION_MAJMIN}-${CMAKE_SYSTEM_NAME}.tar.gz )
     ENDIF( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
-    IF( NOT EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
+    IF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
+        MESSAGE( STATUS "3rd-party archive exists already, won't download again (${3RDPARTY_FILENAME})" )
+    ELSE( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
         SET( 3RDPARTY_SERVER http://www.movesinstitute.org/~kolsch/CVAC )
         SET( 3RDPARTY_URL ${3RDPARTY_SERVER}/${3RDPARTY_FILENAME} )
+        MESSAGE( STATUS "Trying to download 3rd-party archive from ${3RDPARTY_URL}" )
         FILE( DOWNLOAD ${3RDPARTY_URL} ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME}
                 INACTIVITY_TIMEOUT 30  # abort if n seconds of inactivity
                 STATUS status
@@ -124,15 +127,20 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
             FILE( REMOVE ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )  # this doesn't seem to work.
             MESSAGE( ERROR "Could not download 3rd-party software package: ${status_string}" )
       ENDIF( NOT status_code EQUAL 0) 
-    ENDIF( NOT EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
+    ENDIF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
 
     # untar or unzip the file;
     # note: should use "jar xf" or 7zip on Windows
-    MESSAGE( STATUS "Unpacking 3rd-party software package to ${CMAKE_SOURCE_DIR}/3rdparty" )    
-    EXECUTE_PROCESS( 
-         COMMAND ${CMAKE_COMMAND} -E tar xzf ${3RDPARTY_FILENAME}
-         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-     )
+    SET( 3RDPARTY_DIR ${CMAKE_SOURCE_DIR}/3rdparty )
+    IF( EXISTS ${3RDPARTY_DIR} )
+        MESSAGE( STATUS "3rd-party directory exists, not unpacking (${3RDPARTY_DIR})" )    
+    ELSE( EXISTS ${3RDPARTY_DIR} )
+        MESSAGE( STATUS "Unpacking 3rd-party software package to ${CMAKE_SOURCE_DIR}/3rdparty" )    
+        EXECUTE_PROCESS( 
+             COMMAND ${CMAKE_COMMAND} -E tar xzf ${3RDPARTY_FILENAME}
+             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+         )
+    ENDIF( EXISTS ${3RDPARTY_DIR} )
 ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
 
 #
