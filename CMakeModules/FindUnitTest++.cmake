@@ -4,23 +4,26 @@
   
 FIND_PATH(UNITTEST++_INCLUDE_DIR UnitTest++.h
           HINTS
-           ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/src
+           ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/include
           PATHS
            /opt/local
           PATH_SUFFIXES UnitTest++
           )
 
 FIND_LIBRARY(UNITTEST++_LIBRARY
+             HINTS
+                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/lib
              NAMES UnitTest++ UnitTest++.vsnet2005
              PATHS
-                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Release
                 /opt/local/lib
              )
 
 FIND_LIBRARY(UNITTEST++_LIBRARY_DEBUG
              NAMES UnitTest++D UnitTest++.vsnet2005
+             HINTS
+                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/lib
              PATHS
-              ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/Debug
+                /opt/local/lib
              )
 
 IF (NOT UNITTEST++_LIBRARY_DEBUG)

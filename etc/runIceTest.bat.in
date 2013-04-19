@@ -15,7 +15,7 @@ if "%1" equ "CTest" (
     set VERIFY="verifyresults"
     shift;
 )
-call "${CMAKE_SOURCE_DIR}/runIcebox.bat"
+call "${CMAKE_SOURCE_DIR}/bin/runIcebox.bat"
 timeout /T 1
 echo "runIcebox returned"
 :next
@@ -29,12 +29,12 @@ if "%1" neq "" (
     )
     if %errorlevel% == 1 (
         echo "Detector %1 failed"
-        ${CMAKE_SOURCE_DIR}/stopIcebox.bat
+        ${CMAKE_SOURCE_DIR}/bin/stopIcebox.bat
         exit /b 1
     )
     shift
     goto :next
 )
 echo "Stopping icebox"
-${CMAKE_SOURCE_DIR}/stopIcebox.bat
+${CMAKE_SOURCE_DIR}/bin/stopIcebox.bat
 exit /b 0

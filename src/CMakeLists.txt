@@ -57,13 +57,6 @@ ADD_CUSTOM_COMMAND(
 MESSAGE ( STATUS "Java archive will be built using this command:" )
 MESSAGE ( STATUS "${CMAKE_Java_ARCHIVE} ${JAR_ARGS}" )
 
-# the target
-#ADD_CUSTOM_TARGET( ${PROJECT_INTERFACE_JAR}
-#    DEPENDS ${JAVA_OUTPUT_CLASSPATH}/cvac/${SLICE_TOKEN_CLASS}.class
-#)
-
-
-
 SET(SOURCE_FILES
     cvac/corpus/CorpusI.java
     cvac/corpus/CorpusServer.java
@@ -93,3 +86,7 @@ ADD_JAR( Corpus ${SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.j
             ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_INTERFACE_JAR}
 )
 
+INSTALL( TARGETS Corpus
+               DESTINATION lib
+             )
+             

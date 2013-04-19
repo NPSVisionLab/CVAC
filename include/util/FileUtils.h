@@ -57,10 +57,11 @@ namespace cvac
 
   /** Echo message both locally ('printv'), and by sending a client message
      * only if there is adequate verbosity level.
-     * @param level: Verbosity level inherent to the message.
-     * @param callbackHandler: A reference to the Ice client callbackHandler object.
+     * @param level Verbosity level inherent to the message.
+     * @param callbackHandler A reference to the Ice client callbackHandler object.
+     * @param fmt Format string and arguments akin to printf
      */
-  void localAndClientMsg(VLogger::Levels level, const ::cvac::CallbackHandlerPrx& callbackHandler, const char* fmt, ...);
+  void localAndClientMsg(VLogger::Levels level, const CallbackHandlerPrx& callbackHandler, const char* fmt, ...);
   
    /** Does the supplied directory exist?
      * @param directory The path to the directory to verify
@@ -70,7 +71,7 @@ namespace cvac
    bool directoryExists(const std::string& directory);
 
    /** Extract just the path to the supplied fully-qualified file name.
-     * @code getFilePath("c:/temp/foo/myFile.txt"); //returns "c:/temp/foo"
+     * \code getFilePath("c:/temp/foo/myFile.txt"); //returns "c:/temp/foo" \endcode
      * @param fileName the full path and file name
      * @return The extracted path to the supplied fileName
      */
@@ -95,7 +96,7 @@ namespace cvac
    bool makeDirectory(const std::string& path);
 
    /**  Get the file name, excluding the path.
-     *  @code getFileName("/temp/myfile.tar.gz") //returns "myfile.tar.gz"
+     *  \code getFileName("/temp/myfile.tar.gz") //returns "myfile.tar.gz" \endcode
      *  @param fileName The file name with path to extract just the file name from
      *  @return Just the file name
      */
@@ -103,7 +104,7 @@ namespace cvac
 
    /** Get the base of a file name without the path or extension. This contains
      * all the characters of the file name up to the first '.' character.
-     * @code getBaseFileName("/temp/myfile.tar.gz") //returns "myfile"
+     * \code getBaseFileName("/temp/myfile.tar.gz") //returns "myfile" \endcode
      * @return The base part of the supplied fileName
      * @param fileName The full file name, with or without path
      */
@@ -120,33 +121,33 @@ namespace cvac
    bool compatiblePurpose( const cvac::Purpose& actual, const cvac::Purpose& constraint );
 
   /** Add a file path to a RunSet reference, under the given purpopse.
-    *  @param cvac::RunSet& runSet:             The target runset
-    *  @param const std::string& relativePath:  The media file path to be added, relative to working dir
-    *  @param const std::string& filename:      The media file name to be added
-    *  @param const cvac::Purpose& purpose      The purpose describing intent and content of the media file
+    *  @param runSet:             The target runset
+    *  @param relativePath:  The media file path to be added, relative to working dir
+    *  @param filename:      The media file name to be added
+    *  @param purpose      The purpose describing intent and content of the media file
     */
    void addFileToRunSet( cvac::RunSet& runSet, const std::string& relativePath,
                            const std::string& filename, const cvac::Purpose& purpose);
 
   /** Add a file path to a RunSet reference, under the given purpopse.
-    *  @param cvac::RunSet& runSet:             The target runset
-    *  @param const std::string& relativePath:  The media file path to be added, relative to working dir
-    *  @param const std::string& filename:      The media file name to be added
-    *  @param int classID:                      Identifying class for media file
+    *  @param runSet:             The target runset
+    *  @param relativePath:  The media file path to be added, relative to working dir
+    *  @param filename:      The media file name to be added
+    *  @param classID:                      Identifying class for media file
     */
    void addFileToRunSet( cvac::RunSet& runSet, const std::string& relativePath,
                            const std::string& filename, int classID);
 
   /** Create a symlink given the parameters using the appropriate Windows or Linux
    * API command.
-   * @param const std::string linkFullPath:     Path to the link file which will be created.
-   * @param const std::string tgtFile
+   * @param linkFullPath:     Path to the link file which will be created.
+   * @param tgtFile
    */
    bool makeSymlinkFile(const std::string linkFullPath, const std::string tgtFile);
    /** Expand filename based on relative/absolute and config setting
    * API command.
-   * @param const std::string fileName file name to change if its a relative path
-   * @param const std::string prefix string to prepend
+   * @param fileName file name to change if its a relative path
+   * @param prefixDir string to prepend
    */
    std::string expandFilename(std::string fileName, std::string prefixDir);
 };

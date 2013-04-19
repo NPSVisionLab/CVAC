@@ -36,3 +36,6 @@ TARGET_LINK_LIBRARIES(bowICEServerTrain
     utils
     )
 
+INSTALL( TARGETS bowICEServerTrain
+               DESTINATION lib
+             )

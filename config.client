@@ -35,6 +35,11 @@ Ice.Warn.Connections=1
 Ice.Warn.Dispatch=2
 
 #
+# CVAC Tracing
+#
+CVAC.ClientVerbosity = info
+
+#
 # Network Tracing
 #
 # 0 = no network tracing

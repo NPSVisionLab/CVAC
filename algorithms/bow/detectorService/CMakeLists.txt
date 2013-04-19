@@ -36,4 +36,6 @@ TARGET_LINK_LIBRARIES(bowICEServer
     ${OpenCV_LIBS}
     )
           
-
+INSTALL( TARGETS bowICEServer
+               DESTINATION lib
+             )
