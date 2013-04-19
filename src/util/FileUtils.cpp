@@ -70,14 +70,17 @@ void cvac::localAndClientMsg(VLogger::Levels rqLevel, const CallbackHandlerPrx& 
   va_start(args, fmt);
   
   // Echo locally according to config.service property 'CVAC.ServicesVerbosity' in CVAC root
-  if(cvac::vLogger.getBaseLevel() >= rqLevel)
+  if(vLogger.getBaseLevel() >= rqLevel)
   {
-    cvac::vLogger.printv(rqLevel, fmt, args);
+    vLogger.printv(rqLevel, fmt, args);
   }
 
-  // Echo remotely based on client verbosity
-  if((cvac::vLogger.getBaseLevel() > cvac::vLogger.getIntLevel(0))) //&&   (Tmp: always echo client messages unless SILENT)
-     //(cvac::vLogger.getBaseLevel() >= rqLevel))   // Early pruning of expensive messages  (will use 'clientVerbosity')
+  // Echo remotely based on client verbosity.
+  // commenting out the second if condition means: always echo client messages unless SILENT
+  // Otherwise: Early pruning of expensive messages  (will use 'clientVerbosity')
+  if( vLogger.getBaseLevel() > vLogger.getIntLevel(0)
+      && vLogger.getBaseLevel() >= rqLevel
+    )  
   {
     // Echo through callbackHandler if available, assemble string for client message from arglist
     if(0 != callbackHandler) {

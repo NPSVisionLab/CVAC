@@ -1,10 +1,11 @@
 #!/bin/bash
-# Usage: runIceTest [ctest] det1 det2 ..."
+# Usage: see below
 #
 #export PATH=$PATH:/opt/local/bin
 #export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_ROOT_DIR}/lib"
 if [ "$#" == "0" ]; then
-    echo "Pass in the detectors run"
+    echo "No arguments received."
+    echo "Usage: runIceTest [CTest] det1 det2 ..."
     exit 1
 fi
 CTEST="testImg"
@@ -16,10 +17,12 @@ if [ "$1" == "CTest" ]; then
 fi
 ${CMAKE_SOURCE_DIR}/bin/runIcebox.sh
 sleep 1
-echo "runIcebox returned"
+echo "IceBox started (with ${CMAKE_SOURCE_DIR}/bin/runIcebox.sh)"
 while (( "$#" ));do
-    echo "Running detector $1"
-    ${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} $1 $CTEST ${CVAC_ROOT_DIR}/config.client $VERIFY
+    echo "Running detector $1 with this command:"
+    DETCO="${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} $1 $CTEST ${CVAC_ROOT_DIR}/config.client $VERIFY"
+    echo "$DETCO"
+    $DETCO
     if [ "$?" == "1" ]; then
         echo "Detector $1 failed"
 	${CMAKE_SOURCE_DIR}/bin/stopIcebox.sh

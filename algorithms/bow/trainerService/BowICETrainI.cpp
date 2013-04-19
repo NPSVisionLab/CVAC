@@ -88,7 +88,11 @@ void BowICETrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& current
 
 	// Load CVAC verbosity
 	Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
-	vLogger.setLocalVerbosityLevel(props->getProperty("CVAC.ServicesVerbosity"));
+	string verbStr = props->getProperty("CVAC.ServicesVerbosity");
+	if (!verbStr.empty())
+	{
+	    vLogger.setLocalVerbosityLevel( verbStr );
+	}
 
 	if(pBowCV->train_initialize(_nameFeature,_nameDescriptor,_nameMatcher,_countWords))
 		fInitialized = true;
