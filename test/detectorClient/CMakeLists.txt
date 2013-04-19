@@ -60,6 +60,9 @@ ADD_TEST(detectorClient_BowDetector
 ADD_TEST(detectorClient_BowDetector_Verify
          ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT} CTest BagOfWordsUSKOCA
          )
+INSTALL( FILES ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT}
+               DESTINATION bin
+             )
 ENDIF (BUILD_WITH_BOW)
 
 ## Positive-Image Live-Verification for Detectors ###
