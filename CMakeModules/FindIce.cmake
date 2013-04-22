@@ -19,7 +19,7 @@ FIND_PATH (ICE_ROOT slice
            DOC "The ICE root folder"
            )
            
-FIND_PATH (ICE_INCLUDE Slice
+FIND_PATH (ICE_INCLUDE Slice/Util.h
            PATH_SUFFIXES include
            HINTS
            ${ICE_ROOT}
@@ -69,45 +69,45 @@ ENDIF()
 
 FIND_PROGRAM( ICE_BOX_EXECUTABLE
                  NAMES icebox${CMAKE_DEBUG_POSTFIX}
-                 PATHS ${ICE_ROOT}/bin
+                 HINTS ${ICE_ROOT}/bin
                )
 
 FIND_PROGRAM( ICE_BOX_ADMIN
                  NAMES iceboxadmin
-                 PATHS ${ICE_ROOT}/bin
+                 HINTS ${ICE_ROOT}/bin
                )
 
 
 IF (MSVC10)
    FIND_PROGRAM( ICE_SLICE_EXECUTABLE
                  NAMES slice2cpp
-                 PATHS ${ICE_ROOT}/bin/vc100
+                 HINTS ${ICE_ROOT}/bin/vc100
                )
 ELSE (MSVC10)
    FIND_PROGRAM( ICE_SLICE_EXECUTABLE
                  NAMES slice2cpp
-                 PATHS ${ICE_ROOT}/bin
+                 HINTS ${ICE_ROOT}/bin
                )
 ENDIF (MSVC10)
 MARK_AS_ADVANCED (ICE_SLICE_EXECUTABLE)
 IF (MSVC10)
    FIND_PROGRAM( ICE_SLICE2JAVA_EXECUTABLE
                  NAMES slice2java
-                 PATHS ${ICE_ROOT}/bin/vc100
+                 HINTS ${ICE_ROOT}/bin/vc100
                )
 ELSE (MSVC10)
    FIND_PROGRAM( ICE_SLICE2JAVA_EXECUTABLE
                  NAMES slice2java
-                 PATHS ${ICE_ROOT}/bin
+                 HINTS ${ICE_ROOT}/bin
                )
 ENDIF (MSVC10)
 MARK_AS_ADVANCED (ICE_SLICE2JAVA_EXECUTABLE)
 FIND_PROGRAM( ICE_SLICE2PY_EXECUTABLE
               NAMES slice2py
-              PATHS ${ICE_ROOT}/bin
+              HINTS ${ICE_ROOT}/bin
                     ${ICE_ROOT}/bin/vc100
             )
-MARK_AS_ADVANCED (ICE_SLICE2PY_EXECUTABLE)
+MARK_AS_ADVANCED (ICE_SLICE2PY_EXECUTABLE ICE_INSTALLDIR)
 
 SET(ICE_LIBRARIES
     optimized ${ICE_LIBRARY} debug ${ICE_LIBRARY_DEBUG}
