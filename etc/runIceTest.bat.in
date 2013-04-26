@@ -15,9 +15,9 @@ if "%1" equ "CTest" (
     set VERIFY="verifyresults"
     shift;
 )
-call "${CMAKE_SOURCE_DIR}/bin/runIcebox.bat"
+call "${CMAKE_SOURCE_DIR}/bin/startIcebox.bat"
 timeout /T 1
-echo "runIcebox returned"
+echo "startIcebox returned"
 :next
 if "%1" neq "" (
     echo "Running detector %1"
