@@ -18,9 +18,12 @@ bowIceTrain.Proxy=bowTrain:tcp -p 10003
 #CvFaces.DetectorFilename = OpencvFaces.zip
 
 # BOW Detector flags
-BagOfWordsUSKOCA.Proxy=bowTest:tcp -p 10004    				 
+BagOfWordsUSKOCA.Proxy=bowTest:tcp -p 10004
 BagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
 
+# same on vision.nps.edu:
+NpsBagOfWordsUSKOCA.Proxy=bowTest:tcp -h vision.nps.edu -p 10104
+NpsBagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
 
 #Trainers
 BOWTrainer.Proxy = bowTrain:tcp -p 10003
