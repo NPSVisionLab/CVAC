@@ -5,7 +5,7 @@ rem
 PATH=${ICE_ROOT}/bin;%PATH%
 chdir "${CVAC_ROOT_DIR}"
 if "%1" equ "" (
-    echo "Pass in the detectors run"
+    echo "Pass in the names of the detectors to run"
     exit /b 1
 )
 set CTEST="testImg"
