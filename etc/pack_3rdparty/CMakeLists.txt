@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 
 #
 # CPack Package Properties
@@ -17,14 +17,29 @@ set( CVAC_VERSION_DIR CVAC-${CVAC_VERSION} )
 set( CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE.txt )
 
 # 3rdparty dependencies for building CVAC
-INSTALL(DIRECTORY   ${ICE_ROOT}/bin ${ICE_ROOT}/lib ${ICE_ROOT}/slice 
+INSTALL(DIRECTORY   ${ICE_ROOT}/include ${ICE_ROOT}/lib ${ICE_ROOT}/slice
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT IceExt
         PATTERN *.pdb EXCLUDE
        )
+INSTALL(PROGRAMS ${ICE_SLICE_EXECUTABLE}
+                 ${ICE_SLICE2JAVA_EXECUTABLE} 
+                 ${ICE_SLICE2PY_EXECUTABLE}
+                 ${ICE_BOX_EXECUTABLE}
+                 ${ICE_BOX_ADMIN}
+        DESTINATION 3rdparty/ICE/bin
+        COMPONENT IceExt
+       )
+# this gets us into trouble with symlinks
+#INSTALL(FILES ${ICE_LIBRARY} ${ICE_LIBRARY_DEBUG}
+#              ${ICE_UTIL_LIBRARY} ${ICE_UTIL_LIBRARY_DEBUG}
+#              ${ICE_BOX_LIBRARY} ${ICE_BOX_LIBRARY_DEBUG}
+#        DESTINATION 3rdparty/ICE/lib
+#        COMPONENT IceExt
+#       )
 INSTALL(DIRECTORY   ${UNITTEST++_INCLUDE_DIR}
-        DESTINATION 3rdparty/UnitTest++/include
+        DESTINATION 3rdparty/UnitTest++
         COMPONENT UnitTestPPExt
        )
 INSTALL(FILES    ${UNITTEST++_LIBRARY}

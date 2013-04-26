@@ -118,15 +118,16 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
         MESSAGE( STATUS "Trying to download 3rd-party archive from ${3RDPARTY_URL}" )
         FILE( DOWNLOAD ${3RDPARTY_URL} ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME}
                 INACTIVITY_TIMEOUT 30  # abort if n seconds of inactivity
-                STATUS status
+                STATUS DOWNLOAD_RESULT
                 SHOW_PROGRESS
+#                EXPECTED_MD5;aaaab03d4f38d7fe0525c994e52c3aaa
                )
-        list(GET status 0 status_code) 
-        list(GET status 1 status_string) 
-        IF( NOT status_code EQUAL 0)
+        list(GET ${DOWNLOAD_RESULT} 0 ${DOWNLOAD_CODE}) 
+        list(GET ${DOWNLOAD_RESULT} 1 ${DOWNLOAD_STRING}) 
+        IF( NOT ${DOWNLOAD_CODE} EQUAL 0)
             FILE( REMOVE ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )  # this doesn't seem to work.
-            MESSAGE( ERROR "Could not download 3rd-party software package: ${status_string}" )
-      ENDIF( NOT status_code EQUAL 0) 
+            MESSAGE( SEND_ERROR "Could not download 3rd-party software package: ${DOWNLOAD_STRING}" )
+        ENDIF( NOT ${DOWNLOAD_CODE} EQUAL 0) 
     ENDIF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
 
     # untar or unzip the file;
@@ -139,8 +140,13 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
         EXECUTE_PROCESS( 
              COMMAND ${CMAKE_COMMAND} -E tar xzf ${3RDPARTY_FILENAME}
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+             RESULT_VARIABLE unpack_result
          )
+        IF( NOT ${unpack_result} STREQUAL 0 )
+            MESSAGE( SEND_ERROR "Could not unpack (${unpack_result})- subsequent error may occur" )
+        ENDIF( NOT ${unpack_result} STREQUAL 0 )
     ENDIF( EXISTS ${3RDPARTY_DIR} )
+    SET( DOWNLOAD_3RDPARTY_PACKAGE OFF CACHE BOOL "Download 3rd-party package had download or unpack errors, please obtain manually" FORCE )
 ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
 
 #
