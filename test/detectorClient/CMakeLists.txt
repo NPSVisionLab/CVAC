@@ -55,6 +55,11 @@ CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/etc/runIceTest.${SCRIPT_EXT}.in  ${CMAKE_SOUR
 #MESSAGE("/CVAC_GENERATED_OUTPUT_DIR/Testing/Temporary/LastTest.log")    #Display path to test-log file
 
 IF (BUILD_WITH_BOW) 
+# see if we can talk to vision.nps.edu
+# note that a missing PATH to bzip2 in 3rdparty/ICE/bin might cause problems
+#ADD_TEST(detectorClient_BowDetector_Nps
+#         ${OUTPUT_BINDIR}/${APP_NAME} NpsBagOfWordsUSKOCA testImg ${CVAC_ROOT_DIR}/config.client
+#         )
 ADD_TEST(detectorClient_BowDetector
          ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT} BagOfWordsUSKOCA
          )

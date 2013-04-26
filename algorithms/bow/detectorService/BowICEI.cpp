@@ -191,20 +191,20 @@ ResultSetV2 BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilen
 
     if(true == result) {
         localAndClientMsg(VLogger::DEBUG_1, NULL, "Detection, %s as Class: %d\n", _ffullname.c_str(), _bestClass);
+
+        Result _tResult;
+        _tResult.original = new Labelable();
+        _tResult.original->sub.path.filename = _ffullname;
+
+        // The original field is for the original file name.  Results need
+        // to be returned in foundLabels.
+        Labelable *labelable = new Labelable();
+        char buff[32];
+        sprintf(buff, "%d", _bestClass);
+        labelable->lab.name = buff;   
+        _tResult.foundLabels.push_back(labelable);
+        _resSet.results.push_back(_tResult);
     }
-
-    Result _tResult;
-    _tResult.original = new Labelable();
-    _tResult.original->sub.path.filename = _ffullname;
-
-    // The original field is for the original file name.  Results need
-    // to be returned in foundLabels.
-    Labelable *labelable = new Labelable();
-    char buff[32];
-    sprintf(buff, "%d", _bestClass);
-    labelable->lab.name = buff;   
-    _tResult.foundLabels.push_back(labelable);
-    _resSet.results.push_back(_tResult);
 	
 	return _resSet;
 }
