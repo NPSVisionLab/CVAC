@@ -243,6 +243,12 @@ int main(int argc, char* argv[])
 {
 	int mainResult;
 
+#if 0
+    std::string val = getenv( "PATH" );
+    cout << "PATH=" << val << endl;
+    return -1;
+#endif //0
+
 	try
 	{
 		if((argc < 2) || (argc > 6)) 
@@ -260,7 +266,7 @@ int main(int argc, char* argv[])
 		std::string configstr = "config.client";
 		app.m_detectorName = std::string(argv[1]);
 
-		if(app.m_detectorName == "BagOfWordsUSKOCA")
+        if(app.m_detectorName.find("BagOfWordsUSKOCA")!=std::string::npos)
 		{
 			appData.multiclassDetection = true;
 		}

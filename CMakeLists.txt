@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 2.6)
 
+IF(WIN32)
+    # don't want the four default configuration types with MS Visual Studio
+    SET (CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "")
+ENDIF(WIN32)
+
 PROJECT(CVAC)
 
 INCLUDE (UserCMakeLists.txt OPTIONAL)
@@ -143,9 +148,9 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
              RESULT_VARIABLE unpack_result
          )
-        IF( NOT ${unpack_result} STREQUAL 0 )
-            MESSAGE( SEND_ERROR "Could not unpack (${unpack_result})- subsequent error may occur" )
-        ENDIF( NOT ${unpack_result} STREQUAL 0 )
+        IF( NOT unpack_result STREQUAL 0 )
+            MESSAGE( SEND_ERROR "Could not unpack (${unpack_result})- subsequent errors may occur" )
+        ENDIF( NOT unpack_result STREQUAL 0 )
     ENDIF( EXISTS ${3RDPARTY_DIR} )
     SET( DOWNLOAD_3RDPARTY_PACKAGE OFF CACHE BOOL "Download 3rd-party package had download or unpack errors, please obtain manually" FORCE )
 ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
