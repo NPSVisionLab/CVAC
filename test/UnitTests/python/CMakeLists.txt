@@ -49,5 +49,12 @@ WRAP_SLICE2PY( SLICE_FILES
 
     add_custom_target(PythonUnitTests ALL DEPENDS ${SLICE_FILES})
 
+    # Test whether a Python client can connect and talk to the Corpus service
+    # Note: this currently needs the Java Corpus server started manually
+    ADD_TEST( PythonCorpusTest
+       ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/CorpusServerTest.py )
+    SET_TESTS_PROPERTIES( PythonCorpusTest
+      PROPERTIES ENVIRONMENT "PYTHONPATH=${ICE_ROOT}/python:${CMAKE_CURRENT_BINARY_DIR}" )
+
     #    install(CODE "execute_process(COMMAND ${PYTHON} ${SETUP_PY} install)")
 endif()
