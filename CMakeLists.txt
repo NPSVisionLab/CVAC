@@ -7,7 +7,10 @@ INCLUDE (UserCMakeLists.txt OPTIONAL)
 OPTION(BUILD_WITH_BOW "Enables the projects that depend on the bow library" OFF)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Enables the projects that depend on the OpencvPerformance library" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
-OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" ON)
+OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" OFF)
+OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
+OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
+OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
 
 # where the Find*.cmake files are
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules
@@ -70,6 +73,84 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 #
+# What version of CVAC?
+#
+# Try to create the include/version.h file that specifies the CVAC version,
+# as obtained from the version-control tag (major.minor) and the
+# number of commits since that tag (patch)
+if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+    EXECUTE_PROCESS( COMMAND git describe --long --match "v[0-9]*.[0-9]*"
+              OUTPUT_VARIABLE CVAC_VERSION_GIT
+              OUTPUT_STRIP_TRAILING_WHITESPACE
+              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+    IF ( CVAC_VERSION_GIT )
+        # parse this kind of string v1.2-3-gkd3kdj4:
+	# CVAC_VERSION_MAJMIN is 1.2
+    	# CVAC_VERSION_MAJOR is 1
+    	# CVAC_VERSION_MINOR is 2
+    	# CVAC_VERSION_PATCH is 3
+    	# CVAC_VERSION is 1.2.3
+     	STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
+     	STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
+     	STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
+     	STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
+     	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+        MESSAGE( STATUS "successfully parsed version: CVAC-${CVAC_VERSION}" )
+     	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
+                                   ${CMAKE_SOURCE_DIR}/include/version.h)
+    ENDIF( CVAC_VERSION_GIT )
+endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+
+#
+# offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
+#
+IF( DOWNLOAD_3RDPARTY_PACKAGE )
+    IF( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+        SET( 3RDPARTY_FILENAME CVAC_3rdparty-${CVAC_VERSION_MAJMIN}-${CMAKE_SYSTEM_NAME}.zip )
+    ELSE( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+        SET( 3RDPARTY_FILENAME CVAC_3rdparty-${CVAC_VERSION_MAJMIN}-${CMAKE_SYSTEM_NAME}.tar.gz )
+    ENDIF( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+    IF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
+        MESSAGE( STATUS "3rd-party archive exists already, won't download again (${3RDPARTY_FILENAME})" )
+    ELSE( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
+        SET( 3RDPARTY_SERVER http://www.movesinstitute.org/~kolsch/CVAC )
+        SET( 3RDPARTY_URL ${3RDPARTY_SERVER}/${3RDPARTY_FILENAME} )
+        MESSAGE( STATUS "Trying to download 3rd-party archive from ${3RDPARTY_URL}" )
+        FILE( DOWNLOAD ${3RDPARTY_URL} ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME}
+                INACTIVITY_TIMEOUT 30  # abort if n seconds of inactivity
+                STATUS DOWNLOAD_RESULT
+                SHOW_PROGRESS
+#                EXPECTED_MD5;aaaab03d4f38d7fe0525c994e52c3aaa
+               )
+        list(GET ${DOWNLOAD_RESULT} 0 ${DOWNLOAD_CODE}) 
+        list(GET ${DOWNLOAD_RESULT} 1 ${DOWNLOAD_STRING}) 
+        IF( NOT ${DOWNLOAD_CODE} EQUAL 0)
+            FILE( REMOVE ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )  # this doesn't seem to work.
+            MESSAGE( SEND_ERROR "Could not download 3rd-party software package: ${DOWNLOAD_STRING}" )
+        ENDIF( NOT ${DOWNLOAD_CODE} EQUAL 0) 
+    ENDIF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
+
+    # untar or unzip the file;
+    # note: should use "jar xf" or 7zip on Windows
+    SET( 3RDPARTY_DIR ${CMAKE_SOURCE_DIR}/3rdparty )
+    IF( EXISTS ${3RDPARTY_DIR} )
+        MESSAGE( STATUS "3rd-party directory exists, not unpacking (${3RDPARTY_DIR})" )    
+    ELSE( EXISTS ${3RDPARTY_DIR} )
+        MESSAGE( STATUS "Unpacking 3rd-party software package to ${CMAKE_SOURCE_DIR}/3rdparty" )    
+        EXECUTE_PROCESS( 
+             COMMAND ${CMAKE_COMMAND} -E tar xzf ${3RDPARTY_FILENAME}
+             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+             RESULT_VARIABLE unpack_result
+         )
+        IF( NOT ${unpack_result} STREQUAL 0 )
+            MESSAGE( SEND_ERROR "Could not unpack (${unpack_result})- subsequent error may occur" )
+        ENDIF( NOT ${unpack_result} STREQUAL 0 )
+    ENDIF( EXISTS ${3RDPARTY_DIR} )
+    SET( DOWNLOAD_3RDPARTY_PACKAGE OFF CACHE BOOL "Download 3rd-party package had download or unpack errors, please obtain manually" FORCE )
+ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
+
+#
 # add a Makefile target "doc" to generate API documentation with Doxygen
 #
 IF( BUILD_DOCUMENTATION )
@@ -97,20 +178,18 @@ IF( BUILD_DOCUMENTATION )
 ENDIF( BUILD_DOCUMENTATION )
 
 FIND_PACKAGE(Ice REQUIRED)
-FIND_PACKAGE(LibArchive)
+FIND_PACKAGE(LibArchive REQUIRED)
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
-  FIND_PACKAGE( OpenCV REQUIRED core imgproc highgui ml features2d nonfree objdetect calib3d PATHS ../CVAC_extras/OpenCV-2.4.2)
+  FIND_PACKAGE( OpenCV 2.4 REQUIRED
+                            core imgproc highgui ml features2d nonfree objdetect calib3d
+             HINTS
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv
+  )
+  MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
-IF (WIN32)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIcebox.bat.in  ${CMAKE_SOURCE_DIR}/runIcebox.bat)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/stopIcebox.bat.in  ${CMAKE_SOURCE_DIR}/stopIcebox.bat)
-ELSE (WIN32)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/runIcebox.sh.in  ${CMAKE_SOURCE_DIR}/runIcebox.sh)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/stopIcebox.sh.in  ${CMAKE_SOURCE_DIR}/stopIcebox.sh)
-ENDIF (WIN32)
-
+ADD_SUBDIRECTORY( etc )
 ADD_SUBDIRECTORY(src/util)
 IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
   ADD_SUBDIRECTORY(algorithms)
@@ -125,3 +204,13 @@ ENDIF( BUILD_WITH_TESTS )
 IF( BUILD_UNIT_TESTS)
   FIND_PACKAGE(UnitTest++)
 ENDIF( BUILD_UNIT_TESTS )
+
+#
+# Packaging for binary or 3rdparty distribution
+#
+IF ( BUILD_3RDPARTY_PACKAGE )
+    ADD_SUBDIRECTORY( etc/pack_3rdparty )
+ENDIF( BUILD_3RDPARTY_PACKAGE )
+IF ( BUILD_BINARY_PACKAGE )
+    ADD_SUBDIRECTORY( etc/pack_binary )
+ENDIF ( BUILD_BINARY_PACKAGE )

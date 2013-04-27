@@ -1,0 +1,35 @@
+#!/bin/bash
+# Usage: see below
+#
+#export PATH=$PATH:/opt/local/bin
+#export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_ROOT_DIR}/lib"
+if [ "$#" == "0" ]; then
+    echo "No arguments received."
+    echo "Usage: runIceTest [CTest] det1 det2 ..."
+    exit 1
+fi
+CTEST="testImg"
+VERIFY=""
+if [ "$1" == "CTest" ]; then
+    CTEST=$1
+    VERIFY="verifyresults"
+    shift;
+fi
+${CMAKE_SOURCE_DIR}/bin/startIcebox.sh
+sleep 1
+echo "IceBox started (with ${CMAKE_SOURCE_DIR}/bin/startIcebox.sh)"
+while (( "$#" ));do
+    echo "Running detector $1 with this command:"
+    DETCO="${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX} $1 $CTEST ${CVAC_ROOT_DIR}/config.client $VERIFY"
+    echo "$DETCO"
+    $DETCO
+    if [ "$?" == "1" ]; then
+        echo "Detector $1 failed"
+	${CMAKE_SOURCE_DIR}/bin/stopIcebox.sh
+        exit 1
+    fi
+    shift
+done
+echo "Stopping icebox"
+${CMAKE_SOURCE_DIR}/bin/stopIcebox.sh
+exit 0

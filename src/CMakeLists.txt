@@ -63,3 +63,7 @@ ADD_JAR( Corpus ${SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.j
             ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
 )
 
+INSTALL( TARGETS Corpus
+               DESTINATION lib
+             )
+             

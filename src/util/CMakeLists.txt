@@ -45,3 +45,6 @@ ADD_LIBRARY(utils
 TARGET_LINK_LIBRARIES(utils
                       ${LIBARCHIVE_LIBRARY}
                      )
+INSTALL( TARGETS utils
+                DESTINATION lib
+               COMPONENT Runtime )

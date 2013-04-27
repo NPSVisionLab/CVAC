@@ -81,14 +81,18 @@ BowICETrainI::~BowICETrainI()
 void BowICETrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& current)
 {
 	//lekomin: how to get these initial and tunable parameters
-	string	_nameFeature("SURF");	//SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS
-	string	_nameDescriptor("SURF");	//SURF, SIFT, OpponentSIFT, OpponentSURF
+	string	_nameFeature("SIFT");	//SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS
+	string	_nameDescriptor("SIFT");	//SURF, SIFT, OpponentSIFT, OpponentSURF
 	string	_nameMatcher("BruteForce-L1");	//BruteForce-L1, BruteForce, FlannBased  
 	int		_countWords = 150;	
 
 	// Load CVAC verbosity
 	Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
-	vLogger.setLocalVerbosityLevel(props->getProperty("CVAC.ServicesVerbosity"));
+	string verbStr = props->getProperty("CVAC.ServicesVerbosity");
+	if (!verbStr.empty())
+	{
+	    vLogger.setLocalVerbosityLevel( verbStr );
+	}
 
 	if(pBowCV->train_initialize(_nameFeature,_nameDescriptor,_nameMatcher,_countWords))
 		fInitialized = true;
