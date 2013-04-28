@@ -2,12 +2,12 @@ package util;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.logging.Level;
+//import java.util.ArrayList;
+//import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import cvac.Corpus;
-import util.Code_Utils.OS_Type;
+//import Code_Utils.OS_Type;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
@@ -18,8 +18,10 @@ import org.apache.commons.io.FilenameUtils;
  */
 public class Data_IO_Utils {
 
-    private static final String userDir_Token = "|USER_HOME_DIR|";
-    private static final String dataDir_Token = "|ENGINE_DATA_DIR|";
+//    TODO: check what's used;
+
+//    private static final String userDir_Token = "|USER_HOME_DIR|";
+//    private static final String dataDir_Token = "|ENGINE_DATA_DIR|";
     private static String os_sepChar = System.getProperty("file.separator");
     private static String usersHomeDir = osPathStr(System.getProperty("user.home"));
 
@@ -94,15 +96,15 @@ public class Data_IO_Utils {
 //        return (original_path); // No substitutions
 //    }
 
-    // win: ~/Caches/MediaAnalyst/
-    // x86/64/mac: ~/Library/Caches/MediaAnalyst/
+    // win: ~/Caches/CVAC/
+    // x86/64/mac: ~/Library/Caches/CVAC/
     private static String getUserCacheDir() {
 
-        if ((OS_Type.WIN == Code_Utils.getOsName()) || (OS_Type.LINUX == Code_Utils.getOsName())) {
-            return (osPathStr(usersHomeDir + File.separatorChar + "Caches" + File.separatorChar + "MediaAnalyst" + File.separatorChar));
-        } else if (OS_Type.MAC == Code_Utils.getOsName()) {
+        if ((Code_Utils.OS_Type.WIN == Code_Utils.getOsName()) || (Code_Utils.OS_Type.LINUX == Code_Utils.getOsName())) {
+            return (osPathStr(usersHomeDir + File.separatorChar + "Caches" + File.separatorChar + "CVAC" + File.separatorChar));
+        } else if (Code_Utils.OS_Type.MAC == Code_Utils.getOsName()) {
             return (osPathStr(usersHomeDir + File.separatorChar + "Library" + File.separatorChar + "Caches" + File.separatorChar + 
-                              "MediaAnalyst" + File.separatorChar));
+                              "CVAC" + File.separatorChar));
         } else {
             throw new RuntimeException("OS Type is not supported: {win, mac, linux}.  Cannot set path for user-space cache.");
         }
@@ -288,7 +290,7 @@ public class Data_IO_Utils {
      * @param base basePath is calculated from this file
      * @param separator directory separator. The platform default is not assumed so that we can test Unix behavior when running on Windows (for example)
      * Code source: http://stackoverflow.com/questions/204784/how-to-construct-a-relative-path-in-java-from-two-absolute-paths-or-urls/3054692#3054692
-     * Note the Unit-tests demonstrating correctness of features:  "/test/MediaAnalyst/utility_code/Data_IO_UtilsTest.java"
+     * Note the Unit-tests demonstrating correctness of features:  "/test/CVAC/utility_code/Data_IO_UtilsTest.java"
      */
     public static String getRelativePath(String targetPath, String basePath, String pathSeparator) {
 

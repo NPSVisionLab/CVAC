@@ -42,6 +42,7 @@ SET(SOURCE_FILES
     cvac/corpus/CorpusServer.java
     cvac/corpus/LabelableListI.java
     #util/RunSetWrapper.java
+    cvac/corpus/CommonDataSet.java
 )
 
 SET(HEADER_FILES
@@ -55,11 +56,23 @@ FIND_JAR( Ice.jar Ice
 	  	${CVAC_ROOT_DIR}/lib 
 		${ICE_ROOT}/lib
 		)
-SET( CMAKE_JAVA_INCLUDE_PATH ${Ice.jar} )
+FIND_JAR( javatar.jar NAMES javatar-2.5 PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
+FIND_JAR( IO.jar NAMES commons-io-1.3.2 PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
+FIND_JAR( javabuilder.jar NAMES javabuilder PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
+FIND_JAR( labelme.jar NAMES labelme PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
+SET( CMAKE_JAVA_INCLUDE_PATH ${Ice.jar} ${javatar.jar} ${IO.jar} ${javabuilder.jar} ${labelme.jar})
 
+# Create two jar files: one for the sliced Corpus files only
+# and one for all, including the hardcoded "implementation" files;
+# The former is handy to have if the hardcoded ones are built in another IDE
+ADD_JAR( CorpusSliced ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+         ${SLICE_OUTPUT_PATH}/cvac/*.java
+        DEPENDS
+            ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+)
 ADD_JAR( Corpus ${SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
          ${SLICE_OUTPUT_PATH}/cvac/*.java
-        DEPENDS 
+        DEPENDS
             ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
 )
 

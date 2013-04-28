@@ -51,6 +51,8 @@ WRAP_SLICE2PY( SLICE_FILES
 
     # Test whether a Python client can connect and talk to the Corpus service
     # Note: this currently needs the Java Corpus server started manually
+    # Note: quite likely we'll need this on Windows, and ; instead of :
+    #       FILE( TO_NATIVE_PATH ${ICE_ROOT}/python ICE_PYTHON_DIR_NATIVE )
     ADD_TEST( PythonCorpusTest
        ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/CorpusServerTest.py )
     SET_TESTS_PROPERTIES( PythonCorpusTest

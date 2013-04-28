@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.imageio.ImageIO;
+//import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import cvac.Corpus;
 
@@ -14,6 +14,8 @@ import cvac.Corpus;
  * @author jcs
  */
 public class Code_Utils {
+
+//    TODO: check if used;
     
     public enum OS_Type { WIN, LINUX, MAC, UNKNOWN }
     private static final Logger logger = Logger.getLogger(Corpus.class.getName());

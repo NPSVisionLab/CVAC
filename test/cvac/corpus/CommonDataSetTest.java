@@ -6,32 +6,30 @@ package cvac.corpus;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.Properties;
-import java.util.logging.Logger;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
+//import static org.junit.Assert.*;
 import util.Data_IO_Utils;
 
 /**
  *
  * @author jonSchmid
- * Port of origin-Class test: 'DataSetTest.java' from MediaAnalyst tests
  */
-public class CommonDataSetTest {
+public class CommonDataSetTest 
+{
     
-    CommonDataSetTestAccess instance = new CommonDataSetTestAccess("Caltech101", "Caltech101_URL", "http://www.vision.caltech.edu/Image_Datasets/Caltech101/101_ObjectCategories.tar.gz", true);
+    CommonDataSet instance = new CommonDataSet("Caltech101", 
+            "Caltech101_URL", 
+            "http://www.vision.caltech.edu/Image_Datasets/Caltech101/101_ObjectCategories.tar.gz",
+            true);
     File[] filesInOutputDir;
     
-    private String  Caltech101_URL =                                              // Caltech url used as test data set
-                            "http://www.vision.caltech.edu/Image_Datasets/Caltech101/101_ObjectCategories.tar.gz",
-                    Caltech256_URL = 
-                            "http://www.vision.caltech.edu/Image_Datasets/Caltech256/256_ObjectCategories.tar",
-                    web_decompress_unTar_OutputDir;
+    // Caltech url used as test data set
+    private String Caltech101_URL =  
+            "http://www.vision.caltech.edu/Image_Datasets/Caltech101/101_ObjectCategories.tar.gz";
+    private String Caltech256_URL =                 
+            "http://www.vision.caltech.edu/Image_Datasets/Caltech256/256_ObjectCategories.tar";
+    private String web_decompress_unTar_OutputDir;
     
     String userDir = System.getProperty("user.home");
     String tmpTargetDir = System.getProperty("java.io.tmpdir", userDir);  // Default to user dir if no 'tmp'
@@ -52,7 +50,7 @@ public class CommonDataSetTest {
         String expandBelow_Path = "";
          
         // Warnings are displayed internally
-        instance.accessExpandCommonDataset_toLocal(webURL, gzipInputFile, decompressedOutputName, expandBelow_Path, CommonDataSet.CompressionType.GZIP);
+        instance.expandDataset_toLocal(webURL, gzipInputFile, decompressedOutputName, expandBelow_Path, CommonDataSet.CompressionType.GZIP);
     }
 
     @Test
@@ -61,7 +59,7 @@ public class CommonDataSetTest {
         File gzipInputFile = new File(tmpTargetDir + "/gzippedArchiveData.tar.gz");
         File targetDirFile = new File(tmpTargetDir);
         
-        instance.accessUnpackArchiveBelow(gzipInputFile, targetDirFile, CommonDataSet.ArchiveType.TAR);
+        instance.unpackArchiveBelow(gzipInputFile, targetDirFile, CommonDataSet.ArchiveType.TAR);
     }
     
     @Test    
@@ -87,7 +85,7 @@ public class CommonDataSetTest {
         File test_OutputFile = new File(test_OutputFileDir.getPath() + File.separatorChar + outputFileName);
 
         try {
-            instance.accessUncompressDataset(gzipInputFile, test_OutputFile, tmpTargetDir, CommonDataSet.CompressionType.GZIP);
+            instance.uncompressDataset(gzipInputFile, test_OutputFile, tmpTargetDir, CommonDataSet.CompressionType.GZIP);
         }
         catch(IOException e) {
             System.out.println("|Test | IOException from uncompressDataset.  " + e.getMessage());
@@ -115,5 +113,14 @@ public class CommonDataSetTest {
         assert(nameStr.equals("Caltech101"));
         String descStr = instProps.getProperty("description");
         assert(descStr.equals("Caltech101_URL"));
+    }
+    
+    /** temporary main method so we can debug this
+     */
+    public static void main( String[] args )
+    {
+        System.out.println("hello22223!!");
+        CommonDataSetTest test = new CommonDataSetTest();
+        test.testExpandCommonDataset_toLocal();
     }
 }
