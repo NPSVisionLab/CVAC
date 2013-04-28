@@ -40,6 +40,8 @@ MESSAGE ( STATUS "${ICE_SLICE2JAVA_EXECUTABLE} ${SLICE_ARGS}" )
 SET(SOURCE_FILES
     cvac/corpus/CorpusI.java
     cvac/corpus/CorpusServer.java
+    cvac/corpus/CorpusServiceI.java
+    cvac/corpus/CorpusConfig.java
     cvac/corpus/LabelableListI.java
     #util/RunSetWrapper.java
     cvac/corpus/CommonDataSet.java
@@ -61,6 +63,8 @@ FIND_JAR( IO.jar NAMES commons-io-1.3.2 PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
 FIND_JAR( javabuilder.jar NAMES javabuilder PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
 FIND_JAR( labelme.jar NAMES labelme PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
 SET( CMAKE_JAVA_INCLUDE_PATH ${Ice.jar} ${javatar.jar} ${IO.jar} ${javabuilder.jar} ${labelme.jar})
+SET( CMAKE_JAVA_TARGET_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/lib )
+#SET( CMAKE_JAVA_TARGET_OUTPUT_DIR ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY} )
 
 # Create two jar files: one for the sliced Corpus files only
 # and one for all, including the hardcoded "implementation" files;

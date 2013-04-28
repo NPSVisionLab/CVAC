@@ -18,7 +18,12 @@ class CorpusServerTest(unittest.TestCase):
 
     ic = None
     cs = None
+    corpus = None
     
+    #
+    # Test the initialization of Ice and the service proxy, then
+    # obtain a corpus with which the remaining operations will be performed
+    #
     def setUp(self):
         self.ic = Ice.initialize(sys.argv)
         base = self.ic.stringToProxy("CorpusServer:default -p 10011")
@@ -26,10 +31,32 @@ class CorpusServerTest(unittest.TestCase):
         if not self.cs:
             raise RuntimeError("Invalid proxy")
 
+        dataRoot = cvac.DirectoryPath( "corpus" );
+        corpusConfigFile = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
+        self.corpus = self.cs.openCorpus( corpusConfigFile )
+        if not self.corpus:
+            raise RuntimeError("could not open corpus from config file at '"
+                               +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
+
+    #
+    # Test if we can open another Corpus with an existing properties file
+    #
     def test_openCorpus(self):
-        dataRoot = cvac.DirectoryPath( "someroot" );
-        corpusConfigFile = cvac.FilePath( dataRoot, "Caltech101.props" )
-        corpus = self.cs.openCorpus( corpusConfigFile )
+        dataRoot = cvac.DirectoryPath( "corpus" );
+        corpusConfigFile = cvac.FilePath( dataRoot, "Caltech101.properties" )
+        corpus2 = self.cs.openCorpus( corpusConfigFile )
+        if not corpus2:
+            raise RuntimeError("could not open corpus from config file at '"
+                               +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
+
+    #
+    # Test obtaining a Labelable set
+    #
+    def test_getDataSet(self):
+        labels = self.cs.getDataSet( self.corpus )
+        if not labels:
+            raise RuntimeError("could not obtain labels from Corpus '"
+                               +self.corpus.name+"'")
 
     def tearDown(self):
         # Clean up

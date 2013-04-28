@@ -8,6 +8,12 @@ import cvac.CorpusService;
 import cvac.CorpusCallback;
 import cvac.Corpus;
 import cvac._CorpusServiceDisp;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Implementation for the CorpusService
@@ -16,18 +22,47 @@ import cvac._CorpusServiceDisp;
  */
 public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service 
 {
-    private Ice.ObjectAdapter mAdapter;
-    private CorpusService mService = null;
+    protected static final Logger logger = Logger.getLogger(CorpusServiceI.class.getName());
+    private Ice.ObjectAdapter mAdapter = null;
+    private String dataDir = "";
+    private CorpusConfig cc = null;
+    private Map<String, CorpusI> corpToImp = null;
+
+    /** Perform the initialization steps common to being started within or
+     * outside an IceBox.  mAdapter must have been set prior to calling this.
+     */
+    private void initialize()
+    {
+        if (null!=cc)
+        {
+            throw new RuntimeException("CorpusServiceI has been initialized already");
+        }
+        dataDir = mAdapter.getCommunicator().getProperties().getProperty("CVAC.DataDir");
+        logger.log(Level.FINE, "CorpusService found CVAC.DataDir={0}", dataDir);
+        cc = new CorpusConfig();
+        corpToImp = new HashMap<String, CorpusI>();
+        logger.log(Level.INFO, "CorpusService initialized" );
+    }
     
+    /** IceBox calls this method
+     * 
+     * @param name
+     * @param communicator
+     * @param args 
+     */
+    @Override
     public void start(String name, Ice.Communicator communicator, String[] args)
     {
         mAdapter = communicator.createObjectAdapter(name);
-        if (mService == null)
-            mService = new CorpusServiceI();
-        mAdapter.add(mService, communicator.stringToIdentity("CorpusServer"));
+        mAdapter.add( this, communicator.stringToIdentity("CorpusServer"));
+        initialize();
         mAdapter.activate();
     }
     
+    /** IceBox calls this method
+     * 
+     */
+    @Override
     public void stop()
     {
          mAdapter.deactivate();  
@@ -37,16 +72,42 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
      * extract, or otherwise prepare the Corpus, just create a Corpus object.
      * @param __current The Current object for the invocation.
      **/
+    @Override
     public Corpus openCorpus(cvac.FilePath file, Ice.Current __current) 
     {
-        System.out.println("request for openCorpus( " + file.filename + " )");
-        return new Corpus();
+        if (null==mAdapter) 
+        {
+            mAdapter = __current.adapter;
+            initialize();
+        }
+        
+        String filename = dataDir + File.separator
+                + file.directory.relativePath + File.separator
+                + file.filename;
+        logger.log(Level.INFO, "request for openCorpus( {0} )", filename);
+        try {
+            CorpusI cs = cc.addCorpusFromConfig( new File(filename) );
+            CorpusI cs_orig = corpToImp.get(cs.name);
+            if (null!=cs_orig)
+            {
+                logger.log(Level.WARNING, 
+                   "a corpus with the name {0} exists already, discarding the new one.", cs.name );
+                return cs_orig;
+            }
+            corpToImp.put( cs.name, cs );
+            return cs;
+        } 
+        catch (IOException ex) {
+            logger.log(Level.WARNING, "could not open Corpus property file: {0}", ex.toString() );
+        }
+        return null;
     }
 
     /**
      * Write Corpus to a metadata file. 
      * @param __current The Current object for the invocation.
      **/
+    @Override
     public void saveCorpus(Corpus corp, cvac.FilePath file, Ice.Current __current)
     {
         
@@ -58,6 +119,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
      * the files so as to construct a LabelableList.
      * @param __current The Current object for the invocation.
      **/
+    @Override
     public void createLocalMirror(Corpus corp, CorpusCallback cb, Ice.Current __current)
     {
         
@@ -69,9 +131,32 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
      * completed.
      * @param __current The Current object for the invocation.
      **/
+    @Override
     public cvac.Labelable[] getDataSet(Corpus corp, Ice.Current __current)
     {
-        return null;
+        if (null==mAdapter) 
+        {
+            logger.log(Level.WARNING, "CorpusServiceI has not been initialized yet, "
+                       + "no corpus is open.  Ignoring request to getDataSet.");
+            return null;
+        }
+        if (null==corp) 
+        {
+            logger.log(Level.WARNING, "CorpusServiceI.getDataSet called with null corpus.");
+            return null;
+        }
+        CorpusI cs = corpToImp.get( corp.name );
+        if (null==cs)
+        {
+            logger.log(Level.WARNING, "nothing known about corpus {0}", corp.name);
+            return null;
+        }
+        if ( cs.isImmutableMirror || !cs.hasFinishedLoading())
+        {
+            logger.log(Level.WARNING, "corpus {0} is immutable or still loading, cannot obtain labels", cs.name);
+            return null;
+        }
+        return cs.getLabels();
     }
 
     /**
@@ -79,8 +164,19 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
      * fail if the Corpus isImmutableMirror.
      * @param __current The Current object for the invocation.
      **/
+    @Override
     public void addLabelable(Corpus corp, cvac.Labelable[] addme, Ice.Current __current)
     {
-        
+        CorpusI cs = corpToImp.get( corp.name );
+        if (null==cs)
+        {
+            logger.log(Level.WARNING, "nothing known about corpus {0}", corp.name);
+            return;
+        }
+        if ( cs.isImmutableMirror || !cs.hasFinishedLoading())
+        {
+            logger.log(Level.WARNING, "corpus {0} is immutabel or still loading, cannot add labels", cs.name);
+        }
+//        cs.addSample( addme );
     }
 }

@@ -18,9 +18,9 @@ import util.Data_IO_Utils;
 public class CommonDataSetTest 
 {
     
-    CommonDataSet instance = new CommonDataSet("Caltech101", 
-            "Caltech101_URL", 
-            "http://www.vision.caltech.edu/Image_Datasets/Caltech101/101_ObjectCategories.tar.gz",
+    CommonDataSet instance = new CommonDataSet("TestImgs", 
+            "CVAC Test Images", 
+            "http://www.movesinstitute.org/~kolsch/CVAC/testImags.tar.gz",
             true);
     File[] filesInOutputDir;
     

@@ -61,7 +61,7 @@ abstract public class CorpusI extends Corpus {
     }
 
     // Advises if load operation is still ongoing
-    public boolean isStillLoading() {
+    public boolean hasFinishedLoading() {
         return false;
 //        return (null!=m_loader_thread && m_loader_thread.isAlive());
     }
@@ -107,6 +107,11 @@ abstract public class CorpusI extends Corpus {
     abstract public void addSample(String category, Labelable sam);
     
     abstract public void removeSample(String category);
+
+    Labelable[] getLabels() {
+        Labelable[] labels = new Labelable[m_images.size()];
+        return m_images.values().toArray( labels );
+    }
 
     /*
      *Load all the images
