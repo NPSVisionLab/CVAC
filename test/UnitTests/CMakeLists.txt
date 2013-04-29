@@ -1,6 +1,9 @@
 SET(APP_NAME UnitTests) 
 
-ADD_SUBDIRECTORY( python )
+IF( BUILD_CORPUS_SERVER )
+    # CorpusServerTest connects via Python
+    ADD_SUBDIRECTORY( python )
+ENDIF( BUILD_CORPUS_SERVER )
 
 WRAP_SLICE(SLICE_FILES
            ${CVAC_ROOT_DIR}/src/Data.ice

@@ -24,24 +24,7 @@ WRAP_SLICE2PY( SLICE_FILES
     ${CMAKE_SOURCE_DIR}/src/Corpus.ice
 )
 
-# need to single out one class so we can address it explicitly instead of with *
-#SET ( SLICE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR} )
-#MAKE_DIRECTORY ( ${SLICE_OUTPUT_PATH} )
-
-#
-# Command to run slice2py to produce all *_ice.py files
-#
-#SET ( SLICE_ARGS ${SLICE_FILES} -I${ICE_ROOT}/slice --output-dir ${SLICE_OUTPUT_PATH} )
-#ADD_CUSTOM_COMMAND(
-#    OUTPUT ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-#    COMMAND ${ICE_SLICE2JAVA_EXECUTABLE}
-#    ARGS ${SLICE_ARGS}
-#    DEPENDS ${SLICE_FILES}
-#    COMMENT "Generating .java files from .ice sources." )
-#MESSAGE ( STATUS "Java source files will be created from Slice definitions using this command:" )
-#MESSAGE ( STATUS "${ICE_SLICE2JAVA_EXECUTABLE} ${SLICE_ARGS}" )
-
-
+#    Python build process
 #    add_custom_command(OUTPUT ${OUTPUT}
 #                       COMMAND ${PYTHON} ${SETUP_PY} build
 #                       COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}

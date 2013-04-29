@@ -43,7 +43,7 @@ module cvac {
 
     /** Called once the createLocalMirror function has completed.
      */
-    void corpusMirrorCompleted( );
+    void corpusMirrorCompleted( Corpus corp );
   };
 
 

@@ -96,20 +96,6 @@ public class Data_IO_Utils {
 //        return (original_path); // No substitutions
 //    }
 
-    // win: ~/Caches/CVAC/
-    // x86/64/mac: ~/Library/Caches/CVAC/
-    private static String getUserCacheDir() {
-
-        if ((Code_Utils.OS_Type.WIN == Code_Utils.getOsName()) || (Code_Utils.OS_Type.LINUX == Code_Utils.getOsName())) {
-            return (osPathStr(usersHomeDir + File.separatorChar + "Caches" + File.separatorChar + "CVAC" + File.separatorChar));
-        } else if (Code_Utils.OS_Type.MAC == Code_Utils.getOsName()) {
-            return (osPathStr(usersHomeDir + File.separatorChar + "Library" + File.separatorChar + "Caches" + File.separatorChar + 
-                              "CVAC" + File.separatorChar));
-        } else {
-            throw new RuntimeException("OS Type is not supported: {win, mac, linux}.  Cannot set path for user-space cache.");
-        }
-    }
-
     // Substitute '|USER_HOME_DIR|' token with Java user directory
     // $ is a special character in XML strings, avoid.
 //    public static String expand_userDir_Prefix(String original) {
