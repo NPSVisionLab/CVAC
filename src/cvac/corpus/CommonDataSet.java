@@ -36,8 +36,8 @@ public class CommonDataSet extends CorpusI {
     public enum CompressionType {GZIP, BZ2, Z, UNCOMPRESSED}
     public enum ArchiveType {A, AR, CPIO, SHAR, LBR, ISO, TAR, UNARCHIVED}
     
-    private File m_metaDataFolder, // '../.meta' sub-folder of root
-                 m_metaTxtFile;   // File: 'status.txt'
+    private File m_metaDataFolder, // '.meta' sub-folder of local corpus folder
+                 m_metaStatusFile;   // File: 'status.txt'
     
     //private CommonDataSet m_parent; //?
 
@@ -45,14 +45,11 @@ public class CommonDataSet extends CorpusI {
     {
         super(name, description, homepageURL, isImmutableMirror);
                 
-        m_metaDataFolder = new File(m_dataSetFolder);
-        m_metaTxtFile = new File( m_dataSetFolder + File.separator + "status.txt" );
+        // note that at first these dirs/files don't exist yet
+        m_metaDataFolder = new File( m_dataSetFolder + File.separator + ".meta" );
+        m_metaStatusFile = new File( m_metaDataFolder + File.separator + "status.txt" );
     }
     
-//    public void loadDataSet(DataSetMirror from_mirror) {
-//        loadDataSet(from_mirror);
-//    }
-//
 //    /*
 //     * Create samples for each file in the dataset on the remote mirror.
 //     */
@@ -93,20 +90,20 @@ public class CommonDataSet extends CorpusI {
             return;
         }
         
+        // download and uncompress the Corpus archive
         String main_location = properties.getProperty("main_location");
         File ml = new File( main_location );
         String fname = ml.getName();
-        File web_SavedFile = new File( m_dataSetFolder + File.separator + fname );
+        File localArchiveFile = new File( m_metaDataFolder + File.separator + fname );
         String decompressed = "decompressed.tar";
-        expandDataset_toLocal( main_location, web_SavedFile, decompressed, 
+        expandDataset_toLocal( main_location, localArchiveFile, decompressed, 
                 m_dataSetFolder, CommonDataSet.CompressionType.GZIP );
 
         // if no errors, write a little metadata file
-        try {
-            Data_IO_Utils.createDir_orFile( m_metaTxtFile, FS_ObjectType.FILE );
-        } catch (IOException ex) {
-            logger.log(Level.WARNING, "can't write metadata file, will cause Corpus to be downloaded again", ex);
-        }
+        writeStatusFile();
+        
+        // read in the Label data
+        loadImages();
     }
 
 
@@ -117,7 +114,7 @@ public class CommonDataSet extends CorpusI {
         if (tentfile.exists())
         {
             // check if the metadata is present and complete, if so, this mirror exists already
-            if (m_metaTxtFile.exists() )
+            if (m_metaStatusFile.exists() )
             {
                 return true;
             }
@@ -143,8 +140,7 @@ public class CommonDataSet extends CorpusI {
 
         File tarOutput;
         if(CompressionType.GZIP == uncompressType) {  // Unzipping GZip Produces (.tar) in /expansion/ folder
-            tarOutput = new File( getSubfolderPath() + 
-                                  File.separatorChar + "expansion" +
+            tarOutput = new File( m_metaDataFolder.getAbsolutePath() +
                                   File.separatorChar + decompressedOutputName ); 
 
             try {
@@ -358,11 +354,20 @@ public class CommonDataSet extends CorpusI {
         }
     }
     
+    private void writeStatusFile()
+    {
+        try {
+            Data_IO_Utils.createDir_orFile( m_metaStatusFile, FS_ObjectType.FILE );
+        } catch (IOException ex) {
+            logger.log(Level.WARNING, "can't write metadata file. this will cause Corpus to be downloaded again", ex);
+        }
+    }
+    
     public void removeMetaFlg() {
         
         logger.warning("Removing 'Meta Flag: status.txt' due to error expanding-DataSet.");
         
-        boolean success = m_metaTxtFile.delete();
+        boolean success = m_metaStatusFile.delete();
         if(!success) {
             logger.severe("Unable to delete MetaFootprint after expansion failure.");
             logger.severe("Future expansions may be subject to incorrect 'DataSet / disk' state in next expansion.");
@@ -388,10 +393,6 @@ public class CommonDataSet extends CorpusI {
 //            props.setProperty("imageType", "image");
         
         return props;
-    }
-    
-    public String getSubfolderPath() {
-        return m_metaDataFolder.getPath();
     }
     
     @Override

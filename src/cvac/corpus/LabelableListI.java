@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import cvac.Corpus;
+import cvac.Label;
 
 /**
  * LabelableListI is either a category of images within a DataSet (such as "dolphins"
@@ -140,9 +141,11 @@ public class LabelableListI extends ArrayList<Labelable> {
     /** LabelableI data points to each file
      * 
      * @param directory
+     * @param what path to record in the Labelable
      * @return the number of samples added
      */
-    public int addAllSamplesInDir(File directory) 
+    public int addAllSamplesInDir(File directory, 
+            Label label, float confidence, String relativePath) 
     {
         boolean video = false;
         if (null != m_corpus){
@@ -159,9 +162,11 @@ public class LabelableListI extends ArrayList<Labelable> {
                     // TODO: helper function createSubstrateFrom( directory, imageFiles[i] )
                     Labelable sample = new Labelable();
                     FilePath path;
-                    path = new FilePath(new DirectoryPath(directory.getPath()), 
+                    path = new FilePath(new DirectoryPath(relativePath), 
                             imageFiles[i].getName());
                     sample.sub = new Substrate(true, false, path, -1, -1);
+                    sample.confidence = confidence;
+                    sample.lab = label;
                     this.add(sample);
                 }
                 cnt += imageFiles.length;
@@ -174,9 +179,11 @@ public class LabelableListI extends ArrayList<Labelable> {
                 for (int i = 0; i < videoFiles.length; i++){
                     Labelable sample = new Labelable();
                     FilePath path;
-                    path = new FilePath(new DirectoryPath(directory.getPath()), 
+                    path = new FilePath(new DirectoryPath(relativePath), 
                             videoFiles[i].getName());
                     sample.sub = new Substrate(false, true, path, -1, -1);
+                    sample.confidence = confidence;
+                    sample.lab = label;
                     this.add(sample);
                 }
                 cnt +=  videoFiles.length;
