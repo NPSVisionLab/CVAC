@@ -11,6 +11,8 @@ UserCMakeLists.txt
 /3rdparty
 /doc/html
 /Doxyfile
+/build*
+/dist
 
 # Compiled source #
 ###################
@@ -50,7 +52,3 @@ nbproject
 Icon?
 ehthumbs.db
 Thumbs.db
-/build/
-/dist/
-/.bowTest/
-/data/CvacCorpusTest/.meta/
