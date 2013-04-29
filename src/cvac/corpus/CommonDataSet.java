@@ -2,6 +2,7 @@ package cvac.corpus;
 
 import com.ice.tar.TarEntry;
 import com.ice.tar.TarInputStream;
+import cvac.CorpusCallback;
 import cvac.Labelable;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -29,13 +30,13 @@ import util.DownloadUtils;
  * @author matz
  */
 public class CommonDataSet extends CorpusI {
-   
+    private Properties properties;
+
     public enum DataSetLocType {LOCAL, URL, STREAMING, REMOTE, LABELME}
     public enum CompressionType {GZIP, BZ2, Z, UNCOMPRESSED}
     public enum ArchiveType {A, AR, CPIO, SHAR, LBR, ISO, TAR, UNARCHIVED}
     
     private File m_metaDataFolder, // '../.meta' sub-folder of root
-                 m_expansionFolder,
                  m_metaTxtFile;   // File: 'status.txt'
     
     //private CommonDataSet m_parent; //?
@@ -43,21 +44,9 @@ public class CommonDataSet extends CorpusI {
     public CommonDataSet(String name, String description, String homepageURL, boolean isImmutableMirror)
     {
         super(name, description, homepageURL, isImmutableMirror);
-        
-        if(null == m_dataSetFolder) {
-            m_dataSetFolder = "";
-        }
-        else {
-            m_metaDataFolder = new File(m_dataSetFolder);
-        }
-    }
-  
-    @Override
-    public void setName(String n) {
-
-        name = n;
-        
-        m_dataSetFolder = (m_dataSetFolder + File.separator + name);
+                
+        m_metaDataFolder = new File(m_dataSetFolder);
+        m_metaTxtFile = new File( m_dataSetFolder + File.separator + "status.txt" );
     }
     
 //    public void loadDataSet(DataSetMirror from_mirror) {
@@ -93,6 +82,52 @@ public class CommonDataSet extends CorpusI {
 //       
 //    }
     
+    
+    @Override
+    void createLocalMirror( CorpusCallback cb )
+    {
+        // does a local mirror exist already?
+        if ( localMirrorExists() )
+        {
+            logger.log( Level.INFO, "Local mirror for Corpus {0} exists already.", this.name );
+            return;
+        }
+        
+        String main_location = properties.getProperty("main_location");
+        File ml = new File( main_location );
+        String fname = ml.getName();
+        File web_SavedFile = new File( m_dataSetFolder + File.separator + fname );
+        String decompressed = "decompressed.tar";
+        expandDataset_toLocal( main_location, web_SavedFile, decompressed, 
+                m_dataSetFolder, CommonDataSet.CompressionType.GZIP );
+
+        // if no errors, write a little metadata file
+        try {
+            Data_IO_Utils.createDir_orFile( m_metaTxtFile, FS_ObjectType.FILE );
+        } catch (IOException ex) {
+            logger.log(Level.WARNING, "can't write metadata file, will cause Corpus to be downloaded again", ex);
+        }
+    }
+
+
+    private boolean localMirrorExists() {
+        // where shall this mirror live?
+        // for now, it's a fixed location based on the corpus name
+        File tentfile = new File( m_dataSetFolder );
+        if (tentfile.exists())
+        {
+            // check if the metadata is present and complete, if so, this mirror exists already
+            if (m_metaTxtFile.exists() )
+            {
+                return true;
+            }
+            
+            // if not: something else is in this folder, and we can't handle that right now
+            throw new RuntimeException("data dir exists already but no metadata; aborting because no plan B available");
+        }
+        return false;
+    }
+   
     
       // Orchestrate entire unpacking sequence
     protected void expandDataset_toLocal( String webURL, File web_SavedFile, String decompressedOutputName,
@@ -359,7 +394,10 @@ public class CommonDataSet extends CorpusI {
         return m_metaDataFolder.getPath();
     }
     
-    public boolean configureFromProperties(Properties config) {
-        return true;
+    @Override
+    public void configureFromProperties(Properties config) 
+            throws CorpusConfigurationException
+    {
+        properties = config;
     }
 }

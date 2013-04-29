@@ -1,5 +1,6 @@
 package cvac.corpus;
 
+import java.io.FileNotFoundException;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.util.Properties;
@@ -66,21 +67,25 @@ class CorpusConfig {
             try {
                 addCorpusFromConfig( propFiles[i] );
             }
-            catch (IOException ioe)
+            catch (CorpusI.CorpusConfigurationException ex)
             {
-                 logger.throwing("Dataset", "opening config file", ioe);
+                 logger.throwing("Dataset", "opening config file", ex);
                  return;
             }
         }
     }
     
     public CorpusI addCorpusFromConfig( File propFile )
-        throws IOException
+        throws CorpusI.CorpusConfigurationException
     {
         FileInputStream fis = null;
         Properties config = new Properties();
-        fis = new FileInputStream( propFile );
-        config.load( fis );
+        try {
+            fis = new FileInputStream( propFile );
+            config.load( fis );
+        } catch (IOException ex) {
+            throw new CorpusI.CorpusConfigurationException( ex.getMessage() );
+        }
         CorpusI ds = parseCorpusProperties(config, propFile.toString());
         logger.log(Level.INFO, "Adding DataSet properties from file {0}", propFile.toString());
         if (null!=ds)
@@ -90,7 +95,9 @@ class CorpusConfig {
         return ds;
     }
 
-    private CorpusI parseCorpusProperties(Properties config, String filename) throws NumberFormatException 
+    // TODO: change "return null" to throwing an exception
+    private CorpusI parseCorpusProperties(Properties config, String filename) 
+            throws CorpusI.CorpusConfigurationException 
     {
         // check config file version compatibility
         String file_version = config.getProperty("dataset_config_version");
@@ -123,8 +130,12 @@ class CorpusConfig {
             return null;
         }
         CorpusI ds = null;
-        String dsTypeProp = config.getProperty("datasetType");
+
+        // Datasets that have a "web" source such as Caltech101 will be downloaded
+        // to some extent, and the local copy will be considered an 
+        // "immutable mirror".  Only locally created datasets will be mutable.
         boolean isImmutableMirror = true;
+        String dsTypeProp = config.getProperty("datasetType");
         if (dsTypeProp == null || dsTypeProp.equalsIgnoreCase("common"))
         {
             ds = new CommonDataSet( nameProp, descProp, homepage, isImmutableMirror );

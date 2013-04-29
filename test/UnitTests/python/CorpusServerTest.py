@@ -10,11 +10,18 @@ import Ice
 if "C:\Program Files (x86)\ZeroC_Ice\python" not in sys.path:
     sys.path.append("C:\Program Files (x86)\ZeroC_Ice\python")
 import Ice
+import IcePy
 import cvac
 import unittest
 
+class TestCorpusCallback(cvac.CorpusCallback):
+    def corpusMirrorProgress( corpus, 
+                numtasks, currtask, taskname, details, percentCompleted, current=None ):
+        print "hello1"
+    def corpusMirrorCompleted( current=None ):
+        print "hello2"
 
-class CorpusServerTest(unittest.TestCase):
+class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
 
     ic = None
     cs = None
@@ -42,6 +49,7 @@ class CorpusServerTest(unittest.TestCase):
     # Test if we can open another Corpus with an existing properties file
     #
     def test_openCorpus(self):
+        print 'openCorpus'
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "Caltech101.properties" )
         corpus2 = self.cs.openCorpus( corpusConfigFile )
@@ -50,13 +58,36 @@ class CorpusServerTest(unittest.TestCase):
                                +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
 
     #
-    # Test obtaining a Labelable set
+    # Test obtaining a Labelable set: first, expect a failure because the corpus
+    # is not downloaded yet (local mirror)
     #
     def test_getDataSet(self):
+        print 'getDataSet'
         labels = self.cs.getDataSet( self.corpus )
         if not labels:
             raise RuntimeError("could not obtain labels from Corpus '"
                                +self.corpus.name+"'")
+
+
+    #
+    # Obtain a local mirror of the data set.
+    #
+    def test_createLocalMirror(self):
+        print 'createLocalMirror'
+        adapter = self.ic.createObjectAdapter("")
+        ident = Ice.Identity()
+        ident.name = IcePy.generateUUID()
+        ident.category = ""
+#        adapter.add( self, ident )
+        adapter.add( TestCorpusCallback(), ident )
+        adapter.activate()
+#        adapter = self.ic.createObjectAdapter("CorpusServer")
+#        adapter.add( TestCorpusCallback(), ic.stringToIdentity("CorpusServer:default -p 10011"))
+#        adapter.activate()
+#        receiver = cvac.CorpusCallbackPrx.uncheckedCast(
+#            adapter.createProxy( self.ic.stringToIdentity("callbackReceiver")))
+        
+        self.cs.createLocalMirror( self.corpus, ident )
 
     def tearDown(self):
         # Clean up

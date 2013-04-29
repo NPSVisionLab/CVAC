@@ -225,7 +225,15 @@ public class Data_IO_Utils {
 
     // Special case for forcing use of knowledge about Directory vs. File
     // from outside of 'objToCreate' File obj
-    public static void createDir_orFile(File objToCreate, FS_ObjectType objType) throws IOException {
+    public static void createDir_orFile(File objToCreate, FS_ObjectType objType) 
+            throws IOException 
+    {
+        // create parent directories, if any
+        File parent = objToCreate.getParentFile();
+        if (!parent.exists())
+        {
+            parent.mkdirs();
+        }
 
         if (FS_ObjectType.FILE == objType) {
 

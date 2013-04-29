@@ -1,6 +1,7 @@
 #ifndef _CORPUS_ICE
 #define _CORPUS_ICE
 
+#include <Ice/Identity.ice>
 #include "Data.ice"
 
 module cvac {
@@ -42,7 +43,7 @@ module cvac {
 
     /** Called once the createLocalMirror function has completed.
      */
-    void corpusMirrorCompleted( Corpus corp );
+    void corpusMirrorCompleted( );
   };
 
 
@@ -73,8 +74,9 @@ module cvac {
     /** Download, extract, and keep caller informed via CorpusCallback.
       * A mirror can contain the actual files or just enough metadata about
       * the files so as to construct a LabelableList.
+      * The callback adapter (cb) must be of type CorpusCallback.
       */
-    void createLocalMirror( Corpus corp, CorpusCallback cb );
+    void createLocalMirror( Corpus corp, Ice::Identity cb );
 
     /** Obtain the actual data items in the corpus.  This will fail if
      *  the Corpus isImmutableMirror and createLocalMirror has not been

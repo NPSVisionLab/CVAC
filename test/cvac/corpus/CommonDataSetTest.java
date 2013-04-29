@@ -97,24 +97,6 @@ public class CommonDataSetTest
         }
     }
     
-    @Test
-    public void testGetProperties() {  // No Special Access needed
-        Properties returnProps = instance.getProperties();
-
-        System.out.println("|**********************************************************|");
-        System.out.println("|Test |           Test_GetProperties:] \n" );
-
-        
-        assert(null != returnProps);
-        // check for properties...
-        
-        Properties instProps = instance.getProperties();
-        String nameStr = instProps.getProperty("name");
-        assert(nameStr.equals("Caltech101"));
-        String descStr = instProps.getProperty("description");
-        assert(descStr.equals("Caltech101_URL"));
-    }
-    
     /** temporary main method so we can debug this
      */
     public static void main( String[] args )

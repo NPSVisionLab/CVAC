@@ -1,5 +1,6 @@
 package cvac.corpus;
 
+import cvac.CorpusCallback;
 import cvac.FilePath;
 import cvac.Labelable;
 import cvac.Substrate;
@@ -20,20 +21,36 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import cvac.Corpus;
+import util.Data_IO_Utils;
 
 /**
  * A corpus represents a set of images, videos, or other media,
  * often annotated with labels.
+ * 
+ * Corpora/datasets that have a "web" source such as Caltech101 will be downloaded
+ * to some extent, and the local copy will be considered an 
+ * "immutable mirror".  Only locally created datasets will be mutable.
+ *
  * @author tomb, jcs, matz
  */
-abstract public class CorpusI extends Corpus {
+abstract public class CorpusI extends Corpus 
+{
+    static class CorpusConfigurationException extends Exception
+    {
+
+        protected CorpusConfigurationException(String string) {
+            super( string );
+        }
+    }
+    
     public static final String[] IMAGE_SUFFIXES = {".jpg",".jpeg",".png", ".pgm"};
     public static final String[] VIDEO_SUFFIXES = {".3g2", ".3gp", ".4xm", ".ajp", ".amc", ".amv", ".asf", ".ass", ".avi", ".bik", ".dpg", ".dsv", ".dv", ".dvf", ".dvx", ".flc", ".flv", ".gvi", ".hdmov", ".hdv", ".heu", ".ivf", ".k3g", ".m2p", ".m2ts", ".mjp", ".mkv", ".mmv", ".mod", ".modd", ".moff", ".mov", ".mp4", ".mpb", ".mpg", ".mswmm", ".mvb", ".mve", ".mxf", ".nsv", ".ogv", ".pva", ".rm", ".rms", ".rv", ".s2k", ".scm", ".smk", ".smv", ".sol", ".srt", ".ssa", ".str", ".sub", ".svi", ".tod", ".tp", ".ts", ".vc1", ".vid", ".vod", ".vp6", ".vp7", ".vqa", ".wm", ".wma", ".wmdb", ".wmv", ".xas", ".xma"};
 
     protected static Logger logger = Logger.getLogger(Corpus.class.getName());
+    static String rootDataDir;  // set by CorpusServiceI during initialization
     public static void setLogger( Logger lg ) { logger = lg; }
     
-    protected String                  m_dataSetFolder;     // Top-Level containing folder for DataSet
+    protected String m_dataSetFolder = null;     // Top-Level containing folder for DataSet
     
 //    private LoaderThread              m_loader_thread;
     protected Map<String, LabelableListI> m_images;
@@ -44,6 +61,7 @@ abstract public class CorpusI extends Corpus {
     {
         super( name, description, homepageURL, isImmutableMirror );
         m_images = new HashMap<String, LabelableListI>();
+        setDataDirBasedOnName();
 //        m_loader_thread = null;
     }
     
@@ -62,13 +80,17 @@ abstract public class CorpusI extends Corpus {
 
     // Advises if load operation is still ongoing
     public boolean hasFinishedLoading() {
-        return false;
+        return true;
 //        return (null!=m_loader_thread && m_loader_thread.isAlive());
     }
 
-    public void setName(String n)
+    private void setDataDirBasedOnName()
     {
-        this.name = n;
+        if(null != m_dataSetFolder) {
+            throw new RuntimeException("we dont expect m_dataSetFolder to be set");
+        }
+        assert(null!=rootDataDir && !rootDataDir.equals(""));
+        m_dataSetFolder = rootDataDir + File.separator + this.name;
     }
 
     public String getName() {
@@ -112,6 +134,8 @@ abstract public class CorpusI extends Corpus {
         Labelable[] labels = new Labelable[m_images.size()];
         return m_images.values().toArray( labels );
     }
+
+    abstract void createLocalMirror(CorpusCallback cb);
 
     /*
      *Load all the images
@@ -166,6 +190,7 @@ abstract public class CorpusI extends Corpus {
      */
     
     public class DirNameFilter implements FilenameFilter {
+        @Override
         public boolean accept (File dir, String name)
         {
             // ignore any .name directories
@@ -209,9 +234,8 @@ abstract public class CorpusI extends Corpus {
                 if (!samplesHasSubDir(subdirs[i].getName()) ){
                     String dir = subdirs[i].getAbsolutePath();
                     String dsfolder = this.m_dataSetFolder;
-                    String replacedUnixPath = "TODO"; // Data_IO_Utils.unixPathStr(dsfolder);
-                    String mediaRootDirStr = "TODO"; //Main.getEngine().getDataDir().getPath();
-                    String unixPath_RootDir = "TODO"; //Data_IO_Utils.unixPathStr(mediaRootDirStr);
+                    String replacedUnixPath = Data_IO_Utils.unixPathStr(dsfolder);
+                    String unixPath_RootDir = Data_IO_Utils.unixPathStr( rootDataDir );
                     String folder = replacedUnixPath.replaceFirst("\\$MEDIA_ROOT", unixPath_RootDir);  // Backslashes convert to Reg-exp       
                     int len = folder.length();
                     String sub = dir.substring(len+1);
@@ -326,6 +350,7 @@ abstract public class CorpusI extends Corpus {
         // Grab all directories inside the DataSet folder, filter out '.meta'
         FileFilter all_nonMetaFolders = new FileFilter() {
             
+            @Override
             public boolean accept(File file) {  // boolean Filter callback
                 return (file.isDirectory() && !(".meta".equals(file.getName())));
             }
@@ -358,15 +383,15 @@ abstract public class CorpusI extends Corpus {
             File[] imageCategoryDirs = topLevelDir.listFiles(all_nonMetaFolders);
             if (null == imageCategoryDirs || 0 == imageCategoryDirs.length){
                 // We assume that all the images are in this directory
-                String name = topLevelDir.getName();
-                dir_SampleList = new LabelableListI(name, this, name);
+                String topDirName = topLevelDir.getName();
+                dir_SampleList = new LabelableListI(topDirName, this, topDirName);
                 int added = dir_SampleList.addAllSamplesInDir(topLevelDir);
                 if (0==added)
                 {
                    logger.log(Level.WARNING, "Sample directory {0} does not exist or is empty", 
                            topLevelDir.getPath());
                 }
-                m_images.put(name, dir_SampleList);
+                m_images.put(topDirName, dir_SampleList);
             }else {
                 for(File curImageCatDir : imageCategoryDirs) {
                     if(!curImageCatDir.isDirectory()) {
@@ -422,6 +447,6 @@ abstract public class CorpusI extends Corpus {
 */
     abstract public Properties getProperties();
     
-    // TODO: should be void function throwing a parsing exception
-    abstract public boolean configureFromProperties(Properties config);
+    abstract void configureFromProperties(Properties config)
+        throws CorpusConfigurationException;
 }

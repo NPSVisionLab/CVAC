@@ -5,6 +5,7 @@ import com.mathworks.toolbox.javabuilder.MWArray;
 import com.mathworks.toolbox.javabuilder.MWException;
 import com.mathworks.toolbox.javabuilder.MWNumericArray;
 import com.mathworks.toolbox.javabuilder.MWStructArray;
+import cvac.CorpusCallback;
 import cvac.DetectorPrx;
 import cvac.DetectorPrxHelper;
 import cvac.DirectoryPath;
@@ -469,37 +470,34 @@ public class LabelMeDataSet extends CorpusI
         return props;
     }
     
-    public boolean configureFromProperties(Properties config) {
+    @Override
+    public void configureFromProperties(Properties config) 
+        throws CorpusConfigurationException
+    {
 
         String folders = config.getProperty("LMFolders");
         if (null == folders){
-            logger.log(Level.WARNING, "No LMFolders property");
-            return false;
+            throw new CorpusConfigurationException("No LMFolders property");
         } else
             this.setLMFolders(folders);
         String objNames = config.getProperty("LMObjectNames");
         if (null == objNames){
-            logger.log(Level.WARNING, "No LMObjectNames property");
-            return false;
+            throw new CorpusConfigurationException("No LMObjectNames property");
         }else
             this.setObjectNames(objNames);
         this.HOMEANNOTATIONS = config.getProperty("LMAnnotationURL");
         if (null == this.HOMEANNOTATIONS){
-            logger.log(Level.WARNING, "No LMAnnotationURL property");
-            return false;
+            throw new CorpusConfigurationException("No LMAnnotationURL property");
         }
         this.HOMEIMAGES = config.getProperty("LMImageURL");
         if (null == this.HOMEIMAGES){
-            logger.log(Level.WARNING, "No LMImageURL property");
-            return false;
+            throw new CorpusConfigurationException("No LMImageURL property");
         }
         // TODO: Move this to base class config
         this.m_dataSetFolder = config.getProperty("DataRootDir");
         if (null == this.m_dataSetFolder){
-            logger.log(Level.WARNING, "No DataRootDir property");
-            return false;
+            throw new CorpusConfigurationException("No DataRootDir property");
         }
-        return true;
     }
 
 //    public String getLMImageURL() {
@@ -528,4 +526,9 @@ public class LabelMeDataSet extends CorpusI
 //        if (lmObjectLabelNames.isEmpty()) return "";
 //        return lmObjectLabelNames.get(0);
 //    }
+
+    @Override
+    void createLocalMirror(CorpusCallback cb) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 }

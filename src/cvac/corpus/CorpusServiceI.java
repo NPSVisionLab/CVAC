@@ -7,6 +7,9 @@ package cvac.corpus;
 import cvac.CorpusService;
 import cvac.CorpusCallback;
 import cvac.Corpus;
+import cvac.CorpusCallbackPrx;
+import cvac.CorpusCallbackPrxHelper;
+import cvac.CorpusServicePrxHelper;
 import cvac._CorpusServiceDisp;
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +23,7 @@ import java.util.logging.Logger;
  *
  * @author matz
  */
-public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service 
+public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
 {
     protected static final Logger logger = Logger.getLogger(CorpusServiceI.class.getName());
     private Ice.ObjectAdapter mAdapter = null;
@@ -39,6 +42,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
         }
         dataDir = mAdapter.getCommunicator().getProperties().getProperty("CVAC.DataDir");
         logger.log(Level.FINE, "CorpusService found CVAC.DataDir={0}", dataDir);
+        CorpusI.rootDataDir = dataDir;
         cc = new CorpusConfig();
         corpToImp = new HashMap<String, CorpusI>();
         logger.log(Level.INFO, "CorpusService initialized" );
@@ -97,8 +101,8 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
             corpToImp.put( cs.name, cs );
             return cs;
         } 
-        catch (IOException ex) {
-            logger.log(Level.WARNING, "could not open Corpus property file: {0}", ex.toString() );
+        catch ( CorpusI.CorpusConfigurationException ex) {
+            logger.log(Level.WARNING, "could not open or parse Corpus property file: {0}", ex.toString() );
         }
         return null;
     }
@@ -117,12 +121,34 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
      * Download, extract, and keep caller informed via CorpusCallback.
      * A mirror can contain the actual files or just enough metadata about
      * the files so as to construct a LabelableList.
+     * @param cb A CorpusCallback reference.
      * @param __current The Current object for the invocation.
      **/
     @Override
-    public void createLocalMirror(Corpus corp, CorpusCallback cb, Ice.Current __current)
+    public void createLocalMirror(Corpus corp, Ice.Identity cb, Ice.Current __current)
     {
-        
+        if (null==mAdapter) 
+        {
+            logger.log(Level.WARNING, "CorpusServiceI has not been initialized yet, "
+                       + "no corpus is open.  Ignoring request to getDataSet.");
+            return;
+        }
+        if (null==corp) 
+        {
+            logger.log(Level.WARNING, "CorpusServiceI.getDataSet called with null corpus.");
+            return;
+        }
+        CorpusI cs = corpToImp.get( corp.name );
+        if (null==cs)
+        {
+            logger.log(Level.WARNING, "nothing known about corpus {0}", corp.name);
+            return;
+        }
+        Ice.ObjectPrx base = __current.con.createProxy( cb );
+        CorpusCallbackPrx client = CorpusCallbackPrxHelper.uncheckedCast(base);
+        //client.corpusMirrorCompleted( );
+        cs.createLocalMirror( null );
+        //(new Thread(this)).start();
     }
 
     /**
@@ -151,9 +177,9 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
             logger.log(Level.WARNING, "nothing known about corpus {0}", corp.name);
             return null;
         }
-        if ( cs.isImmutableMirror || !cs.hasFinishedLoading())
+        if ( !cs.hasFinishedLoading())
         {
-            logger.log(Level.WARNING, "corpus {0} is immutable or still loading, cannot obtain labels", cs.name);
+            logger.log(Level.WARNING, "corpus {0} is still loading, cannot obtain labels", cs.name);
             return null;
         }
         return cs.getLabels();
