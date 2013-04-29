@@ -87,6 +87,7 @@ public class CommonDataSet extends CorpusI {
         if ( localMirrorExists() )
         {
             logger.log( Level.INFO, "Local mirror for Corpus {0} exists already.", this.name );
+            loadImages();
             return;
         }
         

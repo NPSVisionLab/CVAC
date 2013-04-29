@@ -53,3 +53,4 @@ Thumbs.db
 /build/
 /dist/
 /.bowTest/
+/data/CvacCorpusTest/.meta/

@@ -42,6 +42,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
         }
         dataDir = mAdapter.getCommunicator().getProperties().getProperty("CVAC.DataDir");
         logger.log(Level.FINE, "CorpusService found CVAC.DataDir={0}", dataDir);
+        logger.setLevel(Level.FINEST);
         CorpusI.rootDataDir = dataDir;
         cc = new CorpusConfig();
         corpToImp = new HashMap<String, CorpusI>();
@@ -108,7 +109,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
     }
 
     /**
-     * Write Corpus to a metadata file. 
+     * Write Corpus to a properties file. 
      * @param __current The Current object for the invocation.
      **/
     @Override
@@ -148,7 +149,6 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
         CorpusCallbackPrx client = CorpusCallbackPrxHelper.uncheckedCast(base);
         //client.corpusMirrorCompleted( );
         cs.createLocalMirror( null );
-        //(new Thread(this)).start();
     }
 
     /**
