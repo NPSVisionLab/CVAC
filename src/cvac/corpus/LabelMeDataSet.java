@@ -15,6 +15,7 @@ import cvac.LabelablePrx;
 import cvac.LabeledLocation;
 import cvac.LabeledLocationPrx;
 import cvac.LabeledLocationPrxHelper;
+import cvac.Semantics;
 import cvac.Silhouette;
 import cvac.Substrate;
 import util.Data_IO_Utils;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
@@ -50,12 +52,14 @@ public class LabelMeDataSet extends CorpusI
     String HOMEIMAGES = "";
     ArrayList<String> lmObjectLabelNames;
     ArrayList<String> lmFolderList;
+    ArrayList<Labelable> ils;
 
     public LabelMeDataSet(String name, String description, String homepageURL, boolean isImmutableMirror)
     {
         super( name, description, homepageURL, isImmutableMirror );     
         this.lmObjectLabelNames = new ArrayList<String>(0);
         this.lmFolderList = new ArrayList<String>(0);
+        this.ils = new ArrayList<Labelable>(0);
     }
 
     /**
@@ -206,12 +210,8 @@ public class LabelMeDataSet extends CorpusI
                 result3 = annot.getField("object", 1);
 
                 MWStructArray lmobj = (MWStructArray) result3;
-                // TODO: figure out what happened with ils before refactor
-                if (true) {
-                    throw new RuntimeException("whats' going to happen to ils??");
-                }
-                ArrayList<Labelable> ils = 
-                        new ArrayList<Labelable>(lmobj.numberOfElements());
+                // TODO: maybe it's better to keep separate "ils", one for each labelmeObjnum?
+                ils.ensureCapacity( ils.size() + lmobj.numberOfElements() );
                 for (int objcnt=1; objcnt<=lmobj.numberOfElements(); objcnt++)
                 {
                     MWArray result4 = lmobj.getField("name", objcnt);
@@ -238,6 +238,13 @@ public class LabelMeDataSet extends CorpusI
         logger.log(Level.INFO, "loaded {0} image assets", dbSpecific.numberOfElements());
     }
     
+    @Override
+    Labelable[] getLabels()
+    {
+        Labelable[] labels = ils.toArray( new Labelable[0] );
+        return labels;
+    }
+
     /**
      * Use LMobjectnames to obtain a list of all annotation objects and
      * their frequency in the dbSpecific database.
@@ -345,7 +352,7 @@ public class LabelMeDataSet extends CorpusI
             Silhouette locSilhouette = new cvac.Silhouette(pts);
             
             polygonLoc = new LabeledLocation();
-            polygonLoc.lab = new cvac.Label();
+            polygonLoc.lab = new cvac.Label(true, objname, new HashMap<String,String>(0), new Semantics(""));
             polygonLoc.lab.hasLabel = true;                    // hasLabel
             polygonLoc.lab.name = "annotation";                // name
             polygonLoc.loc = locSilhouette;                    // location

@@ -132,26 +132,7 @@ abstract public class CorpusI extends Corpus
     
     abstract public void removeSample(String category);
 
-    Labelable[] getLabels() 
-    {
-        // There's probably a much more elegant way to do this...
-        LabelableListI[] llistA = m_images.values().toArray( new LabelableListI[0] );
-        int totalSize = 0;
-        for ( LabelableListI list : llistA )
-        {
-            totalSize += list.size();
-        }
-        Labelable[] labels = new Labelable[totalSize];
-        int icnt = 0;
-        for ( LabelableListI list : llistA )
-        {
-            for ( Labelable label : list )
-            {
-                labels[icnt++] = label;
-            }
-        }
-        return labels;
-    }
+    abstract Labelable[] getLabels();
 
     abstract void createLocalMirror(CorpusCallback cb);
 

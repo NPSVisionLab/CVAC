@@ -64,7 +64,8 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     def test_openCorpusLabelMe(self):
         print 'openCorpusLabelMe'
         dataRoot = cvac.DirectoryPath( "corpus" );
-        corpusConfigFile = cvac.FilePath( dataRoot, "NpsVisionLabelMe.properties" )
+        corpusConfigFile = cvac.FilePath( dataRoot, "LabelMeCarsTest.properties" )
+#        corpusConfigFile = cvac.FilePath( dataRoot, "NpsVisionLabelMe.properties" )
         corpus3 = self.cs.openCorpus( corpusConfigFile )
         if not corpus3:
             raise RuntimeError("could not open corpus from config file at '"

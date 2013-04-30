@@ -402,4 +402,26 @@ public class CommonDataSet extends CorpusI {
     {
         properties = config;
     }
+    
+    @Override
+    Labelable[] getLabels()
+    {
+        // There's probably a much more elegant way to do this...
+        LabelableListI[] llistA = m_images.values().toArray( new LabelableListI[0] );
+        int totalSize = 0;
+        for ( LabelableListI list : llistA )
+        {
+            totalSize += list.size();
+        }
+        Labelable[] labels = new Labelable[totalSize];
+        int icnt = 0;
+        for ( LabelableListI list : llistA )
+        {
+            for ( Labelable label : list )
+            {
+                labels[icnt++] = label;
+            }
+        }
+        return labels;
+    }
 }
