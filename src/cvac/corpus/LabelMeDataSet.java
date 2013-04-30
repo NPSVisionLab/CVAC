@@ -103,6 +103,8 @@ public class LabelMeDataSet extends CorpusI
             
             // only "OR" queries for object.name are currently allowed.  No
             // multiple "AND" queries with subsequent db intersection yet.
+            logger.log( Level.INFO, "Querying LabelMe for object.name==\"{0}\"",
+                    lmObjectLabelNames.get(0));
             Object[] result2 = lm.LMquery(1, db, "object.name", lmObjectLabelNames.get(0) );
             dbSpecific = (MWStructArray) result2[0];
             logger.log( Level.FINE, "obtained labeled subset from LabelMe");

@@ -43,6 +43,7 @@ SET(SOURCE_FILES
     cvac/corpus/CorpusServiceI.java
     cvac/corpus/CorpusConfig.java
     cvac/corpus/LabelableListI.java
+    cvac/corpus/LabelMeDataSet.java
     #util/RunSetWrapper.java
     cvac/corpus/CommonDataSet.java
 )
