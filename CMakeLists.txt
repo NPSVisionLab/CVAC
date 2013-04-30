@@ -101,6 +101,7 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
     ENDIF( CVAC_VERSION_GIT )
 endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
+
 #
 # offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
 #
