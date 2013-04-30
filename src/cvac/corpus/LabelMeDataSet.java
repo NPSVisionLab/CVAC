@@ -46,40 +46,18 @@ public class LabelMeDataSet extends CorpusI
     private LabelMe lm;
     MWStructArray db = null;
     MWStructArray dbSpecific = null;
- //   @XmlAttribute()
     String HOMEANNOTATIONS = "";
- //   @XmlAttribute()
     String HOMEIMAGES = "";
- //   @XmlElementWrapper(name = "lmObjectLabelNames")
     ArrayList<String> lmObjectLabelNames;
- //   @XmlElementWrapper(name = "lmFolderList")
     ArrayList<String> lmFolderList;
 
-      public LabelMeDataSet(String name, String description, String homepageURL, boolean isImmutableMirror)
-      {
-          super( name, description, homepageURL, isImmutableMirror );     
-          this.lmObjectLabelNames = new ArrayList<String>(0);
-          this.lmFolderList = new ArrayList<String>(0);
-      }
-//    public LabelMeDataSet() 
-//    {
-//        this.m_name = "LabelMe connection";
-//        this.m_description = "";
-//        this.m_homepage = "";
-//        this.m_imageType = DataSetImageType.IMAGE;
-//        this.lmObjectLabelNames = new ArrayList<String>(0);
-//        this.lmFolderList = new ArrayList<String>(0);
-//        this.HOMEANNOTATIONS = "http://nps-vision.ern.nps.edu/LabelMe/Annotations";
-//        this.HOMEIMAGES = "http://nps-vision.ern.nps.edu/LabelMe";
-//    }
-//
-//    @Override
-//    public void setName(String n) 
-//    {
-//        m_name = n;        
-//        m_dataSetFolder = (Main.getEngine().getDataDir() + File.separator + m_name);
-//    }
-//
+    public LabelMeDataSet(String name, String description, String homepageURL, boolean isImmutableMirror)
+    {
+        super( name, description, homepageURL, isImmutableMirror );     
+        this.lmObjectLabelNames = new ArrayList<String>(0);
+        this.lmFolderList = new ArrayList<String>(0);
+    }
+
     /**
      * Connects to LabelMe, downloads a database of objects from 
      * HOMEANNOTATIONS and all specified subfolders (via lmFolderList),
@@ -478,13 +456,15 @@ public class LabelMeDataSet extends CorpusI
         String folders = config.getProperty("LMFolders");
         if (null == folders){
             throw new CorpusConfigurationException("No LMFolders property");
-        } else
+        } else {
             this.setLMFolders(folders);
+        }
         String objNames = config.getProperty("LMObjectNames");
         if (null == objNames){
             throw new CorpusConfigurationException("No LMObjectNames property");
-        }else
+        } else {
             this.setObjectNames(objNames);
+        }
         this.HOMEANNOTATIONS = config.getProperty("LMAnnotationURL");
         if (null == this.HOMEANNOTATIONS){
             throw new CorpusConfigurationException("No LMAnnotationURL property");
@@ -492,11 +472,6 @@ public class LabelMeDataSet extends CorpusI
         this.HOMEIMAGES = config.getProperty("LMImageURL");
         if (null == this.HOMEIMAGES){
             throw new CorpusConfigurationException("No LMImageURL property");
-        }
-        // TODO: Move this to base class config
-        this.m_dataSetFolder = config.getProperty("DataRootDir");
-        if (null == this.m_dataSetFolder){
-            throw new CorpusConfigurationException("No DataRootDir property");
         }
     }
 
@@ -528,7 +503,9 @@ public class LabelMeDataSet extends CorpusI
 //    }
 
     @Override
-    void createLocalMirror(CorpusCallback cb) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    void createLocalMirror(CorpusCallback cb)
+    {
+        // download everything for now, annotations and images
+        loadImageAssets();
     }
 }

@@ -58,6 +58,32 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
                                +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
 
     #
+    # Test if we can open a Label e Corpus with an existing properties file,
+    # if so, try to obtain a Labelable dataset from it
+    #
+    def test_openCorpusLabelMe(self):
+        print 'openCorpusLabelMe'
+        dataRoot = cvac.DirectoryPath( "corpus" );
+        corpusConfigFile = cvac.FilePath( dataRoot, "NpsVisionLabelMe.properties" )
+        corpus3 = self.cs.openCorpus( corpusConfigFile )
+        if not corpus3:
+            raise RuntimeError("could not open corpus from config file at '"
+                               +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
+        adapter = self.ic.createObjectAdapter("")
+        ident = Ice.Identity()
+        ident.name = IcePy.generateUUID()
+        ident.category = ""
+        adapter.add( TestCorpusCallback(), ident )
+        adapter.activate()
+        
+        self.cs.createLocalMirror( corpus3, ident )
+
+        labels = self.cs.getDataSet( corpus3 )
+        if not labels:
+            raise RuntimeError("could not obtain labels from Corpus '"
+                               +corpus3.name+"'")
+
+    #
     # Test obtaining a Labelable set: first, expect a failure because the corpus
     # is not downloaded yet (local mirror)
     #
