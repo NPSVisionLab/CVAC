@@ -7,6 +7,7 @@ FIND_PATH(LIBARCHIVE_INCLUDE archive.h archive_entry.h
               /opt/local
               "C:/Program Files (x86)/libarchive-3.1.2/libarchive"
               "C:/Program Files (x86)/libarchive-2.8.5/libarchive"
+              "C:/Program Files (x86)/libarchive/include"
           DOC "Include directory for libarchive"
          )
 
