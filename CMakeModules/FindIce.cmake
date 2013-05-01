@@ -29,16 +29,18 @@ FIND_PATH (ICE_INCLUDE Slice/Util.h
            /opt/Ice-3.4
            )
 
-#where to find the ICE lib dir
+SET(CDIR "")
 IF (MSVC10)
-    SET(ICE_LIB_SEARCH_PATH
-         ${ICE_ROOT}/lib/vc100
-       )
-ELSE (MSVC10)
-    SET(ICE_LIB_SEARCH_PATH
-         ${ICE_ROOT}/lib
-       )
+    SET(CDIR "/vc100")
 ENDIF (MSVC10)
+# If we are running on Windows 8 the we have ice 3.5 so vc10 is default
+IF (${CMAKE_SYSTEM} STREQUAL "Windows-6.2")
+    SET(CDIR "")
+ENDIF (${CMAKE_SYSTEM} STREQUAL "Windows-6.2")
+#where to find the ICE lib dir
+SET(ICE_LIB_SEARCH_PATH
+         ${ICE_ROOT}/lib${CDIR}
+       )
 
 MACRO(FIND_ICE_LIB LIB_VAR LIB_NAME)
     FIND_LIBRARY(${LIB_VAR} NAMES ${LIB_NAME}
@@ -77,30 +79,16 @@ FIND_PROGRAM( ICE_BOX_ADMIN
                  HINTS ${ICE_ROOT}/bin
                )
 
+FIND_PROGRAM( ICE_SLICE_EXECUTABLE
+                 NAMES slice2cpp
+                 HINTS ${ICE_ROOT}/bin${CDIR}
+               )
 
-IF (MSVC10)
-   FIND_PROGRAM( ICE_SLICE_EXECUTABLE
-                 NAMES slice2cpp
-                 HINTS ${ICE_ROOT}/bin/vc100
-               )
-ELSE (MSVC10)
-   FIND_PROGRAM( ICE_SLICE_EXECUTABLE
-                 NAMES slice2cpp
-                 HINTS ${ICE_ROOT}/bin
-               )
-ENDIF (MSVC10)
 MARK_AS_ADVANCED (ICE_SLICE_EXECUTABLE)
-IF (MSVC10)
-   FIND_PROGRAM( ICE_SLICE2JAVA_EXECUTABLE
+FIND_PROGRAM( ICE_SLICE2JAVA_EXECUTABLE
                  NAMES slice2java
-                 HINTS ${ICE_ROOT}/bin/vc100
+                 HINTS ${ICE_ROOT}/bin${CDIR}
                )
-ELSE (MSVC10)
-   FIND_PROGRAM( ICE_SLICE2JAVA_EXECUTABLE
-                 NAMES slice2java
-                 HINTS ${ICE_ROOT}/bin
-               )
-ENDIF (MSVC10)
 MARK_AS_ADVANCED (ICE_SLICE2JAVA_EXECUTABLE)
 FIND_PROGRAM( ICE_SLICE2PY_EXECUTABLE
               NAMES slice2py
