@@ -158,9 +158,10 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
              COMMAND ${CMAKE_COMMAND} -E tar xzf ${3RDPARTY_FILENAME}
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
              RESULT_VARIABLE unpack_result
+             OUTPUT_VARIALBE unpack_output
          )
         IF( NOT ${unpack_result} EQUAL 0 )
-            MESSAGE( SEND_ERROR "Could not unpack (${unpack_result})- subsequent errors may occur" )
+            MESSAGE( SEND_ERROR "Could not unpack (${unpack_result}: ${unpack_output})- subsequent errors may occur" )
         ENDIF( NOT ${unpack_result} EQUAL 0 )
     ENDIF( EXISTS ${3RDPARTY_DIR} )
     SET( DOWNLOAD_3RDPARTY_PACKAGE OFF CACHE BOOL "Download 3rd-party package had download or unpack errors, please obtain manually" FORCE )
