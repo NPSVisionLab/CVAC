@@ -160,9 +160,13 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
              RESULT_VARIABLE unpack_result
              OUTPUT_VARIABLE unpack_output
          )
-        IF( NOT ${unpack_result} EQUAL 0 )
-            MESSAGE( SEND_ERROR "Could not unpack (${unpack_result}: ${unpack_output})- subsequent errors may occur" )
-        ENDIF( NOT ${unpack_result} EQUAL 0 )
+        IF( NOT (${unpack_result} STREQUAL "0") 
+            OR NOT EXISTS ${CMAKE_SOURCE_DIR}/3rdparty
+            OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty )
+            MESSAGE( SEND_ERROR "Could not unpack 3rdparty package - subsequent errors may occur" )
+        ENDIF( NOT (${unpack_result} STREQUAL "0") 
+            OR NOT EXISTS ${CMAKE_SOURCE_DIR}/3rdparty
+            OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty )
     ENDIF( EXISTS ${3RDPARTY_DIR} )
     SET( DOWNLOAD_3RDPARTY_PACKAGE OFF CACHE BOOL "Download 3rd-party package had download or unpack errors, please obtain manually" FORCE )
 ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
