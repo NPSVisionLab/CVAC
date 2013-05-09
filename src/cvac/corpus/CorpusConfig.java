@@ -1,7 +1,7 @@
 package cvac.corpus;
 
 import cvac.corpus.CorpusI.CorpusConfigurationException;
-import java.io.FileNotFoundException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.util.Properties;
@@ -10,6 +10,7 @@ import java.io.FilenameFilter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 
 
 
@@ -150,20 +151,44 @@ class CorpusConfig {
         if (dsTypeProp == null || dsTypeProp.equalsIgnoreCase("common"))
         {
             ds = new CommonDataSet( nameProp, descProp, homepage, isImmutableMirror );
-            ((CommonDataSet)ds).configureFromProperties(config);
         }
         else if (dsTypeProp.equalsIgnoreCase("labelme"))
         {
-            ds = new LabelMeDataSet( nameProp, descProp, homepage, isImmutableMirror );
-            ((LabelMeDataSet)ds).configureFromProperties(config);
+            // LabelMeDataSet might or might not have been compiled into jar,
+            // obtain it dynamically and essentially do this:
+            // ds = new LabelMeDataSet( nameProp, descProp, homepage, isImmutableMirror );
+            try {
+                // the parameterization with <?> gets rid of the obvious warning
+                // "unchecked call to getConstructor"
+                Class<?> labelMeDataSet = Class.forName("cvac.corpus.LabelMeDataSet");
+                Constructor<?> cons = labelMeDataSet.getConstructor(
+                        new Class[]{String.class, String.class, String.class, Boolean.class});
+                cons.newInstance( nameProp, descProp, homepage, isImmutableMirror );
+            }
+            catch (InstantiationException ex) {
+                logger.log(Level.WARNING, "Problem invoking LabelMe constructor:", ex);
+            } catch (IllegalAccessException ex) {
+                logger.log(Level.WARNING, "Problem invoking LabelMe constructor:", ex);
+            } catch (IllegalArgumentException ex) {
+                logger.log(Level.WARNING, "Problem invoking LabelMe constructor:", ex);
+            } catch (InvocationTargetException ex) {
+                logger.log(Level.SEVERE, "Problem invoking LabelMe constructor:", ex);
+            } catch (ClassNotFoundException ex) {
+                logger.log(Level.WARNING, 
+                        "Cannot create LabelMe Corpus because your jar file does not include this class.", ex);
+            } catch (NoSuchMethodException ex) {
+                logger.log(Level.WARNING, "LabelMeDataSet does not seem to have the expected constructor", ex);
+            } catch (SecurityException ex) {
+                logger.log(Level.WARNING, "LabelMeDataSet does not seem to have a public constructor", ex);
+            }
         }
         else
         {
             logger.log(Level.WARNING, "Incorrect datasetType {0} in file {1}, assuming common",
                     new Object[]{dsTypeProp, filename});
             ds = new CommonDataSet( nameProp, descProp, homepage, isImmutableMirror );
-            ((CommonDataSet)ds).configureFromProperties(config);
         }
+        ds.configureFromProperties(config);
         String mirrorsString = config.getProperty("mirrors");
         if (null == mirrorsString) {
             logger.log(Level.WARNING, 

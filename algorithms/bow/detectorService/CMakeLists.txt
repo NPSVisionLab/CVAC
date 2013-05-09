@@ -36,7 +36,9 @@ TARGET_LINK_LIBRARIES(bowICEServer
     ${OpenCV_LIBS}
     )
           
+IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
 INSTALL( TARGETS bowICEServer
                DESTINATION lib
                COMPONENT Runtime
              )
+ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )

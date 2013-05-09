@@ -43,6 +43,12 @@ ELSE()
   SET(CPACK_GENERATOR "TGZ")
 ENDIF(WIN32)
 
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include
+       DESTINATION .
+       COMPONENT IncludeExt
+       PATTERN version.h.in EXCLUDE
+      )
+      
 include(CPack)
 
 # Declare Binary Group

@@ -36,7 +36,9 @@ TARGET_LINK_LIBRARIES(bowICEServerTrain
     utils
     )
 
+IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
 INSTALL( TARGETS bowICEServerTrain
                DESTINATION lib
                COMPONENT Runtime
              )
+ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )

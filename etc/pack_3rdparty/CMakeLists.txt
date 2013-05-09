@@ -64,18 +64,17 @@ INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
 # OpenCV needs to be isolated in some staging area.  You need
 # to configure this CMake to pull OpenCV from there.
 # OpenCV_DIR points to the shared/OpenCV subdirectory.
-GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}" REALPATH)
+IF( WIN32 )
+  GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}" REALPATH)
+ELSE( WIN32 )
+  GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}/../.." REALPATH)
+ENDIF( WIN32 )
+MESSAGE( STATUS "OpenCV will be 3rd-party archived from this path: ${OpenCV_INSTALL_PATH}" )
 INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}
       DESTINATION 3rdparty
        COMPONENT OpenCVExt
       ) 
 
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include
-       DESTINATION .
-       COMPONENT IncludeExt
-       PATTERN version.h.in EXCLUDE
-      )
-      
 include(CPack)
 
 # Declare Third Party Group
