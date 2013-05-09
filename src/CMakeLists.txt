@@ -43,7 +43,6 @@ SET(SOURCE_FILES
     cvac/corpus/CorpusServiceI.java
     cvac/corpus/CorpusConfig.java
     cvac/corpus/LabelableListI.java
-    cvac/corpus/LabelMeDataSet.java
     #util/RunSetWrapper.java
     cvac/corpus/CommonDataSet.java
 )
@@ -62,6 +61,7 @@ FIND_JAR( Ice.jar Ice
 FIND_JAR( javatar.jar NAMES javatar-2.5 PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
 FIND_JAR( IO.jar NAMES commons-io-1.3.2 PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
 IF( ${BUILD_CORPUS_LABELME} )
+  SET( SOURCE_FILES ${SOURCE_FILES} cvac/corpus/LabelMeDataSet.java )
   FIND_JAR( javabuilder.jar NAMES javabuilder PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
   FIND_JAR( labelme.jar NAMES labelme PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
 ENDIF( ${BUILD_CORPUS_LABELME} )

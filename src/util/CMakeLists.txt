@@ -45,6 +45,8 @@ ADD_LIBRARY(utils
 TARGET_LINK_LIBRARIES(utils
                       ${LIBARCHIVE_LIBRARY}
                      )
-INSTALL( TARGETS utils
+IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
+  INSTALL( TARGETS utils
                 DESTINATION lib
                COMPONENT Runtime )
+ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )
