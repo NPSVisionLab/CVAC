@@ -158,7 +158,7 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
              COMMAND ${CMAKE_COMMAND} -E tar xzf ${3RDPARTY_FILENAME}
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
              RESULT_VARIABLE unpack_result
-             OUTPUT_VARIALBE unpack_output
+             OUTPUT_VARIABLE unpack_output
          )
         IF( NOT ${unpack_result} EQUAL 0 )
             MESSAGE( SEND_ERROR "Could not unpack (${unpack_result}: ${unpack_output})- subsequent errors may occur" )
