@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
+cmake_policy( SET CMP0012 OLD )
+
 IF(WIN32)
     # don't want the four default configuration types with MS Visual Studio
     SET (CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "")
