@@ -159,7 +159,7 @@ std::string BowICEI::getName(const ::Ice::Current& current)
 }
 std::string BowICEI::getDescription(const ::Ice::Current& current)
 {
-	return "bowTest - Empty Description";
+	return "Bag of Words-type detector";
 }
 
 void BowICEI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current)

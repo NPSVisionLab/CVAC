@@ -43,14 +43,31 @@ module cvac {
     * to files that have been created by the same client.
     */
   class FileService {
-    putFile( FilePath file );
-    getFile( FilePath file );
-    getSnapshot( FilePath file );
+    /** 
+      * copies a local file at the specified FilePath to the same location
+      * on the remote file FileService.
+      */
+    void putFile( FilePath file );
+    /** 
+      * copies a remote file at the specified FilePath to the same location
+      * on the local hard disk.
+      */
+    void getFile( FilePath file );
+    /**
+      * Creates a new file *_snap.jpg next to the original file.
+      */
+    FilePath getSnapshot( FilePath file );
     FileProperties getProperties( FilePath file );
 
     /** to obtain read/write permissions of a directory
       */
     FileProperties getProperties( DirectoryPath dir );
+
+    /**
+      * The actual byte copy functions.
+      */
+    void putBytes( Byte[] bytes, FilePath where );
+    Byte[] getBytes( FilePath file );
   };
 
 };

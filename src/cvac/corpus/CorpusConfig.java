@@ -1,5 +1,6 @@
 package cvac.corpus;
 
+import cvac.corpus.CorpusI.CorpusConfigurationException;
 import java.io.FileNotFoundException;
 import java.util.logging.Logger;
 import java.util.logging.Level;
@@ -38,6 +39,10 @@ class CorpusConfig {
         availCorpora.add(ds);
     }
     
+    /** read all property files from a directory, create a corpus for each
+     * 
+     * @param corpusConfigDir where the "properties" files are located
+     */
     public void readConfigurationsFromDir(String corpusConfigDir){
                
         class myFilenameFilter implements FilenameFilter {
@@ -75,6 +80,12 @@ class CorpusConfig {
         }
     }
     
+    /**
+     * 
+     * @param propFile
+     * @return
+     * @throws cvac.corpus.CorpusI.CorpusConfigurationException 
+     */
     public CorpusI addCorpusFromConfig( File propFile )
         throws CorpusI.CorpusConfigurationException
     {
@@ -201,6 +212,31 @@ class CorpusConfig {
                         new Object[]{category, cat_name, cat_subdir});
             }
         }
+        return ds;
+    }
+
+    /** expect a directory with subdirectories, each of which is going
+     * to be the label for all the files in the subdir.  The name is chosen
+     * based on the path.  Other values are set to defaults.  They can be
+     * edited in the properties file after saving the corpus and will be
+     * assumed upon the next load.
+     * 
+     * @param directory The directory that contains the subdirectories.
+     * @return A Corpus implementation.
+     */
+    CorpusI createCorpusFromPath( File directory ) throws CorpusConfigurationException 
+    {
+        String nameProp = directory.getName();
+        String descProp = "Corpus created from directory " + nameProp;
+        String homepage = "";
+        boolean isImmutableMirror = false;
+        CommonDataSet ds = new CommonDataSet( nameProp, descProp, homepage, isImmutableMirror );
+        ds.loadImageAssets();
+        
+        Properties props = new Properties();
+        props.setProperty("main_location", directory.getAbsolutePath() );
+        ds.configureFromProperties( props );
+        
         return ds;
     }
 }

@@ -145,7 +145,7 @@ public class LabelableListI extends ArrayList<Labelable> {
      * @return the number of samples added
      */
     public int addAllSamplesInDir(File directory, 
-            Label label, float confidence, String relativePath) 
+            Label label, float confidence, DirectoryPath relativePath) 
     {
         boolean video = false;
         if (null != m_corpus){
@@ -162,8 +162,7 @@ public class LabelableListI extends ArrayList<Labelable> {
                     // TODO: helper function createSubstrateFrom( directory, imageFiles[i] )
                     Labelable sample = new Labelable();
                     FilePath path;
-                    path = new FilePath(new DirectoryPath(relativePath), 
-                            imageFiles[i].getName());
+                    path = new FilePath( relativePath, imageFiles[i].getName());
                     sample.sub = new Substrate(true, false, path, -1, -1);
                     sample.confidence = confidence;
                     sample.lab = label;
@@ -179,8 +178,7 @@ public class LabelableListI extends ArrayList<Labelable> {
                 for (int i = 0; i < videoFiles.length; i++){
                     Labelable sample = new Labelable();
                     FilePath path;
-                    path = new FilePath(new DirectoryPath(relativePath), 
-                            videoFiles[i].getName());
+                    path = new FilePath( relativePath, videoFiles[i].getName());
                     sample.sub = new Substrate(false, true, path, -1, -1);
                     sample.confidence = confidence;
                     sample.lab = label;
