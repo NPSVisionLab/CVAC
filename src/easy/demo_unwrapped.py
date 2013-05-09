@@ -32,12 +32,12 @@ dataRoot = cvac.DirectoryPath( "corpus" );
 corpusConfigFile = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
 corpus = cs.openCorpus( corpusConfigFile )
 
-corpusTestDir = cvac.DirectoryPath( "trainImg" );
-# corpusTestDir = cvac.DirectoryPath( "corpusTestDir" );
-corpus = cs.createCorpus( corpusTestDir )
+#trainCorpusDir = cvac.DirectoryPath( "corporate_logos" );
+trainCorpusDir = cvac.DirectoryPath( "trainImg" );
+corpus = cs.createCorpus( trainCorpusDir )
 if not corpus:
     raise RuntimeError("Could not create corpus from path '"
-                       +dataRoot.relativePath+"/"+corpusTestDir+"'")
+                       +dataRoot.relativePath+"/"+trainCorpusDir+"'")
 
 lablist = cs.getDataSet( corpus )
 categories = {}
@@ -49,7 +49,8 @@ for lb in lablist:
 
 # print information about this corpus
 sys.stdout.softspace=False;
-print 'Obtained', len(lablist), 'labeled artifacts from corpus', corpus.name, ':'
+print 'Obtained {0} labeled artifact{1} from corpus "{2}":'.format(
+    len(lablist), ("s","")[len(lablist)==1], corpus.name );
 for key in sorted( categories.keys() ):
     klen = len( categories[key] )
     print "{0} ({1} artifact{2})".format( key, klen, ("s","")[klen==1] )
@@ -58,8 +59,9 @@ for key in sorted( categories.keys() ):
 # add some samples to a RunSet
 #
 pur_categories = []
+pur_categories_keys = sorted( categories.keys() )
 cnt = 0
-for key in sorted( categories.keys() ):
+for key in pur_categories_keys:
     purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
     pur_categories.append( cvac.PurposedLabelableSeq( purpose, categories[key] ) )
     cnt = cnt+1
@@ -112,23 +114,24 @@ detector = cvac.DetectorPrx.checkedCast(detector_base)
 if not detector:
     raise RuntimeError("Invalid Detector service proxy")
 
-# this will get called when results have been found
+# this will get called when results have been found;
+# replace the multiclass-ID label with the string label
 class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
+    allResults = []
     def foundNewResults(self, r2, current=None):
         for res in r2.results:
-            numfound = len(res.foundLabels)
-            origname = (res.original.lab.name, "unlabeled")[res.original.lab.hasLabel]
-            print "result for {0} ({1}): found {2} label{3}: {4}".format(
-                res.original.sub.path.filename, origname,
-                #','.join(res.foundLabels) )
-                numfound, ("s","")[numfound==1], res.foundLabels[0].lab.name )
+            # replace ordinal class number with string
+            for lbl in res.foundLabels:
+                lbl.lab.name = pur_categories_keys[int(lbl.lab.name)]
+        self.allResults.extend( r2.results )
 
 # ICE functionality to enable bidirectional connection for callback
 adapter = ic.createObjectAdapter("")
 callback = Ice.Identity()
 callback.name = Ice.generateUUID()
 callback.category = ""
-adapter.add(DetectorCallbackReceiverI(), callback)
+dcbrec = DetectorCallbackReceiverI();
+adapter.add( dcbrec, callback)
 adapter.activate()
 detector.ice_getConnection().setAdapter(adapter)
 
@@ -137,30 +140,16 @@ detector.ice_getConnection().setAdapter(adapter)
 detector.initialize( 3, tcbrec.detectorData )
 detector.process( callback, runset )
 
-print 'returned from process call'
-
-
-quit()
-
-
-caltech101 = cs.openCorpus( cvac.FilePath( dataRoot, "Caltech101.properties" ) )
-# c = corpus.Corpus( "testcorpus" )
-print 'loaded corpus named ', caltech101.name
-print caltech101.description
-
-samples = c.categories[ 'sunflower' ]
-
+# print the results
+print 'received a total of {0} results:'.format( len( dcbrec.allResults ) )
+for res in dcbrec.allResults:
+    names = []
+    for lbl in res.foundLabels:
+        names.append(lbl.lab.name)
+    numfound = len(res.foundLabels)
+    origname = ("unlabeled", res.original.lab.name)[res.original.lab.hasLabel==True]
+    print "result for {0} ({1}): found {2} label{3}: {4}".format(
+    res.original.sub.path.filename, origname,
+        numfound, ("s","")[numfound==1], ', '.join(names) )
 
 quit()
-#
-# Train a detector on the RunSet
-#
-trainer = cvac.DetectorTrainer( 'Felzenszwalb' )
-sunflower_detector = trainer.train( runset )
-
-def detect( n ):
-    a, b = 0, 1
-    while b < n:
-        print b,
-        a, b = b, a+b
-        
