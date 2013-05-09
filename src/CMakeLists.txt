@@ -88,3 +88,9 @@ ADD_JAR( Corpus ${SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.j
 #             )
 INSTALL_JAR( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
              
+IF( ${BUILD_3RDPARTY_PACKAGE} )
+  INSTALL(FILES ${javatar.jar} ${IO.jar} ${javabuilder.jar} ${labelme.jar}
+    DESTINATION 3rdparty/lib
+    COMPONENT LibArchiveExt
+  )
+ENDIF( ${BUILD_3RDPARTY_PACKAGE} )
