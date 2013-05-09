@@ -25,7 +25,6 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
 
     ic = None
     cs = None
-    corpus = None
     
     #
     # Test the initialization of Ice and the service proxy, then
@@ -38,17 +37,12 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
         if not self.cs:
             raise RuntimeError("Invalid proxy")
 
-        dataRoot = cvac.DirectoryPath( "corpus" );
-        corpusConfigFile = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
-        self.corpus = self.cs.openCorpus( corpusConfigFile )
-        if not self.corpus:
-            raise RuntimeError("could not open corpus from config file at '"
-                               +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
-
     #
-    # Test if we can open another Corpus with an existing properties file
+    # Test if we can open a Corpus with an existing properties file;
+    # note that this doesn't try to create a local mirror which would download
+    # the entire Caltech101 data set
     #
-    def test_openCorpus(self):
+    def xtest_openCorpus(self):
         print 'openCorpus'
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "Caltech101.properties" )
@@ -88,7 +82,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # Test obtaining a Labelable set: first, expect a failure because the corpus
     # is not downloaded yet (local mirror)
     #
-    def test_getDataSet(self):
+    def xtest_getDataSet(self):
         print 'getDataSet'
         labels = self.cs.getDataSet( self.corpus )
         if not labels:
@@ -99,8 +93,15 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     #
     # Obtain a local mirror of the data set.
     #
-    def test_createLocalMirror(self):
+    def xtest_createLocalMirror(self):
         print 'createLocalMirror'
+        dataRoot = cvac.DirectoryPath( "corpus" );
+        corpusConfigFile = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
+        self.corpus = self.cs.openCorpus( corpusConfigFile )
+        if not self.corpus:
+            raise RuntimeError("could not open corpus from config file at '"
+                               +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
+
         adapter = self.ic.createObjectAdapter("")
         ident = Ice.Identity()
         ident.name = IcePy.generateUUID()
@@ -115,6 +116,18 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
 #            adapter.createProxy( self.ic.stringToIdentity("callbackReceiver")))
         
         self.cs.createLocalMirror( self.corpus, ident )
+
+    #
+    # Create a Corpus from a directory of labeled data
+    #
+    def test_createCorpus(self):
+        print 'createCorpus'
+        corpusTestDir = cvac.DirectoryPath( "corpusTestDir" );
+        corpus3 = self.cs.createCorpus( corpusTestDir )
+        if not corpus3:
+            raise RuntimeError("could not create corpus from path '"
+                               +dataRoot.relativePath+"/"+corpusTestDir+"'")
+        
 
     def tearDown(self):
         # Clean up

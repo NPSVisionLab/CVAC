@@ -206,4 +206,37 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
         }
 //        cs.addSample( addme );
     }
+
+    /**
+     * Write Corpus to a properties file. 
+     * @param __current The Current object for the invocation.
+     **/
+    @Override
+    public Corpus createCorpus( cvac.DirectoryPath dir, Ice.Current __current )
+    {
+        if (null==mAdapter) 
+        {
+            mAdapter = __current.adapter;
+            initialize();
+        }
+        
+        String dirname = dataDir + File.separator + dir.relativePath;
+        logger.log(Level.INFO, "request to create Corpus from path {0}", dirname);
+        try {
+            CorpusI cs = cc.createCorpusFromPath( new File(dirname) );
+            CorpusI cs_orig = corpToImp.get(cs.name);
+            if (null!=cs_orig)
+            {
+                logger.log(Level.WARNING, 
+                   "a corpus with the name {0} exists already, discarding the new one.", cs.name );
+                return cs_orig;
+            }
+            corpToImp.put( cs.name, cs );
+            return cs;
+        } 
+        catch ( CorpusI.CorpusConfigurationException ex) {
+            logger.log(Level.WARNING, "could not parse Corpus from path {0}", ex.toString() );
+        }
+        return null;
+    }
 }

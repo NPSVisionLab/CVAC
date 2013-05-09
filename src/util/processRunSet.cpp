@@ -212,7 +212,9 @@ void cvac::processRunSet(DetectorPtr detector,
                     filePath.directory.relativePath[0] == '\\')
                 {  // absolute path
                     fname = filePath.directory.relativePath;
-                    localAndClientMsg(VLogger::DEBUG_2, NULL, "Labelable using absolute paths\n");
+                    localAndClientMsg(VLogger::WARN, NULL,
+                                      "Labelable using absolute paths; ignoring file: %s\n", fname.c_str());
+                    continue;
                 } else { 
                     // prepend our prefix in a way visible to symlink filePath
                     filePath.directory.relativePath = (pathPrefix + "/" + filePath.directory.relativePath);
@@ -243,12 +245,16 @@ void cvac::processRunSet(DetectorPtr detector,
                 // 'result' is a vector of result objects
                 ResultSetV2 result = (*detectFunc)(detector, symlinkFullPath.c_str());
 
-                // If we used a symbolic link restore the result data to match the original file
+                // put the "original" label into the result set
+                for (unsigned int idx=0; idx<result.results.size(); idx++)
+                {
+                  result.results[idx].original = lptr;
+                  // printf("inserted original: %s\n", result.results[idx].original->lab.name.c_str());
+                }
+                
+                // If we used a symbolic link, delete it
                 if (newSymlink)
                 {
-                    Result res = result.results[0];
-                    res.original->sub.path.filename = filePath.filename;
-                    res.original->sub.path.directory.relativePath = filePath.directory.relativePath;
                     deleteDirectory(tempString);
                 }
 
@@ -274,6 +280,9 @@ void cvac::processRunSet(DetectorPtr detector,
                 dirptr->directory.relativePath[0] == '\\')
             {  // absolute path
                 fname = dirptr->directory.relativePath;
+                localAndClientMsg(VLogger::WARN, NULL,
+                                  "Labelable using absolute paths; ignoring file: %s\n", fname.c_str());
+                continue;
             } else { // prepend our prefix
 
                 fname = (pathPrefix + "/" + dirptr->directory.relativePath);

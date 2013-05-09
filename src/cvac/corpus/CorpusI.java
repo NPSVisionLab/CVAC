@@ -21,6 +21,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import cvac.Corpus;
+import cvac.DirectoryPath;
 import cvac.Label;
 import cvac.Semantics;
 import util.Data_IO_Utils;
@@ -247,7 +248,8 @@ abstract public class CorpusI extends Corpus
         Label label = new Label(true, subdir, new HashMap<String,String>(0), new Semantics(""));
 
         float confidence = 1.0f;
-        int added = dir_SampleList.addAllSamplesInDir( directory, label, confidence, relativePath );
+        int added = dir_SampleList.addAllSamplesInDir( directory, label, confidence, 
+                new DirectoryPath( relativePath ) );
         if (!dir_SampleList.isEmpty())
         {
             m_images.put(labelName, dir_SampleList);
@@ -364,10 +366,12 @@ abstract public class CorpusI extends Corpus
             File curImageCatDir = new File(m_dataSetFolder);
             if(curImageCatDir.isDirectory()) {
             
-                    dir_SampleList = new LabelableListI(curImageCatDir.getName(), this, curImageCatDir.getName());
-                    Label label = new Label(false, "", new HashMap<String,String>(0), new Semantics(""));
-                    float confidence = 0.0f;
-                    int added = dir_SampleList.addAllSamplesInDir(curImageCatDir, label, confidence, name);
+                    String labelname = curImageCatDir.getName();
+                    dir_SampleList = new LabelableListI(labelname, this, curImageCatDir.getName());
+                    Label label = new Label(true, labelname, new HashMap<String,String>(0), new Semantics(""));
+                    float confidence = 1.0f;
+                    DirectoryPath relPath = new DirectoryPath( name+"/"+curImageCatDir );
+                    int added = dir_SampleList.addAllSamplesInDir(curImageCatDir, label, confidence, relPath);
                     if (0==added)
                     {
                        logger.log(Level.WARNING, "Sample directory {0} does not exist or is empty", 
@@ -389,9 +393,10 @@ abstract public class CorpusI extends Corpus
                 // We assume that all the images are in this directory
                 String topDirName = topLevelDir.getName();
                 dir_SampleList = new LabelableListI(topDirName, this, topDirName);
-                Label label = new Label(false, "", new HashMap<String,String>(0), new Semantics(""));
-                float confidence = 0.0f;
-                int added = dir_SampleList.addAllSamplesInDir(topLevelDir, label, confidence, name);
+                Label label = new Label(true, topDirName, new HashMap<String,String>(0), new Semantics(""));
+                float confidence = 1.0f;
+                DirectoryPath relPath = new DirectoryPath( name+"/"+topDirName );
+                int added = dir_SampleList.addAllSamplesInDir(topLevelDir, label, confidence, relPath);
                 if (0==added)
                 {
                    logger.log(Level.WARNING, "Sample directory {0} does not exist or is empty", 
@@ -405,10 +410,12 @@ abstract public class CorpusI extends Corpus
                     }
                     else { // Create and add Samples for all images in directory to its LabelableListI in the array
 
-                        dir_SampleList = new LabelableListI(curImageCatDir.getName(), this, curImageCatDir.getName());
-                        Label label = new Label(false, "", new HashMap<String,String>(0), new Semantics(""));
+                        String labelname = curImageCatDir.getName();
+                        dir_SampleList = new LabelableListI(labelname, this, curImageCatDir.getName());
+                        Label label = new Label(true, labelname, new HashMap<String,String>(0), new Semantics(""));
                         float confidence = 0.0f;
-                        int added = dir_SampleList.addAllSamplesInDir(curImageCatDir, label, confidence, name);
+                        DirectoryPath relPath = new DirectoryPath( name+"/"+labelname );
+                        int added = dir_SampleList.addAllSamplesInDir(curImageCatDir, label, confidence, relPath);
                         if (0==added)
                         {
                            logger.log(Level.WARNING, "Sample directory {0} does not exist or is empty", 

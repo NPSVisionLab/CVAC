@@ -49,12 +49,13 @@ module cvac {
 
   /** Handles download, mirror, extraction, modification of a Corpus.
    *  Corpus data items and functions are separated into "class Corpus" and
-   *  "interface CorpusService" because of two reasons:
+   *  "interface CorpusService" for two reasons:
    *  1) ICE has to create fewer proxy classes, and
    *  2) only one CorpusService has to run and can deal with many corpora.
    *
-   *  Construction of a new Corpus can currently only be accomplished through
-   *  editing of a property file which contains all relevant information.
+   *  Construction of a new Corpus can be accomplished through
+   *  editing of a property file which contains all relevant information or
+   *  through the createCorpus method which parses a few common file structures.
    *  
    *  A single CorpusService instance generally runs alongside the client code,
    *  but in the case of a remote Corpus, that instance might talk to other
@@ -88,6 +89,13 @@ module cvac {
      *  fail if the Corpus isImmutableMirror.
      */
     void addLabelable( Corpus corp, cvac::LabelableList addme );
+
+    /** A few common file system structures can be parsed into a Corpus.
+     *  Most notably, a path that has subdirectories with images in each
+     *  is treated as a Corpus containing these images, each with a full-substrate
+     *  label corresponding to the subdirectory name.
+     */
+    Corpus createCorpus( cvac::DirectoryPath dir );
   };
 };
 
