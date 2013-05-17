@@ -14,9 +14,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,8 +41,8 @@ class FileServiceI extends FileService implements IceBox.Service {
     private Ice.ObjectAdapter mAdapter = null;
     Map<Endpoint, List<File>> ownedFiles = null;
     String dataDir = "";
-    static List<String> videoExtensions = null;
-    static List<String> imageExtensions = null;
+    static Set<String> videoExtensions = null;
+    static Set<String> imageExtensions = null;
 
     public FileServiceI() {
     }
@@ -70,7 +73,7 @@ class FileServiceI extends FileService implements IceBox.Service {
     public void start(String name, Ice.Communicator communicator, String[] args)
     {
         mAdapter = communicator.createObjectAdapter(name);
-        mAdapter.add( this, communicator.stringToIdentity("FileServer"));
+        mAdapter.add( this, communicator.stringToIdentity("FileService"));
         initialize();
         mAdapter.activate();
     }
@@ -169,8 +172,8 @@ class FileServiceI extends FileService implements IceBox.Service {
     }
 
     /**
-     * Note that we don't report specifically if this file doesn't exist so 
-     * that clients can't query for the existence of files.
+     * Note that we don't report specifically if this file doesn't exist
+     * so that clients can't query for the existence of files.
      * 
      * @param file
      * @param __current
@@ -298,7 +301,7 @@ class FileServiceI extends FileService implements IceBox.Service {
      */
     private void addOwner(Endpoint endpoint, File localFile) 
     {
-        List list = ownedFiles.get(endpoint);
+        List<File> list = ownedFiles.get(endpoint);
         if (null==list)
         {
             list = new ArrayList<File>(1);
@@ -309,14 +312,31 @@ class FileServiceI extends FileService implements IceBox.Service {
 
     private boolean hasVideoExtension(File localFile) 
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (null==videoExtensions)
+        {
+            String[] values = new String[] {"avi", "wmv", "mpg"};
+            videoExtensions = new HashSet<String>(Arrays.asList(values));
+        }
+        String extension = localFile.getName();
+        int i = extension.lastIndexOf('.');
+        if (i > 0) {
+            extension = extension.substring(i+1);
+        }
+        return videoExtensions.contains( extension );
     }
 
-    private boolean hasImageExtension(File localFile) {
+    private boolean hasImageExtension(File localFile) 
+    {
         if (null==imageExtensions)
         {
-            imageExtensions = new ArrayList<String>() {"jgp", "jpeg", "png", "gif"};
+            String[] values = new String[] {"jgp", "jpeg", "png", "gif"};
+            imageExtensions = new HashSet<String>(Arrays.asList(values));
         }
-        throw new UnsupportedOperationException("Not yet implemented");
+        String extension = localFile.getName();
+        int i = extension.lastIndexOf('.');
+        if (i > 0) {
+            extension = extension.substring(i+1);
+        }
+        return imageExtensions.contains( extension );
     }
 }

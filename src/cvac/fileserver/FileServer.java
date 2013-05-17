@@ -30,6 +30,13 @@ public class FileServer extends Ice.Application
         return 0;
     }
 
+    /**
+     * Start this as follows, with the paths to the jar files changed according
+     * to your file structure:
+     * java -cp "./lib/FileServer.jar:./3rdparty/ICE/lib/Ice.jar" cvac.fileserver.FileServer
+     * 
+     * @param args 
+     */
     public static void main(String[] args)
     {
         FileServer app = new FileServer();
