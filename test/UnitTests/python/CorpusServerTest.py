@@ -27,8 +27,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     cs = None
     
     #
-    # Test the initialization of Ice and the service proxy, then
-    # obtain a corpus with which the remaining operations will be performed
+    # Test the initialization of Ice and the service proxy
     #
     def setUp(self):
         self.ic = Ice.initialize(sys.argv)

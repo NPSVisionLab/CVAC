@@ -19,6 +19,7 @@ if (PYTHON)
 #  /opt/Ice-3.4.2/bin/slice2py -I/opt/Ice-3.4.2/slice ../src/Data.ice ../src/Services.ice
 
 WRAP_SLICE2PY( SLICE_FILES
+    ${CMAKE_SOURCE_DIR}/src/Files.ice
     ${CMAKE_SOURCE_DIR}/src/Data.ice
     ${CMAKE_SOURCE_DIR}/src/Services.ice
     ${CMAKE_SOURCE_DIR}/src/Corpus.ice
@@ -36,10 +37,14 @@ WRAP_SLICE2PY( SLICE_FILES
     # Note: this currently needs the Java Corpus server started manually
     # Note: quite likely we'll need this on Windows, and ; instead of :
     #       FILE( TO_NATIVE_PATH ${ICE_ROOT}/python ICE_PYTHON_DIR_NATIVE )
-    ADD_TEST( PythonCorpusTest
-       ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/CorpusServerTest.py )
-    SET_TESTS_PROPERTIES( PythonCorpusTest
-      PROPERTIES ENVIRONMENT "PYTHONPATH=${ICE_ROOT}/python:${CMAKE_CURRENT_BINARY_DIR}" )
+   ADD_TEST( PythonCorpusTest
+      ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/CorpusServerTest.py )
+   SET_TESTS_PROPERTIES( PythonCorpusTest
+     PROPERTIES ENVIRONMENT "PYTHONPATH=${ICE_ROOT}/python:${CMAKE_CURRENT_BINARY_DIR}" )
+   ADD_TEST( PythonFileServerTest
+      ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/FileServerTest.py )
+   SET_TESTS_PROPERTIES( PythonFileServerTest
+     PROPERTIES ENVIRONMENT "PYTHONPATH=${ICE_ROOT}/python:${CMAKE_CURRENT_BINARY_DIR}" )
 
     #    install(CODE "execute_process(COMMAND ${PYTHON} ${SETUP_PY} install)")
 endif()
