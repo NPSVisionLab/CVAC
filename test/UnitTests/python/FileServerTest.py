@@ -40,14 +40,31 @@ class FileServerTest(unittest.TestCase):
             raise RuntimeError("Invalid proxy")
 
     #
-    # Test if we can get a file, copy bytes to a tempfile
+    # Test if we can get a file, copy bytes to a tempfile, compare
     #
     def test_getFile(self):
         print 'getFile'
-        # test with a small file and a larger file
+        # test with a small file for now
         dataRoot = cvac.DirectoryPath( "testImg" );
         filePath = cvac.FilePath( dataRoot, "TestUsFlag.jpg" )
         self.getFileAndCompare( filePath )
+
+    #
+    # Test if we can put a file, compare results;
+    # Test that we can delete this file on the server again;
+    # Test that overwriting an existing file fails;
+    #
+    def test_putFile(self):
+        # create a copy of the existing TestKrFlag.jpg in a tempfile
+
+        # "put" the tempfile and compare the result via file system access
+
+        # delete the "put" file on the server
+
+        # try to "put" an existing file; this should fail
+
+        # close the tempfile
+        return
 
     def getFileAndCompare( self, filePath ):
         bytes = self.fs.getFile( filePath )
@@ -67,7 +84,7 @@ class FileServerTest(unittest.TestCase):
             raise RuntimeError("Cannot obtain path to original file, see comments")
         
         ftmp = tempfile.NamedTemporaryFile( suffix='.jpg', delete=True )
-        # ftmp.write( bytes )
+        ftmp.write( bytes )
         ftmp.flush()
         if not self.filesAreEqual( orig, ftmp.name ):
             print "comparison failed, new file: " + ftmp.name
