@@ -15,10 +15,6 @@ import unittest
 import corpus
 import service
 
-#import corpus
-#import service
-#import cvac
-
 #
 #  open a Corpus of labeled data
 #
