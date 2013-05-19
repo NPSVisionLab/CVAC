@@ -17,7 +17,6 @@ import os
 import inspect
 import tempfile
 import filecmp
-import shutil
 
 class FileServerTest(unittest.TestCase):
 
@@ -67,22 +66,34 @@ class FileServerTest(unittest.TestCase):
     # Test that overwriting an existing file fails;
     #
     def test_putFile(self):
-        # create a copy of the existing TestKrFlag.jpg in a tempfile
+        print 'putFile'
+        # read the bytes from TestKrFlag.jpg
         testDir = cvac.DirectoryPath( "testImg" );
-        filePath = cvac.FilePath( testDir, "TestKrFlag.jpg" )
-        orig = self.dataDir+"/"+filePath.directory.relativePath+"/"+filePath.filename
-        if not os.path.exists( orig ):
-            print "Present working directory: " + os.getcwd()
-            print "Looking for file: " + orig
-            raise RuntimeError("Cannot obtain path to original file, see comments")
-        ftmp = tempfile.NamedTemporaryFile( suffix='.jpg', delete=True, dir=self.dataDir )
-        shutil.copy( orig, ftmp.name )
+        origFilePath = cvac.FilePath( testDir, "TestKrFlag.jpg" )
+        origFS = self.dataDir+"/"+origFilePath.directory.relativePath \
+            +"/"+origFilePath.filename
+        if not os.path.exists( origFS ):
+            raise RuntimeError("Cannot obtain path to original file, see comments: "+origFS)
+        forig = open( origFS )
+        bytes = bytearray( forig.read() )
         
-        # "put" the tempfile and compare the result via file system access
-        self.fs.putFile( filePath, bytes );
+        # "put" the file's bytes as a different file which must not exist,
+        # and compare the result via file system access
+        putFilePath = cvac.FilePath( testDir, "TargetFilename.jpg" )
+        self.fs.putFile( putFilePath, bytes );
+        putFS = self.dataDir+"/"+putFilePath.directory.relativePath \
+            +"/"+putFilePath.filename
+        if not os.path.exists( putFS ):
+            raise RuntimeError("Cannot obtain path to put file on file system, see comments: "+putFS)
+        if not self.filesAreEqual( origFS, putFS ):
+            raise RuntimeError("file was not 'put' correctly to "+putFS)
 
         # delete the "put" file on the server
-
+        print 'deleteFile'
+        self.fs.deleteFile( putFilePath );
+        if os.path.exists( putFS ):
+            raise RuntimeError("FileServer did not delete 'put' file: "+putFS)
+        
         # try to "put" an existing file; this should fail
 
         # close the tempfile
@@ -101,9 +112,7 @@ class FileServerTest(unittest.TestCase):
         # figure it out from the 'pwd'
         orig = self.dataDir+"/"+filePath.directory.relativePath+"/"+filePath.filename
         if not os.path.exists( orig ):
-            print "Present working directory: " + os.getcwd()
-            print "Looking for file: " + orig
-            raise RuntimeError("Cannot obtain path to original file, see comments")
+            raise RuntimeError("Cannot obtain path to original file, see comments: "+orig)
         
         ftmp = tempfile.NamedTemporaryFile( suffix='.jpg', delete=True )
         ftmp.write( bytes )
@@ -111,7 +120,7 @@ class FileServerTest(unittest.TestCase):
         if not self.filesAreEqual( orig, ftmp.name ):
             print "comparison failed, new file: " + ftmp.name
             ftmp.close()
-            raise RuntimeError("file was not copied correctly")
+            raise RuntimeError("file was not 'get' correctly")
         ftmp.close()
 
     def filesAreEqual(self, fname1, fname2):

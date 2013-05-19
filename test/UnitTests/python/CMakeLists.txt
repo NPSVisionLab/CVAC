@@ -7,9 +7,9 @@ cmake_minimum_required(VERSION 2.6)
 
 find_program(PYTHON "python")
 
-IF( NOT ${PYTHON} )
+IF( NOT PYTHON )
   MESSAGE( FATAL_ERROR "Python executable not found: cannot run Python UnitTests" )
-ENDIF( NOT ${PYTHON} )
+ENDIF( NOT PYTHON )
 
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
 set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")

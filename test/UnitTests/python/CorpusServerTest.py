@@ -41,7 +41,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # note that this doesn't try to create a local mirror which would download
     # the entire Caltech101 data set
     #
-    def xtest_openCorpus(self):
+    def test_openCorpus(self):
         print 'openCorpus'
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "Caltech101.properties" )
@@ -81,7 +81,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # Test obtaining a Labelable set: first, expect a failure because the corpus
     # is not downloaded yet (local mirror)
     #
-    def xtest_getDataSet(self):
+    def test_getDataSet(self):
         print 'getDataSet'
         labels = self.cs.getDataSet( self.corpus )
         if not labels:
@@ -92,7 +92,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     #
     # Obtain a local mirror of the data set.
     #
-    def xtest_createLocalMirror(self):
+    def test_createLocalMirror(self):
         print 'createLocalMirror'
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
