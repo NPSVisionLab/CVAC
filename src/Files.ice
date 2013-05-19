@@ -80,6 +80,14 @@ module cvac {
     * to files that have been created by the same client.
     */
   class FileService {
+    /**
+      * True if the file exists on the FileServer.
+      * The FileService might not permit clients to query for the existence of
+      * arbitrary files, instead, it will grant permissions only to files that
+      * were uploaded by the respective client.
+      */
+    bool exists( FilePath file ) throws FileServiceException;
+
     /** 
       * copies a local file at the specified FilePath to the same location
       * on the remote file FileService.

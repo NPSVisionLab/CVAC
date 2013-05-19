@@ -86,6 +86,25 @@ class FileServiceI extends FileService implements IceBox.Service {
     }
 
     @Override
+    public boolean exists(FilePath file, Current __current) throws FileServiceException 
+    {
+        if (null==mAdapter) 
+        {
+            mAdapter = __current.adapter;
+            initialize();
+        }
+        
+        // Read the file into memory and ship off as return value. 
+        // This probably won't work for large files.
+        // get local path and check for permissions
+        File localFile = getLocalPath( file );
+        logger.log(Level.INFO, "FileService exists: {0}", 
+                localFile.getAbsolutePath());
+
+        return localFile.exists();
+    }
+    
+    @Override
     public void putFile(FilePath file, byte[] bytes, Current __current) throws FileServiceException
     {
         if (null==mAdapter) 
@@ -96,7 +115,7 @@ class FileServiceI extends FileService implements IceBox.Service {
         
         // get local path and check for permissions
         File localFile = getLocalPath( file );
-        logger.log(Level.INFO, "FileService putFile called for {0}", 
+        logger.log(Level.INFO, "FileService putFile: {0}", 
                 localFile.getAbsolutePath());
 
         // don't overwrite existing files unless this client owns it
@@ -108,17 +127,13 @@ class FileServiceI extends FileService implements IceBox.Service {
             throw new FileServiceException("FileService doesn't make sense for local clients.");
         }
         Endpoint endpoint = __current.con.getEndpoint();
-
-        if (localFile.canWrite()) 
-            logger.log(Level.INFO, "can write to file");
-        else
         
         if (localFile.exists() && !ownsFile( endpoint, localFile ))
         {
             if (localFile.exists()) 
-                logger.log(Level.INFO, "file exists");
+                logger.log(Level.FINE, "file exists");
             if (!ownsFile( endpoint, localFile )) 
-                logger.log(Level.INFO, "file not owned by endpoint");
+                logger.log(Level.FINE, "file not owned by endpoint");
             throw new FileServiceException("no put permissions to this file");
         }
         
@@ -153,7 +168,7 @@ class FileServiceI extends FileService implements IceBox.Service {
         // This probably won't work for large files.
         // get local path and check for permissions
         File localFile = getLocalPath( file );
-        logger.log(Level.INFO, "FileService getFile called for {0}", 
+        logger.log(Level.INFO, "FileService getFile: {0}", 
                 localFile.getAbsolutePath());
 
         if (!localFile.canRead())
@@ -206,7 +221,7 @@ class FileServiceI extends FileService implements IceBox.Service {
         
         // get local path and check for permissions
         File localFile = getLocalPath( file );
-        logger.log(Level.INFO, "FileService deleteFile called for {0}", 
+        logger.log(Level.INFO, "FileService deleteFile: {0}", 
                 localFile.getAbsolutePath());
 
         // don't delete files unless this client owns it
@@ -235,7 +250,7 @@ class FileServiceI extends FileService implements IceBox.Service {
         }
 
         File localFile = getLocalPath( file );
-        logger.log(Level.INFO, "FileService createSnapshot called for {0}", 
+        logger.log(Level.INFO, "FileService createSnapshot: {0}", 
                 localFile.getAbsolutePath());
         
         throw new FileServiceException("Not supported yet.");
@@ -251,7 +266,7 @@ class FileServiceI extends FileService implements IceBox.Service {
 
         // get local path and check for permissions
         File localFile = getLocalPath( file );
-        logger.log(Level.INFO, "FileService getProperties called for {0}", 
+        logger.log(Level.INFO, "FileService getProperties: {0}", 
                 localFile.getAbsolutePath());
 
         // get the owner so we can report write permissions

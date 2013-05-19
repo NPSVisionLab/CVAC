@@ -1,14 +1,10 @@
 # test the FileServer
 # before calling "python FileServerTest.py", make sure this is set:
 # export PYTHONPATH="/opt/Ice-3.4.2/python:test/UnitTests/python"
+# to run just this test, use "ctest -R PythonFileServerTest --verbose"
 import sys, traceback
-#sys.path.append('''c:\Program Files (x86)\Zeroc\Ice-3.4.2\python''')
-#sys.path.append('''C:\Users\tomb\Documents\nps\git\myCVAC\CVACvisualStudio\test\UnitTests\python''')
-#sys.path.append('''C:\Users\tomb\Documents\nps\git\myCVAC\CVACvisualStudio\test\UnitTests\python\cvac''')
 sys.path.append('''.''')
 import Ice
-if "C:\Program Files (x86)\ZeroC_Ice\python" not in sys.path:
-    sys.path.append("C:\Program Files (x86)\ZeroC_Ice\python")
 import Ice
 import IcePy
 import cvac
@@ -49,6 +45,17 @@ class FileServerTest(unittest.TestCase):
             print "Looking for CVAC.DataDir at: " + self.dataDir
             raise RuntimeError("Cannot obtain path to CVAC.DataDir, see comments")
 
+    #
+    # See if exists works on an existing and non-existent file
+    #
+    def test_exists(self):
+        testDir = cvac.DirectoryPath( "testImg" );
+        existingFile = cvac.FilePath( testDir, "TestUsFlag.jpg" )
+        noFile = cvac.FilePath( testDir, "NonExistentFile.jpg" )
+        if not self.fs.exists( existingFile ):
+            raise RuntimeError("This file should exist: "+self.getRelPath(existingFile) )
+        if self.fs.exists( noFile ):
+            raise RuntimeError("This file should not exist: "+self.getRelPath( noFile ) )
 
     #
     # Test if we can get a file, copy bytes to a tempfile, compare
@@ -70,8 +77,7 @@ class FileServerTest(unittest.TestCase):
         # read the bytes from TestKrFlag.jpg
         testDir = cvac.DirectoryPath( "testImg" );
         origFilePath = cvac.FilePath( testDir, "TestKrFlag.jpg" )
-        origFS = self.dataDir+"/"+origFilePath.directory.relativePath \
-            +"/"+origFilePath.filename
+        origFS = self.dataDir+"/"+self.getRelPath( origFilePath )
         if not os.path.exists( origFS ):
             raise RuntimeError("Cannot obtain path to original file, see comments: "+origFS)
         forig = open( origFS )
@@ -81,12 +87,20 @@ class FileServerTest(unittest.TestCase):
         # and compare the result via file system access
         putFilePath = cvac.FilePath( testDir, "TargetFilename.jpg" )
         self.fs.putFile( putFilePath, bytes );
-        putFS = self.dataDir+"/"+putFilePath.directory.relativePath \
-            +"/"+putFilePath.filename
+        putFS = self.dataDir+"/"+self.getRelPath( putFilePath )
         if not os.path.exists( putFS ):
             raise RuntimeError("Cannot obtain path to put file on file system, see comments: "+putFS)
         if not self.filesAreEqual( origFS, putFS ):
             raise RuntimeError("file was not 'put' correctly to "+putFS)
+
+        # try to "put" an existing file; this should fail
+        permitted = True
+        try:
+            self.fs.putFile( origFilePath, bytes )
+        except cvac.FileServiceException:
+            permitted = False
+        if permitted:
+            raise RuntimeException("should not have permission to put this file")
 
         # delete the "put" file on the server
         print 'deleteFile'
@@ -94,23 +108,17 @@ class FileServerTest(unittest.TestCase):
         if os.path.exists( putFS ):
             raise RuntimeError("FileServer did not delete 'put' file: "+putFS)
         
-        # try to "put" an existing file; this should fail
-
-        # close the tempfile
-        return
-
     def getFileAndCompare( self, filePath ):
         bytes = self.fs.getFile( filePath )
         if not bytes:
-            raise RuntimeError("could not obtain file from '"
-                               +filePath.directory.relativePath+"/"+filePath.filename+"'")
+            raise RuntimeError("could not obtain file from '"+self.getRelPath( filePath ))
 
         # Write bytes to a temp file and compare the contents to the orig.
         # Since this is a test, it's probably run in the build directory. We
         # need to know the path to the original file for the compare, but we
         # don't have easy access to the CVAC.DataDir variable.  Let's try to
         # figure it out from the 'pwd'
-        orig = self.dataDir+"/"+filePath.directory.relativePath+"/"+filePath.filename
+        orig = self.dataDir+"/"+self.getRelPath( filePath )
         if not os.path.exists( orig ):
             raise RuntimeError("Cannot obtain path to original file, see comments: "+orig)
         
@@ -130,6 +138,10 @@ class FileServerTest(unittest.TestCase):
         # diff = difflib.ndiff(forig.readlines(), ftmp.readlines())
         # delta = ''.join(x[2:] for x in diff if x.startswith('- '))
         return filecmp.cmp( fname1, fname2 )
+
+    def getRelPath(self, cvacPath):
+        path = cvacPath.directory.relativePath+"/"+cvacPath.filename
+        return path
 
     def tearDown(self):
         # Clean up

@@ -12,8 +12,11 @@ import Ice
 import IcePy
 import cvac
 import unittest
-import corpus
-import service
+
+
+def getRelPath(cvacPath):
+    path = cvacPath.directory.relativePath+"/"+cvacPath.filename
+    return path
 
 #
 #  open a Corpus of labeled data
@@ -62,6 +65,33 @@ for key in pur_categories_keys:
     pur_categories.append( cvac.PurposedLabelableSeq( purpose, categories[key] ) )
     cnt = cnt+1
 runset = cvac.RunSet( pur_categories )
+
+#
+# Make sure all files in the RunSet are available on the remote site;
+# it is the client's responsibility to upload them if not.
+#
+fileserver_base = ic.stringToProxy("FileServer:default -p 10013")
+fileserver = cvac.FileServicePrx.checkedCast( fileserver_base )
+if not fileserver:
+    raise RuntimeError("Invalid FileServer proxy")
+# collect all "substrates"
+substrates = set()
+for plist in runset.purposedLists:
+    if type(plist) is cvac.PurposedDirectory:
+        raise RuntimeException("cannot deal with PurposedDirectory yet")
+    elif type(plist) is cvac.PurposedLabelableSeq:
+        for lab in plist.labeledArtifacts:
+            if not lab.sub in substrates:
+                substrates.add( lab.sub )
+    else:
+        raise RuntimeException("unexpected subclass of PurposedList")
+# upload if not present
+for sub in substrates:
+    if not fileserver.exists( sub.path ):
+        print 'uploading file to server: ' + getRelPath( sub.path )
+        fileserver.putFile( sub.path )
+    else:
+        print 'file already exists on server: ' + getRelPath( sub.path )
 
 #
 # Connect to a trainer service, train on the RunSet
