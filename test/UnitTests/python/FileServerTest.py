@@ -17,11 +17,13 @@ import os
 import inspect
 import tempfile
 import filecmp
+import shutil
 
 class FileServerTest(unittest.TestCase):
 
     ic = None
     fs = None
+    dataDir = None
     
     #
     # Test the initialization of Ice and the service proxy
@@ -39,14 +41,24 @@ class FileServerTest(unittest.TestCase):
         if not self.fs:
             raise RuntimeError("Invalid proxy")
 
+        # Since this is a test, it's probably run in the build directory. We
+        # need to know the path to the original files for various operations, but we
+        # don't have easy access to the CVAC.DataDir variable.  Let's guess.
+        self.dataDir = "../../../../data"
+        if not os.path.exists( self.dataDir ):
+            print "Present working directory: " + os.getcwd()
+            print "Looking for CVAC.DataDir at: " + self.dataDir
+            raise RuntimeError("Cannot obtain path to CVAC.DataDir, see comments")
+
+
     #
     # Test if we can get a file, copy bytes to a tempfile, compare
     #
     def test_getFile(self):
         print 'getFile'
         # test with a small file for now
-        dataRoot = cvac.DirectoryPath( "testImg" );
-        filePath = cvac.FilePath( dataRoot, "TestUsFlag.jpg" )
+        testDir = cvac.DirectoryPath( "testImg" );
+        filePath = cvac.FilePath( testDir, "TestUsFlag.jpg" )
         self.getFileAndCompare( filePath )
 
     #
@@ -56,8 +68,18 @@ class FileServerTest(unittest.TestCase):
     #
     def test_putFile(self):
         # create a copy of the existing TestKrFlag.jpg in a tempfile
-
+        testDir = cvac.DirectoryPath( "testImg" );
+        filePath = cvac.FilePath( testDir, "TestKrFlag.jpg" )
+        orig = self.dataDir+"/"+filePath.directory.relativePath+"/"+filePath.filename
+        if not os.path.exists( orig ):
+            print "Present working directory: " + os.getcwd()
+            print "Looking for file: " + orig
+            raise RuntimeError("Cannot obtain path to original file, see comments")
+        ftmp = tempfile.NamedTemporaryFile( suffix='.jpg', delete=True, dir=self.dataDir )
+        shutil.copy( orig, ftmp.name )
+        
         # "put" the tempfile and compare the result via file system access
+        self.fs.putFile( filePath, bytes );
 
         # delete the "put" file on the server
 
@@ -77,7 +99,7 @@ class FileServerTest(unittest.TestCase):
         # need to know the path to the original file for the compare, but we
         # don't have easy access to the CVAC.DataDir variable.  Let's try to
         # figure it out from the 'pwd'
-        orig = "../../../../data"+"/"+filePath.directory.relativePath+"/"+filePath.filename
+        orig = self.dataDir+"/"+filePath.directory.relativePath+"/"+filePath.filename
         if not os.path.exists( orig ):
             print "Present working directory: " + os.getcwd()
             print "Looking for file: " + orig
