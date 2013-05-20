@@ -2,6 +2,11 @@
 @setlocal
 set PATH=bin;${ICE_ROOT}/bin;${OpenCV_LIB_DIR_OPT}/../bin;${LIBARCHIVE_BIN_DIR};${LIBZIP_BIN_DIR};${OpenCV_DIR}/common/tbb/ia32/vc9;%PATH%
 chdir "${CVAC_ROOT_DIR}"
-start "CVAC Services" "${ICE_BOX_EXECUTABLE}" --Ice.Config=config.icebox
+start "CVAC Services (C++)" "${ICE_BOX_EXECUTABLE}" --Ice.Config=config.icebox
+
+if "${START_JAVA_SERVICES}" == "1" (
+    start "CVAC Services (Java)" "${CMAKE_Java_RUNTIME}" -cp "${Ice.jar}:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar" IceBox.Server --Ice.Config=config.java_icebox &
+)
+
 echo CVAC services launched
 exit /b 0
