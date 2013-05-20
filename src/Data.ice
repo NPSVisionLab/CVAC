@@ -216,7 +216,8 @@ module cvac {
   };
 
   /** This is a placeholder for the algorithm-internal data that
-   *  turns a generic "object" detection algorithm into a detector for, say, faces, or cars, etc.
+   *  turns a generic "object" detection algorithm into a detector for, say, faces, or cars, etc.;
+   *  We also use it to transfer files.
    */
   sequence<byte> ByteSeq;
 };

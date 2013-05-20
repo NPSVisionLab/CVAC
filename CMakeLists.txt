@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
+cmake_policy( SET CMP0012 OLD )
+
 IF(WIN32)
     # don't want the four default configuration types with MS Visual Studio
     SET (CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "")
@@ -11,7 +13,9 @@ INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 OPTION(BUILD_WITH_BOW "Enables the projects that depend on the bow library" OFF)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Enables the projects that depend on the OpencvPerformance library" OFF)
-OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients)" OFF)
+OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" ON) 
+OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" ON) 
+OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
 OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" OFF)
 OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
@@ -155,10 +159,15 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
              COMMAND ${CMAKE_COMMAND} -E tar xzf ${3RDPARTY_FILENAME}
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
              RESULT_VARIABLE unpack_result
+             OUTPUT_VARIABLE unpack_output
          )
-        IF( NOT unpack_result STREQUAL 0 )
-            MESSAGE( SEND_ERROR "Could not unpack (${unpack_result})- subsequent errors may occur" )
-        ENDIF( NOT unpack_result STREQUAL 0 )
+        IF( NOT (${unpack_result} STREQUAL "0") 
+            OR NOT EXISTS ${CMAKE_SOURCE_DIR}/3rdparty
+            OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty )
+            MESSAGE( SEND_ERROR "Could not unpack 3rdparty package - subsequent errors may occur" )
+        ENDIF( NOT (${unpack_result} STREQUAL "0") 
+            OR NOT EXISTS ${CMAKE_SOURCE_DIR}/3rdparty
+            OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty )
     ENDIF( EXISTS ${3RDPARTY_DIR} )
     SET( DOWNLOAD_3RDPARTY_PACKAGE OFF CACHE BOOL "Download 3rd-party package had download or unpack errors, please obtain manually" FORCE )
 ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
@@ -203,10 +212,10 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 ADD_SUBDIRECTORY( etc )
-IF( BUILD_CORPUS_SERVER )
+IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
     # This requires CMake 2.8 for Java support
     ADD_SUBDIRECTORY( src )
-ENDIF( BUILD_CORPUS_SERVER )
+ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 ADD_SUBDIRECTORY(src/util)
 ADD_SUBDIRECTORY(src/easy)
 IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)

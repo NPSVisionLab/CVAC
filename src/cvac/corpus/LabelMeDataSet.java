@@ -15,6 +15,7 @@ import cvac.LabelablePrx;
 import cvac.LabeledLocation;
 import cvac.LabeledLocationPrx;
 import cvac.LabeledLocationPrxHelper;
+import cvac.Semantics;
 import cvac.Silhouette;
 import cvac.Substrate;
 import util.Data_IO_Utils;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
@@ -46,40 +48,20 @@ public class LabelMeDataSet extends CorpusI
     private LabelMe lm;
     MWStructArray db = null;
     MWStructArray dbSpecific = null;
- //   @XmlAttribute()
     String HOMEANNOTATIONS = "";
- //   @XmlAttribute()
     String HOMEIMAGES = "";
- //   @XmlElementWrapper(name = "lmObjectLabelNames")
     ArrayList<String> lmObjectLabelNames;
- //   @XmlElementWrapper(name = "lmFolderList")
     ArrayList<String> lmFolderList;
+    ArrayList<Labelable> ils;
 
-      public LabelMeDataSet(String name, String description, String homepageURL, boolean isImmutableMirror)
-      {
-          super( name, description, homepageURL, isImmutableMirror );     
-          this.lmObjectLabelNames = new ArrayList<String>(0);
-          this.lmFolderList = new ArrayList<String>(0);
-      }
-//    public LabelMeDataSet() 
-//    {
-//        this.m_name = "LabelMe connection";
-//        this.m_description = "";
-//        this.m_homepage = "";
-//        this.m_imageType = DataSetImageType.IMAGE;
-//        this.lmObjectLabelNames = new ArrayList<String>(0);
-//        this.lmFolderList = new ArrayList<String>(0);
-//        this.HOMEANNOTATIONS = "http://nps-vision.ern.nps.edu/LabelMe/Annotations";
-//        this.HOMEIMAGES = "http://nps-vision.ern.nps.edu/LabelMe";
-//    }
-//
-//    @Override
-//    public void setName(String n) 
-//    {
-//        m_name = n;        
-//        m_dataSetFolder = (Main.getEngine().getDataDir() + File.separator + m_name);
-//    }
-//
+    public LabelMeDataSet(String name, String description, String homepageURL, boolean isImmutableMirror)
+    {
+        super( name, description, homepageURL, isImmutableMirror );     
+        this.lmObjectLabelNames = new ArrayList<String>(0);
+        this.lmFolderList = new ArrayList<String>(0);
+        this.ils = new ArrayList<Labelable>(0);
+    }
+
     /**
      * Connects to LabelMe, downloads a database of objects from 
      * HOMEANNOTATIONS and all specified subfolders (via lmFolderList),
@@ -125,6 +107,8 @@ public class LabelMeDataSet extends CorpusI
             
             // only "OR" queries for object.name are currently allowed.  No
             // multiple "AND" queries with subsequent db intersection yet.
+            logger.log( Level.INFO, "Querying LabelMe for object.name==\"{0}\"",
+                    lmObjectLabelNames.get(0));
             Object[] result2 = lm.LMquery(1, db, "object.name", lmObjectLabelNames.get(0) );
             dbSpecific = (MWStructArray) result2[0];
             logger.log( Level.FINE, "obtained labeled subset from LabelMe");
@@ -226,12 +210,8 @@ public class LabelMeDataSet extends CorpusI
                 result3 = annot.getField("object", 1);
 
                 MWStructArray lmobj = (MWStructArray) result3;
-                // TODO: figure out what happened with ils before refactor
-                if (true) {
-                    throw new RuntimeException("whats' going to happen to ils??");
-                }
-                ArrayList<Labelable> ils = 
-                        new ArrayList<Labelable>(lmobj.numberOfElements());
+                // TODO: maybe it's better to keep separate "ils", one for each labelmeObjnum?
+                ils.ensureCapacity( ils.size() + lmobj.numberOfElements() );
                 for (int objcnt=1; objcnt<=lmobj.numberOfElements(); objcnt++)
                 {
                     MWArray result4 = lmobj.getField("name", objcnt);
@@ -258,6 +238,13 @@ public class LabelMeDataSet extends CorpusI
         logger.log(Level.INFO, "loaded {0} image assets", dbSpecific.numberOfElements());
     }
     
+    @Override
+    Labelable[] getLabels()
+    {
+        Labelable[] labels = ils.toArray( new Labelable[0] );
+        return labels;
+    }
+
     /**
      * Use LMobjectnames to obtain a list of all annotation objects and
      * their frequency in the dbSpecific database.
@@ -365,7 +352,7 @@ public class LabelMeDataSet extends CorpusI
             Silhouette locSilhouette = new cvac.Silhouette(pts);
             
             polygonLoc = new LabeledLocation();
-            polygonLoc.lab = new cvac.Label();
+            polygonLoc.lab = new cvac.Label(true, objname, new HashMap<String,String>(0), new Semantics(""));
             polygonLoc.lab.hasLabel = true;                    // hasLabel
             polygonLoc.lab.name = "annotation";                // name
             polygonLoc.loc = locSilhouette;                    // location
@@ -478,13 +465,15 @@ public class LabelMeDataSet extends CorpusI
         String folders = config.getProperty("LMFolders");
         if (null == folders){
             throw new CorpusConfigurationException("No LMFolders property");
-        } else
+        } else {
             this.setLMFolders(folders);
+        }
         String objNames = config.getProperty("LMObjectNames");
         if (null == objNames){
             throw new CorpusConfigurationException("No LMObjectNames property");
-        }else
+        } else {
             this.setObjectNames(objNames);
+        }
         this.HOMEANNOTATIONS = config.getProperty("LMAnnotationURL");
         if (null == this.HOMEANNOTATIONS){
             throw new CorpusConfigurationException("No LMAnnotationURL property");
@@ -492,11 +481,6 @@ public class LabelMeDataSet extends CorpusI
         this.HOMEIMAGES = config.getProperty("LMImageURL");
         if (null == this.HOMEIMAGES){
             throw new CorpusConfigurationException("No LMImageURL property");
-        }
-        // TODO: Move this to base class config
-        this.m_dataSetFolder = config.getProperty("DataRootDir");
-        if (null == this.m_dataSetFolder){
-            throw new CorpusConfigurationException("No DataRootDir property");
         }
     }
 
@@ -528,7 +512,9 @@ public class LabelMeDataSet extends CorpusI
 //    }
 
     @Override
-    void createLocalMirror(CorpusCallback cb) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    void createLocalMirror(CorpusCallback cb)
+    {
+        // download everything for now, annotations and images
+        loadImageAssets();
     }
 }

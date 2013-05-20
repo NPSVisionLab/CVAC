@@ -27,8 +27,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     cs = None
     
     #
-    # Test the initialization of Ice and the service proxy, then
-    # obtain a corpus with which the remaining operations will be performed
+    # Test the initialization of Ice and the service proxy
     #
     def setUp(self):
         self.ic = Ice.initialize(sys.argv)
@@ -42,7 +41,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # note that this doesn't try to create a local mirror which would download
     # the entire Caltech101 data set
     #
-    def xtest_openCorpus(self):
+    def test_openCorpus(self):
         print 'openCorpus'
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "Caltech101.properties" )
@@ -52,10 +51,37 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
                                +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
 
     #
+    # Test if we can open a Label e Corpus with an existing properties file,
+    # if so, try to obtain a Labelable dataset from it
+    #
+    def test_openCorpusLabelMe(self):
+        print 'openCorpusLabelMe'
+        dataRoot = cvac.DirectoryPath( "corpus" );
+        corpusConfigFile = cvac.FilePath( dataRoot, "LabelMeCarsTest.properties" )
+#        corpusConfigFile = cvac.FilePath( dataRoot, "NpsVisionLabelMe.properties" )
+        corpus3 = self.cs.openCorpus( corpusConfigFile )
+        if not corpus3:
+            raise RuntimeError("could not open corpus from config file at '"
+                               +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
+        adapter = self.ic.createObjectAdapter("")
+        ident = Ice.Identity()
+        ident.name = IcePy.generateUUID()
+        ident.category = ""
+        adapter.add( TestCorpusCallback(), ident )
+        adapter.activate()
+        
+        self.cs.createLocalMirror( corpus3, ident )
+
+        labels = self.cs.getDataSet( corpus3 )
+        if not labels:
+            raise RuntimeError("could not obtain labels from Corpus '"
+                               +corpus3.name+"'")
+
+    #
     # Test obtaining a Labelable set: first, expect a failure because the corpus
     # is not downloaded yet (local mirror)
     #
-    def xtest_getDataSet(self):
+    def test_getDataSet(self):
         print 'getDataSet'
         labels = self.cs.getDataSet( self.corpus )
         if not labels:
@@ -66,7 +92,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     #
     # Obtain a local mirror of the data set.
     #
-    def xtest_createLocalMirror(self):
+    def test_createLocalMirror(self):
         print 'createLocalMirror'
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )

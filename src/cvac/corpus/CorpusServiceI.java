@@ -103,7 +103,8 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
             return cs;
         } 
         catch ( CorpusI.CorpusConfigurationException ex) {
-            logger.log(Level.WARNING, "could not open or parse Corpus property file: {0}", ex.toString() );
+            logger.log(Level.WARNING, "could not open or parse Corpus property file {0}: {1}",
+                    new Object[]{filename, ex.toString()} );
         }
         return null;
     }
