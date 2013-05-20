@@ -33,7 +33,7 @@ import java.util.logging.Logger;
  * 
  * @author matz
  */
-class FileServiceI extends FileService implements IceBox.Service {
+public class FileServiceI extends FileService implements IceBox.Service {
 
     protected static final Logger logger = Logger.getLogger(FileServiceI.class.getName());
     private Ice.ObjectAdapter mAdapter = null;
@@ -41,9 +41,6 @@ class FileServiceI extends FileService implements IceBox.Service {
     String dataDir = "";
     static Set<String> videoExtensions = null;
     static Set<String> imageExtensions = null;
-
-    public FileServiceI() {
-    }
 
     /** Perform the initialization steps common to being started within or
      * outside an IceBox.  mAdapter must have been set prior to calling this.

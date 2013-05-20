@@ -96,8 +96,18 @@ IF( ${BUILD_CORPUS_LABELME} )
 ENDIF( ${BUILD_CORPUS_LABELME} )
 
 SET( CMAKE_JAVA_INCLUDE_PATH ${Ice.jar} ${javatar.jar} ${IO.jar} ${javabuilder.jar} ${labelme.jar})
-SET( CMAKE_JAVA_TARGET_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/lib )
+SET( CMAKE_JAVA_TARGET_OUTPUT_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
 #SET( CMAKE_JAVA_TARGET_OUTPUT_DIR ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY} )
+
+
+FUNCTION( copy_file target destdir )
+    ADD_CUSTOM_COMMAND( TARGET ${target}
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      ARGS ${target}.jar ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+      COMMENT "copying ${target}.jar to ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+    )
+endfunction()
 
 # Create a jar file for the sliced Corpus files only
 # and then some for all, including the hardcoded "implementation" files;
@@ -114,6 +124,7 @@ IF( ${BUILD_CORPUS_SERVER} )
             ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
   )
   INSTALL_JAR( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
+  copy_file( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
 ENDIF( ${BUILD_CORPUS_SERVER} )
 
 IF( ${BUILD_FILESERVER} )
@@ -123,6 +134,7 @@ IF( ${BUILD_FILESERVER} )
             ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
   )
   INSTALL_JAR( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
+  copy_file( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
 ENDIF( ${BUILD_FILESERVER} )
 
 #INSTALL( TARGETS Corpus

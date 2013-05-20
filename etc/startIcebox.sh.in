@@ -1,7 +1,14 @@
+#
+# startIceBox.sh script generated for CVAC version ${CVAC_VERSION}
+#
 export PATH=$PATH:/opt/local/bin
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_ROOT_DIR}/lib"
+export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${OpenCV_LIB_DIR_OPT}"
 cd ${CVAC_ROOT_DIR}
 ${ICE_BOX_EXECUTABLE} --Ice.Config=config.icebox &
-# ${JAVA} -cp "3rdparty/ICE/lib/Ice.jar:lib/FileServer.jar:lib/Corpus.jar" 
+if [ "${START_JAVA_SERVICES}" == "1" ]; then
+    ${CMAKE_Java_RUNTIME} -cp "${Ice.jar}:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar" \
+        IceBox.Server --Ice.Config=config.java_icebox &
+fi
 echo CVAC services launched
 exit

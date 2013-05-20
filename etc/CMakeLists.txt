@@ -3,6 +3,16 @@
 # produce run scripts, put them in the binary folder
 #
 
+IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
+  cmake_minimum_required(VERSION 2.8.6)
+  # Java support since CMake 2.8.6
+  FIND_PACKAGE( Java )
+  INCLUDE( UseJava )
+  SET( START_JAVA_SERVICES 1 )
+ELSE( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
+  SET( START_JAVA_SERVICES 0 )
+ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
+
 IF (WIN32)
     SET( SCRIPT_EXT bat )
 ELSE (WIN32)

@@ -31,11 +31,11 @@
 # Enable Ice.Admin object:
 #
 Ice.Admin.InstanceName=DemoIceBox
-Ice.Admin.Endpoints=tcp -p 9997 -h 127.0.0.1
+Ice.Admin.Endpoints=tcp -p 9995 -h 127.0.0.1
 
 # CorpusService
 IceBox.Service.CorpusService=cvac.corpus.CorpusServiceI --Ice.Config=config.service
-IceBox.Service.FileService=cvac.corpus.FileServiceI --Ice.Config=config.service
+IceBox.Service.FileService=cvac.fileserver.FileServiceI --Ice.Config=config.service
 
 #
 # Warn about connection exceptions
