@@ -102,6 +102,7 @@ def createRunSet( categories ):
     determined correctly automatically.
     Return the mapping from Purpose (class ID) to label name.'''
 
+    runset = None
     pur_categories = []
     pur_categories_keys = sorted( categories.keys() )
     cnt = 0
@@ -126,6 +127,7 @@ def putAllFiles( fileserver, runset ):
     '''Make sure all files in the RunSet are available on the remote site;
     it is the client\'s responsibility to upload them if not.
     For reporting purposes, return what has and has not been uploaded.'''
+    assert( fileserver and runset )
 
     # collect all "substrates"
     substrates = set()
