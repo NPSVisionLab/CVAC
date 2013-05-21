@@ -117,7 +117,9 @@ def createRunSet( categories ):
 def getFileServer( configString ):
     '''Obtain a reference to a remote FileServer.
     Generally, every host of CVAC services also has one FileServer.'''
-    fileserver_base = ic.stringToProxy("FileServer:default -p 10013")
+    fileserver_base = ic.stringToProxy( configString )
+    if not fileserver_base:
+        raise RuntimeError("no such FileServer: "+configString)
     fileserver = cvac.FileServicePrx.checkedCast( fileserver_base )
     if not fileserver:
         raise RuntimeError("Invalid FileServer proxy")
@@ -223,7 +225,25 @@ class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
 def detect( detector, detectorData, runset, purLabelMap=None, callbackRecv=None ):
     '''Synchronously run detection with the specified detector,
     trained model, and optional callback receiver.
+    The detectorData can be either a cvac.DetectorData object or simply
+     a filename of a pre-trained model.
+    The runset can be either a cvac.RunSet object, filename to a single
+     file that is to be tested, or a directory path.
     If a callback receiver is specified, this function returns nothing.'''
+
+    # create a cvac.DetectorData object out of a filename
+    if type(detectorData) is str:
+        ddpath = getCvacPath( detectorData );
+        detectorData = cvac.DetectorData( cvac.DetectorDataType.FILE, None, ddpath, None )
+    elif not type(detectorData) is cvac.DetectorData:
+        raise RuntimeException("detectorData must be either filename or cvac.DetectorData")
+
+    # create a RunSet out of a filename or directory path
+    if type(runset) is str:
+        runset = createRunSet( runset )
+    elif not type(runset) is cvac.RunSet:
+        raise RuntimeException("runset must either be a filename, directory, or cvac.RunSet")
+    
     # ICE functionality to enable bidirectional connection for callback
     adapter = ic.createObjectAdapter("")
     cbID = Ice.Identity()

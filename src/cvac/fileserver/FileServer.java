@@ -20,8 +20,8 @@ public class FileServer extends Ice.Application
         // this starts the actual service
         Ice.Communicator ic = communicator();
         Ice.ObjectAdapter adapter =
-            ic.createObjectAdapterWithEndpoints("FileServiceAdapter", "default -p 10013");
-        adapter.add( fs, ic.stringToIdentity("FileServer") );
+            ic.createObjectAdapterWithEndpoints("FileServiceAdapter", "default -p 10110");
+        adapter.add( fs, ic.stringToIdentity("FileService") );
         ic.getProperties().setProperty( "CVAC.DataDir", "data" );
         adapter.activate();
 
