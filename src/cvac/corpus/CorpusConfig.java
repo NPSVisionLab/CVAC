@@ -162,8 +162,8 @@ class CorpusConfig {
                 // "unchecked call to getConstructor"
                 Class<?> labelMeDataSet = Class.forName("cvac.corpus.LabelMeDataSet");
                 Constructor<?> cons = labelMeDataSet.getConstructor(
-                        new Class[]{String.class, String.class, String.class, Boolean.class});
-                cons.newInstance( nameProp, descProp, homepage, isImmutableMirror );
+                        new Class[]{String.class, String.class, String.class, boolean.class});
+                ds = (CorpusI)cons.newInstance( nameProp, descProp, homepage, isImmutableMirror );
             }
             catch (InstantiationException ex) {
                 logger.log(Level.WARNING, "Problem invoking LabelMe constructor:", ex);
