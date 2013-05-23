@@ -79,7 +79,8 @@ public class FileServiceI extends FileService implements IceBox.Service {
     @Override
     public void stop()
     {
-         mAdapter.deactivate();  
+        mAdapter.deactivate();  
+        logger.log(Level.INFO, "FileService stopped" );
     }
 
     @Override
