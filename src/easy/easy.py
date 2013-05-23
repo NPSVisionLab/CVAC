@@ -20,7 +20,7 @@ import stat
 # one-time initialization code, upon loading the module
 #
 ic = Ice.initialize(sys.argv)
-
+defaultCS = None
 
 
 def getFSPath( cvacPath ):
@@ -39,10 +39,19 @@ def getCvacPath( fsPath ):
 def getCorpusServer( configstr ):
     '''Connect to a Corpus server based on the given configuration string'''
     cs_base = ic.stringToProxy( configstr )
+    if not cs_base:
+        raise RuntimeError("CorpusServer not found in config:", configstr)
     cs = cvac.CorpusServicePrx.checkedCast(cs_base)
     if not cs:
         raise RuntimeError("Invalid CorpusServer proxy")
     return cs
+
+def getDefaultCorpusServer():
+    '''Returns the CorpusServer that is expected to run locally at port 10011'''
+    global defaultCS
+    if not defaultCS:
+        defaultCS = getCorpusServer( "CorpusServer:default -p 10011" )
+    return defaultCS
 
 def openCorpus( corpusServer, corpusPath ):
     '''Open a Corpus specified by a properties file,
@@ -119,11 +128,45 @@ def getFileServer( configString ):
     Generally, every host of CVAC services also has one FileServer.'''
     fileserver_base = ic.stringToProxy( configString )
     if not fileserver_base:
-        raise RuntimeError("no such FileServer: "+configString)
+        raise RuntimeError("no such FileService: "+configString)
     fileserver = cvac.FileServicePrx.checkedCast( fileserver_base )
     if not fileserver:
         raise RuntimeError("Invalid FileServer proxy")
     return fileserver
+
+def getDefaultFileServer( detector ):
+    '''Assume that a FileServer is running on the host of the detector
+    at the default port (10110).  Obtain a connection to that.'''
+    # what host is the detector running on?
+    endpoints = detector.ice_getEndpoints()
+    # debug output:
+    #print endpoints
+    #print type(endpoints[0])
+    #print dir(endpoints[0])
+    #print endpoints[0].getInfo()
+    #print endpoints[0].getInfo().type()
+    #print dir(endpoints[0].getInfo().type())
+    #print "host: ", endpoints[0].getInfo().host, "<-"
+    # expect to see only one Endpoint, of type IP
+    if not len(endpoints) is 1:
+        raise RuntimeError( "don't know how to deal with more than one Endpoint" )
+    if not isinstance( endpoints[0].getInfo(), IcePy.IPEndpointInfo ):
+        raise RuntimeError( "detector has unexpected endpoint(s):", endpoints )
+    host = endpoints[0].getInfo().host
+
+    # if host is empty, the detector is probably a local service and
+    # there is no Endpoint
+    if not host:
+        host = "localhost"
+
+    # get the FileServer at said host at the default port
+    configString = "FileService:default -h "+host+" -p 10110"
+    try:
+        fs = getFileServer( configString )
+    except RuntimeError:
+        raise RuntimeError( "No default FileServer at the detector's host",
+                            host, "on port 10110" )
+    return fs
 
 def putAllFiles( fileserver, runset ):
     '''Make sure all files in the RunSet are available on the remote site;
