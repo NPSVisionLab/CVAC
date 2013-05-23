@@ -41,7 +41,7 @@ class FileServerTest(unittest.TestCase):
         # Since this is a test, it's probably run in the build directory. We
         # need to know the path to the original files for various operations, but we
         # don't have easy access to the CVAC.DataDir variable.  Let's guess.
-        self.dataDir = "../../../../data"
+        self.dataDir = "../../../data"
         if not os.path.exists( self.dataDir ):
             print "Present working directory: " + os.getcwd()
             print "Looking for CVAC.DataDir at: " + self.dataDir
