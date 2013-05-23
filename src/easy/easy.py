@@ -36,6 +36,25 @@ def getCvacPath( fsPath ):
     dataRoot = cvac.DirectoryPath( path );
     return cvac.FilePath( dataRoot, filename )
 
+def isLikelyVideo( cvacPath ):
+    videoExtensions = ['avi', 'mpg', 'wmv']
+    for ext in videoExtensions:
+        if cvacPath.filename.endswith(ext):
+            return True
+    return False
+
+def getLabelable( cvacPath, labelText=None ):
+    '''Create a Labelable wrapper around the file, assigning
+    a textual label if specified.'''
+    if labelText:
+        label = cvac.Label( True, labelText, None, cvac.Semantics() )
+    else:
+        label = cvac.Label( False, "", None, cvac.Semantics() )
+    isVideo = isLikelyVideo( cvacPath )
+    substrate = cvac.Substrate( not isVideo, isVideo, cvacPath, 0, 0 )
+    labelable = cvac.Labelable( 0.0, label, substrate )
+    return labelable
+
 def getCorpusServer( configstr ):
     '''Connect to a Corpus server based on the given configuration string'''
     cs_base = ic.stringToProxy( configstr )
@@ -107,21 +126,42 @@ def createRunSet( categories ):
     '''Add all samples from the categories to a new RunSet.
     Determine whether this is a two-class (positive and negative)
     or a multiclass dataset and create the RunSet appropriately.
+    Input argument can also be a string to a single file.
     Note that the positive and negative classes might not be
     determined correctly automatically.
     Return the mapping from Purpose (class ID) to label name.'''
 
     runset = None
-    pur_categories = []
-    pur_categories_keys = sorted( categories.keys() )
-    cnt = 0
-    for key in pur_categories_keys:
-        purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
-        pur_categories.append( cvac.PurposedLabelableSeq( purpose, categories[key] ) )
-        cnt = cnt+1
-        runset = cvac.RunSet( pur_categories )
+    if type(categories) is dict:
+        # multiple categories
+        pur_categories = []
+        pur_categories_keys = sorted( categories.keys() )
+        cnt = 0
+        for key in pur_categories_keys:
+            purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
+            pur_categories.append( cvac.PurposedLabelableSeq( purpose, categories[key] ) )
+            cnt = cnt+1
+            runset = cvac.RunSet( pur_categories )
+        return {'runset':runset, 'classmap':pur_categories_keys}
 
-    return (runset, pur_categories_keys)
+    elif type(categories) is list and len(categories)>0 and type(categories[0]) is cvac.Labelable:
+        # single category - assume "unlabeled"
+        purpose = cvac.Purpose( cvac.PurposeType.UNLABELED )
+        plists = [ cvac.PurposedLabelableSeq( purpose, categories ) ]
+        runset = cvac.RunSet( plists )
+        return {'runset':runset, 'classmap':None}
+
+    elif type(categories) is str:
+        # single file, create an unlabeled entry
+        fpath = getCvacPath( categories )
+        labelable = getLabelable( fpath )
+        purpose = cvac.Purpose( cvac.PurposeType.UNLABELED )
+        plists = [ cvac.PurposedLabelableSeq( purpose, [labelable] ) ]
+        runset = cvac.RunSet( plists )
+        return {'runset':runset, 'classmap':None}
+        
+    else:
+        raise RuntimeError( "don't know how to create a RunSet from ", type(categories) )
 
 def getFileServer( configString ):
     '''Obtain a reference to a remote FileServer.
@@ -190,6 +230,8 @@ def putAllFiles( fileserver, runset ):
     uploadedFiles = []
     existingFiles = []
     for sub in substrates:
+        if not type(sub) is cvac.Substrate:
+            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
         if not fileserver.exists( sub.path ):
             fileserver.putFile( sub.path )
             uploadedFiles.append( sub.path )
