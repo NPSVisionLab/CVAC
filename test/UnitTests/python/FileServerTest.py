@@ -4,6 +4,8 @@
 # to run just this test, use "ctest -R PythonFileServerTest --verbose"
 import sys, traceback
 sys.path.append('''.''')
+sys.path.append('''../../../lib/python''')
+import paths
 import Ice
 import Ice
 import IcePy

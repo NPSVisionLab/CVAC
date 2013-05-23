@@ -46,10 +46,10 @@ MACRO(WRAP_SLICE2PY outfiles)
     FOREACH(it ${slice_files})
         GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
         GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
-        SET(py_src ${CMAKE_CURRENT_BINARY_DIR}/${outfile}_ice.py)
+        SET(py_src ${SLICE_OUTPUT_PYTHONDIR}/${outfile}_ice.py)
         ADD_CUSTOM_COMMAND(OUTPUT ${py_src}
           COMMAND ${ICE_SLICE2PY_EXECUTABLE}
-          ARGS --output-dir ${CMAKE_CURRENT_BINARY_DIR} -I${ICE_ROOT}/slice ${infile}
+          ARGS --output-dir ${SLICE_OUTPUT_PYTHONDIR} -I${ICE_ROOT}/slice ${infile}
           MAIN_DEPENDENCY ${infile})
 
         SET(${outfiles} ${${outfiles}} ${py_src})
