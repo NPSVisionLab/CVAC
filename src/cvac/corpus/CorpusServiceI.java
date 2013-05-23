@@ -4,15 +4,11 @@
 
 package cvac.corpus;
 
-import cvac.CorpusService;
-import cvac.CorpusCallback;
 import cvac.Corpus;
 import cvac.CorpusCallbackPrx;
 import cvac.CorpusCallbackPrxHelper;
-import cvac.CorpusServicePrxHelper;
 import cvac._CorpusServiceDisp;
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -123,9 +119,57 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
     @Override
     public void saveCorpus(Corpus corp, cvac.FilePath file, Ice.Current __current)
     {
-        
+        throw new RuntimeException("Not implemented yet");
+    }
+    
+    private CorpusI checkValidityAndLookup( Corpus corp )
+    {
+        if (null==mAdapter) 
+        {
+            logger.log(Level.WARNING, "CorpusServiceI has not been initialized yet, "
+                       + "no corpus is open.  Ignoring request.");
+            return null;
+        }
+        if (null==corp) 
+        {
+            logger.log(Level.WARNING, "CorpusServiceI called with null corpus.");
+            return null;
+        }
+        CorpusI cs = corpToImp.get( corp.name );
+        if (null==cs)
+        {
+            logger.log(Level.WARNING, "nothing known about corpus {0}", corp.name);
+            return null;
+        }
+        return cs;
+    }
+    
+    /** Does this Corpus require a "download" before the meta data
+      * can be obtained?  That's in general, independent on whether it
+      * has been downloaded already or not.
+      */
+    @Override
+    public boolean getDataSetRequiresLocalMirror( Corpus corp, Ice.Current __current )
+    {
+        CorpusI cs = checkValidityAndLookup( corp );
+        if (cs.isImmutableMirror)
+        {
+            return true;
+        }
+        return false;
     }
 
+    /** Has a local mirror already been created?  This will return true only
+      * if this corpus requires a download, not for one that is local to
+      * begin with.
+      */
+    @Override
+    public  boolean localMirrorExists( Corpus corp, Ice.Current __current )
+    {
+        CorpusI cs = checkValidityAndLookup( corp );
+        return cs.hasFinishedLoading();
+    }
+    
     /**
      * Download, extract, and keep caller informed via CorpusCallback.
      * A mirror can contain the actual files or just enough metadata about
@@ -136,21 +180,11 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
     @Override
     public void createLocalMirror(Corpus corp, Ice.Identity cb, Ice.Current __current)
     {
-        if (null==mAdapter) 
-        {
-            logger.log(Level.WARNING, "CorpusServiceI has not been initialized yet, "
-                       + "no corpus is open.  Ignoring request to getDataSet.");
-            return;
-        }
-        if (null==corp) 
-        {
-            logger.log(Level.WARNING, "CorpusServiceI.getDataSet called with null corpus.");
-            return;
-        }
-        CorpusI cs = corpToImp.get( corp.name );
+        CorpusI cs = checkValidityAndLookup( corp );
         if (null==cs)
         {
-            logger.log(Level.WARNING, "nothing known about corpus {0}", corp.name);
+            logger.log(Level.WARNING, 
+                    "CorpusServiceI.createLocalMirror: error with corpus {0}", corp.name);
             return;
         }
         Ice.ObjectPrx base = __current.con.createProxy( cb );
@@ -168,18 +202,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
     @Override
     public cvac.Labelable[] getDataSet(Corpus corp, Ice.Current __current)
     {
-        if (null==mAdapter) 
-        {
-            logger.log(Level.WARNING, "CorpusServiceI has not been initialized yet, "
-                       + "no corpus is open.  Ignoring request to getDataSet.");
-            return null;
-        }
-        if (null==corp) 
-        {
-            logger.log(Level.WARNING, "CorpusServiceI.getDataSet called with null corpus.");
-            return null;
-        }
-        CorpusI cs = corpToImp.get( corp.name );
+        CorpusI cs = checkValidityAndLookup( corp );
         if (null==cs)
         {
             logger.log(Level.WARNING, "nothing known about corpus {0}", corp.name);
@@ -201,7 +224,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
     @Override
     public void addLabelable(Corpus corp, cvac.Labelable[] addme, Ice.Current __current)
     {
-        CorpusI cs = corpToImp.get( corp.name );
+        CorpusI cs = checkValidityAndLookup( corp );
         if (null==cs)
         {
             logger.log(Level.WARNING, "nothing known about corpus {0}", corp.name);
