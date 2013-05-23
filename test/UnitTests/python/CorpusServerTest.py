@@ -56,8 +56,8 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "LabelMeCarsTest.properties" )
 #        corpusConfigFile = cvac.FilePath( dataRoot, "NpsVisionLabelMe.properties" )
-        corpus3 = self.cs.openCorpus( corpusConfigFile )
-        if not corpus3:
+        corpus = self.cs.openCorpus( corpusConfigFile )
+        if not corpus:
             raise RuntimeError("could not open corpus from config file at '"
                                +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
         adapter = self.ic.createObjectAdapter("")
@@ -67,12 +67,12 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
         adapter.add( TestCorpusCallback(), ident )
         adapter.activate()
         
-        self.cs.createLocalMirror( corpus3, ident )
+        self.cs.createLocalMirror( corpus, ident )
 
-        labels = self.cs.getDataSet( corpus3 )
+        labels = self.cs.getDataSet( corpus )
         if not labels:
             raise RuntimeError("could not obtain labels from Corpus '"
-                               +corpus3.name+"'")
+                               +corpus.name+"'")
 
     #
     # Test obtaining a Labelable set: first, expect a failure because the corpus
@@ -80,11 +80,24 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     #
     def test_getDataSet(self):
         print 'getDataSet'
-        labels = self.cs.getDataSet( self.corpus )
+        dataRoot = cvac.DirectoryPath( "corpus" );
+        corpusConfigFile1 = cvac.FilePath( dataRoot, "Caltech101.properties" )
+        corpus1 = self.cs.openCorpus( corpusConfigFile1 )
+        try:
+            labels = self.cs.getDataSet( corpus1 )
+            raise RuntimeError("the CorpusServer should not be able to get the data",
+                               "without creating a local mirror")
+        except RuntimeError:
+            # we expect this error: "could not obtain labels from Corpus..."
+            pass
+
+        # this time we expect to be able to access the labels
+        corpusConfigFile2 = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
+        corpus2 = self.cs.openCorpus( corpusConfigFile2 )
+        labels = self.cs.getDataSet( corpus2 )
         if not labels:
             raise RuntimeError("could not obtain labels from Corpus '"
-                               +self.corpus.name+"'")
-
+                               +corpus2.name+"'")
 
     #
     # Obtain a local mirror of the data set.
@@ -93,8 +106,8 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
         print 'createLocalMirror'
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
-        self.corpus = self.cs.openCorpus( corpusConfigFile )
-        if not self.corpus:
+        corpus = self.cs.openCorpus( corpusConfigFile )
+        if not corpus:
             raise RuntimeError("could not open corpus from config file at '"
                                +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
 
@@ -111,7 +124,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
 #        receiver = cvac.CorpusCallbackPrx.uncheckedCast(
 #            adapter.createProxy( self.ic.stringToIdentity("callbackReceiver")))
         
-        self.cs.createLocalMirror( self.corpus, ident )
+        self.cs.createLocalMirror( corpus, ident )
 
     #
     # Create a Corpus from a directory of labeled data

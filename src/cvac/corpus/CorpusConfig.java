@@ -98,8 +98,8 @@ class CorpusConfig {
         } catch (IOException ex) {
             throw new CorpusI.CorpusConfigurationException( ex.getMessage() );
         }
-        CorpusI ds = parseCorpusProperties(config, propFile.toString());
         logger.log(Level.INFO, "Adding DataSet properties from file {0}", propFile.toString());
+        CorpusI ds = parseCorpusProperties(config, propFile.toString());
         if (null!=ds)
         {
             availCorpora.add(ds);
@@ -175,7 +175,8 @@ class CorpusConfig {
                 logger.log(Level.SEVERE, "Problem invoking LabelMe constructor:", ex);
             } catch (ClassNotFoundException ex) {
                 logger.log(Level.WARNING, 
-                        "Cannot create LabelMe Corpus because your jar file does not include this class.", ex);
+                        "Cannot create LabelMe Corpus because your jar file does not include this class.");
+                logger.log(Level.FINE, "Exception trace:", ex);
             } catch (NoSuchMethodException ex) {
                 logger.log(Level.WARNING, "LabelMeDataSet does not seem to have the expected constructor", ex);
             } catch (SecurityException ex) {
@@ -187,6 +188,11 @@ class CorpusConfig {
             logger.log(Level.WARNING, "Incorrect datasetType {0} in file {1}, assuming common",
                     new Object[]{dsTypeProp, filename});
             ds = new CommonDataSet( nameProp, descProp, homepage, isImmutableMirror );
+        }
+        if (null==ds)
+        {
+            logger.log(Level.FINE, "Could not initialize corpus from {0}", filename);
+            return null;
         }
         ds.configureFromProperties(config);
         String mirrorsString = config.getProperty("mirrors");

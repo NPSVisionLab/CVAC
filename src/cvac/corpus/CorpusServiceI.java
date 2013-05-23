@@ -70,7 +70,8 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
     @Override
     public void stop()
     {
-         mAdapter.deactivate();  
+        mAdapter.deactivate();  
+        logger.log(Level.INFO, "CorpusService stopped" );
     }
     /**
      * Opens the Corpus from a metadata file.  This does not download,
@@ -92,6 +93,12 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
         logger.log(Level.INFO, "request for openCorpus( {0} )", filename);
         try {
             CorpusI cs = cc.addCorpusFromConfig( new File(filename) );
+            if (null==cs)	    
+            {
+                logger.log(Level.WARNING, 
+                   "Could not add corpus from config file {0}", filename );
+                return null;
+            }
             CorpusI cs_orig = corpToImp.get(cs.name);
             if (null!=cs_orig)
             {

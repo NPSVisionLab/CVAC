@@ -37,7 +37,9 @@ easy.printCategoryInfo( categories )
 # add all samples from corpus to a RunSet,
 # also obtain a mapping from class ID to label name
 #
-runset, classmap = easy.createRunSet( categories )
+res = easy.createRunSet( categories )
+runset = res['runset']
+classmap = res['classmap']
 
 #
 # Make sure all files in the RunSet are available on the remote site;

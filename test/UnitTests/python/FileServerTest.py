@@ -33,7 +33,7 @@ class FileServerTest(unittest.TestCase):
         if not inspect.ismodule( cvac ) or not inspect.isclass( cvac.FileServicePrx ):
             raise RuntimeError("cvac module not loaded")
         self.ic = Ice.initialize(sys.argv)
-        base = self.ic.stringToProxy("FileServer:default -p 10013")
+        base = self.ic.stringToProxy("FileService:default -p 10110")
         self.fs = cvac.FileServicePrx.checkedCast(base)
         if not self.fs:
             raise RuntimeError("Invalid proxy")
