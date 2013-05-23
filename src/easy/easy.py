@@ -157,8 +157,8 @@ def putAllFiles( fileserver, runset ):
 
 def getTrainer( configString ):
     '''Connect to a trainer service'''
-    trainer_base = ic.stringToProxy("bowTrain:default -p 10003")
-    trainer = cvac.DetectorTrainerPrx.checkedCast(trainer_base)
+    trainer_base = ic.stringToProxy( configString )
+    trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
     if not trainer:
         raise RuntimeError("Invalid DetectorTrainer proxy")
     return trainer
