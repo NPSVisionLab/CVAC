@@ -152,6 +152,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
     public boolean getDataSetRequiresLocalMirror( Corpus corp, Ice.Current __current )
     {
         CorpusI cs = checkValidityAndLookup( corp );
+        // if you're changing this function, please also change localMirrorExists
         if (cs.isImmutableMirror)
         {
             return true;
@@ -164,10 +165,13 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
       * begin with.
       */
     @Override
-    public  boolean localMirrorExists( Corpus corp, Ice.Current __current )
+    public boolean localMirrorExists( Corpus corp, Ice.Current __current )
     {
         CorpusI cs = checkValidityAndLookup( corp );
-        return cs.hasFinishedLoading();
+        // don't query if no local mirror required in the first place;
+        // this protects directory-based corpora from being queried
+        if (!cs.isImmutableMirror) return false;
+        return cs.localMirrorExists();
     }
     
     /**
@@ -208,7 +212,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
             logger.log(Level.WARNING, "nothing known about corpus {0}", corp.name);
             return null;
         }
-        if ( !cs.hasFinishedLoading())
+        if ( cs.isImmutableMirror && !cs.localMirrorExists())
         {
             logger.log(Level.WARNING, "corpus {0} is still loading, cannot obtain labels", cs.name);
             return null;
@@ -230,7 +234,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
             logger.log(Level.WARNING, "nothing known about corpus {0}", corp.name);
             return;
         }
-        if ( cs.isImmutableMirror || !cs.hasFinishedLoading())
+        if ( cs.isImmutableMirror || !cs.localMirrorExists())
         {
             logger.log(Level.WARNING, "corpus {0} is immutabel or still loading, cannot add labels", cs.name);
         }
@@ -257,7 +261,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
             CorpusI cs_orig = corpToImp.get(cs.name);
             if (null!=cs_orig)
             {
-                logger.log(Level.WARNING, 
+                logger.log(Level.FINE, 
                    "a corpus with the name {0} exists already, discarding the new one.", cs.name );
                 return cs_orig;
             }

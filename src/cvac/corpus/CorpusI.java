@@ -80,9 +80,15 @@ abstract public class CorpusI extends Corpus
         // m_spacesUsed = Code_Utils.stringHasSpaces(fullDatasetPath);
         // return m_spacesUsed;
     }
+    
+    /** Has a local mirror already been created?  This will return true only
+      * if this corpus requires a download, not for one that is local to
+      * begin with.
+      */
+    public abstract boolean localMirrorExists();
 
     // Advises if load operation is still ongoing
-    public boolean hasFinishedLoading() {
+    private boolean hasFinishedLoading() {
         return true;
 //        return (null!=m_loader_thread && m_loader_thread.isAlive());
     }

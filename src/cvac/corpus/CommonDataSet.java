@@ -107,8 +107,13 @@ public class CommonDataSet extends CorpusI {
         loadImages();
     }
 
-
-    private boolean localMirrorExists() {
+    /** Has a local mirror already been created?  This will return true only
+      * if this corpus requires a download, not for one that is local to
+      * begin with.
+      */
+    @Override
+    public boolean localMirrorExists()
+    {
         // where shall this mirror live?
         // for now, it's a fixed location based on the corpus name
         File tentfile = new File( m_dataSetFolder );
@@ -121,7 +126,9 @@ public class CommonDataSet extends CorpusI {
             }
             
             // if not: something else is in this folder, and we can't handle that right now
-            throw new RuntimeException("data dir exists already but no metadata; aborting because no plan B available");
+            throw new RuntimeException("data dir exists already but no metadata file ("
+                    +m_metaStatusFile.getAbsolutePath()
+                    +"); aborting because no plan B available");
         }
         return false;
     }
