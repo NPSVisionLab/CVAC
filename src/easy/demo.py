@@ -2,9 +2,13 @@
 # A demo for the Easy Computer Vision library.
 #
 
-# before interpreting this file, make sure this is set:
-# export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
+import sys
+
+#Add the lib/python directory to get packages
+sys.path.append('''../../lib/python''')
+import paths
 import cvac
+
 import easy
 
 

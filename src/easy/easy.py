@@ -4,10 +4,12 @@
 # easy.py is a high-level interface to CVAC, the
 # Computer Vision Algorithm Collection.
 #
-# before interpreting this file, make sure this is set:
-# export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
 import os
 import sys, traceback
+# paths should setup the PYTHONPATH.  If you special requirements
+# then use the following to set it up prior to running.
+# export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
+import paths
 sys.path.append('''.''')
 import Ice
 import Ice

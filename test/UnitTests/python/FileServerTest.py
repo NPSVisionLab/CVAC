@@ -1,9 +1,8 @@
 # test the FileServer
-# before calling "python FileServerTest.py", make sure this is set:
-# export PYTHONPATH="/opt/Ice-3.4.2/python:test/UnitTests/python"
+# paths sets up the PYTHONPATH so this is not needed to be setup by the user
 # to run just this test, use "ctest -R PythonFileServerTest --verbose"
 import sys, traceback
-sys.path.append('''.''')
+import paths
 import Ice
 import Ice
 import IcePy
@@ -36,10 +35,11 @@ class FileServerTest(unittest.TestCase):
         if not self.fs:
             raise RuntimeError("Invalid proxy")
 
-        # Since this is a test, it's probably run in the build directory. We
-        # need to know the path to the original files for various operations, but we
-        # don't have easy access to the CVAC.DataDir variable.  Let's guess.
-        self.dataDir = "../../../../data"
+        # Lets get the directory of the script and work upwards to 
+        # get the data directory
+
+        filepath = os.path.dirname(os.path.abspath(__file__))
+        self.dataDir = filepath + "/../../../data"
         if not os.path.exists( self.dataDir ):
             print "Present working directory: " + os.getcwd()
             print "Looking for CVAC.DataDir at: " + self.dataDir
@@ -195,14 +195,15 @@ class FileServerTest(unittest.TestCase):
         if not os.path.exists( orig ):
             raise RuntimeError("Cannot obtain path to original file, see comments: "+orig)
         
-        ftmp = tempfile.NamedTemporaryFile( suffix='.jpg', delete=True )
+        ftmp = tempfile.NamedTemporaryFile( suffix='.jpg', delete=False )
         ftmp.write( bytes )
         ftmp.flush()
+        ftmp.close()
         if not self.filesAreEqual( orig, ftmp.name ):
             print "comparison failed, new file: " + ftmp.name
             ftmp.close()
             raise RuntimeError("file was not 'get' correctly")
-        ftmp.close()
+        os.unlink(ftmp.name)
 
     def filesAreEqual(self, fname1, fname2):
         # import difflib
