@@ -3,7 +3,6 @@
 # export PYTHONPATH="/opt/Ice-3.4.2/python:test/UnitTests/python"
 import sys, traceback
 sys.path.append('''.''')
-sys.path.append('''../../../lib/python''')
 import paths
 import Ice
 import Ice

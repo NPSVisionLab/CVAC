@@ -17,6 +17,7 @@ set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build/timestamp")
 
 #    configure_file(${SETUP_PY_IN} ${SETUP_PY})
+CONFIGURE_FILE(paths.py.in ${CMAKE_CURRENT_SOURCE_DIR}/paths.py)
 
 #    SLICE2PY
 #  /opt/Ice-3.4.2/bin/slice2py -I/opt/Ice-3.4.2/slice ../src/Data.ice ../src/Services.ice
