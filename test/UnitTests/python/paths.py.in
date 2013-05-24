@@ -1,4 +1,0 @@
-import sys
-
-sys.path.append('''${ICE_ROOT}/python''')
-sys.path.append('''${SLICE_OUTPUT_PYTHONDIR}''')
