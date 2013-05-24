@@ -353,9 +353,10 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 	
 	Mat trainDescriptors;	trainDescriptors.create(0,bowExtractor->descriptorSize(),bowExtractor->descriptorType());
 	Mat trainClass;	trainClass.create(0,1,CV_32FC1);
-	int _classID;
-	
+	int _classID;	
 
+	std::list<int> _listClassAll;
+	std::list<int> _listClassUnique;
 	for(unsigned int k=0;k<vFilenameTrain.size();k++)
 	{
 		_fullFilePathImg = vFilenameTrain[k];
@@ -379,7 +380,12 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 		bowExtractor->compute(_img, _keypoints, _descriptors);
 		trainDescriptors.push_back(_descriptors);
 		trainClass.push_back(_classID);
+		_listClassAll.push_back(_classID);
 	}
+	_listClassUnique = _listClassAll;
+	_listClassUnique.sort();
+	_listClassUnique.unique();	
+
 
 	//SVMTrainParamsExt svmParamsExt;
 	//CvSVMParams svmParams;
@@ -388,9 +394,37 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 	//CvParamGrid c_grid, gamma_grid, p_grid, nu_grid, coef_grid, degree_grid;
 	//setSVMTrainAutoParams( c_grid, gamma_grid,  p_grid, nu_grid, coef_grid, degree_grid );
 	//classifierSVM[class_].train_auto( samples_32f, labels, Mat(), Mat(), svmParams, 10, c_grid, gamma_grid, p_grid, nu_grid, coef_grid, degree_grid );
-	classifierSVM.train(trainDescriptors,trainClass);
-
 	
+
+	/*
+	//////////////////////////////////////////////////////
+	// Way #1
+	classifierSVM.train(trainDescriptors,trainClass);
+	//////////////////////////////////////////////////////
+	*/
+	
+
+	//////////////////////////////////////////////////////
+	// Way #2
+	float* _classWeight = new float[_listClassUnique.size()];
+	int _idx = 0;
+	int _maxCount = -1;	
+	for(std::list<int>::iterator _itr=_listClassUnique.begin();_itr!= _listClassUnique.end();++_itr)		
+	{	
+		int _count = std::count(_listClassAll.begin(),_listClassAll.end(),(*_itr));
+		_maxCount = (_maxCount<_count)?_count:_maxCount;
+		_classWeight[_idx++] = (float)_count;
+	}
+	for(unsigned int k=0;k<_listClassUnique.size();k++)
+		_classWeight[k] = (float)_maxCount/_classWeight[k];		
+
+	CvSVMParams param;
+	//param.kernel_type = CvSVM::LINEAR;
+	param.class_weights = new CvMat();	
+	cvInitMatHeader(param.class_weights,1,_listClassUnique.size(),CV_32FC1,_classWeight);
+	classifierSVM.train(trainDescriptors,trainClass,cv::Mat(),cv::Mat(),param);
+	delete [] _classWeight;
+	//////////////////////////////////////////////////////
 
 	_fullFilePathList = _filepathForSavingResult + "/" + _filenameForSavingResult;
 	ofstream ofile(_fullFilePathList.c_str());
