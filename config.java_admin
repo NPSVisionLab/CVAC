@@ -10,5 +10,5 @@
 #
 # When Ice.Admin is configured:
 #
-IceBoxAdmin.ServiceManager.Proxy=DemoIceBox/admin -f IceBox.ServiceManager:tcp -p 9995 -h 127.0.0.1
+IceBoxAdmin.ServiceManager.Proxy=JavaIceBox/admin -f IceBox.ServiceManager:tcp -p 9995 -h 127.0.0.1
 
