@@ -168,6 +168,9 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
 #            adapter.createProxy( self.ic.stringToIdentity("callbackReceiver")))
         
         self.cs.createLocalMirror( corpus, ident )
+        if not self.cs.localMirrorExists( corpus ):
+            raise RuntimeError( "could not create local mirror for",
+                                corpusConfigFile.filename )
 
     #
     # Create a Corpus from a directory of labeled data
