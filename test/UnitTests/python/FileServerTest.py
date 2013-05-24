@@ -197,7 +197,7 @@ class FileServerTest(unittest.TestCase):
             print "comparison failed, new file: " + ftmp.name
             ftmp.close()
             raise RuntimeError("file was not 'get' correctly")
-        ftmp.delete()
+        os.unlink(ftmp.name)
 
     def filesAreEqual(self, fname1, fname2):
         # import difflib
