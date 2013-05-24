@@ -106,9 +106,42 @@ def openCorpus( corpusServer, corpusPath ):
                                + getFsPath( cvacPath ))
     return corpus
 
-def getDataSet( corpusServer, corpus ):
+def createLocalMirror( corpus ):
+    '''Call the corpusServer to create the local mirror for the
+    specified corpus.  Provide a simple callback for tracking.'''
+    ident = Ice.Identity()
+    # todo: more callback stuff required here
+    corpusServer.createLocalMirror( corpus, ident )
+
+def getDataSet( corpus, corpusServer=None, createMirror=False ):
     '''Obtain the set of labels from the given corpus and return it as
-    a dictionary of label categories.  Also return a flat list of all labels.'''
+    a dictionary of label categories.  Also return a flat list of all labels.
+    The default local corpusServer is used if not explicitly specified.
+    If the corpus argument is not given as an actual cvac.Corpus object
+    but the argument is a string instead, an attempt is made to
+    open (but not create) a Corpus object from the corpusServer.
+    Note that this will fail if the corpus needs a local mirror but has not
+    been downloaded yet, unless createMirror=True.'''
+
+    # get the default CorpusServer if not explicitly specified
+    if not corpusServer:
+        corpusServer = getDefaultCorpusServer()
+
+    if type(corpus) is str:
+        corpus = openCorpus( corpusServer, corpus )
+    elif not type(corpus) is cvac.Corpus:
+        raise RuntimeError( "unexpected type for corpus:", type(corpus) )
+
+    # print 'requires:', corpusServer.getDataSetRequiresLocalMirror( corpus )
+    # print 'exists:', corpusServer.localMirrorExists( corpus )
+    if corpusServer.getDataSetRequiresLocalMirror( corpus ) \
+        and not corpusServer.localMirrorExists( corpus ):
+        if createMirror:
+            createLocalMirror( corpus )
+        else:
+            raise RuntimeError("local mirror required, won't create automatically",
+                               "(specify createMirror=True to do so)")
+        
     labelList = corpusServer.getDataSet( corpus )
     categories = {}
     for lb in labelList:
@@ -275,6 +308,8 @@ def train( trainer, runset, callbackRecv=None ):
 
     # connect to trainer, initialize with a verbosity value, and train
     trainer.initialize( 3 )
+    if type(runset) is dict:
+        runset = runset['runset']
     trainer.process( cbID, runset )
     
     if callbackRecv.detectorData.type == cvac.DetectorDataType.BYTES:
@@ -327,10 +362,12 @@ def detect( detector, detectorData, runset, purLabelMap=None, callbackRecv=None 
 
     # create a RunSet out of a filename or directory path
     if type(runset) is str:
-        runset = createRunSet( runset )
+        res = createRunSet( runset )
+        runset = res['runset']
+        purLabelMap = res['classmap']
     elif not type(runset) is cvac.RunSet:
         raise RuntimeException("runset must either be a filename, directory, or cvac.RunSet")
-    
+
     # ICE functionality to enable bidirectional connection for callback
     adapter = ic.createObjectAdapter("")
     cbID = Ice.Identity()

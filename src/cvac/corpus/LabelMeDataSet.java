@@ -53,6 +53,7 @@ public class LabelMeDataSet extends CorpusI
     ArrayList<String> lmObjectLabelNames;
     ArrayList<String> lmFolderList;
     ArrayList<Labelable> ils;
+    private boolean loaded = false;
 
     public LabelMeDataSet(String name, String description, String homepageURL, boolean isImmutableMirror)
     {
@@ -516,5 +517,16 @@ public class LabelMeDataSet extends CorpusI
     {
         // download everything for now, annotations and images
         loadImageAssets();
+        loaded = true;
+    }
+
+    /** Has a local mirror already been created?  This will return true only
+      * if this corpus requires a download, not for one that is local to
+      * begin with.
+      */
+    @Override
+    public boolean localMirrorExists()
+    {
+        return loaded;
     }
 }

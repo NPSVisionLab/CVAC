@@ -72,6 +72,17 @@ module cvac {
      */
     void saveCorpus( Corpus corp, cvac::FilePath file );
 
+    /** Does this Corpus require a "download" before the meta data
+      * can be obtained?
+      */
+    bool getDataSetRequiresLocalMirror( Corpus corp );
+
+    /** Has a local mirror already been created?  This will return true only
+      * if this corpus requires a download, not for one that is local to
+      * begin with.
+      */
+    bool localMirrorExists( Corpus corp );
+    
     /** Download, extract, and keep caller informed via CorpusCallback.
       * A mirror can contain the actual files or just enough metadata about
       * the files so as to construct a LabelableList.

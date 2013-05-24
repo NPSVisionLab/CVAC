@@ -99,6 +99,46 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
                                +corpus2.name+"'")
 
     #
+    # Does this corpus need a download to create local metadata?
+    #
+    def test_getDataSetRequiresLocalMirror(self):
+        print 'getDataSetRequiresLocalMirror'
+        # try with one where we do expect it:
+        dataRoot = cvac.DirectoryPath( "corpus" );
+        corpusConfigFile1 = cvac.FilePath( dataRoot, "Caltech101.properties" )
+        corpus1 = self.cs.openCorpus( corpusConfigFile1 )
+        required = self.cs.getDataSetRequiresLocalMirror( corpus1 )
+        if not required:
+            raise RuntimeError("Corpus", corpusConfigFile1.filename,
+                               "is expected to require a local mirror for data access, but it does not")
+
+        # now try with one that should not require it
+        corpusTestDir = cvac.DirectoryPath( "corpusTestDir" );
+        corpus2 = self.cs.createCorpus( corpusTestDir )
+        required = self.cs.getDataSetRequiresLocalMirror( corpus2 )
+        if required:
+            raise RuntimeError("Corpus at", corpusTestDir.relativePath,
+                               "is expected to not require a local mirror for data access, but it does")
+
+    #
+    # Has a local mirror already been created?  This will return true only
+    # if this corpus requires a download, not for one that is local to begin with.
+    #
+    def test_localMirrorExists(self):
+        print 'localMirrorExists'
+        # try with one where we expect the mirror to exist already,
+        # mainly because test_createLocalMirror has been called already
+        dataRoot = cvac.DirectoryPath( "corpus" );
+        corpusConfigFile = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
+        corpus = self.cs.openCorpus( corpusConfigFile )
+        if not corpus:
+            raise RuntimeError("could not open corpus from config file at '"
+                               +dataRoot.relativePath+"/"+corpusConfigFile.filename+"'")
+        exists = self.cs.localMirrorExists( corpus )
+        if not exists:
+            raise RuntimeError("expected corpus to already have a local mirror")
+    
+    #
     # Obtain a local mirror of the data set.
     #
     def test_createLocalMirror(self):
@@ -124,6 +164,9 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
 #            adapter.createProxy( self.ic.stringToIdentity("callbackReceiver")))
         
         self.cs.createLocalMirror( corpus, ident )
+        if not self.cs.localMirrorExists( corpus ):
+            raise RuntimeError( "could not create local mirror for",
+                                corpusConfigFile.filename )
 
     #
     # Create a Corpus from a directory of labeled data

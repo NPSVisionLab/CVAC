@@ -13,14 +13,27 @@ import easy
 
 
 #
-# First, a super quick and easy teaser:
+# First, a teaser for detection:
 #
 # TODO: doesn't work yet because the image file argument doesn't get turned into a RunSet yet.
-#detector = easy.getDetector( "bowTest:default -p 10004" )
-#results = easy.detect( detector, "detectors/bowUSKOCA.zip", "testImg/TestCaFlag.jpg" )
-#easy.printResults( results )
+detector = easy.getDetector( "bowTest:default -p 10004" )
+results = easy.detect( detector, "detectors/bowUSKOCA.zip", "testImg/TestCaFlag.jpg" )
+easy.printResults( results )
 
 #
+# Second, a quick way to train a detector.  The resulting model
+# can be used in place of the detector above.
+#
+# TODO: doesn't work yet because a) getDataSet assumes a CorpusServer and Corpus,
+#       and b) createRunSet expects entire categories, not LabelLists
+categories = easy.getDataSet( "Caltech101.properties" )
+runset = easy.createRunSet( categories["car_side"] )
+trainer = easy.getTrainer( "bowTrain:default -p 10003" )
+carSideModel = easy.train( trainer, runset )
+
+#
+# Third, a slower walk-through of functionality that digs a bit deeper.  All
+# following steps are part of that.
 # Obtain a set of labeled data from a Corpus,
 # print dataset information about this corpus
 #
