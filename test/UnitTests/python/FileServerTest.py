@@ -79,17 +79,20 @@ class FileServerTest(unittest.TestCase):
         origFilePath = cvac.FilePath( testDir, "TestKrFlag.jpg" )
         origFS = self.dataDir+"/"+self.getFSPath( origFilePath )
         if not os.path.exists( origFS ):
-            raise RuntimeError("Cannot obtain path to original file, see comments: "+origFS)
-        forig = open( origFS )
+            raise RuntimeError("Cannot obtain FS path to original file,",
+                               "see comments. file: "+origFS)
+        forig = open( origFS, 'rb' )
         bytes = bytearray( forig.read() )
         
         # "put" the file's bytes as a different file which must not exist,
         # and compare the result via file system access
         putFilePath = cvac.FilePath( testDir, "TargetFilename.jpg" )
         self.fs.putFile( putFilePath, bytes );
+        forig.close()
         putFS = self.dataDir+"/"+self.getFSPath( putFilePath )
         if not os.path.exists( putFS ):
-            raise RuntimeError("Cannot obtain path to put file on file system, see comments: "+putFS)
+            raise RuntimeError("Cannot obtain path to the just-'put' file",
+                               "on the file system, see comments. file: "+putFS)
         if not self.filesAreEqual( origFS, putFS ):
             raise RuntimeError("file was not 'put' correctly to "+putFS)
 
@@ -107,6 +110,70 @@ class FileServerTest(unittest.TestCase):
         self.fs.deleteFile( putFilePath );
         if os.path.exists( putFS ):
             raise RuntimeError("FileServer did not delete 'put' file: "+putFS)
+
+    #
+    # on a remote FileServer, first put, then get, then delete a file
+    #
+    def test_remotePutGetDelete(self):
+        print 'putFile remote'
+        configStr = "FileService:default -h vision.nps.edu -p 10110"
+        baser = self.ic.stringToProxy( configStr )
+        if not baser:
+            raise RuntimeError("Unknown service?", configStr)
+        fsr = cvac.FileServicePrx.checkedCast(baser)
+        if not fsr:
+            raise RuntimeError("Invalid proxy:", configStr)
+
+        # read the bytes from TestUsFlag.jpg
+        testDir = cvac.DirectoryPath( "testImg" );
+        origFilePath = cvac.FilePath( testDir, "TestUsFlag.jpg" )
+        origFS = self.dataDir+"/"+self.getFSPath( origFilePath )
+        if not os.path.exists( origFS ):
+            raise RuntimeError("Cannot obtain FS path to original file,",
+                               "see comments. file: "+origFS)
+        forig = open( origFS, 'rb' )
+        bytes = bytearray( forig.read() )
+        
+        # "put" the file's bytes as a different file which must not exist
+        putFilePath = cvac.FilePath( testDir, "TargetFilename.jpg" )
+        try:
+            fsr.putFile( putFilePath, bytes );
+        except cvac.FileServiceException as ex:
+            print( "if you do not have 'put' permissions, " +
+                   "was the file deleted properly in a prior test run?\nfile: " +
+                   putFilePath.filename)
+            raise ex
+        forig.close()
+
+        # "get" the bytes again from the same name that we used for putting,
+        # store them in a file on the local file system with the same name,
+        # and compare the obtained file to the original one
+        print 'getFile remote'
+        getFS = self.dataDir+"/"+self.getFSPath( putFilePath )
+        if os.path.exists( getFS ):
+            raise RuntimeError("Local file exists already - cannot continue. file: "+getFS)
+#            raise RuntimeError("Cannot obtain path to store file on file system,",
+#                               "see comments. file: "+getFS)
+        fgetFS = open( getFS, 'wb' )
+        recvbytes = fsr.getFile( putFilePath )
+        fgetFS.write( recvbytes )
+        fgetFS.close()
+
+        # now compare the results and delete the local file
+        if not self.filesAreEqual( origFS, getFS ):
+            raise RuntimeError("File was not 'put' or subsequently 'get' correctly to.",
+                               "Please check, then remove manually: "+getFS)
+        os.remove( getFS )
+
+        # delete the file on the remote side and check that it's gone
+        print 'deleteFile remote'
+        fsr.deleteFile( putFilePath )
+        try:
+            dummy = fsr.getFile( putFilePath )
+            raise RuntimeError("File was not deleted on remote FileServer:", putFilePath)
+        except:
+            # we expect the except
+            pass
         
     def getFileAndCompare( self, filePath ):
         bytes = self.fs.getFile( filePath )
@@ -134,9 +201,10 @@ class FileServerTest(unittest.TestCase):
     def filesAreEqual(self, fname1, fname2):
         # import difflib
         # print difflib.SequenceMatcher(None, orig, tfile.name)
-        # forig = open( orig )
+        # forig = open( orig, 'rb' )
         # diff = difflib.ndiff(forig.readlines(), ftmp.readlines())
         # delta = ''.join(x[2:] for x in diff if x.startswith('- '))
+        # forig.close()
         return filecmp.cmp( fname1, fname2 )
 
     def getFSPath(self, cvacPath):
