@@ -322,7 +322,10 @@ def train( trainer, runset, callbackRecv=None ):
     if type(runset) is dict:
         runset = runset['runset']
     trainer.process( cbID, runset )
-    
+
+    # check results
+    if not callbackRecv.detectorData:
+        raise RuntimeError("no DetectorData received from trainer")    
     if callbackRecv.detectorData.type == cvac.DetectorDataType.BYTES:
         raise RuntimeError('detectorData as BYTES has not been tested yet')
     elif callbackRecv.detectorData.type == cvac.DetectorDataType.PROVIDER:
