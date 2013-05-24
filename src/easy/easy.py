@@ -27,7 +27,9 @@ defaultCS = None
 
 def getFSPath( cvacPath ):
     '''Turn a CVAC path into a file system path'''
-    path = cvacPath.directory.relativePath+"/"+cvacPath.filename
+    # todo: obtain CVAC.DataDir
+    CVAC_DataDir = "data"
+    path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
     return path
 
 def getCvacPath( fsPath ):
@@ -141,7 +143,7 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
         else:
             raise RuntimeError("local mirror required, won't create automatically",
                                "(specify createMirror=True to do so)")
-        
+
     labelList = corpusServer.getDataSet( corpus )
     categories = {}
     for lb in labelList:
@@ -243,6 +245,17 @@ def getDefaultFileServer( detector ):
                             host, "on port 10110" )
     return fs
 
+def putFile( fileserver, filepath ):
+    origFS = getFSPath( filepath )
+    if not os.path.exists( origFS ):
+        raise RuntimeError("Cannot obtain FS path to local file:",origFS)
+    forig = open( origFS, 'rb' )
+    bytes = bytearray( forig.read() )
+    
+    # "put" the file's bytes to the FileServer
+    fileserver.putFile( filepath, bytes );
+    forig.close()
+
 def putAllFiles( fileserver, runset ):
     '''Make sure all files in the RunSet are available on the remote site;
     it is the client\'s responsibility to upload them if not.
@@ -268,7 +281,7 @@ def putAllFiles( fileserver, runset ):
         if not type(sub) is cvac.Substrate:
             raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
         if not fileserver.exists( sub.path ):
-            fileserver.putFile( sub.path )
+            putFile( fileserver, sub.path )
             uploadedFiles.append( sub.path )
         else:
             existingFiles.append( sub.path )
@@ -311,7 +324,10 @@ def train( trainer, runset, callbackRecv=None ):
     if type(runset) is dict:
         runset = runset['runset']
     trainer.process( cbID, runset )
-    
+
+    # check results
+    if not callbackRecv.detectorData:
+        raise RuntimeError("no DetectorData received from trainer")    
     if callbackRecv.detectorData.type == cvac.DetectorDataType.BYTES:
         raise RuntimeError('detectorData as BYTES has not been tested yet')
     elif callbackRecv.detectorData.type == cvac.DetectorDataType.PROVIDER:
