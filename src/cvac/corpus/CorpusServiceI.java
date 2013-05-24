@@ -212,6 +212,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
             logger.log(Level.WARNING, "nothing known about corpus {0}", corp.name);
             return null;
         }
+        logger.log(Level.INFO, "request for getDataSet( {0} )", cs.name);
         if ( cs.isImmutableMirror && !cs.localMirrorExists())
         {
             logger.log(Level.WARNING, "corpus {0} is still loading, cannot obtain labels", cs.name);

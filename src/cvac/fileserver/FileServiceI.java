@@ -136,6 +136,12 @@ public class FileServiceI extends FileService implements IceBox.Service {
         }
         
         try {
+            if (!localFile.getParentFile().exists())
+            {
+                localFile.getParentFile().mkdirs();
+                logger.log(Level.FINE, "made superdirectories for {0}",
+                           localFile.getAbsolutePath());
+            }
             if (!localFile.createNewFile() || !localFile.canWrite())
             {
                 logger.log(Level.INFO, "cannot write to file");
@@ -147,7 +153,8 @@ public class FileServiceI extends FileService implements IceBox.Service {
             bos.write( bytes );
             bos.close();
         } catch (IOException ex) {
-            throw new FileServiceException(ex.getMessage());
+            throw new FileServiceException("error putting file: "
+                                           + ex.getMessage());
         }
         
         addOwner( endpoint, localFile );
