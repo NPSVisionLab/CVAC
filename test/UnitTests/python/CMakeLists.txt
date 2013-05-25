@@ -5,11 +5,11 @@
 
 cmake_minimum_required(VERSION 2.6)
 
-find_program(PYTHON "python")
+find_program(PYTHON_EXECUTABLE "python")
 
-IF( NOT PYTHON )
+IF( NOT PYTHON_EXECUTABLE )
   MESSAGE( FATAL_ERROR "Python executable not found: cannot run Python UnitTests" )
-ENDIF( NOT PYTHON )
+ENDIF( NOT PYTHON_EXECUTABLE )
 
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
 set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
@@ -32,7 +32,7 @@ CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/easy/paths.py.in ${CMAKE_CURRENT_SOURCE_D
 
 #    Python build process
 #    add_custom_command(OUTPUT ${OUTPUT}
-#                       COMMAND ${PYTHON} ${SETUP_PY} build
+#                       COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} build
 #                       COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}
 #                       DEPENDS ${DEPS})
 
@@ -43,14 +43,14 @@ add_custom_target(PythonUnitTests ALL DEPENDS ${SLICE_FILES})
 # Note: quite likely we'll need this on Windows, and ; instead of :
 #       FILE( TO_NATIVE_PATH ${ICE_ROOT}/python ICE_PYTHON_DIR_NATIVE )
 ADD_TEST( PythonCorpusTest
-  ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/CorpusServerTest.py )
+  ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/CorpusServerTest.py )
 
 #SET_TESTS_PROPERTIES( PythonCorpusTest
 #  PROPERTIES ENVIRONMENT "PYTHONPATH=${ICE_ROOT}/python:${SLICE_OUTPUT_PYTHONDIR}" )
 ADD_TEST( PythonFileServerTest
-  ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/FileServerTest.py )
+  ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/FileServerTest.py )
 
 #SET_TESTS_PROPERTIES( PythonFileServerTest
 #  PROPERTIES ENVIRONMENT "PYTHONPATH=${ICE_ROOT}/python:${SLICE_OUTPUT_PYTHONDIR}" )
 
-#    install(CODE "execute_process(COMMAND ${PYTHON} ${SETUP_PY} install)")
+#    install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")
