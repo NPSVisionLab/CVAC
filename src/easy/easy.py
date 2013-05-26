@@ -17,6 +17,7 @@ import IcePy
 import cvac
 import unittest
 import stat
+import threading
 
 #
 # one-time initialization code, upon loading the module
@@ -301,9 +302,17 @@ def getTrainer( configString ):
 # this will get called once the training is done
 class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
     detectorData = None
+    trainingFinished = False
+    condition = threading.Condition()
     def createdDetector(self, detData, current=None):
+        if not detData:
+            raise RuntimeError("Finished training, but obtained no DetectorData")
+        print "Finished training, obtained DetectorData of type", detData.type
+        self.condition.acquire()
         self.detectorData = detData
-        print "Finished training, obtained DetectorData of type", self.detectorData.type
+        self.trainingFinished = True
+        self.condition.notify()
+        self.condition.release()
 
 def train( trainer, runset, callbackRecv=None ):
     '''A callback receiver can optionally be specified'''
@@ -324,6 +333,12 @@ def train( trainer, runset, callbackRecv=None ):
     if type(runset) is dict:
         runset = runset['runset']
     trainer.process( cbID, runset )
+
+    # wait for training to finish
+    callbackRecv.condition.acquire()
+    while not callbackRecv.trainingFinished:
+        callbackRecv.condition.wait()
+    callbackRecv.condition.release()
 
     # check results
     if not callbackRecv.detectorData:
