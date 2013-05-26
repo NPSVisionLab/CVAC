@@ -172,15 +172,45 @@ def createRunSet( categories ):
     runset = None
     if type(categories) is dict:
         # multiple categories
+        classmap = {}
         pur_categories = []
         pur_categories_keys = sorted( categories.keys() )
+
+        # if it's two classes, maybe one is called "pos" and the other "neg"?
+        if len(categories) is 2:
+            alow = pur_categories_keys[0].lower()
+            blow = pur_categories_keys[1].lower()
+            poskeyid = -1
+            if "pos" in alow and "neg" in blow:
+                # POSITIVES in keys[0]
+                poskeyid = 0
+            elif "neg" in alow and "pos" in blow:
+                # POSITIVES in keys[1]
+                poskeyid = 1
+            if poskeyid != -1:
+                pospur = cvac.Purpose( cvac.PurposeType.POSITIVE, -1 )
+                negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, -1 )
+                poskey = pur_categories_keys[poskeyid]
+                negkey = pur_categories_keys[1-poskeyid]
+                pur_categories.append( cvac.PurposedLabelableSeq( \
+                    pospur, categories[poskey] ) )
+                pur_categories.append( cvac.PurposedLabelableSeq( \
+                    negpur, categories[negkey] ) )
+                runset = cvac.RunSet( pur_categories )
+                classmap[pospur] = poskey
+                classmap[negpur] = negkey
+                return {'runset':runset, 'classmap':classmap}
+
+        # multi-class
         cnt = 0
         for key in pur_categories_keys:
             purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
+            classmap[purpose] = key
             pur_categories.append( cvac.PurposedLabelableSeq( purpose, categories[key] ) )
             cnt = cnt+1
             runset = cvac.RunSet( pur_categories )
-        return {'runset':runset, 'classmap':pur_categories_keys}
+            
+        return {'runset':runset, 'classmap':classmap}
 
     elif type(categories) is list and len(categories)>0 and type(categories[0]) is cvac.Labelable:
         # single category - assume "unlabeled"
@@ -303,16 +333,12 @@ def getTrainer( configString ):
 class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
     detectorData = None
     trainingFinished = False
-    condition = threading.Condition()
     def createdDetector(self, detData, current=None):
         if not detData:
             raise RuntimeError("Finished training, but obtained no DetectorData")
         print "Finished training, obtained DetectorData of type", detData.type
-        self.condition.acquire()
         self.detectorData = detData
         self.trainingFinished = True
-        self.condition.notify()
-        self.condition.release()
 
 def train( trainer, runset, callbackRecv=None ):
     '''A callback receiver can optionally be specified'''
@@ -333,12 +359,6 @@ def train( trainer, runset, callbackRecv=None ):
     if type(runset) is dict:
         runset = runset['runset']
     trainer.process( cbID, runset )
-
-    # wait for training to finish
-    callbackRecv.condition.acquire()
-    while not callbackRecv.trainingFinished:
-        callbackRecv.condition.wait()
-    callbackRecv.condition.release()
 
     # check results
     if not callbackRecv.detectorData:
@@ -365,13 +385,15 @@ def getDetector( configString ):
 class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
     allResults = []
     purLabelMap = None
+    detectionFinished = False
     def foundNewResults(self, r2, current=None):
         # If we have a map from ordinal class number to label name,
         # replace the result label
         if self.purLabelMap:
             for res in r2.results:
                 for lbl in res.foundLabels:
-                    lbl.lab.name = self.purLabelMap[int(lbl.lab.name)]
+                    if type(lbl.lab.name) is int:
+                        lbl.lab.name = self.purLabelMap[int(lbl.lab.name)]
         # collect all results
         self.allResults.extend( r2.results )
 
@@ -424,6 +446,7 @@ def detect( detector, detectorData, runset, purLabelMap=None, callbackRecv=None 
 def printResults( results ):
     '''Print detection results as specified in a ResultSet'''
     print 'received a total of {0} results:'.format( len( results ) )
+    identical = 0
     for res in results:
         names = []
         for lbl in res.foundLabels:
@@ -433,3 +456,13 @@ def printResults( results ):
         print "result for {0} ({1}): found {2} label{3}: {4}".format(
             res.original.sub.path.filename, origname,
             numfound, ("s","")[numfound==1], ', '.join(names) )
+        if numfound==1 and origname==res.foundLabels[0].lab.name:
+            identical += 1
+    print '{0} out of {1} results had identical labels'.format( identical, len( results ) )
+
+def getConfusionMatrix( runset, results ):
+    '''produce a confusion matrix'''
+    import numpy
+    catsize = len( runset.purposedLists )
+    confmat = numpy.empty( (catsize+1, catsize+1) )
+    return confmat
