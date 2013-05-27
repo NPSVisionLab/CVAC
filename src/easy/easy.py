@@ -99,22 +99,41 @@ def openCorpus( corpusServer, corpusPath ):
         corpus = corpusServer.createCorpus( cvacPath )
         if not corpus:
             raise RuntimeError("Could not create corpus from directory at '"
-                               + getFsPath( cvacPath ))
+                               + getFSPath( cvacPath ))
     else:
         # open an existing corpus
         cvacPath = getCvacPath( corpusPath )
         corpus = corpusServer.openCorpus( cvacPath )
         if not corpus:
             raise RuntimeError("Could not open corpus from properties file '"
-                               + getFsPath( cvacPath ))
+                               + getFSPath( cvacPath ))
     return corpus
 
-def createLocalMirror( corpus ):
+class CorpusCallbackI(cvac.CorpusCallback):
+    corpus = None
+    def corpusMirrorProgress( corp, numtasks, currtask, taskname, details,
+            percentCompleted ):
+        print "Downloading corpus {0}, task {1}/{2}: {3} ({4}%)".\
+              format( corp.name, currtask, numtasks, taskname )
+    def corpusMirrorCompleted(self, corp):
+        self.corpus = corp
+
+def createLocalMirror( corpusServer, corpus ):
     '''Call the corpusServer to create the local mirror for the
     specified corpus.  Provide a simple callback for tracking.'''
-    ident = Ice.Identity()
-    # todo: more callback stuff required here
-    corpusServer.createLocalMirror( corpus, ident )
+    # ICE functionality to enable bidirectional connection for callback
+    adapter = ic.createObjectAdapter("")
+    cbID = Ice.Identity()
+    cbID.name = Ice.generateUUID()
+    cbID.category = ""
+    callbackRecv = CorpusCallbackI()
+    adapter.add( callbackRecv, cbID)
+    adapter.activate()
+    corpusServer.ice_getConnection().setAdapter(adapter)
+    # this call should block
+    corpusServer.createLocalMirror( corpus, cbID )
+    if not callbackRecv.corpus:
+        raise RuntimeError("could not create local mirror")
 
 def getDataSet( corpus, corpusServer=None, createMirror=False ):
     '''Obtain the set of labels from the given corpus and return it as
@@ -140,7 +159,7 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
     if corpusServer.getDataSetRequiresLocalMirror( corpus ) \
         and not corpusServer.localMirrorExists( corpus ):
         if createMirror:
-            createLocalMirror( corpus )
+            createLocalMirror( corpusServer, corpus )
         else:
             raise RuntimeError("local mirror required, won't create automatically",
                                "(specify createMirror=True to do so)")
@@ -155,6 +174,9 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
     return (categories, labelList)
 
 def printCategoryInfo( categories ):
+    if not categories:
+        print "no categories, nothing to print"
+        return
     sys.stdout.softspace=False;
     for key in sorted( categories.keys() ):
         klen = len( categories[key] )
@@ -197,15 +219,15 @@ def createRunSet( categories ):
                 pur_categories.append( cvac.PurposedLabelableSeq( \
                     negpur, categories[negkey] ) )
                 runset = cvac.RunSet( pur_categories )
-                classmap[pospur] = poskey
-                classmap[negpur] = negkey
+                classmap[poskey] = pospur
+                classmap[negkey] = negpur
                 return {'runset':runset, 'classmap':classmap}
 
         # multi-class
         cnt = 0
         for key in pur_categories_keys:
             purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
-            classmap[purpose] = key
+            classmap[key] = purpose
             pur_categories.append( cvac.PurposedLabelableSeq( purpose, categories[key] ) )
             cnt = cnt+1
             runset = cvac.RunSet( pur_categories )
@@ -384,20 +406,20 @@ def getDetector( configString ):
 # replace the multiclass-ID label with the string label
 class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
     allResults = []
-    purLabelMap = None
+    classmap = None
     detectionFinished = False
     def foundNewResults(self, r2, current=None):
         # If we have a map from ordinal class number to label name,
         # replace the result label
-        if self.purLabelMap:
+        if self.classmap:
             for res in r2.results:
                 for lbl in res.foundLabels:
                     if type(lbl.lab.name) is int:
-                        lbl.lab.name = self.purLabelMap[int(lbl.lab.name)]
+                        lbl.lab.name = self.classmap[int(lbl.lab.name)]
         # collect all results
         self.allResults.extend( r2.results )
 
-def detect( detector, detectorData, runset, purLabelMap=None, callbackRecv=None ):
+def detect( detector, detectorData, runset, classmap=None, callbackRecv=None ):
     '''Synchronously run detection with the specified detector,
     trained model, and optional callback receiver.
     The detectorData can be either a cvac.DetectorData object or simply
@@ -417,7 +439,7 @@ def detect( detector, detectorData, runset, purLabelMap=None, callbackRecv=None 
     if type(runset) is str:
         res = createRunSet( runset )
         runset = res['runset']
-        purLabelMap = res['classmap']
+        classmap = res['classmap']
     elif not type(runset) is cvac.RunSet:
         raise RuntimeException("runset must either be a filename, directory, or cvac.RunSet")
 
@@ -430,7 +452,7 @@ def detect( detector, detectorData, runset, purLabelMap=None, callbackRecv=None 
     if not callbackRecv:
         ourRecv = True
         callbackRecv = DetectorCallbackReceiverI();
-        callbackRecv.purLabelMap = purLabelMap
+        callbackRecv.classmap = classmap
     adapter.add( callbackRecv, cbID )
     adapter.activate()
     detector.ice_getConnection().setAdapter(adapter)
@@ -443,26 +465,45 @@ def detect( detector, detectorData, runset, purLabelMap=None, callbackRecv=None 
     if ourRecv:
         return callbackRecv.allResults
 
-def printResults( results ):
-    '''Print detection results as specified in a ResultSet'''
+def printResults( results, foundMap=None, origMap=None ):
+    '''Print detection results as specified in a ResultSet.
+    If classmaps are specified, the labels are mapped
+    (replaced by) purposes: the detectmap maps found labels and
+    the origMap maps the original labels, if any.
+    The classmap is a dictionary mapping label to Purpose.  If
+    the values have a ".name" field, that field will be printed,
+    otherwise the ptype.'''
     print 'received a total of {0} results:'.format( len( results ) )
     identical = 0
     for res in results:
         names = []
         for lbl in res.foundLabels:
-            names.append(lbl.lab.name)
+            foundLabel = lbl.lab.name
+            if foundMap:
+                if foundMap[foundLabel].name:
+                    foundLabel = foundMap[foundLabel].name
+                else:
+                    foundLabel = foundMap[foundLabel].ptype
+            names.append(foundLabel)
         numfound = len(res.foundLabels)
         origname = ("unlabeled", res.original.lab.name)[res.original.lab.hasLabel==True]
+        if origMap and res.original.lab.hasLabel:
+            if origMap[origname].name:
+                origname = origMap[origname].name
+            else:
+                origname = origMap[origname].ptype
         print "result for {0} ({1}): found {2} label{3}: {4}".format(
             res.original.sub.path.filename, origname,
             numfound, ("s","")[numfound==1], ', '.join(names) )
-        if numfound==1 and origname==res.foundLabels[0].lab.name:
+        if numfound==1 and origname.lower()==names[0].lower():
             identical += 1
     print '{0} out of {1} results had identical labels'.format( identical, len( results ) )
 
-def getConfusionMatrix( runset, results ):
+def getConfusionMatrix( results, origMap, foundMap ):
     '''produce a confusion matrix'''
     import numpy
-    catsize = len( runset.purposedLists )
+    catsize = len( origMap )
+    if catsize>50:
+        pass
     confmat = numpy.empty( (catsize+1, catsize+1) )
     return confmat

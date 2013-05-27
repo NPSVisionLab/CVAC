@@ -98,7 +98,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
             CorpusI cs_orig = corpToImp.get(cs.name);
             if (null!=cs_orig)
             {
-                logger.log(Level.WARNING, 
+                logger.log(Level.INFO, 
                    "a corpus with the name {0} exists already, discarding the new one.", cs.name );
                 return cs_orig;
             }
