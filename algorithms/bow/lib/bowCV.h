@@ -41,6 +41,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
+#include <list>
+#include <vector>
+#include <algorithm>
 #include <util/ServiceMan.h>
 
 #include <opencv2/opencv.hpp>
