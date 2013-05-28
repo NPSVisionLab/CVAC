@@ -7,8 +7,14 @@ start "CVAC Services (C++)" "${ICE_BOX_EXECUTABLE}" --Ice.Config=config.icebox
 if "${START_JAVA_SERVICES}" == "1" goto startjava
 goto next
 :startjava
-    start "CVAC Services (Java)" "${CMAKE_Java_RUNTIME}" -cp "${Ice.jar};${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar;${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar;${CMAKE_SOURCE_DIR}/3rdparty/lib/labelme.jar;${CMAKE_SOURCE_DIR}/3rdparty/lib/javabuilder.jar;${CMAKE_SOURCE_DIR}/3rdparty/lib/commons-io-1.3.2.jar;${CMAKE_SOURCE_DIR}/3rdparty/lib/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox &
-)
+    start "CVAC Services (Java)" "${CMAKE_Java_RUNTIME}" -cp "${Ice.jar};${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar;${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar;${CMAKE_SOURCE_DIR}/3rdparty/lib/labelme.jar;${CMAKE_SOURCE_DIR}/3rdparty/lib/javabuilder.jar;${CMAKE_SOURCE_DIR}/3rdparty/lib/commons-io-1.3.2.jar;${CMAKE_SOURCE_DIR}/3rdparty/lib/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox 
 :next
+REM Python services that are listed in python.config
+if "${PYTHON_EXECUTABLE}" neq "" (if exist "${CMAKE_SOURCE_DIR}/python.config" goto startpython)
+go next2
+:startpython
+    set PYTHONPATH="${ICE_PYTHON_DIR}:${SLICE_OUTPUT_PYTHONDIR}:3rdparty/opencv/lib/python2.6/site-packages"
+    for /F "eol=; tokens=*" %%A in (${CMAKE_SOURCE_DIR}/python.config) do start "CVAC Service (Python)" "${PYTHON_EXECUTABLE}" %%A
+:next2
 echo CVAC services launched
 exit /b 0
