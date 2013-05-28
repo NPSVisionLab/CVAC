@@ -11,14 +11,14 @@ Ice.ACM.Client=0
 ## CVAC Services Config:
 CVAC.DataDir = data
 
-bowIceTrain.Proxy=bowTrain:tcp -p 10003
+bowIceTrain.Proxy=bowTrain:tcp -p 10103
 
 # CVPerf Detector CvFaces
 #CvFaces.Proxy = CVAC_OpenCV_Detector:tcp -p 10002
 #CvFaces.DetectorFilename = OpencvFaces.zip
 
 # BOW Detector flags
-BagOfWordsUSKOCA.Proxy=bowTest:tcp -p 10004
+BagOfWordsUSKOCA.Proxy=bowTest:tcp -p 10104
 BagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
 
 # same on vision.nps.edu:
