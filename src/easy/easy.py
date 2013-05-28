@@ -406,27 +406,21 @@ def getDetector( configString ):
 # replace the multiclass-ID label with the string label
 class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
     allResults = []
-    classmap = None
     detectionFinished = False
     def foundNewResults(self, r2, current=None):
-        # If we have a map from ordinal class number to label name,
-        # replace the result label
-        if self.classmap:
-            for res in r2.results:
-                for lbl in res.foundLabels:
-                    if type(lbl.lab.name) is int:
-                        lbl.lab.name = self.classmap[int(lbl.lab.name)]
         # collect all results
         self.allResults.extend( r2.results )
 
-def detect( detector, detectorData, runset, classmap=None, callbackRecv=None ):
+def detect( detector, detectorData, runset, callbackRecv=None ):
     '''Synchronously run detection with the specified detector,
     trained model, and optional callback receiver.
     The detectorData can be either a cvac.DetectorData object or simply
-     a filename of a pre-trained model.
+     a filename of a pre-trained model.  Naturally, the model has to be
+     compatible with the detector.
     The runset can be either a cvac.RunSet object, filename to a single
      file that is to be tested, or a directory path.
-    If a callback receiver is specified, this function returns nothing.'''
+    If a callback receiver is specified, this function returns nothing,
+    otherwise, the obtained results are returned.'''
 
     # create a cvac.DetectorData object out of a filename
     if type(detectorData) is str:
@@ -452,7 +446,6 @@ def detect( detector, detectorData, runset, classmap=None, callbackRecv=None ):
     if not callbackRecv:
         ourRecv = True
         callbackRecv = DetectorCallbackReceiverI();
-        callbackRecv.classmap = classmap
     adapter.add( callbackRecv, cbID )
     adapter.activate()
     detector.ice_getConnection().setAdapter(adapter)
@@ -465,33 +458,79 @@ def detect( detector, detectorData, runset, classmap=None, callbackRecv=None ):
     if ourRecv:
         return callbackRecv.allResults
 
+def getPurposeName( purpose ):
+    '''Returns a string to identify the purpose or an
+    int to identify a multiclass class ID.'''
+    if purpose.ptype is cvac.PurposeType.UNLABELED:
+        return "unlabeled"
+    elif purpose.ptype is cvac.PurposeType.POSITIVE:
+        return "positive"
+    elif purpose.ptype is cvac.PurposeType.NEGATIVE:
+        return "negative"
+    elif purpose.ptype is cvac.PurposeType.MULTICLASS:
+        return purpose.classID
+    elif purpose.ptype is cvac.PurposeType.ANY:
+        return "any"
+    else:
+        raise RuntimeError("unexpected cvac.PurposeType")
+
+def getLabelText( label, classmap=None ):
+    '''Return a label text for the label: either
+    "unlabeled" or the name of the label or whatever
+    Purpose this label maps to.'''
+    if not label.hasLabel:
+        return "unlabeled"
+    text = label.name
+    if classmap and text in classmap:
+        mapped = classmap[text]
+        if type(mapped) is cvac.Purpose:
+            text = getPurposeName( mapped )
+            if type(text) is int:
+                text = 'class {0}'.format( text )
+        elif type(mapped) is str:
+            text = mapped
+        else:
+            raise RuntimeError( "unexpected type for classmap elements: "+
+                                type(mapped) )
+    return text
+
 def printResults( results, foundMap=None, origMap=None ):
     '''Print detection results as specified in a ResultSet.
     If classmaps are specified, the labels are mapped
-    (replaced by) purposes: the detectmap maps found labels and
+    (replaced by) purposes: the foundMap maps found labels and
     the origMap maps the original labels, if any.
-    The classmap is a dictionary mapping label to Purpose.  If
-    the values have a ".name" field, that field will be printed,
-    otherwise the ptype.'''
+    The classmap is a dictionary mapping either label to Purpose
+    or label to string.  Since detectors do not produce Purposes,
+    but the foundMap maps labels to Purposes, it is assumed that
+    the users wishes to replace a label that hints at the Purpose
+    with the label that maps to that same Purpose.  For example,
+    a result label of '12' is assumed to be a class ID.  The
+    classmap might map 'face' to a Purpose(MULTICLASS, 12).
+    Hence, we would replace '12' with 'face'.'''
+    
+    # create inverse map for found labels
+    labelPurposeLabelMap = {}
+    if foundMap:
+        for key in foundMap.iterkeys():
+            pur = foundMap[key]
+            if not type(pur) is cvac.Purpose:
+                break
+            id = getPurposeName( pur )
+            if type(id) is int:
+                id = str(id)
+            labelPurposeLabelMap[id] = key
+    if labelPurposeLabelMap:
+        foundMap = labelPurposeLabelMap
+    
     print 'received a total of {0} results:'.format( len( results ) )
     identical = 0
     for res in results:
         names = []
         for lbl in res.foundLabels:
-            foundLabel = lbl.lab.name
-            if foundMap:
-                if foundMap[foundLabel].name:
-                    foundLabel = foundMap[foundLabel].name
-                else:
-                    foundLabel = foundMap[foundLabel].ptype
+            foundLabel = getLabelText( lbl.lab, foundMap )
             names.append(foundLabel)
         numfound = len(res.foundLabels)
-        origname = ("unlabeled", res.original.lab.name)[res.original.lab.hasLabel==True]
-        if origMap and res.original.lab.hasLabel:
-            if origMap[origname].name:
-                origname = origMap[origname].name
-            else:
-                origname = origMap[origname].ptype
+        origname = getLabelText( res.original.lab, origMap )
         print "result for {0} ({1}): found {2} label{3}: {4}".format(
             res.original.sub.path.filename, origname,
             numfound, ("s","")[numfound==1], ', '.join(names) )
