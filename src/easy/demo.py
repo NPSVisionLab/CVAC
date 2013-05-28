@@ -4,8 +4,6 @@
 
 import sys
 
-#Add the lib/python directory to get packages
-sys.path.append('''../../lib/python''')
 import paths
 import cvac
 

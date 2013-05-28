@@ -14,6 +14,7 @@ WRAP_SLICE2PY( SLICE_FILES
 # Copy paths.py to the python lib dir expanding variables
 #
 CONFIGURE_FILE(paths.py.in "${SLICE_OUTPUT_PYTHONDIR}/paths.py")
+CONFIGURE_FILE(paths.py.in paths.py)
 
 #
 # Copy easy.py to the python lib dir without expanding
