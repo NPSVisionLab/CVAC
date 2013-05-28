@@ -29,6 +29,15 @@ FIND_PATH (ICE_INCLUDE Slice/Util.h
            /opt/Ice-3.4
            )
 
+FIND_PATH (ICE_PYTHON_DIR Ice.py
+           PATH_SUFFIXES python
+           HINTS
+           ${ICE_ROOT}
+           PATHS
+           $ENV{ICE_ROOT}
+           /opt/Ice-3.4
+           )
+
 SET(CDIR "")
 IF (MSVC10)
     SET(CDIR "/vc100")
