@@ -4,7 +4,6 @@
 
 import sys, os
 
-#Add the lib/python directory to get packages
 thisPath = os.path.dirname(os.path.abspath(__file__))
 srcPath = os.path.abspath(thisPath+"/../../lib/python")
 sys.path.append(srcPath)
