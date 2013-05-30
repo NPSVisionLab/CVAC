@@ -15,7 +15,6 @@ FIND_PATH (ICE_ROOT slice
            /opt/Ice-3.4.2
            /usr/include
            /usr/share/Ice-3.4.2
-#           "C:\\Program Files (x86)\\ZeroC\\Ice-3.4.2"
            DOC "The ICE root folder"
            )
            
@@ -104,7 +103,7 @@ FIND_PROGRAM( ICE_SLICE2PY_EXECUTABLE
               HINTS ${ICE_ROOT}/bin
                     ${ICE_ROOT}/bin/vc100
             )
-MARK_AS_ADVANCED (ICE_SLICE2PY_EXECUTABLE ICE_INSTALLDIR)
+MARK_AS_ADVANCED (ICE_SLICE2PY_EXECUTABLE ICE_ROOT)
 
 SET(ICE_LIBRARIES
     optimized ${ICE_LIBRARY} debug ${ICE_LIBRARY_DEBUG}
