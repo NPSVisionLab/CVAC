@@ -39,16 +39,6 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # Test the initialization of Ice and the service proxy
     #
     def setUp(self):
-        # start up the local services
-        # pid = subprocess.Popen(["/bin/pwd"]).pid
-        if os.name is "posix":
-            pid = subprocess.Popen(["/bin/sh", "./../../../../bin/startIcebox.sh"]).pid
-        #else if os.name is "windows":
-        #    pid = subprocess.Popen(["cmd", "./../../../../bin/startIcebox.bat"]).pid
-        else:
-            raise RuntimeError("please check and fix the lines above on your OS")
-        time.sleep(2)
-
         self.ic = Ice.initialize(sys.argv)
         base = self.ic.stringToProxy("CorpusServer:default -p 10011")
         self.cs = cvac.CorpusServicePrx.checkedCast(base)
@@ -212,14 +202,6 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
                 traceback.print_exc()
                 status = 1
                 
-        # stop the local services
-        if os.name is "posix":
-            pid = subprocess.Popen(["/bin/sh", "./../../../../bin/stopIcebox.sh"]).pid
-        #else if os.name is "windows":
-        #    pid = subprocess.Popen(["cmd", "./../../../../bin/stopIcebox.bat"]).pid
-        else:
-            raise RuntimeError("please check and fix the lines above on your OS")
-        time.sleep(2)
         
 if __name__ == '__main__':
     unittest.main()
