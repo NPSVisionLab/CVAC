@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 # test the CorpusServer
 # before calling "python CorpusServerTest.py", make sure this is set:
 # export PYTHONPATH="/opt/Ice-3.4.2/python:test/UnitTests/python"
@@ -16,9 +18,9 @@ import os
 class TestCorpusCallback(cvac.CorpusCallback):
     def corpusMirrorProgress( corpus, 
                 numtasks, currtask, taskname, details, percentCompleted, current=None ):
-        print "hello1"
+        print("hello1")
     def corpusMirrorCompleted( current=None ):
-        print "hello2"
+        print("hello2")
 
 class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
 
@@ -51,7 +53,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # the entire Caltech101 data set
     #
     def test_openCorpus(self):
-        print 'openCorpus'
+        print('openCorpus')
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "Caltech101.properties" )
         corpus2 = self.cs.openCorpus( corpusConfigFile )
@@ -64,7 +66,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # if so, try to obtain a Labelable dataset from it
     #
     def test_openCorpusLabelMe(self):
-        print 'openCorpusLabelMe'
+        print('openCorpusLabelMe')
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "LabelMeCarsTest.properties" )
 #        corpusConfigFile = cvac.FilePath( dataRoot, "NpsVisionLabelMe.properties" )
@@ -91,7 +93,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # is not downloaded yet (local mirror)
     #
     def test_getDataSet(self):
-        print 'getDataSet'
+        print('getDataSet')
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile1 = cvac.FilePath( dataRoot, "Caltech101.properties" )
         corpus1 = self.cs.openCorpus( corpusConfigFile1 )
@@ -115,7 +117,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # Does this corpus need a download to create local metadata?
     #
     def test_getDataSetRequiresLocalMirror(self):
-        print 'getDataSetRequiresLocalMirror'
+        print('getDataSetRequiresLocalMirror')
         # try with one where we do expect it:
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile1 = cvac.FilePath( dataRoot, "Caltech101.properties" )
@@ -138,7 +140,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # if this corpus requires a download, not for one that is local to begin with.
     #
     def test_localMirrorExists(self):
-        print 'localMirrorExists'
+        print('localMirrorExists')
         # try with one where we expect the mirror to exist already,
         # mainly because test_createLocalMirror has been called already
         dataRoot = cvac.DirectoryPath( "corpus" );
@@ -155,7 +157,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # Obtain a local mirror of the data set.
     #
     def test_createLocalMirror(self):
-        print 'createLocalMirror'
+        print('createLocalMirror')
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
         corpus = self.cs.openCorpus( corpusConfigFile )
@@ -185,7 +187,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # Create a Corpus from a directory of labeled data
     #
     def test_createCorpus(self):
-        print 'createCorpus'
+        print('createCorpus')
         corpusTestDir = cvac.DirectoryPath( "corpusTestDir" );
         corpus3 = self.cs.createCorpus( corpusTestDir )
         if not corpus3:
