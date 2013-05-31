@@ -225,12 +225,24 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
 		}
 	}
 
+	// Forcefully, setting the saving directory of detectorData to the folder "tmp" under the CVAC_DataDir folder
+	_filepath = CVAC_DataDir + "/tmp";	
+	makeDirectory(_filepath);	
+
 	localAndClientMsg(VLogger::INFO, _callback, "Training procedure is started.. \n");	//lekomin_suspended
     // Tell ServiceManager that we will listen for stop
     mServiceMan->setStoppable();
-	pBowCV->train_run(_filepath, logfile_BowTrainResult, mServiceMan);	
+	bool fTrain = pBowCV->train_run(_filepath, logfile_BowTrainResult, mServiceMan);
     // Tell ServiceManager that we are done listening for stop
     mServiceMan->clearStop();
+
+	if(!fTrain)
+	{
+		_resStr = "Error during the training of BoW.\n";
+		localAndClientMsg(VLogger::WARN, _callback, _resStr.c_str());
+		return;
+	}
+
 	DetectorData detectorData;
 	// Method 1	
 	detectorData.type = ::cvac::FILE;
