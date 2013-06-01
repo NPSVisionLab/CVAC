@@ -43,6 +43,9 @@
 #include <map>
 #include <utility>
 #include <iostream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 using namespace Ice;
 using namespace cvac;
 using namespace UnitTest;
@@ -56,7 +59,7 @@ SUITE(UnitTests_cvac)
 
   TEST(getBaseFileNameWithDotInThePath)
   {
-     cout << endl << endl << endl << "#####################################################################" << endl;
+     cout << "#####################################################################" << endl;
      const std::string filename = "c:/temp/something.here/myfile.txt";
 
      CHECK_EQUAL("myfile", cvac::getBaseFileName(filename));
@@ -67,21 +70,29 @@ SUITE(UnitTests_cvac)
      CHECK(!getCurrentWorkingDirectory().empty());
   }
 
+  void testDirectoryExists(std::string& fname)
+  {
+    struct stat s;
+    int err = stat(fname.c_str(), &s);
+    CHECK( 0==err );
+    CHECK(S_ISDIR(s.st_mode));
+  }
+
   TEST(checkMakeTieredDirectoryAndClear)
   {
     std::string CWD = std::string(getCurrentWorkingDirectory().c_str());
     
     // Add hierarchy root folder
     std::string runsetRootDir = (CWD + "/rootDir");
-    cout << "Creating tiered test directory at:  \n" << runsetRootDir << endl << endl;
+    cout << "Creating tiered test directory at:  \n" << runsetRootDir << endl;
     makeDirectory(runsetRootDir);
+    testDirectoryExists(runsetRootDir);
 
     // Add nested '/images' folder
     std::string secondTierFolder = (runsetRootDir + "/images");
-    cout << "Creating tiered test directory at:  \n" << secondTierFolder << endl << endl;
-    makeDirectory(runsetRootDir);
-
-    // Set breakpoint here, to check for successful creation of folders
+    cout << "Creating tiered test directory at:  \n" << secondTierFolder << endl;
+    makeDirectory(secondTierFolder);
+    testDirectoryExists(secondTierFolder);
 
     // Clear folders: deepest first, to root
     deleteDirectory(secondTierFolder);
@@ -104,7 +115,7 @@ SUITE(UnitTests_cvac)
   TEST(makeSymlinkFile) {  // Note path to target file must be Absolute, at least was true on Windows development machine
     fstream linkOutputFile, linkSourceFile;
     std::string linkDir = std::string(getCurrentWorkingDirectory().c_str());
-    std::string tempDir = "../test/temp/testLink";
+    std::string tempDir = linkDir + "/../test/temp/testLink";
     std::string linkPath = tempDir + "/linkOutputFile.txt";
     std::string tgtFile = linkDir + "/../test/data/sourceLinkFile.txt";  // Relative to CVAC/bin
 
@@ -120,13 +131,18 @@ SUITE(UnitTests_cvac)
     }
 
     // Check Paths
-    cout << endl << "######### Make Symlink File        ##################################" << endl;
+    cout << "######### Make Symlink File        ##################################" << endl;
     cout << "Target at " << tgtFile << endl;
     cout << "linkFile at: " << linkPath << endl;
+    cout << "tempDir at: " << tempDir << endl;
     // In case its still around after a failure delete it and the link.
-    deleteDirectory(tempDir);
-    makeDirectories(tempDir);
-
+    //    deleteDirectory(tempDir);
+    bool madeDirs = makeDirectories(tempDir);
+    if (!madeDirs)
+    {
+      printf("failed to create directory %s\n", tempDir.c_str());
+    }
+    testDirectoryExists( tempDir );
 
     // Verify input file exists
     bool callSuccess = makeSymlinkFile(linkPath, tgtFile);
@@ -135,15 +151,13 @@ SUITE(UnitTests_cvac)
 
 
     if(!testSuccess) {        // Explain failure in making symlink
-            printf("\n");
-            printf("UnitTest could not find link target:  '%s' \n", tgtFile.c_str() );
-            printf("subfolder of CWD.\n");
+            printf("UnitTest could not find link target:  '%s' \n", linkPath.c_str() );
             printSymlinkHintsPerPlatform(callSuccess);
     }
     else {  // Clear dir and link file
       printf("Test found output symlink file.\n");
       linkOutputFile.close();
-      deleteDirectory(tempDir);
+      //      deleteDirectory(tempDir);
     }
 
     // Found expected Symlink file on disk?
@@ -152,7 +166,7 @@ SUITE(UnitTests_cvac)
 
   TEST(addSamples_toRunset)
   {
-    cout << endl << "######### Add Samples to RunSet    ##################################" << endl;
+    cout << "######### Add Samples to RunSet    ##################################" << endl;
     std::map<std::string, std::string> symlinkFilenames;
     fstream inputFile, symFile;
     RunSet runSet;

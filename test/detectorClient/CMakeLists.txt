@@ -67,10 +67,10 @@ IF (BUILD_WITH_BOW)
 
     # local service; each of these starts an IceBox in the script
     ADD_TEST(detectorClient_BowDetector
-             ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT} BagOfWordsUSKOCA
+             ${CVAC_ROOT_DIR}/bin/detectorClient BagOfWordsUSKOCA testImg ${CVAC_ROOT_DIR}/config.client
              )
     ADD_TEST(detectorClient_BowDetector_Verify
-             ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT} CTest BagOfWordsUSKOCA
+             ${CVAC_ROOT_DIR}/bin/detectorClient BagOfWordsUSKOCA CTest ${CVAC_ROOT_DIR}/config.client verifyresults
              )
     INSTALL( FILES ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT}
                    DESTINATION bin
