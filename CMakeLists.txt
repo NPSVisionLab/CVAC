@@ -22,6 +22,8 @@ OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-pa
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
 
+MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
+
 # where the Find*.cmake files are
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules
                       ${CMAKE_MODULE_PATH})
