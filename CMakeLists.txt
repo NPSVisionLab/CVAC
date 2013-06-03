@@ -110,14 +110,37 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
      	STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
      	STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
      	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
-        MESSAGE( STATUS "successfully parsed version: CVAC-${CVAC_VERSION}" )
+        MESSAGE( STATUS "successfully parsed version from git: CVAC-${CVAC_VERSION}" )
      	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
                                    ${CMAKE_SOURCE_DIR}/include/version.h)
     ENDIF( CVAC_VERSION_GIT )
 endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
+if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
+    # .git directory doesn't exist: now make sure that
+    # files are a complete download, not a fragmented collection.
+    # In other words, there must be a include/version.h file.
+    FILE( STRINGS ${CMAKE_SOURCE_DIR}/include/version.h
+          versionfile_contents
+          REGEX "#define CVAC_VERSION*" )
+    STRING( REGEX REPLACE ".*MAJOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MAJOR ${versionfile_contents} )
+    STRING( REGEX REPLACE ".*MINOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MINOR ${versionfile_contents} )
+    STRING( REGEX REPLACE ".*PATCH ([^ ]+).*" "\\1" CVAC_VERSION_PATCH ${versionfile_contents} )
+    SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+    MESSAGE( STATUS "successfully parsed version from version.h: CVAC-${CVAC_VERSION}" )
+endif( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
 
-#
+IF( "x${CVAC_VERSION}x" STREQUAL "xx"
+    OR "x${CVAC_VERSION_MAJOR}x" STREQUAL "xx"
+    OR "x${CVAC_VERSION_MINOR}x" STREQUAL "xx" )
+    # need version string to continue for many tasks
+    MESSAGE( SEND_ERROR "Could not obtain CVAC version from git or include/version.h:" )
+    MESSAGE( SEND_ERROR "all:${CVAC_VERSION} major:${CVAC_VERSION_MAJOR} minor:${CVAC_VERSION_MINOR}" )
+ENDIF( "x${CVAC_VERSION}x" STREQUAL "xx"
+    OR "x${CVAC_VERSION_MAJOR}x" STREQUAL "xx"
+    OR "x${CVAC_VERSION_MINOR}x" STREQUAL "xx" )
+
+
 # offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
 #
 IF( DOWNLOAD_3RDPARTY_PACKAGE )
