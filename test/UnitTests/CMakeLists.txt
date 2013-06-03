@@ -35,7 +35,6 @@ ADD_EXECUTABLE( ${APP_NAME}
               )
 
 SET(LIBS
-    ${APP_NAME}
     optimized ${UNITTEST++_LIBRARY} debug ${UNITTEST++_LIBRARY_DEBUG}
     utils
     ${ICE_LIBRARIES}
@@ -43,7 +42,7 @@ SET(LIBS
 )
 
 #libraries to link into the executable, both Release and Debug
-TARGET_LINK_LIBRARIES( ${LIBS} )
+TARGET_LINK_LIBRARIES( ${APP_NAME} ${LIBS} )
  
                       
 SET_TARGET_PROPERTIES(${APP_NAME} PROPERTIES DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}")
