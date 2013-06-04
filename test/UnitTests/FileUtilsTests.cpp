@@ -45,8 +45,8 @@
 #include <iostream>
 #include <sys/types.h>
 #include <sys/stat.h>
-#if defined(WIN32)
-#include <direct.h> //for S_ISDIR
+#if defined(WIN32) && !defined(S_ISDIR)
+#define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
 #endif
 using namespace Ice;
 using namespace cvac;
