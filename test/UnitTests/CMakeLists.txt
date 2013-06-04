@@ -26,8 +26,8 @@ SET(HEADER_FILES
 INCLUDE_DIRECTORIES( .
                      ${UNITTEST++_INCLUDE_DIR}
                      ${CVAC_INCLUDE_DIR}
-		                 ${ICE_INCLUDE}
-		                 ${CMAKE_CURRENT_BINARY_DIR} #for generated slice files
+                     ${ICE_INCLUDE}
+                     ${CMAKE_CURRENT_BINARY_DIR} #for generated slice files
                    )
 
 ADD_EXECUTABLE( ${APP_NAME}

@@ -99,9 +99,11 @@ void cvac::localAndClientMsg(VLogger::Levels rqLevel, const CallbackHandlerPrx& 
 bool cvac::directoryExists(const std::string& directory)
 {
    struct stat fileStat;
-   if (stat(directory.c_str(), &fileStat) != 0)
+   if (stat(directory.c_str(), &fileStat) == -1)
    {
-      return false;
+     if (ENOENT==errno) return false;
+     printf("ERROR: cannot obtain info about directory path %s\n", directory.c_str());
+     return false;
    }
 
    if (fileStat.st_mode & S_ISDIR(fileStat.st_mode))
@@ -216,6 +218,7 @@ bool cvac::makeDirectories(const std::string& dirPath)
 ///////////////////////////////////////////////////////////////////////////////
 bool cvac::makeDirectory(const std::string& path)
 {
+  printf("makeDirectory called with %s\n", path.c_str());
    if (path.empty())
    {
       //no path supplied
