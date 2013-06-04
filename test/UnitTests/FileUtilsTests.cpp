@@ -46,7 +46,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #if defined(WIN32)
-#include <dirent.h> //for S_ISDIR
+#include <direct.h> //for S_ISDIR
 #endif
 using namespace Ice;
 using namespace cvac;
@@ -158,9 +158,9 @@ SUITE(UnitTests_cvac)
     // Verify input file exists
     bool callSuccess = makeSymlinkFile(linkPath, tgtFile);
     linkOutputFile.open(linkPath.c_str(), ios::in);
-    bool testSuccess = linkOutputFile.is_open();
+    bool symlinkFileExists = linkOutputFile.is_open();
 
-    if(!testSuccess) {        // Explain failure in making symlink
+    if(!symlinkFileExists) {        // Explain failure in making symlink
             printf("UnitTest could not find link target:  '%s' \n", linkPath.c_str() );
             printSymlinkHintsPerPlatform(callSuccess);
     }
@@ -172,7 +172,7 @@ SUITE(UnitTests_cvac)
     }
 
     // Found expected Symlink file on disk?
-    CHECK(testSuccess);
+    CHECK(symlinkFileExists);
   }
 
   TEST(addSamplesToRunset)
