@@ -22,3 +22,10 @@ CONFIGURE_FILE(paths.py.in paths.py)
 CONFIGURE_FILE(easy.py "${SLICE_OUTPUT_PYTHONDIR}/easy.py" COPYONLY)
 
 add_custom_target( easy ALL DEPENDS ${SLICE_FILES} )
+
+IF( BUILD_BINARY_PACKAGE )
+  INSTALL(FILES  demo.py easy.py paths.py demo_unwrapped.py
+    DESTINATION src/easy
+    COMPONENT Runtime
+  )
+ENDIF( BUILD_BINARY_PACKAGE )

@@ -67,7 +67,7 @@ easy.putAllFiles( fileserver, runset )
 #
 # Connect to a trainer service, train on the RunSet
 #
-trainer = easy.getTrainer( "bowTrain:default -p 10103 " + host )
+trainer = easy.getTrainer( "bowTrain:default -p 10003 " + host )
 trainedModel = easy.train( trainer, runset )
 print("Training model stored in file: " + easy.getFSPath( trainedModel.file ))
 
@@ -77,7 +77,7 @@ print("Training model stored in file: " + easy.getFSPath( trainedModel.file ))
 # The detect call takes the detector, the trained model, the
 # runset, and a mapping from purpose to label name
 #
-detector = easy.getDetector( "bowTest:default -p 10104 " + host )
+detector = easy.getDetector( "bowTest:default -p 10004 " + host )
 results = easy.detect( detector, trainedModel, runset )
 easy.printResults( results, foundMap=classmap )
 
