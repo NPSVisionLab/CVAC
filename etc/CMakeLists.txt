@@ -16,8 +16,8 @@ ELSE( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
   SET( START_JAVA_SERVICES 0 )
 ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 
-# start Python services if we can find the interpreter
-find_program(PYTHON_EXECUTABLE "python")
+# start Python services if we can find the interpreter:
+# CMakeLists in the root dir will set PYTHON_EXECUTABLE if found
 
 IF (WIN32)
     SET( SCRIPT_EXT bat )

@@ -89,15 +89,15 @@ class FileServerTest(unittest.TestCase):
         # "put" the file's bytes as a different file which must not exist,
         # and compare the result via file system access
         putFilePath = cvac.FilePath( testDir, "TargetFilename.jpg" )
+        putFS = self.dataDir+"/"+self.getFSPath( putFilePath )
         try:
             self.fs.putFile( putFilePath, bytes );
         except cvac.FileServiceException as ex:
             print( "if you do not have 'put' permissions, " +
                    "was the file deleted properly in a prior test run?\nfile: " +
-                   putFilePath.filename)
+                   putFS )
             raise ex
         forig.close()
-        putFS = self.dataDir+"/"+self.getFSPath( putFilePath )
         if not os.path.exists( putFS ):
             raise RuntimeError("Cannot obtain path to the just-'put' file",
                                "on the file system, see comments. file: "+putFS)
