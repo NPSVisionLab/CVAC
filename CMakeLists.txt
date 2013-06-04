@@ -237,7 +237,7 @@ FIND_PACKAGE(LibArchive REQUIRED)
 IF( PYTHONINTERP_FOUND )
   # make sure it's version 2.6 or else error
   IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
-    MESSAGE( SEND_ERROR "Found Python version ${PYTHON_VERSION} but need 2.6" )
+    MESSAGE( SEND_ERROR "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
   ENDIF()
 ENDIF( PYTHONINTERP_FOUND )
 
