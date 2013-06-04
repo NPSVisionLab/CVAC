@@ -45,6 +45,9 @@
 #include <iostream>
 #include <sys/types.h>
 #include <sys/stat.h>
+#if defined(WIN32)
+#include <dirent.h> //for S_ISDIR
+#endif
 using namespace Ice;
 using namespace cvac;
 using namespace UnitTest;
