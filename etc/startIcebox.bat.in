@@ -14,7 +14,7 @@ if "${PYTHON_EXECUTABLE}" neq "" (if exist "${CMAKE_SOURCE_DIR}/python.config" g
 go next2
 :startpython
     set PYTHONPATH="${ICE_PYTHON_DIR}:${SLICE_OUTPUT_PYTHONDIR}:3rdparty/opencv/lib/python2.6/site-packages"
-    for /F "eol=; tokens=*" %%A in (${CMAKE_SOURCE_DIR}/python.config) do start "CVAC Service (Python)" "${PYTHON_EXECUTABLE}" %%A
+    for /F "eol=# tokens=*" %%A in (${CMAKE_SOURCE_DIR}/python.config) do start "CVAC Service (Python)" "${PYTHON_EXECUTABLE}" %%A
 :next2
 echo CVAC services launched
 exit /b 0
