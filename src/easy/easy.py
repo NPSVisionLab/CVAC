@@ -359,7 +359,7 @@ def deleteAllFiles( fileserver, uploadedFiles ):
         if not type(path) is cvac.FilePath:
             raise RuntimeError("Unexpected type found instead of cvac.FilePath:", type(path))
         try:
-            fileserver.deleteFile( path ):
+            fileserver.deleteFile( path )
             deletedFiles.append( path )
         except cvac.FileServiceException:
             notDeletedFiles.append( path )

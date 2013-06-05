@@ -115,7 +115,7 @@ class FileServerTest(unittest.TestCase):
 
         # delete the "put" file on the server
         print 'deleteFile'
-        self.fs.deleteFile( putFilePath );
+        self.fs.deleteFile( putFilePath )
         if os.path.exists( putFS ):
             raise RuntimeError("FileServer did not delete 'put' file: "+putFS)
 
