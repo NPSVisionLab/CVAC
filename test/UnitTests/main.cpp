@@ -38,11 +38,11 @@
 #include <UnitTest++.h>
 #include <stdio.h>
 #include <iostream>
-
+#include "util/FileUtils.h"
 
 int main(int argc, char **argv)
 {
+   cvac::vLogger.setLocalVerbosityLevel( VLogger::INFO );
    int allTests_rtn = UnitTest::RunAllTests();
-   getchar();
    return allTests_rtn;
 }

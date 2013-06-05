@@ -22,6 +22,8 @@ OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-pa
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
 
+MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
+
 # where the Find*.cmake files are
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules
                       ${CMAKE_MODULE_PATH})
@@ -108,14 +110,35 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
      	STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
      	STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
      	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
-        MESSAGE( STATUS "successfully parsed version: CVAC-${CVAC_VERSION}" )
+        MESSAGE( STATUS "successfully parsed version from git: CVAC-${CVAC_VERSION}" )
      	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
                                    ${CMAKE_SOURCE_DIR}/include/version.h)
     ENDIF( CVAC_VERSION_GIT )
 endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
+if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
+    # .git directory doesn't exist: now make sure that
+    # files are a complete download, not a fragmented collection.
+    # In other words, there must be a include/version.h file.
+    FILE( STRINGS ${CMAKE_SOURCE_DIR}/include/version.h
+          versionfile_contents
+          REGEX "#define CVAC_VERSION*" )
+    STRING( REGEX REPLACE ".*MAJOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MAJOR ${versionfile_contents} )
+    STRING( REGEX REPLACE ".*MINOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MINOR ${versionfile_contents} )
+    STRING( REGEX REPLACE ".*PATCH ([^ ]+).*" "\\1" CVAC_VERSION_PATCH ${versionfile_contents} )
+    SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+    MESSAGE( STATUS "successfully parsed version from version.h: CVAC-${CVAC_VERSION}" )
+endif( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
 
-#
+IF( "x${CVAC_VERSION}x" STREQUAL "xx"
+    OR "x${CVAC_VERSION_MAJOR}x" STREQUAL "xx"
+    OR "x${CVAC_VERSION_MINOR}x" STREQUAL "xx" )
+    # need version string to continue for many tasks
+    MESSAGE( SEND_ERROR "Could not obtain CVAC version from git or include/version.h:" )
+    MESSAGE( SEND_ERROR "all:${CVAC_VERSION} major:${CVAC_VERSION_MAJOR} minor:${CVAC_VERSION_MINOR}" )
+ENDIF()
+
+
 # offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
 #
 IF( DOWNLOAD_3RDPARTY_PACKAGE )
@@ -164,13 +187,16 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
              RESULT_VARIABLE unpack_result
              OUTPUT_VARIABLE unpack_output
          )
-        IF( NOT (${unpack_result} STREQUAL "0") 
-            OR NOT EXISTS ${CMAKE_SOURCE_DIR}/3rdparty
-            OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty )
+        IF( (${unpack_result} STREQUAL "0") AND EXISTS ${CMAKE_SOURCE_DIR}/3rdparty
+            AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty )
+            # clear variables that will be different with the 3rdparty package in place
+            MESSAGE( STATUS "Successfully unpacked the 3rdparty package. You should" )
+            MESSAGE( STATUS "delete CMakeCache.txt and re-run CMake.  Or run" )
+            MESSAGE( STATUS "cmake -U ICE_* -U OpenCV_* -U LIBARCHIVE_*" )
+            MESSAGE( STATUS "so that a subsequent CMake call can pick up the new locations." )
+        ELSE()
             MESSAGE( SEND_ERROR "Could not unpack 3rdparty package - subsequent errors may occur" )
-        ENDIF( NOT (${unpack_result} STREQUAL "0") 
-            OR NOT EXISTS ${CMAKE_SOURCE_DIR}/3rdparty
-            OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty )
+        ENDIF()
     ENDIF( EXISTS ${3RDPARTY_DIR} )
     SET( DOWNLOAD_3RDPARTY_PACKAGE OFF CACHE BOOL "Download 3rd-party package had download or unpack errors, please obtain manually" FORCE )
 ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
@@ -202,8 +228,19 @@ IF( BUILD_DOCUMENTATION )
   ENDIF( DOXYGEN_FOUND )
 ENDIF( BUILD_DOCUMENTATION )
 
+FIND_PACKAGE( PythonInterp )
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
+
+# Make sure packages are compatible
+# ICE 3.4.2 is pre-built against Python 2.6
+IF( PYTHONINTERP_FOUND )
+  # make sure it's version 2.6 or else error
+  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
+    MESSAGE( SEND_ERROR "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+    MESSAGE( SEND_ERROR "Please specify PYTHON_EXECUTABLE manually." )
+  ENDIF()
+ENDIF( PYTHONINTERP_FOUND )
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   FIND_PACKAGE( OpenCV 2.4 REQUIRED
