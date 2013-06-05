@@ -1,3 +1,4 @@
+from __future__ import print_function
 # test the FileServer
 # paths sets up the PYTHONPATH so this is not needed to be setup by the user
 # to run just this test, use "ctest -R PythonFileServerTest --verbose"
@@ -43,8 +44,8 @@ class FileServerTest(unittest.TestCase):
         filepath = os.path.dirname(os.path.abspath(__file__))
         self.dataDir = filepath + "/../../../data"
         if not os.path.exists( self.dataDir ):
-            print "Present working directory: " + os.getcwd()
-            print "Looking for CVAC.DataDir at: " + self.dataDir
+            print("Present working directory: " + os.getcwd())
+            print("Looking for CVAC.DataDir at: " + self.dataDir)
             raise RuntimeError("Cannot obtain path to CVAC.DataDir, see comments")
 
     #
@@ -63,7 +64,7 @@ class FileServerTest(unittest.TestCase):
     # Test if we can get a file, copy bytes to a tempfile, compare
     #
     def test_getFile(self):
-        print 'getFile'
+        print('getFile')
         # test with a small file for now
         testDir = cvac.DirectoryPath( "testImg" );
         filePath = cvac.FilePath( testDir, "TestUsFlag.jpg" )
@@ -75,7 +76,7 @@ class FileServerTest(unittest.TestCase):
     # Test that overwriting an existing file fails;
     #
     def test_putFile(self):
-        print 'putFile'
+        print('putFile')
         # read the bytes from TestKrFlag.jpg
         testDir = cvac.DirectoryPath( "testImg" );
         origFilePath = cvac.FilePath( testDir, "TestKrFlag.jpg" )
@@ -93,7 +94,7 @@ class FileServerTest(unittest.TestCase):
         try:
             self.fs.putFile( putFilePath, bytes );
         except cvac.FileServiceException as ex:
-            print( "if you do not have 'put' permissions, " +
+            print(( "if you do not have 'put' permissions, " +
                    "was the file deleted properly in a prior test run?\nfile: " +
                    putFS )
             raise ex
@@ -114,7 +115,7 @@ class FileServerTest(unittest.TestCase):
             raise RuntimeException("should not have permission to put this file")
 
         # delete the "put" file on the server
-        print 'deleteFile'
+        print('deleteFile')
         self.fs.deleteFile( putFilePath )
         if os.path.exists( putFS ):
             raise RuntimeError("FileServer did not delete 'put' file: "+putFS)
@@ -123,7 +124,7 @@ class FileServerTest(unittest.TestCase):
     # on a remote FileServer, first put, then get, then delete a file
     #
     def test_remotePutGetDelete(self):
-        print 'putFile remote'
+        print('putFile remote')
         configStr = "FileService:default -h vision.nps.edu -p 10110"
         baser = self.ic.stringToProxy( configStr )
         if not baser:
@@ -147,16 +148,16 @@ class FileServerTest(unittest.TestCase):
         try:
             fsr.putFile( putFilePath, bytes );
         except cvac.FileServiceException as ex:
-            print( "if you do not have 'put' permissions, " +
+            print(( "if you do not have 'put' permissions, " +
                    "was the file deleted properly in a prior test run?\nfile: " +
-                   putFilePath.filename)
+                   putFilePath.filename))
             raise ex
         forig.close()
 
         # "get" the bytes again from the same name that we used for putting,
         # store them in a file on the local file system with the same name,
         # and compare the obtained file to the original one
-        print 'getFile remote'
+        print('getFile remote')
         getFS = self.dataDir+"/"+self.getFSPath( putFilePath )
         if os.path.exists( getFS ):
             raise RuntimeError("Local file exists already - cannot continue. file: "+getFS)
@@ -174,7 +175,7 @@ class FileServerTest(unittest.TestCase):
         os.remove( getFS )
 
         # delete the file on the remote side and check that it's gone
-        print 'deleteFile remote'
+        print('deleteFile remote')
         fsr.deleteFile( putFilePath )
         try:
             dummy = fsr.getFile( putFilePath )
@@ -202,7 +203,7 @@ class FileServerTest(unittest.TestCase):
         ftmp.flush()
         ftmp.close()
         if not self.filesAreEqual( orig, ftmp.name ):
-            print "comparison failed, new file: " + ftmp.name
+            print("comparison failed, new file: " + ftmp.name)
             ftmp.close()
             raise RuntimeError("file was not 'get' correctly")
         os.unlink(ftmp.name)

@@ -1,7 +1,7 @@
 #
 # A demo for the Easy Computer Vision library.
 #
-
+from __future__ import print_function
 import sys, os
 
 thisPath = os.path.dirname(os.path.abspath(__file__))
@@ -16,7 +16,7 @@ import easy
 #
 # First, a teaser for detection:
 #
-detector = easy.getDetector( "bowTest:default -p 10004" )
+detector = easy.getDetector( "bowTest:default -p 10104" )
 results = easy.detect( detector, "detectors/bowUSKOCA.zip", "testImg/TestCaFlag.jpg" )
 easy.printResults( results )
 
@@ -29,7 +29,7 @@ easy.printResults( results )
 # categories, lablist = easy.getDataSet( "corpus/Caltech101.properties", createMirror=False )
 #easy.printCategoryInfo( categories )
 #runset = easy.createRunSet( categories["car_side"] )
-#trainer = easy.getTrainer( "bowTrain:default -p 10003" )
+#trainer = easy.getTrainer( "bowTrain:default -p 10103" )
 #carSideModel = easy.train( trainer, runset )
 
 #
@@ -43,8 +43,8 @@ cs = easy.getCorpusServer("CorpusServer:default -p 10011")
 #corpus = easy.openCorpus( cs, "corporate_logos" );
 corpus = easy.openCorpus( cs, "trainImg" );
 categories, lablist = easy.getDataSet( corpus, corpusServer=cs )
-print 'Obtained {0} labeled artifact{1} from corpus "{2}":'.format(
-    len(lablist), ("s","")[len(lablist)==1], corpus.name );
+print('Obtained {0} labeled artifact{1} from corpus "{2}":'.format(
+    len(lablist), ("s","")[len(lablist)==1], corpus.name ));
 easy.printCategoryInfo( categories )
 
 #
@@ -69,7 +69,7 @@ putResult = easy.putAllFiles( fileserver, runset )
 #
 trainer = easy.getTrainer( "bowTrain:default -p 10103 " + host )
 trainedModel = easy.train( trainer, runset )
-print "Training model stored in file: " + easy.getFSPath( trainedModel.file )
+print("Training model stored in file: " + easy.getFSPath( trainedModel.file ))
 
 #
 # Connect to a detector service,

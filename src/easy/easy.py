@@ -4,6 +4,7 @@
 # easy.py is a high-level interface to CVAC, the
 # Computer Vision Algorithm Collection.
 #
+from __future__ import print_function
 import os
 import sys, traceback
 # paths should setup the PYTHONPATH.  If you special requirements
@@ -113,8 +114,8 @@ class CorpusCallbackI(cvac.CorpusCallback):
     corpus = None
     def corpusMirrorProgress( corp, numtasks, currtask, taskname, details,
             percentCompleted ):
-        print "Downloading corpus {0}, task {1}/{2}: {3} ({4}%)".\
-              format( corp.name, currtask, numtasks, taskname )
+        print("Downloading corpus {0}, task {1}/{2}: {3} ({4}%)".\
+              format( corp.name, currtask, numtasks, taskname ))
     def corpusMirrorCompleted(self, corp):
         self.corpus = corp
 
@@ -175,12 +176,12 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
 
 def printCategoryInfo( categories ):
     if not categories:
-        print "no categories, nothing to print"
+        print("no categories, nothing to print")
         return
     sys.stdout.softspace=False;
     for key in sorted( categories.keys() ):
         klen = len( categories[key] )
-        print "{0} ({1} artifact{2})".format( key, klen, ("s","")[klen==1] )
+        print("{0} ({1} artifact{2})".format( key, klen, ("s","")[klen==1] ))
 
 def createRunSet( categories ):
     '''Add all samples from the categories to a new RunSet.
@@ -383,7 +384,7 @@ class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
     def createdDetector(self, detData, current=None):
         if not detData:
             raise RuntimeError("Finished training, but obtained no DetectorData")
-        print "Finished training, obtained DetectorData of type", detData.type
+        print("Finished training, obtained DetectorData of type", detData.type)
         self.detectorData = detData
         self.trainingFinished = True
 
@@ -536,7 +537,7 @@ def printResults( results, foundMap=None, origMap=None ):
     # create inverse map for found labels
     labelPurposeLabelMap = {}
     if foundMap:
-        for key in foundMap.iterkeys():
+        for key in foundMap.keys():
             pur = foundMap[key]
             if not type(pur) is cvac.Purpose:
                 break
@@ -547,7 +548,7 @@ def printResults( results, foundMap=None, origMap=None ):
     if labelPurposeLabelMap:
         foundMap = labelPurposeLabelMap
     
-    print 'received a total of {0} results:'.format( len( results ) )
+    print('received a total of {0} results:'.format( len( results ) ))
     identical = 0
     for res in results:
         names = []
@@ -556,12 +557,12 @@ def printResults( results, foundMap=None, origMap=None ):
             names.append(foundLabel)
         numfound = len(res.foundLabels)
         origname = getLabelText( res.original.lab, origMap )
-        print "result for {0} ({1}): found {2} label{3}: {4}".format(
+        print("result for {0} ({1}): found {2} label{3}: {4}".format(
             res.original.sub.path.filename, origname,
-            numfound, ("s","")[numfound==1], ', '.join(names) )
+            numfound, ("s","")[numfound==1], ', '.join(names) ))
         if numfound==1 and origname.lower()==names[0].lower():
             identical += 1
-    print '{0} out of {1} results had identical labels'.format( identical, len( results ) )
+    print('{0} out of {1} results had identical labels'.format( identical, len( results ) ))
 
 def getConfusionMatrix( results, origMap, foundMap ):
     '''produce a confusion matrix'''
@@ -571,3 +572,12 @@ def getConfusionMatrix( results, origMap, foundMap ):
         pass
     confmat = numpy.empty( (catsize+1, catsize+1) )
     return confmat
+
+
+def getTrainedModel(_strRelativePath,_strFileName):
+    detectorData = cvac.DetectorData()
+    detectorData.type = cvac.DetectorDataType.FILE
+    detectorData.file.directory.relativePath = _strRelativePath
+    detectorData.file.filename = _strFileName
+    return detectorData
+

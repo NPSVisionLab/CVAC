@@ -14,7 +14,7 @@ CVAC.DataDir = data
 bowIceTrain.Proxy=bowTrain:tcp -p 10103
 
 # CVPerf Detector CvFaces
-#CvFaces.Proxy = CVAC_OpenCV_Detector:tcp -p 10002
+#CvFaces.Proxy = CVAC_OpenCV_Detector:tcp -p 10102
 #CvFaces.DetectorFilename = OpencvFaces.zip
 
 # BOW Detector flags
@@ -26,7 +26,7 @@ NpsBagOfWordsUSKOCA.Proxy=bowTest:tcp -h vision.nps.edu -p 10104
 NpsBagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
 
 #Trainers
-BOWTrainer.Proxy = bowTrain:tcp -p 10003
+BOWTrainer.Proxy = bowTrain:tcp -p 10103
 
 DetectorCallback.Client.Endpoints=default
 TrainerCallback.Client.Endpoints=default
