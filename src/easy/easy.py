@@ -310,13 +310,9 @@ def putFile( fileserver, filepath ):
     fileserver.putFile( filepath, bytes );
     forig.close()
 
-def putAllFiles( fileserver, runset ):
-    '''Make sure all files in the RunSet are available on the remote site;
-    it is the client\'s responsibility to upload them if not.
-    For reporting purposes, return what has and has not been uploaded.'''
-    assert( fileserver and runset )
-
-    # collect all "substrates"
+def collectSubstrates( runset ):
+    '''obtain a set (a list without duplicates) of all
+    substrates that occur in this runset'''
     substrates = set()
     for plist in runset.purposedLists:
         if type(plist) is cvac.PurposedDirectory:
@@ -327,7 +323,17 @@ def putAllFiles( fileserver, runset ):
                     substrates.add( lab.sub )
         else:
             raise RuntimeException("unexpected subclass of PurposedList")
+    return substrates
 
+def putAllFiles( fileserver, runset ):
+    '''Make sure all files in the RunSet are available on the remote site;
+    it is the client\'s responsibility to upload them if not.
+    For reporting purposes, return what has and has not been uploaded.'''
+    assert( fileserver and runset )
+
+    # collect all "substrates"
+    substrates = collectSubstrates( runset )
+    
     # upload if not present
     uploadedFiles = []
     existingFiles = []
@@ -340,7 +346,26 @@ def putAllFiles( fileserver, runset ):
         else:
             existingFiles.append( sub.path )
 
-    return (uploadedFiles, existingFiles)
+    return {'uploaded':uploadedFiles, 'existing':existingFiles}
+
+def deleteAllFiles( fileserver, uploadedFiles ):
+    '''Delete all files that were previously uploaded to the fileserver.
+    For reporting purposes, return what has and has not been uploaded.'''
+    assert( fileserver and runset )
+
+    # try top delete, ignore but log errors
+    deletedFiles = []
+    notDeletedFiles = []
+    for path in uploadedFiles:
+        if not type(path) is cvac.FilePath:
+            raise RuntimeError("Unexpected type found instead of cvac.FilePath:", type(path))
+        try:
+            fileserver.deleteFile( path )
+            deletedFiles.append( path )
+        except cvac.FileServiceException:
+            notDeletedFiles.append( path )
+
+    return {'deleted':deletedFiles, 'notDeleted':notDeletedFiles}
 
 def getTrainer( configString ):
     '''Connect to a trainer service'''
@@ -547,3 +572,12 @@ def getConfusionMatrix( results, origMap, foundMap ):
         pass
     confmat = numpy.empty( (catsize+1, catsize+1) )
     return confmat
+
+
+def getTrainedModel(_strRelativePath,_strFileName):
+    detectorData = cvac.DetectorData()
+    detectorData.type = cvac.DetectorDataType.FILE
+    detectorData.file.directory.relativePath = _strRelativePath
+    detectorData.file.filename = _strFileName
+    return detectorData
+

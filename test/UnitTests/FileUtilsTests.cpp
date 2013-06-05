@@ -43,6 +43,11 @@
 #include <map>
 #include <utility>
 #include <iostream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#if defined(WIN32) && !defined(S_ISDIR)
+#define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+#endif
 using namespace Ice;
 using namespace cvac;
 using namespace UnitTest;
@@ -50,46 +55,61 @@ using namespace std;
 typedef pair<std::string, std::string> Str_Pair;
 ///////////////////////////////////////////////////////////////////////////////
 
+bool pdebug = (VLogger::DEBUG_2 <= cvac::vLogger.getBaseLevel());
+
 SUITE(UnitTests_cvac)
 {
   void printSymlinkHintsPerPlatform(bool callSuccess);  // Declared inside this Test suite
 
   TEST(getBaseFileNameWithDotInThePath)
   {
-     cout << endl << endl << endl << "#####################################################################" << endl;
-     const std::string filename = "c:/temp/something.here/myfile.txt";
+    printf("getBaseFileNameWithDotInThePath\n");
+    const std::string filename = "c:/temp/something.here/myfile.txt";
 
-     CHECK_EQUAL("myfile", cvac::getBaseFileName(filename));
+    CHECK_EQUAL("myfile", cvac::getBaseFileName(filename));
   }
 
-  TEST(currentWorkingDirectoryShouldntBeEmpty)
+  TEST(testCurrentWorkingDirectoryIsNotEmpty)
   {
-     CHECK(!getCurrentWorkingDirectory().empty());
+    printf("testCurrentWorkingDirectoryIsNotEmpty\n");
+    CHECK(!getCurrentWorkingDirectory().empty());
+  }
+
+  void assertDirectoryExists(std::string& fname)
+  {
+    struct stat s;
+    int err = stat(fname.c_str(), &s);
+    CHECK( 0==err );
+    CHECK(S_ISDIR(s.st_mode));
   }
 
   TEST(checkMakeTieredDirectoryAndClear)
   {
+    printf("checkMakeTieredDirectoryAndClear\n");
     std::string CWD = std::string(getCurrentWorkingDirectory().c_str());
     
     // Add hierarchy root folder
     std::string runsetRootDir = (CWD + "/rootDir");
-    cout << "Creating tiered test directory at:  \n" << runsetRootDir << endl << endl;
+    if (pdebug)
+      cout << "Creating tiered test directory at:  \n" << runsetRootDir << endl;
     makeDirectory(runsetRootDir);
+    assertDirectoryExists(runsetRootDir);
 
     // Add nested '/images' folder
     std::string secondTierFolder = (runsetRootDir + "/images");
-    cout << "Creating tiered test directory at:  \n" << secondTierFolder << endl << endl;
-    makeDirectory(runsetRootDir);
-
-    // Set breakpoint here, to check for successful creation of folders
+    if (pdebug)
+      cout << "Creating tiered test directory at:  \n" << secondTierFolder << endl;
+    makeDirectory(secondTierFolder);
+    assertDirectoryExists(secondTierFolder);
 
     // Clear folders: deepest first, to root
     deleteDirectory(secondTierFolder);
     deleteDirectory(runsetRootDir);
   }
 
-  TEST(checkPaths_forIllegalChars)
+  TEST(checkPathsForIllegalChars)
   {
+    printf("checkPathsForIllegalChars\n");
     // Currently, the OpenCv based detectors like 'Cv_Cmd' will not
     // accept spaces in filenames.  
     FilePath fpath;
@@ -101,12 +121,16 @@ SUITE(UnitTests_cvac)
     CHECK(true == withSpaces_Illegal);
   }
 
-  TEST(makeSymlinkFile) {  // Note path to target file must be Absolute, at least was true on Windows development machine
+  // Note that the path to target file must be Absolute,
+  // at least was true on Windows development machine
+  TEST(makeSymlinkFile)
+  {
+    printf("makeSymlinkFile\n");
     fstream linkOutputFile, linkSourceFile;
     std::string linkDir = std::string(getCurrentWorkingDirectory().c_str());
-    std::string tempDir = "../test/temp/testLink";
+    std::string tempDir = linkDir + "/tmp/testLink";
     std::string linkPath = tempDir + "/linkOutputFile.txt";
-    std::string tgtFile = linkDir + "/../test/data/sourceLinkFile.txt";  // Relative to CVAC/bin
+    std::string tgtFile = linkDir + "/tmp/sourceLinkFile.txt";
 
     // Test checks access to source file
     linkSourceFile.open(tgtFile.c_str(), ios::in);
@@ -115,44 +139,45 @@ SUITE(UnitTests_cvac)
     }
     else {
       printf("Could not find source file: 'sourceLinkFile.txt'.  This test should \n");
-      printf("be run from an Administrator Console with CWD as the 'CVAC/bin' directory.  \n");
-      printf("The relative path to the source file is thus '../test/UnitTests/' from CWD.  \n");
     }
 
     // Check Paths
-    cout << endl << "######### Make Symlink File        ##################################" << endl;
-    cout << "Target at " << tgtFile << endl;
-    cout << "linkFile at: " << linkPath << endl;
+    if (pdebug)
+    {
+      cout << "  target at " << tgtFile << endl;
+      cout << "  linkFile at: " << linkPath << endl;
+      cout << "  tempDir at: " << tempDir << endl;
+    }
     // In case its still around after a failure delete it and the link.
-    deleteDirectory(tempDir);
-    makeDirectories(tempDir);
-
+    //    deleteDirectory(tempDir);
+    bool madeDirs = makeDirectories(tempDir);
+    if (!madeDirs && pdebug)
+      printf("failed to create directory %s\n", tempDir.c_str());
+    assertDirectoryExists( tempDir );
 
     // Verify input file exists
     bool callSuccess = makeSymlinkFile(linkPath, tgtFile);
     linkOutputFile.open(linkPath.c_str(), ios::in);
-    bool testSuccess = linkOutputFile.is_open();
+    bool symlinkFileExists = linkOutputFile.is_open();
 
-
-    if(!testSuccess) {        // Explain failure in making symlink
-            printf("\n");
-            printf("UnitTest could not find link target:  '%s' \n", tgtFile.c_str() );
-            printf("subfolder of CWD.\n");
+    if(!symlinkFileExists) {        // Explain failure in making symlink
+            printf("UnitTest could not find link target:  '%s' \n", linkPath.c_str() );
             printSymlinkHintsPerPlatform(callSuccess);
     }
     else {  // Clear dir and link file
-      printf("Test found output symlink file.\n");
+      if (pdebug)
+        printf("Test found output symlink file.\n");
       linkOutputFile.close();
-      deleteDirectory(tempDir);
+      //      deleteDirectory(tempDir);
     }
 
     // Found expected Symlink file on disk?
-    CHECK(testSuccess);
+    CHECK(symlinkFileExists);
   }
 
-  TEST(addSamples_toRunset)
+  TEST(addSamplesToRunset)
   {
-    cout << endl << "######### Add Samples to RunSet    ##################################" << endl;
+    printf("addSamplesToRunset\n");
     std::map<std::string, std::string> symlinkFilenames;
     fstream inputFile, symFile;
     RunSet runSet;
@@ -165,7 +190,8 @@ SUITE(UnitTests_cvac)
     std::string dir = getCurrentWorkingDirectory().c_str(); // c_str needed to properly size the string.
     input_fullPath = dir + std::string("/../test/data/");
     input_fullPath += tgtFilename;
-    cout << "Target at " << input_fullPath << endl;
+    if (pdebug)
+      cout << "  target at " << input_fullPath << endl;
 
     // Verify input file exists
     inputFile.open(input_fullPath.c_str(), ios::in);
@@ -175,7 +201,6 @@ SUITE(UnitTests_cvac)
     else {
         printf("Fatal Error, could not find required input file: %s\n", input_fullPath.c_str());
         CHECK(false); // Can't proceed without input file
-        exit(0);
     }
     
     // Get symlink path for the illegal input path
@@ -201,9 +226,7 @@ SUITE(UnitTests_cvac)
     else {
         printf("Fatal Error, could not find generated symlink file: %s\n", input_fullPath.c_str());
         printSymlinkHintsPerPlatform(callSuccess);
-
         CHECK(false); // Can't proceed
-        exit(0);
     }
 
     // Add original and symlink names to map
@@ -225,7 +248,7 @@ SUITE(UnitTests_cvac)
     //runsetRootDir = (CWD + std::string("/") + std::string(tempFolder));
     //if(!err)
     //{
-    //  printf("Creating root RunSet folder: %s\n", tempFolder);
+//  printf("Creating root RunSet folder: %s\n", tempFolder);
     //  makeDirectory(runsetRootDir);
     //}
     //else {
@@ -243,17 +266,20 @@ SUITE(UnitTests_cvac)
   }
 
   TEST(printCWD) {
+    printf("printCWD\n");
     std::string CWD = std::string(getCurrentWorkingDirectory().c_str());
-    printf("Commands start out relative to Curent Working Directory:\n");
-    printf("--------------------------------------------------------\n");
-    printf("%s\n\n", CWD.c_str());
-
+    if (pdebug)
+    {
+      printf("Commands start out relative to Curent Working Directory:\n");
+      printf("--------------------------------------------------------\n");
+      printf("%s\n\n", CWD.c_str());
+    }
     int stopHere = 0;  // breakpoint
   }
 
-  TEST(cvacLibArchiveExpand) {
-
-    printf("TEST: cvacLibArchiveExpand\n");
+  TEST(cvacLibArchiveExpand)
+  {
+    printf("cvacLibArchiveExpand\n");
     // Test: with subfolder
     // Expand files from source archive
     std::string expandDir = "testtemp";
@@ -273,7 +299,8 @@ SUITE(UnitTests_cvac)
 
     // File exists after extraction
     CHECK(true == (0 != testForXml));
-    printf("Success opening expanded file (from subfolder).");
+    if (pdebug)
+      printf("Success opening expanded file (from subfolder).");
 
     // Clear
     deleteDirectory("." + expandDir);

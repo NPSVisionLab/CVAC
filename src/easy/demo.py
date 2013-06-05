@@ -16,7 +16,7 @@ import easy
 #
 # First, a teaser for detection:
 #
-detector = easy.getDetector( "bowTest:default -p 10004" )
+detector = easy.getDetector( "bowTest:default -p 10104" )
 results = easy.detect( detector, "detectors/bowUSKOCA.zip", "testImg/TestCaFlag.jpg" )
 easy.printResults( results )
 
@@ -29,7 +29,7 @@ easy.printResults( results )
 # categories, lablist = easy.getDataSet( "corpus/Caltech101.properties", createMirror=False )
 #easy.printCategoryInfo( categories )
 #runset = easy.createRunSet( categories["car_side"] )
-#trainer = easy.getTrainer( "bowTrain:default -p 10003" )
+#trainer = easy.getTrainer( "bowTrain:default -p 10103" )
 #carSideModel = easy.train( trainer, runset )
 
 #
@@ -62,7 +62,7 @@ classmap = res['classmap']
 host = "-h localhost"
 #host = "-h vision.nps.edu"
 fileserver = easy.getFileServer( "FileService:default -p 10110 " + host )
-easy.putAllFiles( fileserver, runset )
+putResult = easy.putAllFiles( fileserver, runset )
 
 #
 # Connect to a trainer service, train on the RunSet
@@ -80,5 +80,7 @@ print("Training model stored in file: " + easy.getFSPath( trainedModel.file ))
 detector = easy.getDetector( "bowTest:default -p 10104 " + host )
 results = easy.detect( detector, trainedModel, runset )
 easy.printResults( results, foundMap=classmap )
+
+easy.deleteAllFiles( fileserver, putResult['uploaded'] )
 
 quit()

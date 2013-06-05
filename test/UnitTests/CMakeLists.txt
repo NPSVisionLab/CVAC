@@ -26,8 +26,8 @@ SET(HEADER_FILES
 INCLUDE_DIRECTORIES( .
                      ${UNITTEST++_INCLUDE_DIR}
                      ${CVAC_INCLUDE_DIR}
-		                 ${ICE_INCLUDE}
-		                 ${CMAKE_CURRENT_BINARY_DIR} #for generated slice files
+                     ${ICE_INCLUDE}
+                     ${CMAKE_CURRENT_BINARY_DIR} #for generated slice files
                    )
 
 ADD_EXECUTABLE( ${APP_NAME}
@@ -35,7 +35,6 @@ ADD_EXECUTABLE( ${APP_NAME}
               )
 
 SET(LIBS
-    ${APP_NAME}
     optimized ${UNITTEST++_LIBRARY} debug ${UNITTEST++_LIBRARY_DEBUG}
     utils
     ${ICE_LIBRARIES}
@@ -43,7 +42,7 @@ SET(LIBS
 )
 
 #libraries to link into the executable, both Release and Debug
-TARGET_LINK_LIBRARIES( ${LIBS} )
+TARGET_LINK_LIBRARIES( ${APP_NAME} ${LIBS} )
  
                       
 SET_TARGET_PROPERTIES(${APP_NAME} PROPERTIES DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}")
@@ -52,6 +51,9 @@ ADD_TEST(NAME UnitTests
          COMMAND UnitTests${DEBUG_POSTFIX}
          WORKING_DIRECTORY ${OUTPUT_BINDIR}
          )
+# OSX needs DYLD_LIBRARY_PATH set in order to find the libopencv_*.dylib files
+SET_TESTS_PROPERTIES( UnitTests
+  PROPERTIES ENVIRONMENT "DYLD_LIBRARY_PATH=${OpenCV_LIB_DIR_OPT}:$ENV{DYLD_LIBRARY_PATH}" )
 
 IF( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
     FILE( TO_NATIVE_PATH ${ICE_ROOT}/bin ICE_BIN_DIR_NATIVE )

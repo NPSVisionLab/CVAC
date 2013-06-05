@@ -88,6 +88,7 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
     dir = opendir(filename);
     if (dir == NULL)
         return;
+
     while ((walker = readdir(dir)) != NULL)
     {
 
@@ -117,8 +118,16 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
                     strcpy(tempName, filename);
                     strcat(tempName, "/");
                     strcat(tempName, walker->d_name);
+                    Labelable *label = new Labelable();  // Ice will clean up so don't delete
+                    label->sub.path.filename = std::string(walker->d_name);
+                    label->sub.path.directory.relativePath = std::string(filename);
 
                     ResultSetV2 res = (*_detectFunc)(_detect, tempName);
+                    // put the "original" label into the result set
+                    for (unsigned int idx=0; idx<res.results.size(); idx++)
+                    {
+                         res.results[idx].original = label;
+                    }
                     _callback->foundNewResults(res);
                 }
                 nextSuffix = suffixes[i++];

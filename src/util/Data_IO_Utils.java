@@ -277,14 +277,20 @@ public class Data_IO_Utils {
 
     /**
      * Get the relative path from one file to another, specifying the directory separator. 
-     * If one of the provided resources does not exist, it is assumed to be a file unless it ends with '/' or
+     * If one of the provided resources does not exist,
+     * it is assumed to be a file unless it ends with '/' or
      * '\'.
      * 
-     * @param target targetPath is calculated to this file
-     * @param base basePath is calculated from this file
-     * @param separator directory separator. The platform default is not assumed so that we can test Unix behavior when running on Windows (for example)
+     * @param targetPath is calculated to this file
+     * @param basePath is calculated from this file
+     * @param pathSeparator directory separator.
+     *
+     * The platform default
+     * is not assumed so that we can test Unix behavior when running
+     * on Windows (for example)
      * Code source: http://stackoverflow.com/questions/204784/how-to-construct-a-relative-path-in-java-from-two-absolute-paths-or-urls/3054692#3054692
-     * Note the Unit-tests demonstrating correctness of features:  "/test/CVAC/utility_code/Data_IO_UtilsTest.java"
+     * Note the Unit-tests demonstrating correctness of features:
+     * /test/CVAC/utility_code/Data_IO_UtilsTest.java
      */
     public static String getRelativePath(String targetPath, String basePath, String pathSeparator) {
 
