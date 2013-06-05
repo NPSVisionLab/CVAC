@@ -57,11 +57,6 @@ INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/testImg
        COMPONENT data
       )
       
-#INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdParty
-#       DESTINATION .
-#       COMPONENT ThirdParty
-#      )
-
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/lib/python
        DESTINATION lib
        COMPONENT Runtime
@@ -73,28 +68,67 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/config.admin ${CMAKE_SOURCE_DIR}/config.icebox
       )
 
 # ThirdParty dependencies for building CVAC
+
+IF (WIN32)
+
+INSTALL(DIRECTORY   ${ICE_ROOT}/bin
+        DESTINATION 3rdParty/ICE
+        USE_SOURCE_PERMISSIONS
+        COMPONENT ThirdParty
+        PATTERN icestorm* EXCLUDE
+        PATTERN icegrid* EXCLUDE
+        PATTERN *d.dll EXCLUDE
+        PATTERN *.exe EXCLUDE
+        PATTERN *.pdb EXCLUDE
+        )
+INSTALL(DIRECTORY   ${ICE_ROOT}/lib
+        DESTINATION 3rdParty/ICE
+        USE_SOURCE_PERMISSIONS
+        COMPONENT ThirdParty
+        PATTERN *.pdb EXCLUDE
+        PATTERN *.lib EXCLUDE
+       )
+
+
+ELSE (WIN32)
+
 INSTALL(DIRECTORY   ${ICE_ROOT}/lib
         DESTINATION 3rdParty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
         PATTERN *.pdb EXCLUDE
        )
-INSTALL(PROGRAMS ${ICE_SLICE_EXECUTABLE}
-                 ${ICE_SLICE2JAVA_EXECUTABLE} 
-                 ${ICE_SLICE2PY_EXECUTABLE}
-                 ${ICE_BOX_EXECUTABLE}
+
+ENDIF (WIN32)
+
+INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox.exe
+                 ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/iceboxd.exe
                  ${ICE_BOX_ADMIN}
         DESTINATION 3rdParty/ICE/bin
         COMPONENT ThirdParty
        )
 
+INSTALL(DIRECTORY   ${ICE_ROOT}/python
+        DESTINATION 3rdParty/ICE
+        USE_SOURCE_PERMISSIONS
+        COMPONENT ThirdParty
+        PATTERN *.pyc EXCLUDE
+       )
+
 # libarchive is a symlink, but we want the file:
 # CONFIGURE_FILE( ${LIBARCHIVE_LIBRARY} ${CMAKE_CURRENT_BINARY_DIR}/tmp/ COPYONLY)
-#GET_FILENAME_COMPONENT( LIBARCHIVE_LIBRARY_REALPATH ${LIBARCHIVE_LIBRARY} REALPATH )
-#INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
-#       DESTINATION 3rdParty/libarchive/lib
-#       COMPONENT ThirdParty
-#      )
+GET_FILENAME_COMPONENT( LIBARCHIVE_LIBRARY_REALPATH ${LIBARCHIVE_LIBRARY} REALPATH )
+IF (WIN32)
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/bin
+       DESTINATION 3rdParty/libarchive
+       COMPONENT ThirdParty
+      )
+ELSE (WIN32)
+INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
+       DESTINATION 3rdParty/libarchive/lib
+       COMPONENT ThirdParty
+      )
+ENDIF (WIN32)
 
 # OpenCV needs to be isolated in some staging area.  You need
 # to configure this CMake to pull OpenCV from there.

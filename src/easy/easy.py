@@ -547,3 +547,12 @@ def getConfusionMatrix( results, origMap, foundMap ):
         pass
     confmat = numpy.empty( (catsize+1, catsize+1) )
     return confmat
+
+
+def getTrainedModel(_strRelativePath,_strFileName):
+    detectorData = cvac.DetectorData()
+    detectorData.type = cvac.DetectorDataType.FILE
+    detectorData.file.directory.relativePath = _strRelativePath
+    detectorData.file.filename = _strFileName
+    return detectorData
+
