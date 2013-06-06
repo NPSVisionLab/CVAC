@@ -1,6 +1,5 @@
 # CVAC-specific #
 #################
-include/version.h
 src/util/Data.*
 src/util/Services.*
 test/UnitTests/Data.*
@@ -52,3 +51,5 @@ nbproject
 Icon?
 ehthumbs.db
 Thumbs.db
+
+include/version.h

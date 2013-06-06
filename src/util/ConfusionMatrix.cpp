@@ -68,12 +68,12 @@ void ConfusionMatrix::initialize(RunSet runSet) {
     
     // itemPurpose not found, insert
     if(NOT_FOUND == purposeIdx(itemPurpose)) {
-      localAndClientMsg(VLogger::DEBUG_1, NULL, "ConfusionMatrix added Purpose with matrix-index: %d\n", (itemPurpose.ptype - 1));
+      localAndClientMsg(VLogger::DEBUG_2, NULL, "ConfusionMatrix added Purpose with matrix-index: %d\n", (itemPurpose.ptype - 1));
       allPurposes.push_back(itemPurpose);
     }
   }
 
-  localAndClientMsg(VLogger::DEBUG_1, NULL, "Initializing: (%dx%d) confusion matrix with Purposes of RunSet's labelables.\n", allPurposes.size(), allPurposes.size());
+  localAndClientMsg(VLogger::DEBUG_2, NULL, "Initializing: (%dx%d) confusion matrix with Purposes of RunSet's labelables.\n", allPurposes.size(), allPurposes.size());
   int actualDim    = allPurposes.size(),
       detectedDim = allPurposes.size();
 
@@ -116,7 +116,7 @@ void ConfusionMatrix::addResult(Purpose actual, Purpose detectionResult) {
   matrix[indeces.actual][indeces.detected]++;
 
   int matrixEntry = matrix[indeces.actual][indeces.detected];
-  localAndClientMsg(VLogger::DEBUG_1, NULL, "Matrix incremented at [%d][%d], now = %d.\n", 
+  localAndClientMsg(VLogger::DEBUG_2, NULL, "Matrix incremented at [%d][%d], now = %d.\n", 
                           indeces.actual, indeces.detected, matrixEntry);
 }
 
@@ -139,7 +139,7 @@ ConfusionMatrix::IntPair ConfusionMatrix::lookupPurposes(Purpose actual, Purpose
 
   if(newPurposeCount > 0) {  // Match matrix to new size
 
-    localAndClientMsg(VLogger::DEBUG_1, NULL, "Purpose type(s) added, resizing (%dx%d) matrix to: (%dx%d)\n", 
+    localAndClientMsg(VLogger::DEBUG_2, NULL, "Purpose type(s) added, resizing (%dx%d) matrix to: (%dx%d)\n", 
                                                     (allPurposes.size() - newPurposeCount), (allPurposes.size() - newPurposeCount), 
                                                     allPurposes.size(), allPurposes.size());
     resizeMatrix(newPurposeCount);

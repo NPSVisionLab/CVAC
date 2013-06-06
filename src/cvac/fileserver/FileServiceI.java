@@ -244,6 +244,9 @@ public class FileServiceI extends FileService implements IceBox.Service {
         }
         
         localFile.delete();
+
+        // remove ownership
+        removeOwner( endpoint, localFile );
     }
 
     @Override
@@ -357,6 +360,31 @@ public class FileServiceI extends FileService implements IceBox.Service {
             ownedFiles.put(endpoint, list);
         }
         list.add(localFile);
+    }
+
+    /** Forget this @endpoint as owner of the @localFile.
+     *  This is necessary after deleting a file or else it would
+     *  forever belong to the first-put'ing endpoint.
+     * 
+     * @param endpoint The client that connected to the FileService.
+     * @param localFile Absolute path to the local file.
+     */
+    private void removeOwner(Endpoint endpoint, File localFile) 
+    {
+        HashSet<File> list = ownedFiles.get(endpoint);
+        if (null==list)
+        {
+            logger.log(Level.WARNING, "Endpoint {0} does not own any files - ignoring",
+                       endpoint.toString());
+            return;
+        }
+        boolean removed = list.remove(localFile);
+        if (!removed)
+        {
+            logger.log(Level.WARNING, "Endpoint {0} does not own file {1} - ignoring",
+                       new Object[]{endpoint.toString(), localFile.getName()});
+            return;
+        }
     }
 
     private boolean hasVideoExtension(File localFile) 

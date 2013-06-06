@@ -88,6 +88,7 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
     dir = opendir(filename);
     if (dir == NULL)
         return;
+
     while ((walker = readdir(dir)) != NULL)
     {
 
@@ -117,8 +118,16 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
                     strcpy(tempName, filename);
                     strcat(tempName, "/");
                     strcat(tempName, walker->d_name);
+                    Labelable *label = new Labelable();  // Ice will clean up so don't delete
+                    label->sub.path.filename = std::string(walker->d_name);
+                    label->sub.path.directory.relativePath = std::string(filename);
 
                     ResultSetV2 res = (*_detectFunc)(_detect, tempName);
+                    // put the "original" label into the result set
+                    for (unsigned int idx=0; idx<res.results.size(); idx++)
+                    {
+                         res.results[idx].original = label;
+                    }
                     _callback->foundNewResults(res);
                 }
                 nextSuffix = suffixes[i++];
@@ -430,8 +439,10 @@ static std::string _makeDirectories(std::string tempName, DirectoryPath dirPath)
 
 /** Return path of a new symlink if fname contains illegal chars, or original path otherwise.
  *  The map between old and new names is managed directly by clients outside this function.
+ *  If links need to be created, they'll be put into putLinksDir,
+ *  which will be created on demand.
  */
-std::string cvac::getLegalPath(std::string tempName, FilePath filePath, bool &newSymlink) {
+std::string cvac::getLegalPath(std::string putLinksDir, FilePath filePath, bool &newSymlink) {
 
   //if(!shouldIgnore(filePath)) {  // No detection or symlink on these patterns
 
@@ -440,8 +451,8 @@ std::string cvac::getLegalPath(std::string tempName, FilePath filePath, bool &ne
       // We have a illegal character so we need to make a symbolic link using the tempName as the root directory.
       // To insure that we don't have any conflicts we will follow the same directory structure but use the
       // tempname as the root dir.
-      makeDirectory(tempName);
-      std::string directories = _makeDirectories(tempName, filePath.directory);
+      makeDirectory(putLinksDir);
+      std::string directories = _makeDirectories(putLinksDir, filePath.directory);
       newSymlink = true;
       std::string fullName = directories + "/" + filePath.filename;
       std::string linkFileName_withPath = getSymlinkSubstitution(fullName);  // cvac procedure to make symlink

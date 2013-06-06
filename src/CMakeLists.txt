@@ -69,6 +69,11 @@ FIND_JAR( Ice.jar Ice
 	  	${CVAC_ROOT_DIR}/lib 
 		${ICE_ROOT}/lib
 		)
+FIND_JAR( IceBox.jar IceBox 
+	  PATHS 
+	  	${CVAC_ROOT_DIR}/lib 
+		${ICE_ROOT}/lib
+		)
 IF( ${BUILD_FILESERVER} )
 ENDIF( ${BUILD_FILESERVER} )
 
@@ -95,9 +100,9 @@ IF( ${BUILD_CORPUS_LABELME} )
   ENDIF( NOT labelme.jar )
 ENDIF( ${BUILD_CORPUS_LABELME} )
 
-SET( CMAKE_JAVA_INCLUDE_PATH ${Ice.jar} ${javatar.jar} ${IO.jar} ${javabuilder.jar} ${labelme.jar})
+SET( CMAKE_JAVA_INCLUDE_PATH ${Ice.jar} ${IceBox.jar} ${javatar.jar} ${IO.jar} ${javabuilder.jar} ${labelme.jar})
 SET( CMAKE_JAVA_TARGET_OUTPUT_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
-#SET( CMAKE_JAVA_TARGET_OUTPUT_DIR ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY} )
+SET( CMAKE_JAVA_JAR_PATH ${Ice.jar};${IceBox.jar};${javatar.jar};${IO.jar};${javabuilder.jar};${labelme.jar})
 
 
 FUNCTION( copy_file target destdir )
@@ -112,39 +117,80 @@ endfunction()
 # Create a jar file for the sliced Corpus files only
 # and then some for all, including the hardcoded "implementation" files;
 # The former is handy to have if the hardcoded ones are built in another IDE
+IF (MSVC10)
+FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cvac)
+add_custom_target(CvacSliced
+                   COMMAND ${Java_JAVAC_EXECUTABLE} -d ${CMAKE_CURRENT_BINARY_DIR}/cvac -cp "${CMAKE_JAVA_JAR_PATH}" ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
+                   COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar -C ${CMAKE_CURRENT_BINARY_DIR}/cvac .
+                   WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
+ELSE (MSVC10)
 ADD_JAR( CvacSliced ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-         ${SLICE_OUTPUT_PATH}/cvac/*.java
+        ${SLICE_OUTPUT_PATH}/cvac/*.java
         DEPENDS
             ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
 )
+ENDIF (MSVC10)
+
+
 IF( ${BUILD_CORPUS_SERVER} )
+
+IF (MSVC10)
+FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/corpus)
+add_custom_target(Corpus
+                   COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/corpus -cp "${CMAKE_JAVA_JAR_PATH}" ${CORPUS_SOURCE_FILES} util/*java ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
+                   COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar -C ${CMAKE_CURRENT_BINARY_DIR}/corpus .
+                   WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
+  copy_file( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
+ELSE (MSVC10)
   ADD_JAR( Corpus ${CORPUS_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-         ${SLICE_OUTPUT_PATH}/cvac/*.java
+        ${SLICE_OUTPUT_PATH}/cvac/*.java
         DEPENDS
             ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
   )
   INSTALL_JAR( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
-#  copy_file( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
+ENDIF(MSVC10)
+
 ENDIF( ${BUILD_CORPUS_SERVER} )
 
 IF( ${BUILD_FILESERVER} )
+IF (MSVC10)
+FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fileserver)
+add_custom_target(FileServer
+                   COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/fileserver -cp "${CMAKE_JAVA_JAR_PATH}" ${FILESERVER_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
+                   COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar -C ${CMAKE_CURRENT_BINARY_DIR}/fileserver .
+                   WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
+ copy_file( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
+ELSE (MSVC10)
  ADD_JAR( FileServer ${FILESERVER_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-         ${SLICE_OUTPUT_PATH}/cvac/*.java
+        ${SLICE_OUTPUT_PATH}/cvac/*.java
         DEPENDS
             ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
   )
   INSTALL_JAR( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
-#  copy_file( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
+ENDIF (MSVC10)
+
+
 ENDIF( ${BUILD_FILESERVER} )
 
 #INSTALL( TARGETS Corpus
 #               DESTINATION lib
 #             )
             
-IF( ${BUILD_3RDPARTY_PACKAGE} )
+IF (BUILD_3RDPARTY_PACKAGE OR BUILD_BINARY_PACKAGE)
   INSTALL(FILES ${javatar.jar} ${IO.jar} ${javabuilder.jar} ${labelme.jar}
     DESTINATION 3rdparty/lib
-    COMPONENT LibArchiveExt
+    COMPONENT Runtime 
   )
-ENDIF( ${BUILD_3RDPARTY_PACKAGE} )
+ENDIF (BUILD_3RDPARTY_PACKAGE OR BUILD_BINARY_PACKAGE)
+
+IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
+  INSTALL(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar 
+    DESTINATION bin
+    COMPONENT Runtime
+  )
+  INSTALL(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar 
+    DESTINATION bin
+    COMPONENT Runtime
+  ) 
+ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )
 

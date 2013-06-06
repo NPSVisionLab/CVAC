@@ -1,5 +1,6 @@
 # before interpreting this file, make sure this is set:
 # export PYTHONPATH="/opt/Ice-3.4.2/python:test/UnitTests/python"
+from __future__ import print_function
 import sys, traceback
 #sys.path.append('''c:\Program Files (x86)\Zeroc\Ice-3.4.2\python''')
 #sys.path.append('''C:\Users\tomb\Documents\nps\git\myCVAC\CVACvisualStudio\test\UnitTests\python''')
@@ -48,11 +49,11 @@ for lb in lablist:
 
 # print information about this corpus
 sys.stdout.softspace=False;
-print 'Obtained {0} labeled artifact{1} from corpus "{2}":'.format(
-    len(lablist), ("s","")[len(lablist)==1], corpus.name );
+print('Obtained {0} labeled artifact{1} from corpus "{2}":'.format(
+    len(lablist), ("s","")[len(lablist)==1], corpus.name ));
 for key in sorted( categories.keys() ):
     klen = len( categories[key] )
-    print "{0} ({1} artifact{2})".format( key, klen, ("s","")[klen==1] )
+    print("{0} ({1} artifact{2})".format( key, klen, ("s","")[klen==1] ))
 
 #
 # add some samples to a RunSet
@@ -88,10 +89,10 @@ for plist in runset.purposedLists:
 # upload if not present
 for sub in substrates:
     if not fileserver.exists( sub.path ):
-        print 'uploading file to server: ' + getRelPath( sub.path )
+        print('uploading file to server: ' + getRelPath( sub.path ))
         fileserver.putFile( sub.path )
     else:
-        print 'file already exists on server: ' + getRelPath( sub.path )
+        print('file already exists on server: ' + getRelPath( sub.path ))
 
 #
 # Connect to a trainer service, train on the RunSet
@@ -107,7 +108,7 @@ class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
     detectorData = None
     def createdDetector(self, detData, current=None):
         self.detectorData = detData
-        print "Finished training, obtained DetectorData of type", self.detectorData.type
+        print("Finished training, obtained DetectorData of type", self.detectorData.type)
 
 # ICE functionality to enable bidirectional connection for callback
 adapter = ic.createObjectAdapter("")
@@ -124,12 +125,12 @@ trainer.initialize( 3 )
 trainer.process( callback, runset )
 
 if tcbrec.detectorData.type == cvac.DetectorDataType.FILE:
-    print "received file: {0}/{1}".format(tcbrec.detectorData.file.directory.relativePath,
-                                          tcbrec.detectorData.file.filename)
+    print("received file: {0}/{1}".format(tcbrec.detectorData.file.directory.relativePath,
+                                          tcbrec.detectorData.file.filename))
 elif tcbrec.detectorData.type == cvac.DetectorDataType.BYTES:
-    print "received bytes"
+    print("received bytes")
 elif tcbrec.detectorData.type == cvac.DetectorDataType.PROVIDER:
-    print "received a reference to a DetectorData provider"
+    print("received a reference to a DetectorData provider")
 
 #
 # Connect to a detector service,
@@ -167,15 +168,15 @@ detector.initialize( 3, tcbrec.detectorData )
 detector.process( callback, runset )
 
 # print the results
-print 'received a total of {0} results:'.format( len( dcbrec.allResults ) )
+print('received a total of {0} results:'.format( len( dcbrec.allResults ) ))
 for res in dcbrec.allResults:
     names = []
     for lbl in res.foundLabels:
         names.append(lbl.lab.name)
     numfound = len(res.foundLabels)
     origname = ("unlabeled", res.original.lab.name)[res.original.lab.hasLabel==True]
-    print "result for {0} ({1}): found {2} label{3}: {4}".format(
+    print("result for {0} ({1}): found {2} label{3}: {4}".format(
     res.original.sub.path.filename, origname,
-        numfound, ("s","")[numfound==1], ', '.join(names) )
+        numfound, ("s","")[numfound==1], ', '.join(names) ))
 
 quit()
