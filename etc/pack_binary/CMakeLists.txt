@@ -62,6 +62,11 @@ INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/lib/python
        COMPONENT Runtime
       )
 
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/version.h
+       DESTINATION include
+       COMPONENT Runtime
+      )
+
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/config.admin ${CMAKE_SOURCE_DIR}/config.icebox ${CMAKE_SOURCE_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.java_admin ${CMAKE_SOURCE_DIR}/config.java_icebox ${CMAKE_SOURCE_DIR}/config.client
        DESTINATION .
        COMPONENT Runtime
