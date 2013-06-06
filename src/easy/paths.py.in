@@ -2,3 +2,4 @@ import sys
 
 sys.path.append('''${ICE_ROOT}/python''')
 sys.path.append('''${SLICE_OUTPUT_PYTHONDIR}''')
+sys.path.append('''${CMAKE_SOURCE_DIR}/3rdparty/opencv/python/2.6''')

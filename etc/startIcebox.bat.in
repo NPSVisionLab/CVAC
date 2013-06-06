@@ -2,7 +2,7 @@
 @setlocal
 set 3rdPARTY=${CMAKE_SOURCE_DIR}/3rdparty/lib
 set JAR=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-set ICEBOXJAR=${Icebox.jar} 
+set ICEBOXJAR=${IceBox.jar} 
 set PATH=bin;${ICE_ROOT}/bin;${OpenCV_LIB_DIR_OPT}/../bin;${LIBARCHIVE_BIN_DIR};${LIBZIP_BIN_DIR};${OpenCV_DIR}/common/tbb/ia32/vc9;%PATH%
 chdir "${CVAC_ROOT_DIR}"
 start "CVAC Services (C++)" "${ICE_BOX_EXECUTABLE}" --Ice.Config=config.icebox
