@@ -119,7 +119,9 @@ endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
     # .git directory doesn't exist: now make sure that
     # files are a complete download, not a fragmented collection.
-    # In other words, there must be a include/version.h file.
+    # In other words, there must be a include/version.h.repo file.
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.repo
+          ${CMAKE_SOURCE_DIR}/include/version.h)
     FILE( STRINGS ${CMAKE_SOURCE_DIR}/include/version.h
           versionfile_contents
           REGEX "#define CVAC_VERSION*" )
