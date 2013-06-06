@@ -42,14 +42,14 @@ def examineFile( fpath, do_replace=False ):
             if not replaced:
                 print 'danger? ' + libname
         
-def walkDirectory( rootDir ):
+def walkDirectory( rootDir, do_replace=False ):
     '''Do just that: walk the specified directory, and for
     all files ending in .dylib, call examineFile.'''
     print('walking from root directory '+rootDir)
     for root, dirs, files in os.walk(rootDir):
         for fname in files:
             if fname.endswith('.dylib'):
-                examineFile( os.path.join(root, fname) )
+                examineFile( os.path.join(root, fname), do_replace )
 
 #
 # start of main function;   parse command line arguments
@@ -59,11 +59,12 @@ try:
     parser = argparse.ArgumentParser(description='List or replace absolute paths to dylibs.')
     parser.add_argument('rootDir', metavar='filename', type=str, default='.',
                         help='individual file or directory')
-    parser.add_argument('--replace', dest='do_replace', default=False,
+    parser.add_argument('--replace', dest='do_replace', action='store_true', default=False,
                         help='run install_name_tool to replace paths; otherwise just list')
     args = parser.parse_args()
-    rootDir = vars(args)['rootDir']
-    do_replace = vars(args)['do_replace']
+    rootDir = args.rootDir
+    do_replace = args.do_replace
+
 except ImportError:
     # argparse is new in Python 2.7
     rootDir = '.'
@@ -78,7 +79,7 @@ except ImportError:
 # otherwise walk the directory that's specified, default is '.'
 #
 if os.path.isdir( rootDir ):
-    walkDirectory( rootDir )
+    walkDirectory( rootDir, do_replace )
 else:
     # examine individual file
     examineFile( rootDir, do_replace )
