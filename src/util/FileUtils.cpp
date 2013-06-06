@@ -106,7 +106,8 @@ bool cvac::directoryExists(const std::string& directory)
      return false;
    }
 
-   if (fileStat.st_mode & S_ISDIR(fileStat.st_mode))
+   if (S_ISDIR(fileStat.st_mode))
+     // TODO: check on Windows and other OSX:  if (fileStat.st_mode & S_ISDIR(fileStat.st_mode))
    {
       //found, and is a directory
       return true;
@@ -194,11 +195,13 @@ bool cvac::makeDirectories(const std::string& dirPath)
 #endif /* WIN32 */
     while (idx != -1)
     {
-        substr = dirPath.substr(lastIdx, idx - lastIdx); 
+        substr = dirPath.substr(lastIdx, idx - lastIdx);
         result += "/";
         result += substr;
         if (!makeDirectory(result))
+        {
             return false;
+        }
         lastIdx = idx+1;
 #ifdef WIN32
         idx = dirPath.find('\\', lastIdx);

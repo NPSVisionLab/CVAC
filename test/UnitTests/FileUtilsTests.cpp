@@ -65,6 +65,7 @@ SUITE(UnitTests_cvac)
   std::string getTempFilename( const std::string& basedir="" );
   bool createAndTestFile( const std::string& srcFile,
                           const std::string& testtext="somerandomtext\n" );
+  bool deleteFile( const std::string& filename );
 
   TEST(getBaseFileNameWithDotInThePath)
   {
@@ -80,14 +81,6 @@ SUITE(UnitTests_cvac)
     CHECK(!getCurrentWorkingDirectory().empty());
   }
 
-  void assertDirectoryExists(std::string& fname)
-  {
-    struct stat s;
-    int err = stat(fname.c_str(), &s);
-    CHECK( 0==err );
-    CHECK(S_ISDIR(s.st_mode));
-  }
-
   TEST(checkMakeTieredDirectoryAndClear)
   {
     printf("checkMakeTieredDirectoryAndClear\n");
@@ -98,20 +91,21 @@ SUITE(UnitTests_cvac)
     if (pdebug)
       cout << "Creating tiered test directory at:  \n" << runsetRootDir << endl;
     makeDirectory(tempDir);
+    CHECK( directoryExists(tempDir) );
     makeDirectory(runsetRootDir);
-    assertDirectoryExists(runsetRootDir);
+    CHECK( directoryExists(runsetRootDir) );
 
     // Add nested '/images' folder
     std::string secondTierFolder = (runsetRootDir + "/images");
     if (pdebug)
       cout << "Creating tiered test directory at:  \n" << secondTierFolder << endl;
     makeDirectory(secondTierFolder);
-    assertDirectoryExists(secondTierFolder);
+    CHECK( directoryExists(secondTierFolder) );
 
     // Clear folders: deepest first, to root
     CHECK( deleteDirectory(secondTierFolder) );
     CHECK( deleteDirectory(runsetRootDir) );
-    makeDirectory(tempDir);
+    CHECK( deleteDirectory(tempDir) );
   }
 
   TEST(checkPathsForIllegalChars)
@@ -144,9 +138,7 @@ SUITE(UnitTests_cvac)
     printf("tgtDir: %s\n", tgtDir.c_str());
     // create both src and tgt directories
     bool madeDirs = makeDirectories(tgtDir);
-    if (!madeDirs && pdebug)
-      printf("failed to create directory %s\n", tgtDir.c_str());
-    assertDirectoryExists( tgtDir );
+    CHECK( directoryExists( tgtDir ) );
 
     // Create and test access to source file
     std::string testtext = "testtext";
@@ -184,55 +176,58 @@ SUITE(UnitTests_cvac)
             printf("UnitTest could not find link target:  '%s' \n", tgtFile.c_str() );
             printSymlinkHintsPerPlatform(callSuccess);
     }
+    // Found expected Symlink file on disk?
+    CHECK( symlinkFileExists );
+
+    // remove all files and directories
+    CHECK( deleteFile( srcFile ));
+    CHECK( deleteFile( tgtFile ));
     CHECK( deleteDirectory(tgtDir) );
     CHECK( deleteDirectory(srcDir) );
-
-    // Found expected Symlink file on disk?
-    CHECK(symlinkFileExists);
   }
 
   TEST(addSamplesToRunset)
   {
     printf("addSamplesToRunset\n");
     std::map<std::string, std::string> symlinkFilenames;
-    fstream inputFile, symFile;
     RunSet runSet;
     Purpose pos_vehicle;
     pos_vehicle.ptype = POSITIVE;
     Purpose neg_background;
     neg_background.ptype = NEGATIVE;
     std::string tempDir = getTempFilename();
+    CHECK( makeDirectory( tempDir ) );
     std::string srcFilename = "A a.jpg";
     std::string srcPath = tempDir + "/" + srcFilename;
-    if (pdebug)
-      cout << "  target at " << srcPath << endl;
+    if (pdebug) cout << "  target at " << srcPath << endl;
 
-    bool created = createAndTestFile( srcPath, "notreallyajpg\n" );
-    if(!created && pdebug) {
-        printf("Fatal Error, could not find required input file: %s\n",
-               srcPath.c_str());
-    }
-    CHECK(created); // Can't proceed without input file
+    CHECK( createAndTestFile( srcPath, "notreallyajpg\n" ) );
+    // Can't really proceed without input file...
     
-    // Get symlink path for the illegal input path
-    std::string tempName = getTempFilename( tempDir );
+    // Get symlink path for the illegal input path;
+    // place the symlink into linkDir
     FilePath fpath;
-    fpath.directory.relativePath = "tempName";
+    fpath.directory.relativePath = "";
     fpath.filename = srcFilename;
-    std::string symlinkFullPath = "";
+
     bool newSymlink; // this is an output argument
-    symlinkFullPath = getLegalPath(tempName.c_str(), fpath, newSymlink);  
-    bool callSuccess = makeSymlinkFile(symlinkFullPath, srcPath);
-    CHECK( callSuccess );
+    // linkDir will be created on demand by getLegalPath, put it inside tempDir
+    std::string linkDir = getTempFilename( tempDir );
+    if (pdebug) cout << "  linkDir " << linkDir << endl;
+    std::string symlinkFullPath = 
+      getLegalPath(linkDir.c_str(), fpath, newSymlink);
+    if (pdebug) cout << "  creating symlink at " << symlinkFullPath << endl;
+    CHECK( makeSymlinkFile(symlinkFullPath, srcPath) );
 
     // Verify symlink file exists
+    fstream symFile;
     symFile.open(symlinkFullPath.c_str(), ios::in);
     if(symFile.is_open()) {
       symFile.close();
     }
     else {
         printf("Fatal Error, could not find generated symlink file: %s\n", srcPath.c_str());
-        printSymlinkHintsPerPlatform(callSuccess);
+        printSymlinkHintsPerPlatform(false);
         CHECK(false); // Can't proceed
     }
 
@@ -269,7 +264,11 @@ SUITE(UnitTests_cvac)
 
     //// Clear root RunSet folder
     //CHECK( deleteDirectory(runsetRootDir);
-    CHECK( deleteDirectory(tempDir.c_str()) );
+
+    CHECK( deleteFile(symlinkFullPath) );
+    CHECK( deleteDirectory(linkDir) );
+    CHECK( deleteFile(srcPath) );
+    CHECK( deleteDirectory(tempDir) );
   }
 
   TEST(cvacLibArchiveExpand)
@@ -277,27 +276,31 @@ SUITE(UnitTests_cvac)
     printf("cvacLibArchiveExpand\n");
     // Test: with subfolder
     // Expand files from source archive
-    std::string expandDir = "testtemp";
+    std::string subDir = "tmpSubDir";
     std::string detectZip = "bowUSKOCA.zip";
     std::string archiveFileName1("../data/detectors/" + detectZip);
-    // wipe out any old directory we will expand into
-    CHECK( deleteDirectory(expandDir) );
-    std::vector<std::string> fileNameStrings = expandSeq_fromFile(archiveFileName1, expandDir);
+
+    std::vector<std::string> fileNameStrings = expandSeq_fromFile(archiveFileName1, subDir);
 
     // Check for expanded files
     ifstream testForXml;
-    std::string tempDir = getTempFilename();
-    std::string pathToClear = (tempDir + "/." + expandDir);
-    std::string checkFilePath = (pathToClear + "/logTrain_svm.xml.gz");
+    // TODO: the dot before subDir gets added by expandSeq_fromFile - design that better;
+    // usageOrder.txt is one sample file that should exist in the unzipped folder
+    std::string checkFilePath = "." + subDir + "/usageOrder.txt";
     testForXml.open(checkFilePath.c_str(), ifstream::in);
 
     // File exists after extraction
-    CHECK(true == (0 != testForXml));
+    CHECK( testForXml.is_open() );
     if (pdebug)
-      printf("Success opening expanded file (from subfolder).");
+      printf("Success opening expanded file (from subfolder).\n");
+    testForXml.close();
 
-    // Clear
-    CHECK( deleteDirectory("." + expandDir) );
+    // rm -f current not implemented - delete the files manually
+    CHECK( deleteFile( "."+subDir+"/usageOrder.txt") );
+    CHECK( deleteFile( "."+subDir+"/logTrain_svm.xml.gz") );
+    CHECK( deleteFile( "."+subDir+"/logTrain_Table.txt") );
+    CHECK( deleteFile( "."+subDir+"/logTrain_Vocabulary.xml.gz") );
+    CHECK( deleteDirectory( "." + subDir) );
   }
 
  
@@ -318,8 +321,8 @@ SUITE(UnitTests_cvac)
 
   std::string getTempFilename( const std::string& basedir )
   {
-    if (basedir=="")
-      return "/Users/matz/PROJECTS/NBCVAC/build_make/tmp";
+    // for debugging:
+    //    if (basedir=="") return "/your/named/tmpdir";
 #ifdef WIN32
     char *tempName = _tempnam(basedir.c_str(), NULL);
 #else
@@ -339,7 +342,35 @@ SUITE(UnitTests_cvac)
       srcStream.close();
       return true;
     }
+    if(pdebug) {
+      printf("Fatal Error, could not create file: %s\n", srcFile.c_str());
+    }
     return false;
   }
-  // confusion table (in Utils)
+
+  /** remove the file.  fails for directories, at least on *nix and OSX (by design).
+   */
+  bool deleteFile( const std::string& filename )
+  {
+#ifdef WIN32
+    int res = remove( filename.c_str() );
+#else // WIN32
+    int res = unlink( filename.c_str() );
+#endif // WIN32
+    return res==0;
+  }
+
+  /* already part of FileUtils
+  bool directoryExists( const std::string& fname )
+  {
+    struct stat s;
+    int err = stat(fname.c_str(), &s);
+    bool retval = (0==err) && S_ISDIR(s.st_mode);
+    if (pdebug && !retval)
+    {
+      printf("failed to create directory %s\n", fname.c_str());
+    }
+    return retval;
+  }
+  */
 }
