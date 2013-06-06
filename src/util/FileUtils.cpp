@@ -106,7 +106,8 @@ bool cvac::directoryExists(const std::string& directory)
      return false;
    }
 
-   if (fileStat.st_mode & S_ISDIR(fileStat.st_mode))
+   if (S_ISDIR(fileStat.st_mode))
+     // TODO: check on Windows and other OSX:  if (fileStat.st_mode & S_ISDIR(fileStat.st_mode))
    {
       //found, and is a directory
       return true;
@@ -168,13 +169,18 @@ bool cvac::makeDirectories(const std::string& dirPath)
          idx = dirPath.find('/', lastIdx); // try forward slash
 #else
     if (dirPath[lastIdx] == '/')
-         lastIdx++;   // ignore a first slash
+    {
+      //         lastIdx++;   // ignore a first slash
+      // TODO: why ignore a first slash??
+    }
     int idx =  dirPath.find('/', lastIdx);
 #endif /* WIN32 */
     std::string substr;
     if (idx > 0)
     {
         std::string substr = dirPath.substr(0, idx - lastIdx);
+        vLogger.printv(VLogger::DEBUG_2,
+                       "makeDirectories: first path substr: %s\n", substr.c_str());
         if (!makeDirectory(substr))
             return false;    
         result += substr; 
@@ -189,11 +195,13 @@ bool cvac::makeDirectories(const std::string& dirPath)
 #endif /* WIN32 */
     while (idx != -1)
     {
-        substr = dirPath.substr(lastIdx, idx - lastIdx); 
+        substr = dirPath.substr(lastIdx, idx - lastIdx);
         result += "/";
         result += substr;
         if (!makeDirectory(result))
+        {
             return false;
+        }
         lastIdx = idx+1;
 #ifdef WIN32
         idx = dirPath.find('\\', lastIdx);
@@ -218,7 +226,8 @@ bool cvac::makeDirectories(const std::string& dirPath)
 ///////////////////////////////////////////////////////////////////////////////
 bool cvac::makeDirectory(const std::string& path)
 {
-  printf("makeDirectory called with %s\n", path.c_str());
+   vLogger.printv(VLogger::DEBUG_2,
+                  "makeDirectory called with: %s\n", path.c_str());
    if (path.empty())
    {
       //no path supplied
@@ -358,11 +367,13 @@ void cvac::addFileToRunSet( RunSet& runSet, const std::string& relativePath,
   addFileToRunSet( runSet, relativePath, filename, purpose );
 }
 
-bool cvac::makeSymlinkFile(const std::string linkFullPath, const std::string tgtFile) {
+bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile) {
 
 #if defined(WIN32)
-  int winReturnCode = CreateSymbolicLink(linkFullPath.c_str(), 
-                                         tgtFile.c_str(), 
+  // CreateSymbolicLink( a, b ) creates a link from a to b;
+  // b must exist before hand
+  int winReturnCode = CreateSymbolicLink(fromFile.c_str(), 
+                                         toFile.c_str(), 
                                          false);          // File, not directory
   if(0 != winReturnCode)
     return(true);
@@ -380,13 +391,15 @@ bool cvac::makeSymlinkFile(const std::string linkFullPath, const std::string tgt
           fprintf(stderr, "!!!!Admin rights required for creating a symbolic link!!!!\n");   
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       }
-      printf("failed to create symbolic link for %s\n", tgtFile.c_str());
-      printf("symbolic link name %s\n", linkFullPath.c_str());
+      printf("failed to create symbolic link for %s\n", toFile.c_str());
+      printf("symbolic link name %s\n", fromFile.c_str());
       printf("Error %d\n", err);
   }
 #else
-  
-  int unixReturnCode = symlink(tgtFile.c_str(), linkFullPath.c_str());
+
+  // symlink( a, b ) creates a link from b to a;
+  // a must exist before hand
+  int unixReturnCode = symlink(toFile.c_str(), fromFile.c_str());
   if(0 == unixReturnCode)
     return(true);
   // ToDo return true if errno returns EEXIST

@@ -353,6 +353,10 @@ def deleteAllFiles( fileserver, uploadedFiles ):
     For reporting purposes, return what has and has not been uploaded.'''
     assert( fileserver )
 
+    # are there any files to delete?
+    if not uploadedFiles:
+        return
+
     # try top delete, ignore but log errors
     deletedFiles = []
     notDeletedFiles = []

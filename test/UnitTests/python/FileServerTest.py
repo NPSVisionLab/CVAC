@@ -94,7 +94,7 @@ class FileServerTest(unittest.TestCase):
         try:
             self.fs.putFile( putFilePath, bytes );
         except cvac.FileServiceException as ex:
-            print(( "if you do not have 'put' permissions, " +
+            print( "if you do not have 'put' permissions, " +
                    "was the file deleted properly in a prior test run?\nfile: " +
                    putFS )
             raise ex
@@ -148,9 +148,9 @@ class FileServerTest(unittest.TestCase):
         try:
             fsr.putFile( putFilePath, bytes );
         except cvac.FileServiceException as ex:
-            print(( "if you do not have 'put' permissions, " +
+            print( "if you do not have 'put' permissions, " +
                    "was the file deleted properly in a prior test run?\nfile: " +
-                   putFilePath.filename))
+                   putFilePath.filename)
             raise ex
         forig.close()
 

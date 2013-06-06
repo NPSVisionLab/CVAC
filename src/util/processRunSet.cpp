@@ -439,8 +439,10 @@ static std::string _makeDirectories(std::string tempName, DirectoryPath dirPath)
 
 /** Return path of a new symlink if fname contains illegal chars, or original path otherwise.
  *  The map between old and new names is managed directly by clients outside this function.
+ *  If links need to be created, they'll be put into putLinksDir,
+ *  which will be created on demand.
  */
-std::string cvac::getLegalPath(std::string tempName, FilePath filePath, bool &newSymlink) {
+std::string cvac::getLegalPath(std::string putLinksDir, FilePath filePath, bool &newSymlink) {
 
   //if(!shouldIgnore(filePath)) {  // No detection or symlink on these patterns
 
@@ -449,8 +451,8 @@ std::string cvac::getLegalPath(std::string tempName, FilePath filePath, bool &ne
       // We have a illegal character so we need to make a symbolic link using the tempName as the root directory.
       // To insure that we don't have any conflicts we will follow the same directory structure but use the
       // tempname as the root dir.
-      makeDirectory(tempName);
-      std::string directories = _makeDirectories(tempName, filePath.directory);
+      makeDirectory(putLinksDir);
+      std::string directories = _makeDirectories(putLinksDir, filePath.directory);
       newSymlink = true;
       std::string fullName = directories + "/" + filePath.filename;
       std::string linkFileName_withPath = getSymlinkSubstitution(fullName);  // cvac procedure to make symlink
