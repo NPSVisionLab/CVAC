@@ -9,12 +9,11 @@ Ice.ACM.Server=0
 
 MultiBoost.Endpoints=tcp -p           10001
 CVAC_OpenCV_Detector.Endpoints=tcp -p 10002
-BOW_Trainer.Endpoints=tcp -p          10003
-BOW_Detector.Endpoints=tcp -p         10004
+BOW_Trainer.Endpoints=tcp -p          10103
+BOW_Detector.Endpoints=tcp -p         10104
 SBD_Trainer.Endpoints=tcp -p          10005
-SBDTest.Endpoints=tcp -p           	  10006
+SBDTest.Endpoints=tcp -p              10006
 CVAC_OpenCV_Trainer.Endpoints=tcp -p  10007
-VideoValidatorForOpenCV.Endpoints=tcp -p 10008
 CorpusService.Endpoints=tcp -p        10011
 FileService.Endpoints=tcp -p          10110
 ScreenShot_Detector.Endpoints=tcp -p  10012

@@ -43,7 +43,6 @@ IceBox.Service.BOW_Detector=bowICEServer:create --Ice.Config=config.service
 IceBox.Service.BOW_Trainer=bowICEServerTrain:create --Ice.Config=config.service
 #IceBox.Service.SBD_Trainer=SBDICEServerTrain:create --Ice.Config=config.service
 #IceBox.Service.SBDTest=SBDICEServerTest:create --Ice.Config=config.service
-#IceBox.Service.VideoValidatorForOpenCV=VideoValidatorForOpenCVServer:create --Ice.Config=config.service
 
 #
 # Warn about connection exceptions
