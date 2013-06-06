@@ -57,29 +57,33 @@ def walkDirectory( rootDir, do_replace=False ):
 try:
     import argparse
     parser = argparse.ArgumentParser(description='List or replace absolute paths to dylibs.')
-    parser.add_argument('rootDir', metavar='filename', type=str, default='.',
+    parser.add_argument('filenames', metavar='filename', type=str, default=['.'], nargs='*',
                         help='individual file or directory')
     parser.add_argument('--replace', dest='do_replace', action='store_true', default=False,
                         help='run install_name_tool to replace paths; otherwise just list')
     args = parser.parse_args()
-    rootDir = args.rootDir
+    filenames = args.filenames
     do_replace = args.do_replace
 
 except ImportError:
     # argparse is new in Python 2.7
-    rootDir = '.'
+    filenames = ['.']
     do_replace = False
     if len(sys.argv)>1:
-        rootDir = sys.argv[1]
-    if len(sys.argv)>2 and sys.argv[2]=='replace':
-        do_replace = True
+        if sys.argv[1]=='--replace':
+            do_replace = True
+        else:
+            filenames = [sys.argv[1]]
+    if len(sys.argv)>2:
+        filenames = sys.argv[2:]
 
 #
 # if main argument is a file, just examine that,
 # otherwise walk the directory that's specified, default is '.'
 #
-if os.path.isdir( rootDir ):
-    walkDirectory( rootDir, do_replace )
-else:
-    # examine individual file
-    examineFile( rootDir, do_replace )
+for fname in filenames:
+    if os.path.isdir( fname ):
+        walkDirectory( fname, do_replace )
+    else:
+        # examine individual file
+        examineFile( fname, do_replace )
