@@ -1,4 +1,8 @@
 import sys
+import os
 
-sys.path.append('''${ICE_ROOT}/python''')
-sys.path.append('''${SLICE_OUTPUT_PYTHONDIR}''')
+thisPath = os.path.dirname(os.path.abspath(__file__))
+srcPath = os.path.abspath(thisPath+"/../../3rdparty/ICE/python")
+sys.path.append(srcPath)
+srcPath = os.path.abspath(thisPath+"/../../3rdparty/opencv/python/2.6")
+sys.path.append(srcPath)
