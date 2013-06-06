@@ -39,7 +39,7 @@ def examineFile( fpath, do_replace=False ):
                         print 'replcd: ' + libname
                     else:
                         print '!found: ' + libname
-            if not replaced:
+            if do_replace and not replaced:
                 print 'danger? ' + libname
         
 def walkDirectory( rootDir, do_replace=False ):
