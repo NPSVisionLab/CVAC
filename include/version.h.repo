@@ -37,12 +37,19 @@
  *SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****/
 
+/* This file was generated from version.h.repo which is committed to the
+ * repository every now and then.  It contains version numbers for the case
+ * that the CMake configuration is run but no local .git repository is
+ * present to determine the actual and up-to-date version number from.
+ * That means that the "PATCH" is probably not up to date.
+ */
+
 #ifndef __VERSION_H_INCLUDED__
 #define __VERSION_H_INCLUDED__
 
-#define CVAC_VERSION 0.3.112
+#define CVAC_VERSION 0.3.120
 #define CVAC_VERSION_MAJOR 0
 #define CVAC_VERSION_MINOR 3
-#define CVAC_VERSION_PATCH 112
+#define CVAC_VERSION_PATCH 120
 
 #endif // __VERSION_H_INCLUDED__
