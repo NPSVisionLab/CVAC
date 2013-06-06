@@ -351,7 +351,7 @@ def putAllFiles( fileserver, runset ):
 def deleteAllFiles( fileserver, uploadedFiles ):
     '''Delete all files that were previously uploaded to the fileserver.
     For reporting purposes, return what has and has not been uploaded.'''
-    assert( fileserver and runset )
+    assert( fileserver )
 
     # try top delete, ignore but log errors
     deletedFiles = []
