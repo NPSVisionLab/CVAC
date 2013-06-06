@@ -13,6 +13,8 @@ IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
     MESSAGE( SEND_ERROR "Need Java Runtime to start java services" )
   ENDIF( NOT Java_JAVA_EXECUTABLE )
   IF( NOT Ice.jar )
+    # Ice.jar is found in the src/CMakeLists.txt file, so make
+    # sure that the src subdirectory is included before the etc subdir
     MESSAGE( SEND_ERROR "Could not find Ice.jar, but need it for starting the Java IceBox." )
   ENDIF()
 ELSE( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
