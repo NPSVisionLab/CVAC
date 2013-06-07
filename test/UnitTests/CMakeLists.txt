@@ -43,9 +43,17 @@ SET(LIBS
 
 #libraries to link into the executable, both Release and Debug
 TARGET_LINK_LIBRARIES( ${APP_NAME} ${LIBS} )
- 
                       
 SET_TARGET_PROPERTIES(${APP_NAME} PROPERTIES DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}")
+
+# since I can't get CMake RPATH to work, invoke a custom command:
+IF( APPLE )
+  SET_TARGET_PROPERTIES( ${APP_NAME} PROPERTIES INSTALL_RPATH @executable_path/.. )
+  ADD_CUSTOM_COMMAND(TARGET ${APP_NAME}
+    POST_BUILD
+    COMMAND install_name_tool -add_rpath @executable_path/.. ${OUTPUT_BINDIR}/${APP_NAME}
+    )
+ENDIF()
 
 ADD_TEST(NAME UnitTests
          COMMAND UnitTests${DEBUG_POSTFIX}
