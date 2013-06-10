@@ -79,7 +79,7 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/version.h
        COMPONENT Runtime
       )
 
-INSTALL(FILES ${CMAKE_SOURCE_DIR}/config.admin ${CMAKE_SOURCE_DIR}/config.icebox ${CMAKE_SOURCE_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.java_admin ${CMAKE_SOURCE_DIR}/config.java_icebox ${CMAKE_SOURCE_DIR}/config.client
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/config.admin ${CMAKE_SOURCE_DIR}/config.icebox ${CMAKE_SOURCE_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.java_admin ${CMAKE_SOURCE_DIR}/config.java_icebox ${CMAKE_SOURCE_DIR}/config.client 
        DESTINATION .
        COMPONENT Runtime
       )
@@ -87,6 +87,11 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/config.admin ${CMAKE_SOURCE_DIR}/config.icebox
 # ThirdParty dependencies for building CVAC
 
 IF (WIN32)
+
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/etc/startServices.bat ${CMAKE_SOURCE_DIR}/etc/stopServices.bat
+       DESTINATION .
+       COMPONENT Runtime
+      )
 
 INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         DESTINATION 3rdParty/ICE
@@ -118,8 +123,8 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/lib
 
 ENDIF (WIN32)
 
-INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox.exe
-                 ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/iceboxd.exe
+INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox${CMAKE_EXECUTABLE_SUFFIX}
+                 ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/iceboxd.${CMAKE_EXECUTABLE_SUFFIX}xe
                  ${ICE_BOX_ADMIN}
         DESTINATION 3rdParty/ICE/bin
         COMPONENT ThirdParty

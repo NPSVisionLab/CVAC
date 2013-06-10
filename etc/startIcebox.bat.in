@@ -14,7 +14,7 @@ goto next
 :next
 REM Python services that are listed in python.config
 if "${PYTHON_EXECUTABLE}" neq "" (if exist "${CMAKE_SOURCE_DIR}/python.config" goto startpython)
-go next2
+goto next2
 :startpython
     for /F "eol=# tokens=*" %%A in (${CMAKE_SOURCE_DIR}/python.config) do start "CVAC Service (Python)" "${PYTHON_EXECUTABLE}" %%A
 :next2
