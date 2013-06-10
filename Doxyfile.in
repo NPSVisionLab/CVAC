@@ -41,7 +41,7 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 
 INPUT                  = @CMAKE_DOXYGEN_INPUT_LIST@
-FILE_PATTERNS          = *.cpp *.h* *.java *.ice
+FILE_PATTERNS          = *.cpp *.h* *.java *.ice *.py
 EXTENSION_MAPPING      = ice=C++
 STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@
 RECURSIVE              = NO

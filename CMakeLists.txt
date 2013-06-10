@@ -215,6 +215,7 @@ IF( BUILD_DOCUMENTATION )
                 ${CMAKE_SOURCE_DIR}/README.md
                 ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/util
                 ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/util
+                ${CMAKE_SOURCE_DIR}/src/easy
            )		
       string(REGEX REPLACE ";" " " CMAKE_DOXYGEN_INPUT_LIST "${CMAKE_DOXYGEN_INPUT_LIST}")
 
