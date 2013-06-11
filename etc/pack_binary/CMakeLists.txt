@@ -44,8 +44,10 @@ set(CPACK_COMPONENT_DATA_DISPLAY_NAME "CVAC sample data" )
 
 # Select Generator by OS
 IF(WIN32)
+    SET( SCRIPT_EXT bat )
   SET(CPACK_GENERATOR "NSIS")
 ELSE()
+    SET( SCRIPT_EXT sh )
   SET(CPACK_GENERATOR "TGZ")
 ENDIF(WIN32)
 
@@ -84,14 +86,14 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/config.admin ${CMAKE_SOURCE_DIR}/config.icebox
        COMPONENT Runtime
       )
 
+INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/etc/startServices.${SCRIPT_EXT} ${CMAKE_SOURCE_DIR}/etc/stopServices.${SCRIPT_EXT}
+       DESTINATION bin
+       COMPONENT Runtime
+      )
+
 # ThirdParty dependencies for building CVAC
 
 IF (WIN32)
-
-INSTALL(FILES ${CMAKE_SOURCE_DIR}/etc/startServices.bat ${CMAKE_SOURCE_DIR}/etc/stopServices.bat
-       DESTINATION .
-       COMPONENT Runtime
-      )
 
 INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         DESTINATION 3rdParty/ICE
@@ -124,7 +126,6 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/lib
 ENDIF (WIN32)
 
 INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox${CMAKE_EXECUTABLE_SUFFIX}
-                 ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/iceboxd.${CMAKE_EXECUTABLE_SUFFIX}xe
                  ${ICE_BOX_ADMIN}
         DESTINATION 3rdParty/ICE/bin
         COMPONENT ThirdParty
@@ -166,17 +167,18 @@ INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
        COMPONENT ThirdParty
       ) 
 
+IF (WIN32)
 INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/python
       DESTINATION 3rdParty/opencv
        COMPONENT ThirdParty
       ) 
 
+ELSE (WIN32)
 #If not windows need the libs for the shared libraries
-IF (NOT WIN32)
 INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
       DESTINATION 3rdParty/opencv
        COMPONENT ThirdParty
       ) 
-ENDIF(NOT WIN32)
+ENDIF(WIN32)
 
 include(CPack)
