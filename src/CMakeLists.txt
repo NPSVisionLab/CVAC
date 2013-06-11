@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 2.8.6)
 # Java support since CMake 2.8.6
 FIND_PACKAGE( Java )
 INCLUDE( UseJava )
+#For compatability we want to use java sdk 1.6
+SET(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 1.6 -target 1.6)
 
 SET( SLICE_FILES
     ${CVAC_ROOT_DIR}/src/Files.ice
@@ -76,9 +78,6 @@ FIND_JAR( IceBox.jar IceBox
 		)
 IF( ${BUILD_FILESERVER} )
 ENDIF( ${BUILD_FILESERVER} )
-
-#For compatability we want to use java sdk 1.6
-SET(CMAKE_Java_FLAGS "-source 1.6 -target 1.6")
 
 IF( ${BUILD_CORPUS_SERVER} )
   FIND_JAR( javatar.jar NAMES javatar-2.5 PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
