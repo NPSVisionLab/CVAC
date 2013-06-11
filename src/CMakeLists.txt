@@ -77,6 +77,9 @@ FIND_JAR( IceBox.jar IceBox
 IF( ${BUILD_FILESERVER} )
 ENDIF( ${BUILD_FILESERVER} )
 
+#For compatability we want to use java sdk 1.6
+SET(CMAKE_Java_FLAGS "-source 1.6 -target 1.6")
+
 IF( ${BUILD_CORPUS_SERVER} )
   FIND_JAR( javatar.jar NAMES javatar-2.5 PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
   IF( NOT javatar.jar )
