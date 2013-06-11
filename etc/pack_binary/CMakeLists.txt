@@ -91,6 +91,12 @@ INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/etc/startServices.${SCRIPT_EXT} ${CMAKE_SOU
        COMPONENT Runtime
       )
 
+# pre-written versions of startIcebox and stopIcebox for binary distribution, so it's easier to edit:
+INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/etc/startServices.${SCRIPT_EXT} ${CMAKE_SOURCE_DIR}/etc/stopServices.${SCRIPT_EXT}
+       DESTINATION bin
+       COMPONENT Runtime
+      )
+
 # ThirdParty dependencies for building CVAC
 
 IF (WIN32)
