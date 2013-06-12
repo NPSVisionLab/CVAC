@@ -143,6 +143,7 @@ ENDIF()
 
 # offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
 #
+    MESSAGE ("3rdparty ${CVAC_VERSION_MAJMIN}")
 IF( DOWNLOAD_3RDPARTY_PACKAGE )
     IF( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
         IF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
@@ -156,8 +157,6 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
     ELSE( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
         SET( 3RDPARTY_FILENAME CVAC_3rdparty-${CVAC_VERSION_MAJMIN}-${CMAKE_SYSTEM_NAME}.tar.gz )
     ENDIF( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
-    #debug
-    MESSAGE ("3rdparty File ${3RDPARTY_FILENAME}")
     IF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
         MESSAGE( STATUS "3rd-party archive exists already, won't download again (${3RDPARTY_FILENAME})" )
     ELSE( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
