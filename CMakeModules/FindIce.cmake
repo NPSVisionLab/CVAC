@@ -36,6 +36,7 @@ FIND_PATH (ICE_PYTHON_DIR Ice.py
            PATHS
            $ENV{ICE_ROOT}
            /opt/Ice-3.4
+           /usr/lib/pymodules/python2.7
            )
 
 SET(CDIR "")
