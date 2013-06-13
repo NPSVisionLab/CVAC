@@ -7,11 +7,11 @@ WRAP_SLICE(SLICE_FILES
            )
 
 SET(SOURCE_FILES
-#    BowICEI.cpp
+  CascadeDetectI.cpp
 )
 
 SET(HEADER_FILES
-#    BowICEI.h
+  CascadeDetectI.h
 )
 
 SET(INCLUDE_DIRS
