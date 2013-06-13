@@ -18,6 +18,7 @@ SET(HEADER_FILES
 SET(INCLUDE_DIRS
     .
     ${CMAKE_CURRENT_SOURCE_DIR}/../traincascade
+    ${CMAKE_CURRENT_SOURCE_DIR}/../haartraining
     ${CVAC_INCLUDE_DIR}
     ${ICE_INCLUDE}
     ${CMAKE_CURRENT_BINARY_DIR}#for the generated slice files

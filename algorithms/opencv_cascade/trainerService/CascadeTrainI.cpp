@@ -49,6 +49,7 @@
 #include "opencv2/core/internal.hpp"
 #include "cv.h"
 #include "cascadeclassifier.h"
+#include "cvhaartraining.h"
 
 #include "CascadeTrainI.h"
 
@@ -124,6 +125,97 @@ void CascadeTrainI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& cur
   return NULL;
 }
 
+// TODO: move from FileUtilsTest into FileUtils.h/cpp
+std::string getTempFilename( const std::string& basedir="" ) { return "TODO"; }
+
+// TODO: change to K's class name
+class RunSetWrapper {
+public:
+  RunSetWrapper( const ::RunSet& runset ){}
+};
+
+// TODO: make this a member function
+void writeBgFile( const RunSetWrapper& rsw, const string& bgFilename, int* pNumNeg )
+{
+  // TODO: iterate over NEGATIVE purposes only, count numNeg, write 
+  // file names to bgFilename as we did for the old OpenCV Performance training;
+  // something like:
+  // Constraints con; // has a bunch of defaults
+  // con.compatiblePurpose = NEGATIVE;
+  // con.substrateType = IMAGES;
+  // con.mimeTypes = { "jpg", "png", "bmp" };
+  // con.spacesInFilenamesPermitted = false;
+  // LabelableIterator it = rsw.iterator( con );
+  // for labelable in it ...
+}
+
+// TODO: move to header
+class SamplesParams
+{
+public:
+  int numSamples;
+  int width;
+  int height;
+};
+
+// TODO: make this a member function
+void createSamples( const RunSetWrapper& rsw, const SamplesParams& params,
+                    const string& vecFilename, int* pNumPos )
+{
+  // TODO: put this file into tempDir (member variable? parameter?)
+  string infoFilename = "cascade_positives.txt";
+  // TODO: similar to above, iterate over rsw but this time only POSITIVE
+  // see the code from the old OpenCV Performance on what to create
+  bool showsamples = false;
+  *pNumPos = cvCreateTrainingSamplesFromInfo( infoFilename.c_str(), vecFilename.c_str(), 
+                                              params.numSamples, showsamples,
+                                              params.width, params.height
+                                             );
+}
+
+// TODO: move to header
+class TrainParams
+{
+public:
+  int numStages;
+  int featureType; // CvFeatureParams::HAAR, LBP, or HOG
+  int boost_type;
+  float minHitRate;
+  float maxFalseAlarm;
+  float weight_trim_rate;
+  int max_depth;
+  int weak_count;
+};
+
+// TODO: make this a member function
+void createClassifier( const string& tempDir, const string& vecFname, const string& bgName,
+                       int numPos, int numNeg, const TrainParams& trainParams )
+{
+  CvCascadeClassifier classifier;
+  int precalcValBufSize = 256,
+      precalcIdxBufSize = 256;
+  bool baseFormatSave = false;
+  CvCascadeParams cascadeParams;
+  CvCascadeBoostParams stageParams;
+  Ptr<CvFeatureParams> featureParams[] = { Ptr<CvFeatureParams>(new CvHaarFeatureParams),
+                                           Ptr<CvFeatureParams>(new CvLBPFeatureParams),
+                                           Ptr<CvFeatureParams>(new CvHOGFeatureParams)
+                                         };
+  cascadeParams.featureType = trainParams.featureType;
+  stageParams.boost_type = trainParams.boost_type;
+
+  classifier.train( tempDir,
+                    vecFname,
+                    bgName,
+                    numPos, numNeg,
+                    precalcValBufSize, precalcIdxBufSize,
+                    trainParams.numStages,
+                    cascadeParams,
+                    *featureParams[cascadeParams.featureType],
+                    stageParams,
+                    baseFormatSave );  
+}
+
 void CascadeTrainI::process(const Ice::Identity &client,const ::RunSet& runset,const ::Ice::Current& current)
 {	
   TrainerCallbackHandlerPrx _callback =
@@ -139,26 +231,58 @@ void CascadeTrainI::process(const Ice::Identity &client,const ::RunSet& runset,c
     return;
   }
 
-  // iterate over runset, inserting each Labelable into
-  // the input file to "createsamples"
+  // Iterate over runset, inserting each POSITIVE Labelable into
+  // the input file to "createsamples".  Add each NEGATIVE into
+  // the bgFile.  Put both created files into a tempdir.
   // TODO:
+  std::string tempDir = getTempFilename( CVAC_DataDir );
+  makeDirectory( tempDir );
+  RunSetWrapper rsw( runset );
+  string bgName = tempDir + "/cascade_negatives.txt";
+  int numNeg = 0;
+  writeBgFile( rsw, bgName, &numNeg );
 
   // set parameters to createsamples
+  SamplesParams samplesParams;
+  samplesParams.numSamples = 1000;
+  samplesParams.width = 5; // TODO: get this from this->TrainerProperties (see Services.ice)
+  samplesParams.height = 5; // TODO
 
   // run createsamples
-  // TODO
+  std::string vecFname = "cascade_positives.vec";
+  int numPos = 0;
+  createSamples( rsw, samplesParams, vecFname, &numPos );
+
+  // invoke the actual training
+  TrainParams trainParams;
+  trainParams.numStages = 20;
+  trainParams.featureType = CvFeatureParams::HAAR; // HAAR, LBP, HOG;
+  trainParams.boost_type = CvBoost::GENTLE;  // CvBoost::DISCRETE, REAL, LOGIT
+  trainParams.minHitRate = 0.995F;
+  trainParams.maxFalseAlarm = 0.5F;
+  trainParams.weight_trim_rate;  // TODO: set to default from OpenCV/ml.h
+  trainParams.max_depth;  // TODO: set to default from OpenCV/ml.h
+  trainParams.weak_count;  // TODO: set to default from OpenCV/ml.h
+  createClassifier( tempDir, vecFname, bgName,
+                    numPos, numNeg, trainParams );
+
+  // TODO: combine the directories into one XML file
+  // there's a haartraining function to do this;
 
   // return the resulting trained model
+  // TODO: zip the resulting file
   DetectorData detectorData;
   detectorData.type = ::cvac::FILE;
-  detectorData.file.directory.relativePath = "TODO: cascade trainer _filepath";
-  detectorData.file.filename = "TODO: logfile_CascadeTrainResult";
+  detectorData.file.directory.relativePath = tempDir;
+  detectorData.file.filename = "TODO: CascadeTrainResult.xml.zip";
   
   _callback->createdDetector(detectorData);
   
   localAndClientMsg(VLogger::INFO, _callback, "Cascade training done.\n");
 }
 
+// TODO: this is the old main function; here only for reference.  remove 
+// once no longer needed
 int nomain( int argc, char* argv[] )
 {
     CvCascadeClassifier classifier;
