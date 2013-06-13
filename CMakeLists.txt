@@ -144,7 +144,6 @@ ENDIF()
 
 # offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
 #
-    MESSAGE ("3rdparty ${CVAC_VERSION_MAJMIN}")
 IF( DOWNLOAD_3RDPARTY_PACKAGE )
     IF( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
         IF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
