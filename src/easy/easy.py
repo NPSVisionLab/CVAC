@@ -112,11 +112,11 @@ def openCorpus( corpusServer, corpusPath ):
 
 class CorpusCallbackI(cvac.CorpusCallback):
     corpus = None
-    def corpusMirrorProgress( corp, numtasks, currtask, taskname, details,
-            percentCompleted ):
+    def corpusMirrorProgress( self, corp, numtasks, currtask, taskname, details,
+            percentCompleted, current=None ):
         print("Downloading corpus {0}, task {1}/{2}: {3} ({4}%)".\
               format( corp.name, currtask, numtasks, taskname ))
-    def corpusMirrorCompleted(self, corp):
+    def corpusMirrorCompleted(self, corp, current=None):
         self.corpus = corp
 
 def createLocalMirror( corpusServer, corpus ):
@@ -131,7 +131,8 @@ def createLocalMirror( corpusServer, corpus ):
     adapter.add( callbackRecv, cbID)
     adapter.activate()
     corpusServer.ice_getConnection().setAdapter(adapter)
-    # this call should block
+    # this call will block and the callback will receive the corpus
+    # before it returns
     corpusServer.createLocalMirror( corpus, cbID )
     if not callbackRecv.corpus:
         raise RuntimeError("could not create local mirror")

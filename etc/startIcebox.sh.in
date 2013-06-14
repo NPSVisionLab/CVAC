@@ -3,7 +3,9 @@
 #
 export PATH=$PATH:/opt/local/bin
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_ROOT_DIR}/lib:${OpenCV_LIB_DIR_OPT}"
-export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${OpenCV_LIB_DIR_OPT}"
+export MATLAB_MCR_DYLD_PATH="/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/runtime/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/sys/os/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/bin/maci64:/System/Library/Frameworks/JavaVM.framework/JavaVM:/System/Library/Frameworks/JavaVM.framework/Libraries"
+export XAPPLRESDIR=/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/X11/app-defaults
+export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${OpenCV_LIB_DIR_OPT}:$MATLAB_MCR_DYLD_PATH"
 
 # C/C++ services, via IceBox
 cd ${CVAC_ROOT_DIR}

@@ -180,17 +180,20 @@ public class LabelMeDataSet extends CorpusI
                 filename = result2.toString();
                 
 
-                // download the images from LabelMe
+                // download the images from LabelMe to a folder named after
+                // the corpus (m_dataSetFolder), plus a subfolder for the LabelMe folder
                 String remoteURL = HOMEIMAGES + "/Images/" + folder + "/" + filename;
                 logger.log( Level.FINE, "downloading image from {0}", remoteURL );
                 String localFilename = m_dataSetFolder + "/" + folder + "/" + filename;
-                File localFile = new File( localFilename );
-                //debug
-                System.out.println("file " + localFile);
+                // relative local folder, without the CVAC.DataDir
+                String relLocalFolder = this.name + File.separator + folder;
+                logger.log(Level.FINER, "Local file: {0} (relative folder {1})",
+                           new Object[]{ localFilename, relLocalFolder });
                 try {
                     // make sure the folder exists, then write the image
                     Data_IO_Utils.createDir_orFile( new File( m_dataSetFolder + "/" + folder ), 
                         Data_IO_Utils.FS_ObjectType.DIRECTORY);
+                    File localFile = new File( localFilename );
                     DownloadUtils.URL_readToFile( remoteURL, localFile );
                 }
                 catch(IOException e) 
@@ -200,7 +203,7 @@ public class LabelMeDataSet extends CorpusI
                     logger.log(Level.INFO, "", e);
                     continue;
                 }
-                DirectoryPath dirpath = new DirectoryPath( m_dataSetFolder + "/" + folder );
+                DirectoryPath dirpath = new DirectoryPath( relLocalFolder );
                 FilePath path = new FilePath( dirpath, filename );
                 int width = -1; int height = -1;
                 Substrate im = new Substrate( true, false, path, width, height );
@@ -354,8 +357,6 @@ public class LabelMeDataSet extends CorpusI
             
             polygonLoc = new LabeledLocation();
             polygonLoc.lab = new cvac.Label(true, objname, new HashMap<String,String>(0), new Semantics(""));
-            polygonLoc.lab.hasLabel = true;                    // hasLabel
-            polygonLoc.lab.name = "annotation";                // name
             polygonLoc.loc = locSilhouette;                    // location
         }
         catch (MWException ex) {

@@ -191,10 +191,10 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
                     "CorpusServiceI.createLocalMirror: error with corpus {0}", corp.name);
             return;
         }
-        Ice.ObjectPrx base = __current.con.createProxy( cb );
+        Ice.ObjectPrx base = __current.con.createProxy( cb ).ice_oneway();
         CorpusCallbackPrx client = CorpusCallbackPrxHelper.uncheckedCast(base);
-        //client.corpusMirrorCompleted( );
         cs.createLocalMirror( null );
+        client.corpusMirrorCompleted( corp );
     }
 
     /**
