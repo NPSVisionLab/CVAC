@@ -68,6 +68,13 @@ module cvac {
      */
     Corpus openCorpus( cvac::FilePath file );
 
+    /** A corpus, once opened, is cached in the CorpusService and does not
+     *  update itself if the file system or properties file change.  To
+     *  re-open the corpus and re-load the cache, close it first.  Otherwise,
+     *  closing is optional.
+     */
+    void closeCorpus( Corpus corp );
+
     /** Write Corpus to a metadata file. 
      */
     void saveCorpus( Corpus corp, cvac::FilePath file );

@@ -110,6 +110,11 @@ def openCorpus( corpusServer, corpusPath ):
                                + getFSPath( cvacPath ))
     return corpus
 
+def closeCorpus( corpusServer, corpus ):
+    '''Close a previously opened Corpus, presumable to re-open
+    it with an updated properties file or new files'''
+    corpusServer.closeCorpus( corpus )
+    
 class CorpusCallbackI(cvac.CorpusCallback):
     corpus = None
     def corpusMirrorProgress( self, corp, numtasks, currtask, taskname, details,
