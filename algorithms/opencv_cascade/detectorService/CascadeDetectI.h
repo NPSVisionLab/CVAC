@@ -47,9 +47,7 @@
 #include <util/processRunSet.h>
 #include <util/ServiceMan.h>
 
-//#include <opencv2/core/core.hpp>
 #include <cv.h>
-
 
 class CascadeDetectI : public cvac::Detector
 {
@@ -73,14 +71,17 @@ public:
     virtual cvac::DetectorPropertiesPrx getDetectorProperties(const ::Ice::Current& current);
 
 private:
-    void reportResults( const cvac::Labelable& original, CvSeq* foundObjects );
+    cvac::ResultSetV2 convertResults( const cvac::Labelable& original, CvSeq* foundObjects );
     CvSeq* detectObjects( const cvac::Labelable& lbl  );
 
     cvac::ServiceManager    *mServiceMan;
+    cvac::DetectorCallbackHandlerPrx callback;
     bool                     fInitialized;    
     CvHaarClassifierCascade *cascade;
     std::string              cascade_name;
     CvMemStorage            *storage;
+
+    friend cvac::ResultSetV2 detectFunc( cvac::DetectorPtr detector, const char *fname );
 };
 
 #endif //_CascadeDetectI_H__

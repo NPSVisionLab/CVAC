@@ -77,6 +77,9 @@ namespace cvac
                       const std::string &pathPrefix,
                       ServiceManager *servMan);
 
+   void sendResultsToClient( const DetectorCallbackHandlerPrx &client, 
+                             const ResultSetV2& results );
+
    // Check for any chars within the string that could upset the detector
    bool containsIllegalChars(FilePath filePath);
    

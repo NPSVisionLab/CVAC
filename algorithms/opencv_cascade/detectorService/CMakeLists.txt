@@ -1,5 +1,5 @@
 PROJECT (opencv_detectcascade_service)
-set( the_target opencv_detectcascade_service )
+set( the_target OpenCVCascadeDetector )
 
 WRAP_SLICE(SLICE_FILES
            ${CVAC_ROOT_DIR}/src/Data.ice

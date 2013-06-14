@@ -20,6 +20,10 @@ detector = easy.getDetector( "bowTest:default -p 10104" )
 results = easy.detect( detector, "detectors/bowUSKOCA.zip", "testImg/TestCaFlag.jpg" )
 easy.printResults( results )
 
+detector = easy.getDetector( "OpenCVCascadeDetector:default -p 10102" )
+results = easy.detect( detector, "detectors/haarcascade_frontalface_alt.xml", "testImg/TestCaFlag.jpg" )
+easy.printResults( results )
+
 #
 # Second, a quick way to train a detector.  The resulting model
 # can be used in place of the detector above.
