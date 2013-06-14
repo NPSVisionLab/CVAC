@@ -144,7 +144,13 @@ class FileServerTest(unittest.TestCase):
         bytes = bytearray( forig.read() )
         
         # "put" the file's bytes as a different file which must not exist
+        #  if the file exists output an error.
         putFilePath = cvac.FilePath( testDir, "TargetFilename.jpg" )
+        if fsr.exists( putFilePath):
+            raise RuntimeError("File "+putFilePath.filename + 
+                                   " exists on remote host "
+                                   + configStr + " remove and rerun test.")
+                
         try:
             fsr.putFile( putFilePath, bytes );
         except cvac.FileServiceException as ex:
