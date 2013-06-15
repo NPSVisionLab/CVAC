@@ -83,6 +83,7 @@ CascadeTrainI::CascadeTrainI(ServiceManager *serv)
 
 CascadeTrainI::~CascadeTrainI()
 {
+  mAdapter->deactivate();  
 }
 
 void CascadeTrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& current)
@@ -94,6 +95,29 @@ void CascadeTrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& curren
   {
     vLogger.setLocalVerbosityLevel( verbStr );
   }
+  // Create TrainerPropertiesI class to allow the user to modify training 
+  // parameters
+  Ice::ObjectAdapterPtr mAdapter = communicator()->createObjectAdapter("");
+  Ice::Identity ident;
+  ident.name = IceUtil::generateUUID();
+  ident.category = "";
+  TrainerPropertiesI *trainProps = new TrainerPropertiesI();
+  TrainerPropertiesPtr trainPropPtr = trainProps;
+  mAdapter->add(trainPropPtr, ident);
+  mAdapter->activate();
+  ice_getConnection()->setAdapter(mAdapter);    
+
+  // Fill in the trainProps with default values;
+  trainProps->numStages = 20;
+  trainProps->featureType = CvFeatureParams::HAAR; // HAAR, LBP, HOG;
+  trainProps->boost_type = CvBoost::GENTLE;  // CvBoost::DISCRETE, REAL, LOGIT
+  trainProps->minHitRate = 0.995F;
+  trainProps->maxFalseAlarm = 0.5F;
+  trainProps->weight_trim_rate = 0.95; // From opencv/modules/ml/src/boost.cpp
+  trainProps->max_depth = 1;
+  trainProps->weak_count = 100;
+  trainProps->width = 25;
+  trainProps->height = 25;
   
   fInitialized = true;
 }
@@ -122,11 +146,9 @@ void CascadeTrainI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& cur
 
 ::TrainerPropertiesPrx CascadeTrainI::getTrainerProperties(const ::Ice::Current &current)
 {
-  return NULL;
+  return mTrainProps;
 }
 
-// TODO: move from FileUtilsTest into FileUtils.h/cpp
-std::string getTempFilename( const std::string& basedir="" ) { return "TODO"; }
 
 // TODO: change to K's class name
 class RunSetWrapper {
@@ -134,8 +156,8 @@ public:
   RunSetWrapper( const ::RunSet& runset ){}
 };
 
-// TODO: make this a member function
-void writeBgFile( const RunSetWrapper& rsw, const string& bgFilename, int* pNumNeg )
+void CascadeTrainI::writeBgFile( const RunSetWrapper& rsw, 
+                                const string& bgFilename, int* pNumNeg )
 {
   // TODO: iterate over NEGATIVE purposes only, count numNeg, write 
   // file names to bgFilename as we did for the old OpenCV Performance training;
@@ -147,49 +169,164 @@ void writeBgFile( const RunSetWrapper& rsw, const string& bgFilename, int* pNumN
   // con.spacesInFilenamesPermitted = false;
   // LabelableIterator it = rsw.iterator( con );
   // for labelable in it ...
+  // Save stored data from RunSet to OpenCv negative samples file
+
+  int i;
+  std::vector<RectangleLabels> negRectlabels;
+  int imgCnt = 0;
+  for (i = 0; i < runset.purposedLists.size(); i++)
+  {
+    // Only look for positive purposes
+    if (NEGATIVE == runset.purposedLists[i]->pur.ptype)
+    {
+        // Store training-input data to vectors
+        cvac::PurposedLabelableSeq* lab = static_cast<cvac::PurposedLabelableSeq*>(runset.purposedLists[i].get());
+        imgCnt += cvac::processLabelArtifactsToRects(&lab->labeledArtifacts, 
+                                    NULL, &negRectlabels);
+     }
+  }
+  ofstream backgroundFile;
+  backgroundFile.open(bgFilename.c_str());
+  cnt = 0;
+  for (it = negRectlabels.begin(); it < negRectlabels.end(); it++)
+  {
+    // fileName, # of objects, x, y, width, height
+    cvac::RectangleLabels recLabel = *it;
+    backgroundFile << recLabel.filename;
+    cnt++;
+    // NO EXTRA BLANK LINE after the last sample, or cvhaartraining.cpp can fail on: "CV_Assert(elements_read == 1);"
+    if ((cnt) < imgCnt)
+        backgroundFile << endl;
+  }
+  backgroundFile.flush();
+  backgroundFile.close();
+  // Clean up any memory 
+  cvac::cleanupRectangleLabels(&negRectlabels);
+  *pNumNeg = cnt;
 }
 
-// TODO: move to header
-class SamplesParams
+/**
+ * Function called by ProcessLabelArtifactsToRects that returns the
+ * size of an image.
+ */
+bool static getImageWidthHeight(std::string filename, int &width, int &height)
 {
-public:
-  int numSamples;
-  int width;
-  int height;
-};
+   IplImage* img = cvLoadImage(filename.c_str());
+   bool res;
+   if( !img )
+   {
+       width = 0;
+       height = 0;
+       res = false;
+   } else
+   {
+       width = img->width;
+       height = img->height;
+       res = true;
+   }
+   cvReleaseImage( &img );
+   return res;
+}
 
-// TODO: make this a member function
-void createSamples( const RunSetWrapper& rsw, const SamplesParams& params,
-                    const string& vecFilename, int* pNumPos )
+bool CascadeTrainI::createSamples( const RunSetWrapper& rsw, 
+                                   const SamplesParams& params,
+                    const string& vecFilename, int* pNumPos,
+                    )
 {
   // TODO: put this file into tempDir (member variable? parameter?)
   string infoFilename = "cascade_positives.txt";
   // TODO: similar to above, iterate over rsw but this time only POSITIVE
   // see the code from the old OpenCV Performance on what to create
   bool showsamples = false;
-  *pNumPos = cvCreateTrainingSamplesFromInfo( infoFilename.c_str(), vecFilename.c_str(), 
+
+  int i;
+  std::vector<RectangleLabels> posRectlabels;
+  int imgCnt = 0;
+  for (i = 0; i < runset.purposedLists.size(); i++)
+  {
+    // Only look for positive purposes
+    if (POSITIVE == runset.purposedLists[i]->pur.ptype)
+    {
+        // Store training-input data to vectors
+        cvac::PurposedLabelableSeq* lab = static_cast<cvac::PurposedLabelableSeq*>(runset.purposedLists[i].get());
+        cvac::LabelOptionsStruct options;
+        options.square = true;
+        options.discardOutOfBounds = true;
+        imgCnt += cvac::processLabelArtifactsToRects(&lab->labeledArtifacts, getImageWidthHeight, &posRectlabels, &options);
+     }
+  }
+
+  ofstream infoFile;
+ 
+  infoFile.open(infoFileName.c_str());
+
+  // Save stored data from RunSet to OpenCv positive samples .dat file
+  int cnt = 0;
+  std::vector<cvac::RectangleLabels>::iterator it;
+  for (it = posRectlabels.begin(); it < posRectlabels.end(); it++)
+  {
+    cvac::RectangleLabels recLabel = *it;
+    if (recLabel.rects.size() <= 0)
+    { // No rectangle so use the whole image
+        int w, h;
+        getImageWidthHeight(recLabel.filename, w, h);
+        infoFile << recLabel.filename << " 1 0 0 " << w << " " << h;
+    }else 
+    {
+       int rectCnt = 0;  // Only add labels that are as large as the window size we are using!
+       std::vector<cvac::BBoxPtr>::iterator rit;
+       // Get count of valid size rectangles.
+       for (rit = recLabel.rects.begin(); rit < recLabel.rects.end(); rit++)
+       {
+           cvac::BBoxPtr rect = *rit;
+           if (rect->width < params.width || rect->height < params.height)
+               continue;  // dont' count this rect.
+           rectCnt++;
+       }
+       if (rectCnt == 0)
+       {
+           int w, h;
+           getImageWidthHeight(recLabel.filename, w, h);
+           if (w >= params.width && h >= params.height)
+               infoFile << recLabel.filename << " 1 0 0 " << w << " " << h;
+       } else
+       {
+          // fileName, # of objects, x, y, width, height
+          infoFile << recLabel.filename << " " <<
+                      rectCnt << " ";
+
+          for (rit = recLabel.rects.begin(); rit < recLabel.rects.end(); rit++)
+          {
+              cvac::BBoxPtr rect = *rit;
+              if (rect->width >= params.width && rect->height >= params.height)
+                  infoFile << rect->x << " " << rect->y << " " << rect->width <<
+                          " " << rect->height  << " ";
+          }
+       }
+    }
+    cnt++;
+    // NO EXTRA BLANK LINE after the last sample, or cvhaartraining.cpp can fail on: "CV_Assert(elements_read == 1);"
+    if ((cnt) < imgCnt)
+        infoFile << endl;
+  }
+  infoFile.flush();
+  infoFile.close();
+  // Clean up any memory 
+  cvac::cleanupRectangleLabels(&posRectlabels);
+  // Save stored data from RunSet to OpenCv negative samples file
+
+  *pNumPos = cvCreateTrainingSamplesFromInfo( infoFilename.c_str(), 
+                                              vecFilename.c_str(), 
                                               params.numSamples, showsamples,
                                               params.width, params.height
                                              );
 }
 
-// TODO: move to header
-class TrainParams
-{
-public:
-  int numStages;
-  int featureType; // CvFeatureParams::HAAR, LBP, or HOG
-  int boost_type;
-  float minHitRate;
-  float maxFalseAlarm;
-  float weight_trim_rate;
-  int max_depth;
-  int weak_count;
-};
 
-// TODO: make this a member function
-void createClassifier( const string& tempDir, const string& vecFname, const string& bgName,
-                       int numPos, int numNeg, const TrainParams& trainParams )
+void CascadeTrainI::createClassifier( const string& tempDir, 
+                       const string& vecFname, const string& bgName,
+                       int numPos, int numNeg, 
+                       const TrainPropertiesI& trainProps)
 {
   CvCascadeClassifier classifier;
   int precalcValBufSize = 256,
@@ -197,10 +334,11 @@ void createClassifier( const string& tempDir, const string& vecFname, const stri
   bool baseFormatSave = false;
   CvCascadeParams cascadeParams;
   CvCascadeBoostParams stageParams;
-  Ptr<CvFeatureParams> featureParams[] = { Ptr<CvFeatureParams>(new CvHaarFeatureParams),
-                                           Ptr<CvFeatureParams>(new CvLBPFeatureParams),
-                                           Ptr<CvFeatureParams>(new CvHOGFeatureParams)
-                                         };
+  Ptr<CvFeatureParams> featureParams[] = 
+  { Ptr<CvFeatureParams>(new CvHaarFeatureParams),
+    Ptr<CvFeatureParams>(new CvLBPFeatureParams),
+    Ptr<CvFeatureParams>(new CvHOGFeatureParams)
+  };
   cascadeParams.featureType = trainParams.featureType;
   stageParams.boost_type = trainParams.boost_type;
 
@@ -209,16 +347,18 @@ void createClassifier( const string& tempDir, const string& vecFname, const stri
                     bgName,
                     numPos, numNeg,
                     precalcValBufSize, precalcIdxBufSize,
-                    trainParams.numStages,
+                    trainProps->numStages,
                     cascadeParams,
                     *featureParams[cascadeParams.featureType],
                     stageParams,
                     baseFormatSave );  
 }
 
-void CascadeTrainI::process(const Ice::Identity &client,const ::RunSet& runset,const ::Ice::Current& current)
+void CascadeTrainI::process(const Ice::Identity &client,
+                            const ::RunSet& runset,
+                            const ::Ice::Current& current)
 {	
-  TrainerCallbackHandlerPrx _callback =
+  TrainerCallbackHandlerPrx callback =
     TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());		
 
   Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
@@ -227,7 +367,7 @@ void CascadeTrainI::process(const Ice::Identity &client,const ::RunSet& runset,c
   if(runset.purposedLists.size() == 0)
   {
     string _resStr = "Error: no data (runset) for processing\n";
-    localAndClientMsg(VLogger::WARN, _callback, _resStr.c_str());
+    localAndClientMsg(VLogger::WARN, callback, _resStr.c_str());
     return;
   }
 
@@ -242,32 +382,21 @@ void CascadeTrainI::process(const Ice::Identity &client,const ::RunSet& runset,c
   int numNeg = 0;
   writeBgFile( rsw, bgName, &numNeg );
 
+
   // set parameters to createsamples
   SamplesParams samplesParams;
   samplesParams.numSamples = 1000;
-  samplesParams.width = 5; // TODO: get this from this->TrainerProperties (see Services.ice)
-  samplesParams.height = 5; // TODO
+  samplesParams.width = trainProps->width;
+  samplesParams.height = trainProps->height;
 
   // run createsamples
   std::string vecFname = "cascade_positives.vec";
   int numPos = 0;
-  createSamples( rsw, samplesParams, vecFname, &numPos );
-
+  createSamples( rsw, samplesParams, vecFname, &numPos, callback );
   // invoke the actual training
-  TrainParams trainParams;
-  trainParams.numStages = 20;
-  trainParams.featureType = CvFeatureParams::HAAR; // HAAR, LBP, HOG;
-  trainParams.boost_type = CvBoost::GENTLE;  // CvBoost::DISCRETE, REAL, LOGIT
-  trainParams.minHitRate = 0.995F;
-  trainParams.maxFalseAlarm = 0.5F;
-  trainParams.weight_trim_rate;  // TODO: set to default from OpenCV/ml.h
-  trainParams.max_depth;  // TODO: set to default from OpenCV/ml.h
-  trainParams.weak_count;  // TODO: set to default from OpenCV/ml.h
   createClassifier( tempDir, vecFname, bgName,
                     numPos, numNeg, trainParams );
 
-  // TODO: combine the directories into one XML file
-  // there's a haartraining function to do this;
 
   // return the resulting trained model
   // TODO: zip the resulting file
@@ -276,9 +405,9 @@ void CascadeTrainI::process(const Ice::Identity &client,const ::RunSet& runset,c
   detectorData.file.directory.relativePath = tempDir;
   detectorData.file.filename = "TODO: CascadeTrainResult.xml.zip";
   
-  _callback->createdDetector(detectorData);
+  callback->createdDetector(detectorData);
   
-  localAndClientMsg(VLogger::INFO, _callback, "Cascade training done.\n");
+  localAndClientMsg(VLogger::INFO, callback, "Cascade training done.\n");
 }
 
 // TODO: this is the old main function; here only for reference.  remove 

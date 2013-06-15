@@ -150,5 +150,13 @@ namespace cvac
    * @param prefixDir string to prepend
    */
    std::string expandFilename(std::string fileName, std::string prefixDir);
+
+   /** Return a unique temporary file name.  If basedir is not defined 
+   * then the file name is in the current systems temporary file .
+   * @param basedir Base directory the temp filename.
+   * @return The temp file name including path.
+   */
+
+   std::string getTempFilename( const std::string& basedir="" );
 };
 #endif // __FILEUTILS_H_INCLUDED__

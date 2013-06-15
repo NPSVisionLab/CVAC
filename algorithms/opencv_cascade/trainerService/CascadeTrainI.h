@@ -47,6 +47,46 @@
 #include <util/processRunSet.h>
 #include <util/ServiceMan.h>
 
+class SamplesParams
+{
+ public:
+  int numSamples;
+  int width;
+  int height;
+};
+
+
+class TrainerPropertiesI : public cvac::TrainerProperties
+{
+ public:
+   /**
+    * Client access fuctions
+    */
+   virtual void setWindowsSize(cvac::Size wsize,
+                               const ::Ice::Current& = ::Ice::Current() );
+   virtual bool canSetWindowsSize(
+                               const ::Ice::Current& = ::Ice::Current() );
+   virtual cvac::Size getWindowsSize(
+                               const ::Ice::Current& = ::Ice::Current() );
+   virtual void setSensitivity(double falseAlarmRate, double recall,
+                               const ::Ice::Current& = ::Ice::Current() );
+   virtual bool canSetSensitivity(
+                               const ::Ice::Current& = ::Ice::Current() );
+   virtual void getSensitivity(
+                               const ::Ice::Current& = ::Ice::Current() );
+ public:
+  int numStages;
+  int featureType; // CvFeatureParams::HAAR, LBP, or HOG
+  int boost_type;
+  float minHitRate;
+  float maxFalseAlarm;
+  float weight_trim_rate;
+  int max_depth;
+  int weak_count;
+  int width;
+  int height;
+};
+
 class CascadeTrainI : public cvac::DetectorTrainer
 {
  public:
@@ -64,11 +104,22 @@ class CascadeTrainI : public cvac::DetectorTrainer
   virtual ::std::string getDescription(const ::Ice::Current& = ::Ice::Current() );
   virtual void setVerbosity(::Ice::Int, const ::Ice::Current& = ::Ice::Current() );
   virtual ::cvac::TrainerPropertiesPrx getTrainerProperties(const ::Ice::Current& = ::Ice::Current());
+  void writeBgFile( const RunSetWrapper& rsw, const std::string& bgFilename, 
+                    int* pNumNeg );
 
+  bool createSamples( const RunSetWrapper& rsw, const SamplesParams& params,
+                    const std::string& vecFilename, int* pNumPos)
+  bool createClassifier( const std::string& tempDir, 
+                         const std::string& vecFname, 
+                         const std::string& bgName,
+                         int numPos, int numNeg, 
+                         const TrainPropertiesI *trainProps );
  private:
   bool  fInitialized;    	
   int   m_cvacVerbosity;
   cvac::ServiceManager *mServiceMan;
+  Ice::ObjectAdapterPtr mAdapter;
+  TrainingPropertiesI *mTrainProps;
 };
 
 #endif //_CascadeTrainI_H__

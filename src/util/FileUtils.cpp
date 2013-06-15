@@ -433,7 +433,21 @@ void cvac::sleep(int numberOfMilliseconds)
       #else
          ::Sleep(numberOfMilliseconds);
       #endif
-  }
+   }
+
+std::string getTempFilename( const std::string & basedir)
+{
+    char *baseName = NULL;
+    if (basdir != NULL  && (!basedir.empty)) 
+        baseName = basedir.c_str();
+#ifdef WIN32
+    char *tempName = _tempnam(basedir.c_str(), NULL);
+#else
+    char *tempName = tempnam(basedir.c_str(), NULL);
+#endif /* WIN32 */
+    std::string tempString = tempName;
+}
+
 /*
 BaseException(const std::string& newMsg) { //const std::string &newMsg
 
