@@ -91,6 +91,10 @@ bowCV::~bowCV()
 	vBoundHeight.clear();
 }
 
+bool bowCV::isInitialized()
+{
+  return flagName;
+}
 
 bool bowCV::train_initialize(const string& _detectorName,const string& _extractorName,const string& _matcherName,int _nCluster)
 {
@@ -189,7 +193,9 @@ bool bowCV::train_parseTrainList(const string& _filepathTrain,const string& _fil
 	ifstream ifList(_fullFilePathList.c_str());
 	if(!ifList.is_open())
 	{
-		cout << "Error - no file: " << _fullFilePathList <<endl;	fflush(stdout);
+		cout << "Error - can't parse train list from path list file: "
+                     << _fullFilePathList <<endl;
+                fflush(stdout);
 		return false;
 	}
 
@@ -237,7 +243,9 @@ bool bowCV::train_parseTrainList(const string& _filepathTrain,const string& _fil
 		if(_img.empty())
 		{
 			ifList.close();
-			cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
+			cout<<"Error - cannot read image from file: "
+                            << _fullFilePathImg << endl;	
+                        fflush(stdout);
 			return false;
 		}	
 
@@ -324,7 +332,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 
 	cout << "Total number of descriptors: " << _descriptorRepository.rows << endl;	fflush(stdout);
 
-	cout << "Clustering ... It will take a time.." << std::endl;	fflush(stdout);
+	cout << "Clustering ... this might take some time..." << std::endl;	fflush(stdout);
 	BOWKMeansTrainer bowTrainer(cntCluster); 
 	bowTrainer.add(_descriptorRepository);	
 	mVocabulary = bowTrainer.cluster();	
@@ -522,7 +530,9 @@ bool bowCV::detect_readTrainResult(const string& _filepath,const string& _filena
 	ifstream infile(_fullpath.c_str());	
 	if(!infile.is_open())
 	{
-		cout << "Error - no file: " << _fullpath <<endl;	fflush(stdout);
+		cout << "Error - can't read train result from file: "
+                     << _fullpath <<endl;	
+                fflush(stdout);
 		return false;
 	}
 	

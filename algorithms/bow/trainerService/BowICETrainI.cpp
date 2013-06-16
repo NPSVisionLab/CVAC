@@ -131,9 +131,10 @@ void BowICETrainI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& curr
     return NULL;
 }
 
-
 //ResultSetV2
-string BowICETrainI::processSingleImg(DetectorTrainerPtr trainer,string _filepath,string _filename,int _classID,const ::LocationPtr& _ploc)
+void BowICETrainI::processSingleImg(string _filepath,string _filename,int _classID,
+                                    const ::LocationPtr& _ploc,
+                                    TrainerCallbackHandlerPrx& _callback)
 {
 	std::string _strFilepath = std::string(_filepath);
 	std::string _strFilename = std::string(_filename);	
@@ -142,124 +143,120 @@ string BowICETrainI::processSingleImg(DetectorTrainerPtr trainer,string _filepat
 	std::ostringstream _ostr;	_ostr << _classID;
 	std::string _strClassID(_ostr.str());
 
-	BowICETrainI* _bowCV = static_cast<BowICETrainI*>(trainer.get());
-
-	std::string _resMsg;
 	if(_ploc.get() == NULL)
-		_bowCV->pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()));
+        {
+          pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()));
+        }
 	else
 	{
-		if(_ploc->ice_isA("::cvac::BBox"))
+		if(!_ploc->ice_isA("::cvac::BBox"))
 		{
-			BBoxPtr pbox = BBoxPtr::dynamicCast(_ploc);		
-			_bowCV->pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()),pbox->x,pbox->y,pbox->width,pbox->height);
-		}
-		else
-		{
-			_resMsg = "Error: " + _strFullname + " is not added to a class because only cvac::BBox type is accepted \n";
-			return _resMsg;
+                  localAndClientMsg(VLogger::WARN, _callback, 
+                                    "Not adding %s because not of cvac::BBox type.\n",
+                                    _strFilename.c_str(), _strClassID.c_str());
+                  return;
 		}		
-	}	
-	
-	std::ostringstream _omsg;	
-	_omsg << _strFilename << " is added into class: |" << _strClassID << "| for training. \n";	
-	_resMsg = _omsg.str();
-
-	//localAndClientMsg(VLogger::DEBUG, NULL, "%s is added into class: |%s| for training. \n", _strFilename.c_str(), _strClassID.c_str());
-	//localAndClientMsg(VLogger::DEBUG, NULL, _resMsg.c_str());
-
-	return _resMsg;
+                BBoxPtr pbox = BBoxPtr::dynamicCast(_ploc);		
+                pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()),
+                                              pbox->x,pbox->y,pbox->width,pbox->height);
+        }
+        localAndClientMsg(VLogger::DEBUG, _callback, "Adding %s into training class %s.\n",
+                          _strFilename.c_str(), _strClassID.c_str());
 }
 
 
 
 void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,const ::Ice::Current& current)
 {	
-	TrainerCallbackHandlerPrx _callback = TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());		
+  localAndClientMsg(VLogger::DEBUG, NULL, "starting BOW training process\n");
+  TrainerCallbackHandlerPrx _callback =
+    TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());		
+  localAndClientMsg( VLogger::DEBUG_2, _callback, 
+                     "starting BOW training process, got callback pointer\n");
 
-	std::string _filepath;
-	std::string _filename;	
-	std::string _resStr;
-	int _classID;
+  int _classID;
 
-	Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
-	std::string CVAC_DataDir = props->getProperty("CVAC.DataDir");
+  Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
+  std::string CVAC_DataDir = props->getProperty("CVAC.DataDir");
 
-	if(runset.purposedLists.size() == 0)
-	{
-		_resStr = "Error: no data (runset) for processing\n";
-		localAndClientMsg(VLogger::WARN, _callback, _resStr.c_str());
-		return;
-	}
+  if(runset.purposedLists.size() == 0)
+  {
+    localAndClientMsg(VLogger::WARN, _callback, 
+                      "Error: no data (runset) for processing\n");
+    return;
+  }
+  localAndClientMsg(VLogger::DEBUG, _callback, "got %d purposed lists\n",
+                    runset.purposedLists.size());
 
-	for (size_t i = 0; i < runset.purposedLists.size();i++)
-	{
-		_classID = runset.purposedLists[i]->pur.classID;
-		PurposedLabelableSeq* lab = static_cast<PurposedLabelableSeq*>(runset.purposedLists[i].get());
+  for (size_t listidx = 0; listidx < runset.purposedLists.size(); listidx++)
+  {
+    _classID = runset.purposedLists[listidx]->pur.classID;
+    PurposedLabelableSeq* lab = static_cast<PurposedLabelableSeq*>(runset.purposedLists[listidx].get());
+    assert(NULL!=lab);
+    
+    if(lab->labeledArtifacts.size() == 0)
+    {
+      localAndClientMsg(VLogger::WARN, _callback,
+                        "no actual labeledArtifacts in purposed list %d\n", listidx );
+      // ignore and continue
+    }
 
-		if(lab->labeledArtifacts.size() == 0)
-		{
-			_resStr = "Error: no real data (in a runset) for processing\n";
-			localAndClientMsg(VLogger::WARN, _callback, _resStr.c_str());
-			return;
-		}
+    for (size_t artfct=0; artfct< lab->labeledArtifacts.size(); artfct++)
+    {						
+      std::string _filepath;
+      std::string _filename;	
+      _filename = lab->labeledArtifacts[artfct]->sub.path.filename;
+      _filepath = lab->labeledArtifacts[artfct]->sub.path.directory.relativePath;
+      _filepath = expandFilename(_filepath, CVAC_DataDir);
+      
+      LocationPtr pLoc = NULL;
+      if(lab->labeledArtifacts[artfct]->ice_isA("::cvac::LabeledLocation"))
+      {
+        LabeledLocationPtr plabeledLocation =
+          LabeledLocationPtr::dynamicCast(lab->labeledArtifacts[artfct]);
+        pLoc = plabeledLocation->loc;				
+      }
+      processSingleImg(_filepath,_filename, _classID,pLoc, _callback);		
+    }
+  }
 
-		for (size_t i =0; i< lab->labeledArtifacts.size(); i++)
-		{						
-			_filename = lab->labeledArtifacts[i]->sub.path.filename;
-			_filepath = lab->labeledArtifacts[i]->sub.path.directory.relativePath;
-			_filepath = expandFilename(_filepath, CVAC_DataDir);
-		
-			if(lab->labeledArtifacts[i]->ice_isA("::cvac::LabeledLocation"))
-			{
-				LabeledLocationPtr plabeledLocation = LabeledLocationPtr::dynamicCast(lab->labeledArtifacts[i]);
-				LocationPtr pLoc = plabeledLocation->loc;				
-				_resStr =  BowICETrainI::processSingleImg(this,_filepath,_filename, _classID,pLoc);		
-			}
-			else
-			{
-				_resStr =  BowICETrainI::processSingleImg(this,_filepath,_filename, _classID,NULL);		
-			}
-					
-			localAndClientMsg(VLogger::DEBUG, _callback, _resStr.c_str());
-		}
-	}
+  // Forcefully, setting the saving directory of detectorData 
+  // to the folder "tmp" under the CVAC_DataDir folder
+  std::string tmpDir = "tmp";
+  std::string dirpath = CVAC_DataDir + "/" + tmpDir;
+  makeDirectory(dirpath);	
 
-	// Forcefully, setting the saving directory of detectorData to the folder "tmp" under the CVAC_DataDir folder
-	_filepath = CVAC_DataDir + "/tmp";	
-	makeDirectory(_filepath);	
+  localAndClientMsg(VLogger::INFO, _callback, 
+                    "Starting actual training procedure...\n"); //lekomin_suspended
+  // Tell ServiceManager that we will listen for stop
+  mServiceMan->setStoppable();
+  bool fTrain = pBowCV->train_run(dirpath, logfile_BowTrainResult, mServiceMan);
+  // Tell ServiceManager that we are done listening for stop
+  mServiceMan->clearStop();
 
-	localAndClientMsg(VLogger::INFO, _callback, "Training procedure is started.. \n");	//lekomin_suspended
-    // Tell ServiceManager that we will listen for stop
-    mServiceMan->setStoppable();
-	bool fTrain = pBowCV->train_run(_filepath, logfile_BowTrainResult, mServiceMan);
-    // Tell ServiceManager that we are done listening for stop
-    mServiceMan->clearStop();
+  if(!fTrain)
+  {
+    localAndClientMsg(VLogger::WARN, _callback, "Error during the training of BoW.\n");
+    return;
+  }
 
-	if(!fTrain)
-	{
-		_resStr = "Error during the training of BoW.\n";
-		localAndClientMsg(VLogger::WARN, _callback, _resStr.c_str());
-		return;
-	}
+  DetectorData detectorData;
+  // Method 1	
+  detectorData.type = ::cvac::FILE;
+  detectorData.file.directory.relativePath = tmpDir;
+  detectorData.file.filename = logfile_BowTrainResult;
 
-	DetectorData detectorData;
-	// Method 1	
-	detectorData.type = ::cvac::FILE;
- 	detectorData.file.directory.relativePath = _filepath;
- 	detectorData.file.filename = logfile_BowTrainResult;
+  // Method 2
+  // 	std::vector<std::string> strSeq;
+  // 	strSeq.push_back(dirpath);
+  // 	strSeq.push_back(logfile_BowTrainResult);
+  // 	Ice::OutputStreamPtr out = Ice::createOutputStream(current.adapter->getCommunicator());	//communicator()
+  // 	out->write(strSeq);
+  // 	ByteSeq seq;
+  // 	out->finished(seq);
+  // 	detectorData.data = seq;	
 
-	// Method 2
-// 	std::vector<std::string> strSeq;
-// 	strSeq.push_back(_filepath);
-// 	strSeq.push_back(logfile_BowTrainResult);
-// 	Ice::OutputStreamPtr out = Ice::createOutputStream(current.adapter->getCommunicator());	//communicator()
-// 	out->write(strSeq);
-// 	ByteSeq seq;
-// 	out->finished(seq);
-// 	detectorData.data = seq;	
+  _callback->createdDetector(detectorData);
 
-	_callback->createdDetector(detectorData);
-
-	localAndClientMsg(VLogger::INFO, _callback, "Training procedure is done..\n");
+  localAndClientMsg(VLogger::INFO, _callback, "Training procedure completed.\n");
 }

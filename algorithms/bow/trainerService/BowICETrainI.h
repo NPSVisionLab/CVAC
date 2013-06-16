@@ -73,7 +73,9 @@ private:
     bool	fInitialized;    	
     int		m_cvacVerbosity;
     cvac::ServiceManager *mServiceMan;
-    static	string processSingleImg(cvac::DetectorTrainerPtr trainer,string _filepath,string _filename,int _classID,const ::cvac::LocationPtr& _ploc);
+    void processSingleImg(string _filepath, string _filename,int _classID,
+                          const ::cvac::LocationPtr& _ploc, 
+                          cvac::TrainerCallbackHandlerPrx& _callback);
 };
 
 #endif //_BowICETrainI_H__

@@ -82,60 +82,68 @@ BowICEI::~BowICEI()
                           // Client verbosity
 void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const ::Ice::Current& current)
 {
-	// Since constructor only called on service start and destroy can be called.  We need to make sure we have it
-	if (pBowCV == NULL)
-		pBowCV = new bowCV();
+  // Since constructor only called on service start and destroy
+  // can be called.  We need to make sure we have it
+  if (pBowCV == NULL)
+  {
+    pBowCV = new bowCV();
+  }
 	
-    // Get the default CVAC data directory as defined in the config file
-    m_CVAC_DataDir = mServiceMan->getDataDir();	
-	std::string _extFile = data.file.filename.substr(data.file.filename.rfind(".")+1,data.file.filename.length());
-	if (_extFile.compare("txt") == 0)
-	{
-		localAndClientMsg(VLogger::DEBUG, NULL, "Initializing bag_of_words.\n");
-		localAndClientMsg(VLogger::DEBUG_1, NULL, "Initializing bag_of_words with %s/%s\n", data.file.directory.relativePath.c_str(), data.file.filename.c_str());
-		
-		
-		if(pBowCV->detect_initialize(data.file.directory.relativePath,data.file.filename))
-			fInitialized = true;
-		else
-			fInitialized = false;
-	}
-	else	//for a zip file	//if (cvac::FILE == data.type && size == 0)
-    { 
-         // Use utils un-compression to get zip file names
-         // Filepath is relative to 'CVAC_DataDir'
-        std::string archiveFilePath; 
-        if ((data.file.directory.relativePath.length() > 1 && data.file.directory.relativePath[1] == ':' )||
-            data.file.directory.relativePath[0] == '/' ||
-            data.file.directory.relativePath[0] == '\\')
-        {  // absolute path
-            archiveFilePath = data.file.directory.relativePath + "/" + data.file.filename;
-        } 
-		else
-		{ // prepend our prefix
-            archiveFilePath = (m_CVAC_DataDir + "/" + data.file.directory.relativePath + "/" + data.file.filename);
-        }
-
-         std::vector<std::string> fileNameStrings =  expandSeq_fromFile(archiveFilePath, getName(current));
-		   
-         // Need to strip off extra zeros
-         std::string directory = std::string(getCurrentWorkingDirectory().c_str());
-         std::string name = getName(current);
-         std::string dpath;
-         dpath.reserve(directory.length() + name.length() + 3);
-         dpath += directory;
-         dpath += std::string("/");
-         dpath += ".";
-         dpath += name;
-
-         if(pBowCV->detect_initialize(dpath,logfile_BowTrainResult))
-			 fInitialized = true;
-		 else
-		 {
-			 localAndClientMsg(VLogger::WARN, NULL, "Failed to run CV detect_initialize\n");
-			 fInitialized = false;
-         }
+  // Get the default CVAC data directory as defined in the config file
+  std::string reldir = "";
+  std::string filename = "";
+  std::string _extFile = data.file.filename.substr( data.file.filename.rfind(".")+1,
+                                                    data.file.filename.length());
+  if (_extFile.compare("txt") == 0)
+  {
+    localAndClientMsg(VLogger::DEBUG, NULL, "Initializing bag_of_words.\n");
+    localAndClientMsg(VLogger::DEBUG_1, NULL, "Initializing bag_of_words with %s/%s\n", 
+                      data.file.directory.relativePath.c_str(), data.file.filename.c_str());
+    reldir = data.file.directory.relativePath;
+    filename = data.file.filename;
+  }
+  else	//for a zip file	//if (cvac::FILE == data.type && size == 0)
+  { 
+    // Use utils un-compression to get zip file names
+    // Filepath is relative to 'CVAC_DataDir'
+    std::string archiveFilePath; 
+    if ( (data.file.directory.relativePath.length() > 1 
+          && data.file.directory.relativePath[1] == ':' )||
+         data.file.directory.relativePath[0] == '/' ||
+         data.file.directory.relativePath[0] == '\\')
+    {  // absolute path
+      archiveFilePath = data.file.directory.relativePath + "/" + data.file.filename;
+    } 
+    else
+    { // prepend our prefix
+      archiveFilePath = (m_CVAC_DataDir + "/" + data.file.directory.relativePath + "/" + data.file.filename);
     }
+
+    std::vector<std::string> fileNameStrings =  expandSeq_fromFile(archiveFilePath, getName(current));
+    
+    // Need to strip off extra zeros
+    std::string directory = std::string(getCurrentWorkingDirectory().c_str());
+    std::string name = getName(current);
+    std::string dpath;
+    dpath.reserve(directory.length() + name.length() + 3);
+    dpath += directory;
+    dpath += std::string("/");
+    dpath += ".";
+    dpath += name;
+
+    reldir = dpath;
+    filename = logfile_BowTrainResult;
+  }
+
+  // add the CVAC.DataDir root path and initialize from txt file
+  m_CVAC_DataDir = mServiceMan->getDataDir();
+  std::string absdir = m_CVAC_DataDir + "/" + reldir;
+  fInitialized = pBowCV->detect_initialize( absdir, filename );
+
+  if (!fInitialized)
+  {
+    localAndClientMsg(VLogger::WARN, NULL, "Failed to run CV detect_initialize\n");
+  }
 }
 
 
@@ -211,13 +219,18 @@ ResultSetV2 BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilen
 //void BowICEI::process(const ::DetectorCallbackHandlerPrx& callbackHandler,const ::RunSet& runset,const ::Ice::Current& current)
 void BowICEI::process(const Ice::Identity &client,const ::RunSet& runset,const ::Ice::Current& current)
 {
-	DetectorCallbackHandlerPrx _callback = DetectorCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
+  DetectorCallbackHandlerPrx _callback = 
+    DetectorCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
+  if (!fInitialized || NULL==pBowCV || !pBowCV->isInitialized())
+  {
+    localAndClientMsg(VLogger::ERROR, _callback, "BowICEI not initialized, aborting.\n");
+  }
   DoDetectFunc func = BowICEI::processSingleImg;
 
   try {
     processRunSet(this, _callback, func, runset, m_CVAC_DataDir, mServiceMan);
   }
   catch (exception e) {
-    localAndClientMsg(VLogger::ERROR_V, NULL, "$$$ Detector could not process given file-path.");
+    localAndClientMsg(VLogger::ERROR, _callback, "BOW detector could not process given file-path.\n");
   }
 }
