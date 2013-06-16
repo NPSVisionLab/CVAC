@@ -327,7 +327,7 @@ ResultSetV2 detectFunc(DetectorPtr detector, const char *fname)
   localAndClientMsg(VLogger::DEBUG, NULL, "About to process 0 %s\n", fname);
   if (!detI)
   {
-    localAndClientMsg(VLogger::ERROR_V, NULL, "Incorrect detectorPtr in detectFun\n");
+    localAndClientMsg(VLogger::ERROR, NULL, "Incorrect detectorPtr in detectFun\n");
     return ResultSetV2();
   }
 
