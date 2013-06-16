@@ -414,9 +414,9 @@ int ClientApp::run(int argc, char* argv[])
 
   if(argc < 3 || argc > 5)  // Warn wrong args
   {
-	localAndClientMsg(VLogger::ERROR_V, NULL,
+	localAndClientMsg(VLogger::ERROR, NULL,
 	"not enough or too many command line arguments\n", appName());
-	localAndClientMsg(VLogger::ERROR_V, NULL,
+	localAndClientMsg(VLogger::ERROR, NULL,
 	"<exe filename> <detector xml or zipFile from config> <name of the detector> [path to directory of images to process] [flag: 'verifyresults']\n");
 	return EXIT_FAILURE;
   }
@@ -424,14 +424,14 @@ int ClientApp::run(int argc, char* argv[])
   // Connect to detector
   DetectorPrx detector = initIceConnection(m_detectorName);
   if(NULL == detector.get()) {
-    localAndClientMsg(VLogger::ERROR_V, NULL, "Could not connect to CVAC Ice Services\n");
+    localAndClientMsg(VLogger::ERROR, NULL, "Could not connect to CVAC Ice Services\n");
     return EXIT_FAILURE;
   }
 
   int resultInit = initializeDetector(detector);
   if((EXIT_SUCCESS != resultInit) || (false == detector->isInitialized())) {
       
-    localAndClientMsg(VLogger::ERROR_V, NULL, "Detector->isInitialized() failed.  Aborting IceTestClient.\n");
+    localAndClientMsg(VLogger::ERROR, NULL, "Detector->isInitialized() failed.  Aborting IceTestClient.\n");
     return(EXIT_FAILURE);
   }
   else {
@@ -444,7 +444,7 @@ int ClientApp::run(int argc, char* argv[])
 	  std::string lastArgStr = std::string(argv[4]);
 	  if(-1 == lastArgStr.find("verifyresults")) 
 	  {
-		  localAndClientMsg(VLogger::ERROR_V, NULL, "Invalid value for argument #5: %s.  CMakeLists.txt must specify token: 'verifyresults'\n", argv[4]);
+		  localAndClientMsg(VLogger::ERROR, NULL, "Invalid value for argument #5: %s.  CMakeLists.txt must specify token: 'verifyresults'\n", argv[4]);
 		  return(EXIT_FAILURE);
 	  }
 		

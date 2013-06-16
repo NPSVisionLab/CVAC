@@ -48,7 +48,7 @@ class VLogger
 {
 public:
   enum Levels{ SILENT, 
-               ERROR_V, // The symbol ERROR is taken
+               ERROR, // The symbol ERROR is often #defined - be aware
                WARN,
                INFO,
                DEBUG, 
