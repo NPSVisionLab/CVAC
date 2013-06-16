@@ -391,6 +391,9 @@ def getTrainer( configString ):
 class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
     detectorData = None
     trainingFinished = False
+    def message( self, level, messageString, current=None ):
+        print("message from trainer: "+messageString, end="")
+        
     def createdDetector(self, detData, current=None):
         if not detData:
             raise RuntimeError("Finished training, but obtained no DetectorData")
