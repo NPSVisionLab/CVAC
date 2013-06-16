@@ -86,7 +86,7 @@ void BowICETrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& current
 	string	_nameMatcher("BruteForce-L1");	//BruteForce-L1, BruteForce, FlannBased  
 	int		_countWords = 150;	
 
-	// Load CVAC verbosity
+	// Set CVAC verbosity according to ICE properties
 	Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
 	string verbStr = props->getProperty("CVAC.ServicesVerbosity");
 	if (!verbStr.empty())
@@ -94,10 +94,8 @@ void BowICETrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& current
 	    vLogger.setLocalVerbosityLevel( verbStr );
 	}
 
-	if(pBowCV->train_initialize(_nameFeature,_nameDescriptor,_nameMatcher,_countWords))
-		fInitialized = true;
-	else
-		fInitialized = false;	
+        fInitialized =
+          pBowCV->train_initialize(_nameFeature,_nameDescriptor,_nameMatcher,_countWords);
 }
 
 bool BowICETrainI::isInitialized(const ::Ice::Current& current)
@@ -119,7 +117,7 @@ std::string BowICETrainI::getName(const ::Ice::Current& current)
 }
 std::string BowICETrainI::getDescription(const ::Ice::Current& current)
 {
-	return "BOW - Empty Description";
+	return "BOW - Bag of Words trainer";
 }
 
 void BowICETrainI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current)

@@ -82,6 +82,14 @@ BowICEI::~BowICEI()
                           // Client verbosity
 void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const ::Ice::Current& current)
 {
+  // Set CVAC verbosity according to ICE properties
+  Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
+  string verbStr = props->getProperty("CVAC.ServicesVerbosity");
+  if (!verbStr.empty())
+  {
+    vLogger.setLocalVerbosityLevel( verbStr );
+  }
+
   // Since constructor only called on service start and destroy
   // can be called.  We need to make sure we have it
   if (pBowCV == NULL)
@@ -195,7 +203,8 @@ ResultSetV2 BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilen
 	std::string _ffullname = std::string(fullfilename);
 	localAndClientMsg(VLogger::DEBUG_1, NULL, "%s is processing.\n", _ffullname.c_str());
 	BowICEI* _bowCV = static_cast<BowICEI*>(detector.get());
-    bool result = _bowCV->pBowCV->detect_run(fullfilename, _bestClass);
+        float confidence = 0.0f;
+        bool result = _bowCV->pBowCV->detect_run(fullfilename, _bestClass);
 
     if(true == result) {
         localAndClientMsg(VLogger::DEBUG_1, NULL, "Detection, %s as Class: %d\n", _ffullname.c_str(), _bestClass);
@@ -208,7 +217,9 @@ ResultSetV2 BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilen
         Labelable *labelable = new Labelable();
         char buff[32];
         sprintf(buff, "%d", _bestClass);
-        labelable->lab.name = buff;   
+        labelable->confidence = confidence;
+        labelable->lab.hasLabel = true;
+        labelable->lab.name = buff;
         _tResult.foundLabels.push_back(labelable);
         _resSet.results.push_back(_tResult);
     }
