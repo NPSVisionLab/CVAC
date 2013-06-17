@@ -212,7 +212,16 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
       {
         LabeledLocationPtr plabeledLocation =
           LabeledLocationPtr::dynamicCast(lab->labeledArtifacts[artfct]);
-        pLoc = plabeledLocation->loc;				
+        if (plabeledLocation)
+        {
+          assert( NULL!=plabeledLocation.get() );
+          pLoc = plabeledLocation->loc;				
+        }
+        else
+          {
+            printf("TODO: ****** RunSetWrapper needs to fix this, it ignores the loc:\n");
+            printf("WEIRD: ********* why is ice_isA true but the cast returns null?\n"); 
+          }
       }
       processSingleImg(_filepath,_filename, _classID,pLoc, _callback);		
     }

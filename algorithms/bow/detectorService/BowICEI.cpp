@@ -79,6 +79,21 @@ BowICEI::~BowICEI()
 	delete pBowCV;
 	pBowCV = NULL;
 }
+
+// TODO: move into fileUtils
+/** Turn a CVAC path into a file system path
+ */
+std::string getFSPath( const cvac::FilePath& fp, const std::string& CVAC_DataDir="" )
+{
+  std::string path;
+  cout<< "yes weh're here!" << fp.directory.relativePath << "!" << endl;
+  if (fp.directory.relativePath.empty())
+    path = CVAC_DataDir+"/"+fp.filename;
+  else
+    path = CVAC_DataDir+"/"+fp.directory.relativePath+"/"+fp.filename;
+  return path;
+}
+
                           // Client verbosity
 void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const ::Ice::Current& current)
 {
@@ -89,6 +104,7 @@ void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const
   {
     vLogger.setLocalVerbosityLevel( verbStr );
   }
+  m_CVAC_DataDir = mServiceMan->getDataDir();
 
   // Since constructor only called on service start and destroy
   // can be called.  We need to make sure we have it
@@ -124,27 +140,21 @@ void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const
     } 
     else
     { // prepend our prefix
-      archiveFilePath = (m_CVAC_DataDir + "/" + data.file.directory.relativePath + "/" + data.file.filename);
+      archiveFilePath = getFSPath( data.file, m_CVAC_DataDir );
     }
 
     std::vector<std::string> fileNameStrings =  expandSeq_fromFile(archiveFilePath, getName(current));
     
-    // Need to strip off extra zeros
+    // Need to strip off extra zeros  (matz: todo: not sure what that means)
+    // TODO: don't use cwd here but a temp dir under CVAC.DataDir instead
     std::string directory = std::string(getCurrentWorkingDirectory().c_str());
     std::string name = getName(current);
-    std::string dpath;
-    dpath.reserve(directory.length() + name.length() + 3);
-    dpath += directory;
-    dpath += std::string("/");
-    dpath += ".";
-    dpath += name;
-
-    reldir = dpath;
+    reldir.reserve(directory.length() + name.length() + 3);
+    reldir = directory + "/." + name;
     filename = logfile_BowTrainResult;
   }
 
   // add the CVAC.DataDir root path and initialize from txt file
-  m_CVAC_DataDir = mServiceMan->getDataDir();
   std::string absdir = m_CVAC_DataDir + "/" + reldir;
   fInitialized = pBowCV->detect_initialize( absdir, filename );
 
@@ -214,7 +224,7 @@ ResultSetV2 BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilen
 
         // The original field is for the original label and file name.  Results need
         // to be returned in foundLabels.
-        Labelable *labelable = new Labelable();
+        LabelablePtr labelable = new Labelable();
         char buff[32];
         sprintf(buff, "%d", _bestClass);
         labelable->confidence = confidence;
