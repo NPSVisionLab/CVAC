@@ -72,8 +72,9 @@ public:
 
 private:
     cvac::ResultSetV2 convertResults( const cvac::Labelable& original, CvSeq* foundObjects );
-    CvSeq* detectObjects( const cvac::Labelable& lbl  );
-
+    CvSeq* detectObjects( const cvac::CallbackHandlerPrx& callback, const cvac::Labelable& lbl  );
+    CvSeq* detectObjects( const cvac::CallbackHandlerPrx& callback, const std::string& fullname );
+    
     cvac::ServiceManager    *mServiceMan;
     cvac::DetectorCallbackHandlerPrx callback;
     bool                     fInitialized;    

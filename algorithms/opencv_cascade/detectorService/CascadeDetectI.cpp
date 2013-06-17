@@ -97,8 +97,19 @@ CascadeDetectI::~CascadeDetectI()
  */
 std::string getFSPath( const cvac::FilePath& fp, const std::string& CVAC_DataDir="" )
 {
-  std::string path = CVAC_DataDir+"/"+fp.directory.relativePath+"/"+fp.filename;
+  std::string path;
+  cout<< "yes weh're here!" << fp.directory.relativePath << "!" << endl;
+  if (fp.directory.relativePath.empty())
+    path = CVAC_DataDir+"/"+fp.filename;
+  else
+    path = CVAC_DataDir+"/"+fp.directory.relativePath+"/"+fp.filename;
   return path;
+}
+
+// TODO: make this a utility function
+std::string getSubstrateFileName( const cvac::Labelable& lbl, const std::string& CVAC_DataDir="" )
+{
+  return getFSPath( lbl.sub.path, CVAC_DataDir );
 }
 
 // TODO: move into fileUtils
@@ -136,19 +147,16 @@ void CascadeDetectI::initialize( ::Ice::Int verbosity,
   { 
     // Use utils un-compression to get zip file names
     // Filepath is relative to 'CVAC_DataDir'
-    std::string archiveFilePath; 
-    archiveFilePath = (m_CVAC_DataDir + "/" + data.file.directory.relativePath + "/" + data.file.filename);
-  
-    std::vector<std::string> fileNameStrings =  expandSeq_fromFile(archiveFilePath, getName(current));
+    std::string archiveFilePath = getFSPath( data.file );  
+    std::vector<std::string> fileNameStrings = 
+      expandSeq_fromFile( archiveFilePath, getName( current ));
     
-    // Need to strip off extra zeros
+    // Need to strip off extra zeros  (matz: todo: not sure what that means)
+    // TODO: don't use cwd here but a temp dir under CVAC.DataDir instead
     std::string directory = std::string(getCurrentWorkingDirectory().c_str());
     std::string name = getName(current);
     dpath.reserve(directory.length() + name.length() + 3);
-    dpath += directory;
-    dpath += std::string("/");
-    dpath += ".";
-    dpath += name;
+    dpath = directory + "/." + name;
   }
   localAndClientMsg( VLogger::DEBUG_1, NULL, "initializing with %s\n", dpath.c_str());
 
@@ -230,7 +238,7 @@ void CascadeDetectI::process( const Ice::Identity &client,
   {
     // do the actual detection
     CvSeq* objects;
-    objects = detectObjects( labelable );
+    objects = detectObjects( callback, labelable );
 
     // convert to ResultSet and send to ICE client
     ResultSetV2 resSet = convertResults( labelable, objects );
@@ -243,31 +251,34 @@ void CascadeDetectI::process( const Ice::Identity &client,
   callback = NULL;
 }
 
-// TODO: make this a utility function
-std::string getSubstrateFileName( const cvac::Labelable& lbl )
+/** run the cascade on the image described in lbl,
+ *  return the objects (rectangles) that were found
+ */
+CvSeq* CascadeDetectI::detectObjects( const CallbackHandlerPrx& callback, const cvac::Labelable& lbl )
 {
-  return getFSPath( lbl.sub.path );
+  localAndClientMsg(VLogger::DEBUG, callback, "in detectObjects\n");
+  CvSeq* objects = NULL;
+  string fullname = getSubstrateFileName( lbl, m_CVAC_DataDir );
+  return detectObjects( callback, fullname );
 }
 
 /** run the cascade on the image described in lbl,
  *  return the objects (rectangles) that were found
  */
-CvSeq* CascadeDetectI::detectObjects( const cvac::Labelable& lbl )
+CvSeq* CascadeDetectI::detectObjects( const CallbackHandlerPrx& callback, const std::string& fullname )
 {
-  localAndClientMsg(VLogger::DEBUG, NULL, "in detectObjects\n");
-  CvSeq* objects = NULL;
-  string fullname = "data/testImg/TestCaFlag.jpg"; // getSubstrateFileName( lbl );
-  localAndClientMsg(VLogger::DEBUG, NULL, "About to process 1 %s\n", fullname.c_str());
+  localAndClientMsg(VLogger::DEBUG, callback, "About to process 1 %s\n", fullname.c_str());
   IplImage *img = cvLoadImage( fullname.c_str() );
   if( !img )
   {
-    localAndClientMsg(VLogger::WARN, NULL, "cannot open %s\n", fullname.c_str());
+    localAndClientMsg(VLogger::WARN, callback, "cannot open %s\n", fullname.c_str());
     return NULL;
   }
-  localAndClientMsg(VLogger::DEBUG, NULL, "About to process 2 %s\n", fullname.c_str());
+  localAndClientMsg(VLogger::DEBUG, callback, "About to process 2 %s\n", fullname.c_str());
   cvClearMemStorage( storage );
   float scale_factor = 1.2; // TODO: make this part of detector parameters
-  objects = cvHaarDetectObjects( img, cascade, storage, scale_factor, 1 );
+  CvSeq* objects =
+    cvHaarDetectObjects( img, cascade, storage, scale_factor, 1 );
 
   cvReleaseImage( &img );
 
@@ -285,7 +296,6 @@ ResultSetV2 CascadeDetectI::convertResults( const Labelable& original, CvSeq* fo
   // The original field is for the original label and file name.  Results need
   // to be returned in foundLabels.
   tResult.original = new Labelable( original );
-  localAndClientMsg(VLogger::DEBUG, NULL, "convert 1");
 
   for( int i = 0; i < detcount; i++ )
   {
@@ -304,19 +314,10 @@ ResultSetV2 CascadeDetectI::convertResults( const Labelable& original, CvSeq* fo
     tResult.foundLabels.push_back( newLocation );
   }
   
-  localAndClientMsg(VLogger::DEBUG, NULL, "convert 2");
   ResultSetV2 resSet;	
-  localAndClientMsg(VLogger::DEBUG, NULL, "convert 3");
   resSet.results.push_back( tResult );
-  localAndClientMsg(VLogger::DEBUG, NULL, "convert 4");
   
   return resSet;
-}
-
-Labelable* createLabelable( const std::string& fname )
-{
-  Labelable *lab = new Labelable();
-  lab->sub.path = *getCvacPath( fname );
 }
 
 // callback for processRunSet
@@ -324,21 +325,17 @@ ResultSetV2 detectFunc(DetectorPtr detector, const char *fname)
 {
   localAndClientMsg(VLogger::DEBUG, NULL, "Filename for Detection: %s\n", fname);
   CascadeDetectI *detI = dynamic_cast<CascadeDetectI*>(detector.get());
-  localAndClientMsg(VLogger::DEBUG, NULL, "About to process 0 %s\n", fname);
   if (!detI)
   {
-    localAndClientMsg(VLogger::ERROR, NULL, "Incorrect detectorPtr in detectFun\n");
     return ResultSetV2();
   }
 
   // do the actual detection
   CvSeq* objects;
-  localAndClientMsg(VLogger::DEBUG, NULL, "About to process 01 %s\n", fname);
-  Labelable* labelable = createLabelable( fname );
-  localAndClientMsg(VLogger::DEBUG, NULL, "About to process 02 %s\n", fname);
-  objects = detI->detectObjects( *labelable );
+  objects = detI->detectObjects( (DetectorCallbackHandlerPrx)NULL, fname );
 
   // convert to ResultSet and return
-  ResultSetV2 resSet = detI->convertResults( *labelable, objects );
+  LabelablePtr original = new Labelable();
+  ResultSetV2 resSet = detI->convertResults( *original, objects );
   return resSet;
 }
