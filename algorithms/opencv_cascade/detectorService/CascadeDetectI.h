@@ -1,4 +1,4 @@
-#ifndef _BowICETrainI_H__
+#ifndef _CascadeDetectI_H__
 /*****************************************************************************
  * CVAC Software Disclaimer
  * 
@@ -35,12 +35,11 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- **************************************************************************/
-#define _BowICETrainI_H__
+ ****************************************************************************/
+#define _CascadeDetectI_H__
 
 #include <Data.h>
 #include <Services.h>
-#include <bowCV.h>
 
 #include <Ice/Ice.h>
 #include <IceBox/IceBox.h>
@@ -48,34 +47,42 @@
 #include <util/processRunSet.h>
 #include <util/ServiceMan.h>
 
-#define logfile_BowTrainResult    "logTrain_Table.txt"	//This file includes the list of result files
+#include <cv.h>
 
-class BowICETrainI : public cvac::DetectorTrainer
+class CascadeDetectI : public cvac::Detector
 {
 public:
-    BowICETrainI(cvac::ServiceManager *serv);
-    ~BowICETrainI();
-	
+    CascadeDetectI(cvac::ServiceManager *servm);
+    ~CascadeDetectI();
+
+    std::string m_CVAC_DataDir; // Store an absolute path to the detector data files
+
 
 public:
-    virtual void initialize(::Ice::Int, const ::Ice::Current& = ::Ice::Current() );
-    virtual void process(const Ice::Identity &client, const ::cvac::RunSet&, const ::Ice::Current& = ::Ice::Current() );
-    virtual bool isInitialized(const ::Ice::Current& = ::Ice::Current() );
-	virtual void destroy(const ::Ice::Current& = ::Ice::Current() );
-	virtual ::std::string getName(const ::Ice::Current& = ::Ice::Current() );
-	virtual ::std::string getDescription(const ::Ice::Current& = ::Ice::Current() );
-	virtual void setVerbosity(::Ice::Int, const ::Ice::Current& = ::Ice::Current() );
-   virtual ::cvac::TrainerPropertiesPrx getTrainerProperties(
-                                    const ::Ice::Current& = ::Ice::Current());
+    virtual void initialize(::Ice::Int verbosity,const ::cvac::DetectorData& data,const ::Ice::Current& current);
+    virtual void process(const Ice::Identity &client,const ::cvac::RunSet& runset,const ::Ice::Current& current);
+    virtual bool isInitialized(const ::Ice::Current& current);
+    virtual void destroy(const ::Ice::Current& current);
+    virtual std::string getName(const ::Ice::Current& current);
+    virtual std::string getDescription(const ::Ice::Current& current);
+    void setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current);
+
+    virtual cvac::DetectorData createCopyOfDetectorData(const ::Ice::Current& current);
+    virtual cvac::DetectorPropertiesPrx getDetectorProperties(const ::Ice::Current& current);
 
 private:
-    bowCV*	pBowCV;
-    bool	fInitialized;    	
-    int		m_cvacVerbosity;
-    cvac::ServiceManager *mServiceMan;
-    void processSingleImg(string _filepath, string _filename,int _classID,
-                          const ::cvac::LocationPtr& _ploc, 
-                          cvac::TrainerCallbackHandlerPrx& _callback);
+    cvac::ResultSetV2 convertResults( const cvac::Labelable& original, CvSeq* foundObjects );
+    CvSeq* detectObjects( const cvac::CallbackHandlerPrx& callback, const cvac::Labelable& lbl  );
+    CvSeq* detectObjects( const cvac::CallbackHandlerPrx& callback, const std::string& fullname );
+    
+    cvac::ServiceManager    *mServiceMan;
+    cvac::DetectorCallbackHandlerPrx callback;
+    bool                     fInitialized;    
+    CvHaarClassifierCascade *cascade;
+    std::string              cascade_name;
+    CvMemStorage            *storage;
+
+    friend cvac::ResultSetV2 detectFunc( cvac::DetectorPtr detector, const char *fname );
 };
 
-#endif //_BowICETrainI_H__
+#endif //_CascadeDetectI_H__

@@ -67,12 +67,13 @@ static VLogger vLogger();  // Compile-time default base-level
 void cvac::localAndClientMsg(VLogger::Levels rqLevel, const CallbackHandlerPrx& callbackHandler, const char* fmt, ...) {
 
   va_list args;
-  va_start(args, fmt);
   
   // Echo locally according to config.service property 'CVAC.ServicesVerbosity' in CVAC root
   if(vLogger.getBaseLevel() >= rqLevel)
   {
+    va_start(args, fmt);
     vLogger.printv(rqLevel, fmt, args);
+    va_end(args);
   }
 
   // Echo remotely based on client verbosity.
@@ -84,11 +85,18 @@ void cvac::localAndClientMsg(VLogger::Levels rqLevel, const CallbackHandlerPrx& 
   {
     // Echo through callbackHandler if available, assemble string for client message from arglist
     if(0 != callbackHandler) {
-     
-      char buffer[1024];
-      memset(&buffer[0], 0, sizeof(buffer));
-      vsprintf(buffer, fmt, args);
-
+      const unsigned int BUFLEN=1024;
+      if (strlen(fmt)>BUFLEN/2)
+      {
+        vLogger.printv( VLogger::DEBUG_2, 
+                        "Really long debug message - might get truncated: %s\n", fmt );
+      }
+      char buffer[BUFLEN+1];
+      // shouldn't need this:      memset(&buffer[0], 0, sizeof(buffer));
+      va_start(args, fmt);
+      vsnprintf(buffer, BUFLEN, fmt, args);
+      va_end(args);
+      buffer[BUFLEN]=0;
       callbackHandler->message(rqLevel, buffer);  // Send to client
     }
     va_end(args);

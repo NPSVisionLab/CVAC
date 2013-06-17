@@ -76,6 +76,7 @@ public:
 	bowCV();
 	~bowCV();	
 	
+        bool                    isInitialized();
 	bool			train_initialize(const string& _detectorName,const string& _extractorName,const string& _matcherName,int _nCluster);
 	bool			train_parseTrainList(const string& _filepathTrain,const string& _filenameTrainList);
 	void			train_stackTrainImage(const string& _fullpath,const int& _classID);	

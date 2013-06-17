@@ -1,5 +1,5 @@
 PROJECT (opencv_detectcascade_service)
-set( the_target opencv_detectcascade_service )
+set( the_target OpenCVCascadeDetector )
 
 WRAP_SLICE(SLICE_FILES
            ${CVAC_ROOT_DIR}/src/Data.ice
@@ -7,11 +7,11 @@ WRAP_SLICE(SLICE_FILES
            )
 
 SET(SOURCE_FILES
-#    BowICEI.cpp
+  CascadeDetectI.cpp
 )
 
 SET(HEADER_FILES
-#    BowICEI.h
+  CascadeDetectI.h
 )
 
 SET(INCLUDE_DIRS
@@ -31,7 +31,6 @@ ADD_LIBRARY(${the_target} SHARED
             )
 
 TARGET_LINK_LIBRARIES(${the_target}
-#    bow
     utils
     ${ICE_LIBRARIES} ${ICE_BOX_LIBRARY}
     ${OpenCV_LIBS}
@@ -48,6 +47,5 @@ INSTALL( TARGETS ${the_target}
                DESTINATION lib
                COMPONENT Runtime
              )
-
 ENDIF (WIN32)
 ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )

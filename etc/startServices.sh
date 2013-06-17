@@ -16,7 +16,9 @@ export PYTHONEXE=/usr/bin/python2.6
 export ICEDIR=${INSTALLDIR}/3rdparty/ICE
 export OPENCVDIR=${INSTALLDIR}/3rdparty/opencv
 export PATH=$PATH:${INSTALLDIR}/bin
-export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${INSTALLDIR}/lib:${OPENCVDIR}/lib:${ICEDIR}/lib"
+export MATLAB_MCR_DYLD_PATH="/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/runtime/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/sys/os/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/bin/maci64:/System/Library/Frameworks/JavaVM.framework/JavaVM:/System/Library/Frameworks/JavaVM.framework/Libraries"
+export XAPPLRESDIR=/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/X11/app-defaults
+export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${INSTALLDIR}/lib:${OPENCVDIR}/lib:${ICEDIR}/lib:$MATLAB_MCR_DYLD_PATH"
 
 # C/C++ services, via IceBox
 cd ${INSTALLDIR}

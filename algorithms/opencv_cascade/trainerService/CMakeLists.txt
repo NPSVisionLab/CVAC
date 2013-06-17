@@ -1,6 +1,6 @@
 PROJECT (opencv_traincascade_service)
 
-set(the_target opencv_traincascade_service)
+set(the_target OpenCVCascadeTrainer)
 
 WRAP_SLICE(SLICE_FILES
            ${CVAC_ROOT_DIR}/src/Data.ice

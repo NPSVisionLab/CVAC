@@ -90,7 +90,7 @@ VLogger::Levels VLogger::getIntLevel(int intLevel) {
   switch(intLevel) {
     case 0: return SILENT;
       break;
-    case 1: return ERROR_V;
+    case 1: return ERROR;
       break;
     case 2: return WARN;
       break;
@@ -105,7 +105,7 @@ VLogger::Levels VLogger::getIntLevel(int intLevel) {
     case 7: return DEBUG_3;
 
     default:
-      localAndClientMsg(VLogger::ERROR_V, NULL, "Unable to map integer level: %d to VLogger::Levels.\n", intLevel);
+      localAndClientMsg(VLogger::ERROR, NULL, "Unable to map integer level: %d to VLogger::Levels.\n", intLevel);
       return(DEBUG_3);
   }
 }

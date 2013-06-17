@@ -20,6 +20,10 @@ detector = easy.getDetector( "bowTest:default -p 10104" )
 results = easy.detect( detector, "detectors/bowUSKOCA.zip", "testImg/TestCaFlag.jpg" )
 easy.printResults( results )
 
+detector = easy.getDetector( "OpenCVCascadeDetector:default -p 10102" )
+results = easy.detect( detector, "detectors/haarcascade_frontalface_alt.xml", "testImg/TestCaFlag.jpg" )
+easy.printResults( results )
+
 #
 # Second, a quick way to train a detector.  The resulting model
 # can be used in place of the detector above.
@@ -39,9 +43,9 @@ easy.printResults( results )
 # print dataset information about this corpus
 #
 cs = easy.getCorpusServer("CorpusServer:default -p 10011")
-#corpus = easy.openCorpus( cs, "corpus/CvacCorpusTest.properties" )
-#corpus = easy.openCorpus( cs, "corporate_logos" );
-corpus = easy.openCorpus( cs, "trainImg" );
+#corpus = easy.openCorpus( "corpus/CvacCorpusTest.properties", corpusServer=cs )
+#corpus = easy.openCorpus( "corporate_logos", corpusServer=cs );
+corpus = easy.openCorpus( "trainImg", corpusServer=cs );
 categories, lablist = easy.getDataSet( corpus, corpusServer=cs )
 print('Obtained {0} labeled artifact{1} from corpus "{2}":'.format(
     len(lablist), ("s","")[len(lablist)==1], corpus.name ));

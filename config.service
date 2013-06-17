@@ -8,23 +8,22 @@
 Ice.ACM.Server=0
 
 MultiBoost.Endpoints=tcp -p           10101
-CVAC_OpenCV_Detector.Endpoints=tcp -p 10102
+OpenCVCascadeDetector.Endpoints=tcp -p             10102
+OpenCVCascadeTrainer.Endpoints=tcp -p              10107
 BOW_Trainer.Endpoints=tcp -p          10103
 BOW_Detector.Endpoints=tcp -p         10104
 SBD_Trainer.Endpoints=tcp -p          10105
 SBDTest.Endpoints=tcp -p              10106
-CVAC_OpenCV_Trainer.Endpoints=tcp -p  10107
 CorpusService.Endpoints=tcp -h localhost -p        10011
 FileService.Endpoints=tcp -h localhost -p          10110
 
 ##############################################################################
 # 0: silent, 1: warnings, 2: info, 3: debug, 4: debug_1, 5: debug_2 6: debug_3
-CVAC.ServicesVerbosity = 4
+CVAC.ServicesVerbosity = 3
 
 #Directory to prepend file names with if the file names are not absolute
 CVAC.DataDir = data
 
-CVAC.ServicesVerbosity=5
 #
 # Warn about connection exceptions
 #

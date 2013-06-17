@@ -140,13 +140,17 @@ public class LabelableListI extends ArrayList<Labelable> {
     }
     /** LabelableI data points to each file
      * 
-     * @param directory
-     * @param what path to record in the Labelable
+     * @param directory Collect files from this directory.
+     * @param label The label that these Labelables will git.
+     * @param confidence What confidence to assign to the Labelable.
+     * @param relativePath The path to get to this folder.
      * @return the number of samples added
      */
     public int addAllSamplesInDir(File directory, 
-            Label label, float confidence, DirectoryPath relativePath) 
+                                  Label label, float confidence, DirectoryPath relativePath,
+                                  boolean recursive) 
     {
+        System.out.println("****** scanning rel "+relativePath.relativePath+", dir " + directory.getPath() );
         boolean video = false;
         if (null != m_corpus){
             //if (m_corpus.getImageType() == Corpus.DataSetImageType.VIDEO) {
@@ -185,6 +189,28 @@ public class LabelableListI extends ArrayList<Labelable> {
                     this.add(sample);
                 }
                 cnt +=  videoFiles.length;
+            }
+        }
+        if (recursive)
+        {
+            File files[] = directory.listFiles();
+            if (null!=files)
+            {
+                for ( File file : files )
+                {
+                    if ( file.isDirectory() && 
+                         !(file.getName().equals(".")
+                           || file.getName().equals("..")
+                           || file.getName().equals(".meta")
+                           ))
+                    {
+                        DirectoryPath newRelativePath = (DirectoryPath) relativePath.clone();
+                        newRelativePath.relativePath = 
+                            relativePath.relativePath + "/" + file.getName();
+                        cnt += addAllSamplesInDir( file, label, confidence,
+                                                   newRelativePath, true );
+                    }
+                }
             }
         }
         return cnt;
