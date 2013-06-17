@@ -20,18 +20,32 @@ import unittest
 import stat
 import threading
 
+# for drawing only:
+try:
+    import Tkinter as tk
+    from PIL import Image, ImageTk, ImageDraw
+except:
+    # don't raise an error now
+    pass
+
 #
 # one-time initialization code, upon loading the module
 #
 ic = Ice.initialize(sys.argv)
 defaultCS = None
 
-
 def getFSPath( cvacPath ):
     '''Turn a CVAC path into a file system path'''
     # todo: obtain CVAC.DataDir
+    if type(cvacPath) is cvac.Labelable:
+        cvacPath = cvacPath.sub.path
+    elif type(cvacPath) is cvac.Substrate:
+        cvacPath = cvacPath.path
     CVAC_DataDir = "data"
-    path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
+    if not cvacPath.directory.relativePath:
+        path = CVAC_DataDir+"/"+cvacPath.filename
+    else:
+        path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
     return path
 
 def getCvacPath( fsPath ):
@@ -78,9 +92,14 @@ def getDefaultCorpusServer():
         defaultCS = getCorpusServer( "CorpusServer:default -p 10011" )
     return defaultCS
 
-def openCorpus( corpusServer, corpusPath ):
+def openCorpus( corpusPath, corpusServer=None ):
     '''Open a Corpus specified by a properties file,
-       or create a new Corpus from all files in a given directory'''
+       or create a new Corpus from all files in a given directory;
+       if no corpusServer is specified, a default local server is
+       expected at port 10011'''
+    if not corpusServer:
+        corpusServer = getDefaultCorpusServer()
+        
     # switch based on whether corpusPath is likely a directory or not.
     # note that the corpus could be on a remote server, therefore
     # we can't check for existence and type of corpusPath (dir, file)
@@ -168,7 +187,7 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
         if createMirror:
             createLocalMirror( corpusServer, corpus )
         else:
-            raise RuntimeError("local mirror required, won't create automatically",
+            raise RuntimeError("local mirror required, won't create automatically " \
                                "(specify createMirror=True to do so)")
 
     labelList = corpusServer.getDataSet( corpus )
@@ -188,6 +207,42 @@ def printCategoryInfo( categories ):
     for key in sorted( categories.keys() ):
         klen = len( categories[key] )
         print("{0} ({1} artifact{2})".format( key, klen, ("s","")[klen==1] ))
+
+def printSubstrateInfo( labelList, indent="" ):
+    if not labelList:
+        print("no labelList, nothing to print")
+        return
+    substrates = {}
+    for lb in labelList:
+        subpath = getFSPath( lb.sub.path )
+        if subpath in substrates:
+            substrates[subpath] = substrates[subpath]+1
+        else:
+            substrates[subpath] = 1
+    sys.stdout.softspace=False;
+    for subpath in sorted( substrates.keys() ):
+        numlabels = substrates[subpath]
+        print("{0}{1} ({2} label{3})".\
+              format( indent, subpath, numlabels, ("s","")[numlabels==1] ))
+
+def printRunsetInfo( runset ):
+    if not runset or not type(runset) is cvac.RunSet:
+        print("no (proper) runset, nothing to print")
+        return
+    sys.stdout.softspace=False;
+    for plist in runset.purposedLists:
+        purposeText = plist.pur.ptype
+        if purposeText is cvac.PurposeType.MULTICLASS:
+            purposeText = "{0}, classID={1}".format( purposeText, plist.pur.classID)
+        if type(plist) is cvac.PurposedDirectory:
+            print("directory with Purpose '{0}'; not listing members"\
+                  .format( purposeText ) )
+        elif type(plist) is cvac.PurposedLabelableSeq:
+            print("sequence with Purpose '{0}' and the following members:"\
+                  .format( purposeText ) )
+            printSubstrateInfo( plist.labeledArtifacts, indent="  " )
+        else:
+            raise RuntimeError("unexpected type "+type(plist))
 
 def createRunSet( categories ):
     '''Add all samples from the categories to a new RunSet.
@@ -322,13 +377,13 @@ def collectSubstrates( runset ):
     substrates = set()
     for plist in runset.purposedLists:
         if type(plist) is cvac.PurposedDirectory:
-            raise RuntimeException("cannot deal with PurposedDirectory yet")
+            raise RuntimeError("cannot deal with PurposedDirectory yet")
         elif type(plist) is cvac.PurposedLabelableSeq:
             for lab in plist.labeledArtifacts:
                 if not lab.sub in substrates:
                     substrates.add( lab.sub )
         else:
-            raise RuntimeException("unexpected subclass of PurposedList")
+            raise RuntimeError("unexpected subclass of PurposedList")
     return substrates
 
 def putAllFiles( fileserver, runset ):
@@ -466,7 +521,7 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
         ddpath = getCvacPath( detectorData );
         detectorData = cvac.DetectorData( cvac.DetectorDataType.FILE, None, ddpath, None )
     elif not type(detectorData) is cvac.DetectorData:
-        raise RuntimeException("detectorData must be either filename or cvac.DetectorData")
+        raise RuntimeError("detectorData must be either filename or cvac.DetectorData")
 
     # create a RunSet out of a filename or directory path
     if type(runset) is str:
@@ -474,7 +529,7 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
         runset = res['runset']
         classmap = res['classmap']
     elif not type(runset) is cvac.RunSet:
-        raise RuntimeException("runset must either be a filename, directory, or cvac.RunSet")
+        raise RuntimeError("runset must either be a filename, directory, or cvac.RunSet")
 
     # ICE functionality to enable bidirectional connection for callback
     adapter = ic.createObjectAdapter("")
@@ -576,6 +631,84 @@ def printResults( results, foundMap=None, origMap=None ):
         if numfound==1 and origname.lower()==names[0].lower():
             identical += 1
     print('{0} out of {1} results had identical labels'.format( identical, len( results ) ))
+
+wnd = None
+def initGraphics():
+    global wnd
+    if not wnd:
+        try:
+            wnd = tk.Tk()
+            wnd.title('results')
+        except:
+            wnd = None
+            raise RuntimeError("cannot display images - do you have PIL installed?")
+
+def showImage( img ):
+    # open window, convert image into displayable photo
+    photo = ImageTk.PhotoImage( img )
+    
+    # make the window the size of the image
+    # position coordinates of wnd 'upper left corner'
+    x = 500
+    y = 0
+    w = photo.width()
+    h = photo.height()
+    wnd.geometry("%dx%d+%d+%d" % (w, h, x, y))
+    
+    # Display the photo in a label (as wnd has no image argument)
+    panel = tk.Label(wnd, image=photo)
+    panel.pack(side='top', fill='both', expand='yes')    
+    # save the panel's image from 'garbage collection'
+    panel.image = photo
+    
+    # start the event loop
+    wnd.mainloop()
+
+def drawResults( results ):
+    if not results:
+        print("no results, nothing to draw")
+        return
+
+    # first, collect all image substrates of found labels;
+    # if the foundLabel doesn't have a path, use the path from
+    # the original
+    substrates = {}
+    for res in results:
+        for lbl in res.foundLabels:
+            if lbl.sub.isImage:
+                if not lbl.sub.path.filename:
+                    subpath = getFSPath( res.original )
+                else:
+                    subpath = getFSPath( lbl )
+                if subpath in substrates:
+                    substrates[subpath].append( lbl )
+                else:
+                    substrates[subpath] = [lbl]
+    if not substrates:
+        print("no labels and/or no substrates, nothing to draw");
+        return
+
+    sys.stdout.softspace=False;
+    for subpath in sorted( substrates.keys() ):
+        numlabels = len( substrates[subpath] )
+        print("{0} ({1} label{2})".format( subpath, numlabels, ("s","")[numlabels==1] ))
+
+    # now draw
+    initGraphics()
+    for subpath in substrates:
+        img = Image.open( subpath )
+        for lbl in substrates[subpath]:
+            # draw poly into the image
+            if type(lbl) is cvac.LabeledLocation:
+                if type( lbl.loc ) is cvac.BBox:
+                    draw = ImageDraw.Draw( img )
+                    a = lbl.loc.x
+                    b = lbl.loc.y
+                    c = a+lbl.loc.width
+                    d = b+lbl.loc.height
+                    draw.line([(a,b), (c,b), (c,d), (a,d), (a,b)], fill=255, width=2)
+                    del draw
+        showImage( img )
 
 def getConfusionMatrix( results, origMap, foundMap ):
     '''produce a confusion matrix'''
