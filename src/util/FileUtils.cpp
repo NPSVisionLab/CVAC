@@ -437,15 +437,16 @@ void cvac::sleep(int numberOfMilliseconds)
 
 std::string getTempFilename( const std::string & basedir)
 {
-    char *baseName = NULL;
-    if (basdir != NULL  && (!basedir.empty)) 
+    const char *baseName = NULL;
+    if (!basedir.empty()) 
         baseName = basedir.c_str();
 #ifdef WIN32
-    char *tempName = _tempnam(basedir.c_str(), NULL);
+    char *tempName = _tempnam(baseName, NULL);
 #else
-    char *tempName = tempnam(basedir.c_str(), NULL);
+    char *tempName = tempnam(baseName, NULL);
 #endif /* WIN32 */
     std::string tempString = tempName;
+    return tempString;
 }
 
 /*

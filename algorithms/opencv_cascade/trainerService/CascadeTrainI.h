@@ -55,6 +55,14 @@ class SamplesParams
   int height;
 };
 
+// TODO: change to K's class name
+class RunSetWrapper {
+public:
+  RunSetWrapper(const cvac::RunSet& rs ): runset(rs) { }
+
+public:
+  const cvac::RunSet &runset;
+};
 
 class TrainerPropertiesI : public cvac::TrainerProperties
 {
@@ -62,17 +70,17 @@ class TrainerPropertiesI : public cvac::TrainerProperties
    /**
     * Client access fuctions
     */
-   virtual void setWindowsSize(cvac::Size wsize,
+   virtual void setWindowSize(const cvac::Size &wsize,
+                               const Ice::Current& = ::Ice::Current() );
+   virtual bool canSetWindowSize(
                                const ::Ice::Current& = ::Ice::Current() );
-   virtual bool canSetWindowsSize(
+   virtual cvac::Size getWindowSize(
                                const ::Ice::Current& = ::Ice::Current() );
-   virtual cvac::Size getWindowsSize(
-                               const ::Ice::Current& = ::Ice::Current() );
-   virtual void setSensitivity(double falseAlarmRate, double recall,
+   virtual void setSensitivity(Ice::Double falseAlarmRate, Ice::Double recall,
                                const ::Ice::Current& = ::Ice::Current() );
    virtual bool canSetSensitivity(
                                const ::Ice::Current& = ::Ice::Current() );
-   virtual void getSensitivity(
+   virtual void getSensitivity(Ice::Double &falseAlarmRate, Ice::Double &recall,
                                const ::Ice::Current& = ::Ice::Current() );
  public:
   int numStages;
@@ -108,18 +116,18 @@ class CascadeTrainI : public cvac::DetectorTrainer
                     int* pNumNeg );
 
   bool createSamples( const RunSetWrapper& rsw, const SamplesParams& params,
-                    const std::string& vecFilename, int* pNumPos)
+                    const std::string& vecFilename, int* pNumPos);
   bool createClassifier( const std::string& tempDir, 
                          const std::string& vecFname, 
                          const std::string& bgName,
                          int numPos, int numNeg, 
-                         const TrainPropertiesI *trainProps );
+                         const TrainerPropertiesI *trainProps );
  private:
   bool  fInitialized;    	
   int   m_cvacVerbosity;
   cvac::ServiceManager *mServiceMan;
   Ice::ObjectAdapterPtr mAdapter;
-  TrainingPropertiesI *mTrainProps;
+  TrainerPropertiesI *mTrainProps;
 };
 
 #endif //_CascadeTrainI_H__
