@@ -1,14 +1,4 @@
-SET(OPENCV_TRAINCASCADE_DEPS opencv_core opencv_ml opencv_imgproc opencv_objdetect opencv_highgui opencv_calib3d opencv_video opencv_features2d opencv_flann opencv_legacy)
-#ocv_check_dependencies(${OPENCV_TRAINCASCADE_DEPS})
-
-#if(NOT OCV_DEPENDENCIES_FOUND)
-#  return()
-#endif()
-
 project(traincascade)
-
-#ocv_include_directories("${CMAKE_CURRENT_SOURCE_DIR}" "${OpenCV_SOURCE_DIR}/include/opencv")
-#ocv_include_modules(${OPENCV_TRAINCASCADE_DEPS})
 
 set(traincascade_files
   cascadeclassifier.cpp cascadeclassifier.h

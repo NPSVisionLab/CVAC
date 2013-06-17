@@ -1,14 +1,4 @@
-SET(OPENCV_HAARTRAINING_DEPS opencv_core opencv_imgproc opencv_highgui opencv_objdetect opencv_calib3d opencv_video opencv_features2d opencv_flann opencv_legacy)
-#ocv_check_dependencies(${OPENCV_HAARTRAINING_DEPS})
-
-#if(NOT OCV_DEPENDENCIES_FOUND)
-#  return()
-#endif()
-
 project(haartraining)
-
-#ocv_include_directories("${CMAKE_CURRENT_SOURCE_DIR}" "${OpenCV_SOURCE_DIR}/include/opencv")
-#ocv_include_modules(${OPENCV_HAARTRAINING_DEPS})
 
 if(WIN32)
   link_directories(${CMAKE_CURRENT_BINARY_DIR})

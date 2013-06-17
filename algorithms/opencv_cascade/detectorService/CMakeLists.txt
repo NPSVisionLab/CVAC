@@ -31,7 +31,6 @@ ADD_LIBRARY(${the_target} SHARED
             )
 
 TARGET_LINK_LIBRARIES(${the_target}
-#    bow
     utils
     ${ICE_LIBRARIES} ${ICE_BOX_LIBRARY}
     ${OpenCV_LIBS}
@@ -48,6 +47,5 @@ INSTALL( TARGETS ${the_target}
                DESTINATION lib
                COMPONENT Runtime
              )
-
 ENDIF (WIN32)
 ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )

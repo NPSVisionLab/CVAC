@@ -125,8 +125,9 @@ def openCorpus( corpusPath, corpusServer=None ):
         cvacPath = getCvacPath( corpusPath )
         corpus = corpusServer.openCorpus( cvacPath )
         if not corpus:
-            raise RuntimeError("Could not open corpus from properties file '"
-                               + getFSPath( cvacPath ))
+            raise RuntimeError("Could not open corpus from properties file '" 
+                               + corpusPath + "' (" \
+                               + getFSPath( cvacPath ) + ")")
     return corpus
 
 def closeCorpus( corpusServer, corpus ):
