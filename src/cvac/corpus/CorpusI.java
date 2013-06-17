@@ -156,7 +156,9 @@ abstract public class CorpusI extends Corpus
         for(LabelableListI sl : m_images.values()){
             queue.add(sl);   
         }
-        int added = loadImagesFromDir( name, dir, "", queue );
+        logger.log( Level.FINE, "loading images from corpus main data directory, {0}",
+                    m_dataSetFolder );
+        int added = loadImagesFromDir( name, dir, "", queue, false );
         if (0==added)
         {
             // don't worry too much about this, it's the root directory and not an empty category
@@ -167,7 +169,9 @@ abstract public class CorpusI extends Corpus
         {
             sl = queue.remove();
             File subdir = new File( m_dataSetFolder+File.separator+sl.getSubdir() );
-            added = loadImagesFromDir(sl.getName(), subdir, sl.getSubdir(), queue);
+            logger.log( Level.FINE, "loading images from corpus sub-directory, {0}",
+                        subdir.getPath() );
+            added = loadImagesFromDir(sl.getName(), subdir, sl.getSubdir(), queue, true);
             if (0==added)
             {
                 // worry a bit more about this, this is an empty category
@@ -211,8 +215,11 @@ abstract public class CorpusI extends Corpus
      *
      */
     protected int loadImagesFromDir(String labelName, File directory, 
-            String subdir, LinkedList<LabelableListI> queue)
+                                    String subdir, LinkedList<LabelableListI> queue, 
+                                    boolean recurse)
     {
+        logger.log( Level.INFO, "loadImagesFromDir {0}, {1}, {2}", 
+                    new Object[]{labelName, directory.getPath(), subdir } );
         LabelableListI dir_SampleList = m_images.get(labelName);
         if (null==dir_SampleList)
         {
@@ -255,7 +262,8 @@ abstract public class CorpusI extends Corpus
 
         float confidence = 1.0f;
         int added = dir_SampleList.addAllSamplesInDir( directory, label, confidence, 
-                new DirectoryPath( relativePath ) );
+                                                       new DirectoryPath( relativePath ), 
+                                                       recurse );
         if (!dir_SampleList.isEmpty())
         {
             m_images.put(labelName, dir_SampleList);
@@ -377,7 +385,9 @@ abstract public class CorpusI extends Corpus
                     Label label = new Label(true, labelname, new HashMap<String,String>(0), new Semantics(""));
                     float confidence = 1.0f;
                     DirectoryPath relPath = new DirectoryPath( name+"/"+curImageCatDir );
-                    int added = dir_SampleList.addAllSamplesInDir(curImageCatDir, label, confidence, relPath);
+                    boolean recurse = true;
+                    int added = dir_SampleList.addAllSamplesInDir(curImageCatDir, label, 
+                                                                  confidence, relPath, recurse);
                     if (0==added)
                     {
                        logger.log(Level.WARNING, "Sample directory {0} does not exist or is empty", 
@@ -402,7 +412,8 @@ abstract public class CorpusI extends Corpus
                 Label label = new Label(true, topDirName, new HashMap<String,String>(0), new Semantics(""));
                 float confidence = 1.0f;
                 DirectoryPath relPath = new DirectoryPath( name+"/"+topDirName );
-                int added = dir_SampleList.addAllSamplesInDir(topLevelDir, label, confidence, relPath);
+                boolean recurse = true;
+                int added = dir_SampleList.addAllSamplesInDir(topLevelDir, label, confidence, relPath, recurse);
                 if (0==added)
                 {
                    logger.log(Level.WARNING, "Sample directory {0} does not exist or is empty", 
@@ -421,7 +432,9 @@ abstract public class CorpusI extends Corpus
                         Label label = new Label(true, labelname, new HashMap<String,String>(0), new Semantics(""));
                         float confidence = 0.0f;
                         DirectoryPath relPath = new DirectoryPath( name+"/"+labelname );
-                        int added = dir_SampleList.addAllSamplesInDir(curImageCatDir, label, confidence, relPath);
+                        boolean recurse = true;
+                        int added = dir_SampleList.addAllSamplesInDir(curImageCatDir, label, 
+                                                                      confidence, relPath, recurse);
                         if (0==added)
                         {
                            logger.log(Level.WARNING, "Sample directory {0} does not exist or is empty", 
