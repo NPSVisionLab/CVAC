@@ -83,6 +83,9 @@ int copy_data(struct archive *ar, struct archive *aw)
 // Archive file must include: 'usageOrder.txt', which allows filenames to be returned in a
 // specific argument order without relying on fancy extensions or pattern matching.  
 // Format: one filename per line.  Ordering documented by receiver for its expectations.
+//
+// arguments: filename: the archive (zip) file
+//            expandSubfolder: folder to extract into
 std::vector<std::string> expandSeq_fromFile(const std::string& filename, const std::string& expandSubfolder) {
   struct archive *a;
   struct archive *ext;
@@ -107,7 +110,9 @@ std::vector<std::string> expandSeq_fromFile(const std::string& filename, const s
 
 //std::string directory = std::string(getCurrentWorkingDirectory().c_str());
   if((r = archive_read_open_file(a, filename.c_str(), 10240))) {
-    localAndClientMsg(VLogger::WARN, NULL, "DetectorDataArchive function: 'expandSeq_fromFile' could not open requested file: %s\n", filename.c_str());
+    localAndClientMsg(VLogger::WARN, NULL,
+                      "DetectorDataArchive::expandSeq_fromFile could not open requested file: %s\n",
+                      filename.c_str());
     throw "";
   }
   for (;;) {
@@ -125,10 +130,7 @@ std::vector<std::string> expandSeq_fromFile(const std::string& filename, const s
 
     // Augment entry-file which will get specified subfolder added-on
     const char* entryFilename = archive_entry_pathname(entry);
-    std::string fullSubfolderPath(".");
-    fullSubfolderPath += expandSubfolder;
-    fullSubfolderPath += "/";
-    fullSubfolderPath += entryFilename;
+    std::string fullSubfolderPath = expandSubfolder + "/" + entryFilename;
     archive_entry_set_pathname(entry, fullSubfolderPath.c_str());
 
     r = archive_write_header(ext, entry);
@@ -172,9 +174,7 @@ std::vector<std::string> expandSeq_fromFile(const std::string& filename, const s
     // Read the local 'usageOrder.txt' key file which should have been extracted
     ifstream orderingTxtFile;
 
-    std::string orderingSubfolderPath(".");  // Build subfolder path
-    orderingSubfolderPath += expandSubfolder;
-    orderingSubfolderPath += "/usageOrder.txt";
+    std::string orderingSubfolderPath = expandSubfolder + "/usageOrder.txt";
     orderingTxtFile.open(orderingSubfolderPath.c_str());
 
     if(!orderingTxtFile) {

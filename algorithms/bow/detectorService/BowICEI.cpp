@@ -113,7 +113,7 @@ void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const
   }
 	
   // Get the default CVAC data directory as defined in the config file
-  std::string reldir = "";
+  std::string expandedSubfolder = "";
   std::string filename = "";
   std::string _extFile = data.file.filename.substr( data.file.filename.rfind(".")+1,
                                                     data.file.filename.length());
@@ -122,7 +122,7 @@ void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const
     localAndClientMsg(VLogger::DEBUG, NULL, "Initializing bag_of_words.\n");
     localAndClientMsg(VLogger::DEBUG_1, NULL, "Initializing bag_of_words with %s/%s\n", 
                       data.file.directory.relativePath.c_str(), data.file.filename.c_str());
-    reldir = data.file.directory.relativePath;
+    expandedSubfolder = m_CVAC_DataDir + "/" + data.file.directory.relativePath;
     filename = data.file.filename;
   }
   else	//for a zip file	//if (cvac::FILE == data.type && size == 0)
@@ -135,6 +135,8 @@ void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const
          data.file.directory.relativePath[0] == '/' ||
          data.file.directory.relativePath[0] == '\\')
     {  // absolute path
+      // TODO: don't permit absolute paths!  get rid of if/else and just
+      // check in getFSPath that it's relative
       archiveFilePath = data.file.directory.relativePath + "/" + data.file.filename;
     } 
     else
@@ -142,20 +144,15 @@ void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const
       archiveFilePath = getFSPath( data.file, m_CVAC_DataDir );
     }
 
-    std::vector<std::string> fileNameStrings =  expandSeq_fromFile(archiveFilePath, getName(current));
+    expandedSubfolder = archiveFilePath + "_";
+    std::vector<std::string> fileNameStrings =
+      expandSeq_fromFile(archiveFilePath, expandedSubfolder);
     
-    // Need to strip off extra zeros  (matz: todo: not sure what that means)
-    // TODO: don't use cwd here but a temp dir under CVAC.DataDir instead
-    std::string directory = std::string(getCurrentWorkingDirectory().c_str());
-    std::string name = getName(current);
-    reldir.reserve(directory.length() + name.length() + 3);
-    reldir = directory + "/." + name;
     filename = logfile_BowTrainResult;
   }
 
   // add the CVAC.DataDir root path and initialize from txt file
-  std::string absdir = m_CVAC_DataDir + "/" + reldir;
-  fInitialized = pBowCV->detect_initialize( absdir, filename );
+  fInitialized = pBowCV->detect_initialize( expandedSubfolder, filename );
 
   if (!fInitialized)
   {

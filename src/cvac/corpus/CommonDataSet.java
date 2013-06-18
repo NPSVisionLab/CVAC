@@ -599,6 +599,8 @@ public class CommonDataSet extends CorpusI {
                 labels[icnt++] = label;
             }
         }
+        logger.log( Level.INFO, "Created list of {0} labels from corpus {1}.",
+                    new Object[]{totalSize, name} );
         return labels;
     }
 }
