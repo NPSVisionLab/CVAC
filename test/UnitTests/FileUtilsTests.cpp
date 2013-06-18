@@ -276,9 +276,9 @@ SUITE(UnitTests_cvac)
     printf("cvacLibArchiveExpand\n");
     // Test: with subfolder
     // Expand files from source archive
-    std::string subDir = "tmpSubDir";
     std::string detectZip = "bowUSKOCA.zip";
     std::string archiveFileName1("../data/detectors/" + detectZip);
+    std::string subDir = archiveFileName1 + "_tmpSubDir";
 
     std::vector<std::string> fileNameStrings = expandSeq_fromFile(archiveFileName1, subDir);
 
@@ -286,7 +286,7 @@ SUITE(UnitTests_cvac)
     ifstream testForXml;
     // TODO: the dot before subDir gets added by expandSeq_fromFile - design that better;
     // usageOrder.txt is one sample file that should exist in the unzipped folder
-    std::string checkFilePath = "." + subDir + "/usageOrder.txt";
+    std::string checkFilePath = subDir + "/usageOrder.txt";
     testForXml.open(checkFilePath.c_str(), ifstream::in);
 
     // File exists after extraction
@@ -296,11 +296,11 @@ SUITE(UnitTests_cvac)
     testForXml.close();
 
     // rm -f current not implemented - delete the files manually
-    CHECK( deleteFile( "."+subDir+"/usageOrder.txt") );
-    CHECK( deleteFile( "."+subDir+"/logTrain_svm.xml.gz") );
-    CHECK( deleteFile( "."+subDir+"/logTrain_Table.txt") );
-    CHECK( deleteFile( "."+subDir+"/logTrain_Vocabulary.xml.gz") );
-    CHECK( deleteDirectory( "." + subDir) );
+    CHECK( deleteFile( subDir+"/usageOrder.txt") );
+    CHECK( deleteFile( subDir+"/logTrain_svm.xml.gz") );
+    CHECK( deleteFile( subDir+"/logTrain_Table.txt") );
+    CHECK( deleteFile( subDir+"/logTrain_Vocabulary.xml.gz") );
+    CHECK( deleteDirectory( subDir) );
   }
 
  
