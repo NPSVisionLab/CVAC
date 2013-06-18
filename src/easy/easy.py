@@ -227,6 +227,9 @@ def printSubstrateInfo( labelList, indent="" ):
               format( indent, subpath, numlabels, ("s","")[numlabels==1] ))
 
 def printRunsetInfo( runset ):
+    if type(runset) is dict and not runset['runset'] is None\
+        and type(runset['runset']) is cvac.RunSet:
+        runset = runset['runset']
     if not runset or not type(runset) is cvac.RunSet:
         print("no (proper) runset, nothing to print")
         return
@@ -243,20 +246,68 @@ def printRunsetInfo( runset ):
                   .format( purposeText ) )
             printSubstrateInfo( plist.labeledArtifacts, indent="  " )
         else:
-            raise RuntimeError("unexpected type "+type(plist))
+            raise RuntimeError("unexpected plist type "+type(plist))
 
-def createRunSet( categories ):
+def getPurpose( purpose ):
+    '''Try to convert the input in to cvac.Purpose'''
+    if type(purpose) is cvac.Purpose:
+        pass # all ok
+    elif type(purpose) is str:
+        # try to convert str to Purpose
+        if "pos" in purpose.lower():
+            purpose = cvac.Purpose( cvac.PurposeType.POSITIVE, -1 )
+        elif "neg" in purpose.lower():
+            purpose = cvac.Purpose( cvac.PurposeType.NEGATIVE, -1 )
+        else:
+            try:
+                classID = int(purpose)
+                purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, classID )
+            except:
+                raise RuntimeError("unexpected type for purpose: {0}".\
+                                   format(purpose))
+    return purpose
+					
+def addToRunSet( categories, purpose=None ):
     '''Add all samples from the categories to a new RunSet.
     Determine whether this is a two-class (positive and negative)
     or a multiclass dataset and create the RunSet appropriately.
     Input argument can also be a string to a single file.
     Note that the positive and negative classes might not be
-    determined correctly automatically.
+    determined correctly automatically.  Specifiy a single Purpose
+    if all samples will have the same purpose.
     Return the mapping from Purpose (class ID) to label name.'''
 
+    # convert purpose if given, but not proper type
+    if not purpose is None:
+        purpose = getPurpose( purpose )
+        
+def createRunSet( categories, purpose=None ):
+    '''Add all samples from the categories to a new RunSet.
+    Determine whether this is a two-class (positive and negative)
+    or a multiclass dataset and create the RunSet appropriately.
+    Input argument can also be a string to a single file.
+    Note that the positive and negative classes might not be
+    determined correctly automatically.  Specifiy a single Purpose
+    if all samples will have the same purpose.
+    Return the mapping from Purpose (class ID) to label name.'''
+
+    # convert purpose if given, but not proper type
+    if not purpose is None:
+        purpose = getPurpose( purpose )
+        
     runset = None
-    if type(categories) is dict:
-        # multiple categories
+    if type(categories) is dict and not purpose is None:
+        # all categories get identical purposes
+        labseq = cvac.PurposedLabelableSeq( purpose, categories.values() )
+        classmap = {}
+        for key in categories.keys():
+            classmap[key] = porpose
+        runset = cvac.RunSet( [labseq] )
+        return {'runset':runset, 'classmap':classmap}
+
+    elif type(categories) is dict:
+        # multiple categories, try to guess the purpose and
+        # if not possible, fall back to MULTICLASS
         classmap = {}
         pur_categories = []
         pur_categories_keys = sorted( categories.keys() )
@@ -289,7 +340,8 @@ def createRunSet( categories ):
         # multi-class
         cnt = 0
         for key in pur_categories_keys:
-            purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
+            if purpose is None:
+                purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
             classmap[key] = purpose
             pur_categories.append( cvac.PurposedLabelableSeq( purpose, categories[key] ) )
             cnt = cnt+1
@@ -298,7 +350,8 @@ def createRunSet( categories ):
 
     elif type(categories) is list and len(categories)>0 and type(categories[0]) is cvac.Labelable:
         # single category - assume "unlabeled"
-        purpose = cvac.Purpose( cvac.PurposeType.UNLABELED )
+        if purpose is None:
+            purpose = cvac.Purpose( cvac.PurposeType.UNLABELED )
         plists = [ cvac.PurposedLabelableSeq( purpose, categories ) ]
         runset = cvac.RunSet( plists )
         return {'runset':runset, 'classmap':None}
@@ -307,7 +360,8 @@ def createRunSet( categories ):
         # single file, create an unlabeled entry
         fpath = getCvacPath( categories )
         labelable = getLabelable( fpath )
-        purpose = cvac.Purpose( cvac.PurposeType.UNLABELED )
+        if purpose is None:
+            purpose = cvac.Purpose( cvac.PurposeType.UNLABELED )
         plists = [ cvac.PurposedLabelableSeq( purpose, [labelable] ) ]
         runset = cvac.RunSet( plists )
         return {'runset':runset, 'classmap':None}
