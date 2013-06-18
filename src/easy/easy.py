@@ -294,7 +294,6 @@ def createRunSet( categories ):
             pur_categories.append( cvac.PurposedLabelableSeq( purpose, categories[key] ) )
             cnt = cnt+1
             runset = cvac.RunSet( pur_categories )
-            
         return {'runset':runset, 'classmap':classmap}
 
     elif type(categories) is list and len(categories)>0 and type(categories[0]) is cvac.Labelable:
@@ -371,6 +370,25 @@ def putFile( fileserver, filepath ):
     # "put" the file's bytes to the FileServer
     fileserver.putFile( filepath, bytes );
     forig.close()
+
+def getFile( fileserver, filepath ):
+    if type(filepath) is cvac.DetectorData:
+        filepath = filepath.file
+    elif type(filepath) is str:
+        filepath = getCvacPath( filepath )
+    else:
+        assert( type(filepath) is cvac.FilePath )
+    localFS = getFSPath( filepath )
+    if not os.path.exists( os.path.dirname(localFS) ):
+        os.makedirs( os.path.dirname(localFS) )
+    flocal = open( localFS, 'w' )
+    
+    # "get" the file's bytes from the FileServer
+    bytes = fileserver.getFile( filepath );
+    flocal.write( bytes )
+    flocal.close()
+    if not os.path.exists( localFS ):
+        raise RuntimeError("Cannot obtain FS path to local file:",origFS)
 
 def collectSubstrates( runset ):
     '''obtain a set (a list without duplicates) of all
@@ -541,6 +559,7 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
     if not callbackRecv:
         ourRecv = True
         callbackRecv = DetectorCallbackReceiverI();
+        callbackRecv.allResults = []
     adapter.add( callbackRecv, cbID )
     adapter.activate()
     detector.ice_getConnection().setAdapter(adapter)
