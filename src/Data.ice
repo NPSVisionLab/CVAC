@@ -2,11 +2,10 @@
 #define _DATA_ICE
 
 module cvac {
-  // should this be UNPURPOSED instead of UNLABELED?
-  enum PurposeType {UNLABELED, POSITIVE, NEGATIVE, MULTICLASS, ANY};
+  enum PurposeType {UNPURPOSED, POSITIVE, NEGATIVE, MULTICLASS, ANY};
 
   struct Purpose {
-    PurposeType ptype = UNLABELED;
+    PurposeType ptype = UNPURPOSED;
     int classID = 0; // if MULTICLASS
   };
 

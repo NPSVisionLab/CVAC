@@ -54,3 +54,7 @@ ehthumbs.db
 Thumbs.db
 
 include/version.h
+/.bowTest/
+/data/Caltech101/.meta/
+/data/CvacCorpusTest/.meta/
+/data/Faces94/.meta/
