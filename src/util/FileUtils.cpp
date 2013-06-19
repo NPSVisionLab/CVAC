@@ -450,30 +450,34 @@ std::string cvac::getTempFilename( const std::string & basedir)
         baseName = basedir.c_str();
     char *tempName;
 #ifdef WIN32
+    // Windows will not use baseName if TMPDIR variable is defined so we use tmpNam instead of
+    // _tempname so we can control the base directory if one is passed in.
     char current[1024];
     if (baseName == NULL)
-    {
+    { // No base directory so let the TMPDIR variable pick the  name.
         tempName = _tempnam(baseName, NULL);
     } else
-    { 
-        getcwd(current, 1024);
+    { // tmpname only works in the current dir so change to where we want temp file
+        _getcwd(current, 1024);
         if (_chdir(baseName) != -1)
-        {
-            tempName = tmpnam(NULL);  
+        { // directory exists
+            tempName = tmpnam(NULL); 
+            // change directory back to original one 
             _chdir(current);
             strcpy(current, baseName);
             strcat(current, tempName);
+            // tmpname puts a '.' at end of filename of windows this fails if its going to be a directory so get rid of it.
             int len = strlen(current);
             if (current[len-1] == '.')
                 current[len-1] = 0;
             tempName = current;
         }else
-        {
+        { // the basename directory does not exist so let windows give use the tempfile name
             tempName = _tempnam(baseName, NULL);
         }
     }
 #else
-    char *tempName = tempnam(baseName, NULL);
+    tempName = tempnam(baseName, NULL);
 #endif /* WIN32 */
     std::string tempString = tempName;
     return tempString;
