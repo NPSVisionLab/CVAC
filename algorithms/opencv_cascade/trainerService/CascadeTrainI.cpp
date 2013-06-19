@@ -134,11 +134,11 @@ void CascadeTrainI::destroy(const ::Ice::Current& current)
 }
 std::string CascadeTrainI::getName(const ::Ice::Current& current)
 {
-  return "CascadeTrain";
+  return "OpenCVCascadeTrainer";
 }
 std::string CascadeTrainI::getDescription(const ::Ice::Current& current)
 {
-  return "CascadeTrain: OpenCV Cascade trainer";
+  return "OpenCVCascadeTrainer: OpenCV Cascade trainer";
 }
 
 void CascadeTrainI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current)
