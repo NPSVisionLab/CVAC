@@ -96,7 +96,7 @@ module cvac {
    * meaning of the name strings.
    */
   struct Label {
-    bool hasLabel = false;
+    bool hasLabel;
     string name;
     LabelProperties properties;
     Semantics semantix;

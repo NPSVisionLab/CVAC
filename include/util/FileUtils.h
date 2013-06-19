@@ -71,11 +71,11 @@ namespace cvac
    bool directoryExists(const std::string& directory);
 
    /** Extract just the path to the supplied fully-qualified file name.
-     * \code getFilePath("c:/temp/foo/myFile.txt"); //returns "c:/temp/foo" \endcode
+     * \code getFileDirectory("c:/temp/foo/myFile.txt"); //returns "c:/temp/foo" \endcode
      * @param fileName the full path and file name
      * @return The extracted path to the supplied fileName
      */
-   std::string getFilePath(const std::string& fileName);
+   std::string getFileDirectory(const std::string& fileName);
 
    /** Return the working directory that exists at the time of this function call
      * @return The current working directory
@@ -150,5 +150,14 @@ namespace cvac
    * @param prefixDir string to prepend
    */
    std::string expandFilename(std::string fileName, std::string prefixDir);
+
+   /** Return a unique temporary file name.  If basedir is not defined 
+   * then the file name is in the current systems temporary file .
+   * @param basedir Base directory the temp filename.
+   * @return The temp file name including path.
+   */
+
+   std::string getTempFilename( const std::string& basedir="" );
+
 };
 #endif // __FILEUTILS_H_INCLUDED__

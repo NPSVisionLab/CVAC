@@ -129,7 +129,7 @@ bool cvac::directoryExists(const std::string& directory)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::getFilePath(const std::string& fileName)
+std::string cvac::getFileDirectory(const std::string& fileName)
 {
    std::string::size_type slash1 = fileName.find_last_of('/');
    std::string::size_type slash2 = fileName.find_last_of('\\');
@@ -441,7 +441,44 @@ void cvac::sleep(int numberOfMilliseconds)
       #else
          ::Sleep(numberOfMilliseconds);
       #endif
-  }
+   }
+
+std::string cvac::getTempFilename( const std::string & basedir)
+{
+    const char *baseName = NULL;
+    if (!basedir.empty()) 
+        baseName = basedir.c_str();
+    char *tempName;
+#ifdef WIN32
+    char current[1024];
+    if (baseName == NULL)
+    {
+        tempName = _tempnam(baseName, NULL);
+    } else
+    { 
+        getcwd(current, 1024);
+        if (_chdir(baseName) != -1)
+        {
+            tempName = tmpnam(NULL);  
+            _chdir(current);
+            strcpy(current, baseName);
+            strcat(current, tempName);
+            int len = strlen(current);
+            if (current[len-1] == '.')
+                current[len-1] = 0;
+            tempName = current;
+        }else
+        {
+            tempName = _tempnam(baseName, NULL);
+        }
+    }
+#else
+    char *tempName = tempnam(baseName, NULL);
+#endif /* WIN32 */
+    std::string tempString = tempName;
+    return tempString;
+}
+
 /*
 BaseException(const std::string& newMsg) { //const std::string &newMsg
 

@@ -670,7 +670,7 @@ int ClientApp::initializeDetector(DetectorPrx detector)
 	// If a detector dat file was passed then use that instead of getting it from the config file
 	if (m_detectorData.length() > 0)
 	{
-		detectorData.file.directory.relativePath = getFilePath(m_detectorData);
+		detectorData.file.directory.relativePath = getFileDirectory(m_detectorData);
 		detectorData.file.filename = getFileName(m_detectorData);
 	}
 	else
