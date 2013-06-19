@@ -70,6 +70,14 @@ namespace cvac
      */
    bool directoryExists(const std::string& directory);
 
+   /** Does the supplied file exists?
+     * This implementation may not be able to handle the file which is larger than 2GB. 
+     * @param path (directory + filename) to verify
+     * @return True if the file exists, false if not 
+     *         but is not a directory.
+     */
+   bool fileExists(const std::string& _abspath);
+
    /** Extract just the path to the supplied fully-qualified file name.
      * \code getFilePath("c:/temp/foo/myFile.txt"); //returns "c:/temp/foo" \endcode
      * @param fileName the full path and file name
@@ -109,6 +117,13 @@ namespace cvac
      * @param fileName The full file name, with or without path
      */
    std::string getBaseFileName(const std::string& fileName);
+
+   /**  Get the file extension, excluding the path and the filename.
+     *  \code getFileExtension("/temp/myfile.tar.gz") //returns "tar.gz" \endcode
+     *  @param path (directory + filename) 
+     *  @return Just the extension
+     */
+   std::string getFileExtension(const std::string& _path);
 
    /** Remove the contents of the directory and delete the directory.
     *  @return True if successfull
