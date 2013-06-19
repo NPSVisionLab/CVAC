@@ -63,6 +63,20 @@ def isLikelyVideo( cvacPath ):
             return True
     return False
 
+def isLikelyDir( path ):
+    '''Return true if path is likely a directory.
+    Note that the path could be on a remote server, therefore
+    we cannot check for existence and type of path (dir, file)
+    but instead have to guess from the file extension, if any'''
+    dotidx = path.rfind(".")  # find last .
+    if dotidx is -1:
+        return True
+    else:
+        sepidx = path[dotidx:].rfind("/") # any / after .?
+        if sepidx>-1:
+            return True
+    return False
+        
 def getLabelable( cvacPath, labelText=None ):
     '''Create a Labelable wrapper around the file, assigning
     a textual label if specified.'''
@@ -101,19 +115,10 @@ def openCorpus( corpusPath, corpusServer=None ):
         corpusServer = getDefaultCorpusServer()
         
     # switch based on whether corpusPath is likely a directory or not.
-    # note that the corpus could be on a remote server, therefore
+    # note that the corpusPath could be on a remote server, therefore
     # we can't check for existence and type of corpusPath (dir, file)
     # but instead have to guess from the file extension, if any
-    likelyDir = False
-    dotidx = corpusPath.rfind(".")  # find last .
-    if dotidx is -1:
-        likelyDir = True
-    else:
-        sepidx = corpusPath[dotidx:].rfind("/") # any / after .?
-        if sepidx>-1:
-            likelyDir = True
-        
-    if likelyDir:
+    if isLikelyDir(corpusPath):
         # create a new corpus
         cvacPath = cvac.DirectoryPath( corpusPath )
         corpus = corpusServer.createCorpus( cvacPath )
@@ -130,9 +135,11 @@ def openCorpus( corpusPath, corpusServer=None ):
                                + getFSPath( cvacPath ) + ")")
     return corpus
 
-def closeCorpus( corpusServer, corpus ):
+def closeCorpus( corpus, corpusServer=None ):
     '''Close a previously opened Corpus, presumable to re-open
     it with an updated properties file or new files'''
+    if not corpusServer:
+        corpusServer = getDefaultCorpusServer()
     corpusServer.closeCorpus( corpus )
     
 class CorpusCallbackI(cvac.CorpusCallback):
@@ -201,6 +208,8 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
     return (categories, labelList)
 
 def printCategoryInfo( categories ):
+    '''Categories are a dictionary, key being the label and the
+    value being all samples of that label.'''
     if not categories:
         print("no categories, nothing to print")
         return
@@ -215,7 +224,9 @@ def printSubstrateInfo( labelList, indent="" ):
         return
     substrates = {}
     for lb in labelList:
-        subpath = getFSPath( lb.sub.path )
+        # subpath = getFSPath( lb.sub.path )  # print file system paths
+        subpath = lb.sub.path.directory.relativePath +\
+                  "/" + lb.sub.path.filename # print cvac.FilePath
         if subpath in substrates:
             substrates[subpath] = substrates[subpath]+1
         else:
@@ -226,9 +237,13 @@ def printSubstrateInfo( labelList, indent="" ):
         print("{0}{1} ({2} label{3})".\
               format( indent, subpath, numlabels, ("s","")[numlabels==1] ))
 
-def printRunsetInfo( runset ):
+def printRunSetInfo( runset ):
+    '''You can pass in an actual cvac.RunSet or a dictionary with
+    the runset and a classmap, as returned by createRunSet.'''
+    classmap = None
     if type(runset) is dict and not runset['runset'] is None\
         and type(runset['runset']) is cvac.RunSet:
+        classmap = runset['classmap']
         runset = runset['runset']
     if not runset or not type(runset) is cvac.RunSet:
         print("no (proper) runset, nothing to print")
@@ -242,11 +257,16 @@ def printRunsetInfo( runset ):
             print("directory with Purpose '{0}'; not listing members"\
                   .format( purposeText ) )
         elif type(plist) is cvac.PurposedLabelableSeq:
-            print("sequence with Purpose '{0}' and the following members:"\
+            print("sequence with Purpose '{0}' and these members:"\
                   .format( purposeText ) )
             printSubstrateInfo( plist.labeledArtifacts, indent="  " )
         else:
             raise RuntimeError("unexpected plist type "+type(plist))
+    if classmap:
+        print("classmap:")
+        for key in sorted( classmap.keys() ):
+            print("  label '{0}': purpose {1}".\
+                  format( key, getPurposeName( classmap[key] )) )
 
 def getPurpose( purpose ):
     '''Try to convert the input in to cvac.Purpose'''
@@ -266,54 +286,70 @@ def getPurpose( purpose ):
                 raise RuntimeError("unexpected type for purpose: {0}".\
                                    format(purpose))
     return purpose
-					
-def addToRunSet( categories, purpose=None ):
-    '''Add all samples from the categories to a new RunSet.
-    Determine whether this is a two-class (positive and negative)
-    or a multiclass dataset and create the RunSet appropriately.
-    Input argument can also be a string to a single file.
-    Note that the positive and negative classes might not be
-    determined correctly automatically.  Specifiy a single Purpose
-    if all samples will have the same purpose.
-    Return the mapping from Purpose (class ID) to label name.'''
 
+def getPurposedLabelableSeq( runset, purpose ):
+    '''Return the PurposedLabelableSeq in the runset that has
+    the specified purpose, or None.'''
+    if not runset.purposedLists:
+        return None
+    for purposedList in runset.purposedLists:
+        if type(purposedList) is cvac.PurposedLabelableSeq \
+           and purposedList.pur==purpose:
+            return purposedList
+    return None
+
+def addPurposedLabelablesToRunSet( runset, purpose, labelables ):
+    '''Append labelables to a sequence with the same purpose.
+    If the runset does not have one, add a new sequence.'''
+    # see if runset already has a list with these purposes
+    seq = getPurposedLabelableSeq( runset, purpose )
+    if seq:
+        seq.labeledArtifacts.extend( labelables )
+    else:
+        seq = cvac.PurposedLabelableSeq( purpose, labelables )
+        if runset.purposedLists is None:
+            runset.purposedLists = [seq]
+        else:
+            runset.purposedLists.append( seq )
+
+def addToClassmap( classmap, key, purpose ):
+    if not classmap is None:
+        if key in classmap and not classmap[key]==purpose:
+            raise RuntimeError("purpose mismatch, won't add new samples")
+        classmap[key] = purpose
+		       		
+def addToRunSet( runset, samples, purpose=None, classmap=None ):
+    '''Add samples to a given RunSet.
+    Take a look at the documentation for createRunSet for details.'''
+    if type(runset) is dict and not runset['runset'] is None\
+        and type(runset['runset']) is cvac.RunSet:
+        if not classmap:
+            classmap = runset['classmap']
+        runset = runset['runset']
+    if runset is None or not type(runset) is cvac.RunSet:
+        raise RuntimeError("No runset given - use createRunSet instead")
+        
     # convert purpose if given, but not proper type
     if not purpose is None:
+        if not type(purpose) is cvac.Purpose and not type(purpose) is str:
+            raise RuntimeError("Purpose must be specified as str or cvac.Purpose")
         purpose = getPurpose( purpose )
         
-def createRunSet( categories, purpose=None ):
-    '''Add all samples from the categories to a new RunSet.
-    Determine whether this is a two-class (positive and negative)
-    or a multiclass dataset and create the RunSet appropriately.
-    Input argument can also be a string to a single file.
-    Note that the positive and negative classes might not be
-    determined correctly automatically.  Specifiy a single Purpose
-    if all samples will have the same purpose.
-    Return the mapping from Purpose (class ID) to label name.'''
-
-    # convert purpose if given, but not proper type
-    if not purpose is None:
-        purpose = getPurpose( purpose )
-        
-    runset = None
-    if type(categories) is dict and not purpose is None:
+    if type(samples) is dict and not purpose is None:
         # all categories get identical purposes
-        labseq = cvac.PurposedLabelableSeq( purpose, categories.values() )
-        classmap = {}
-        for key in categories.keys():
-            classmap[key] = porpose
-        runset = cvac.RunSet( [labseq] )
-        return {'runset':runset, 'classmap':classmap}
+        for key in samples.keys():
+            addToClassmap( classmap, key, purpose )
+        addPurposedLabelablesToRunSet( runset, purpose, categories.values() )
 
-    elif type(categories) is dict:
+    elif type(samples) is dict:
         # multiple categories, try to guess the purpose and
         # if not possible, fall back to MULTICLASS
-        classmap = {}
+        assert( purpose is None )
         pur_categories = []
-        pur_categories_keys = sorted( categories.keys() )
+        pur_categories_keys = sorted( samples.keys() )
 
         # if it's two classes, maybe one is called "pos" and the other "neg"?
-        if len(categories) is 2:
+        if len(samples) is 2:
             alow = pur_categories_keys[0].lower()
             blow = pur_categories_keys[1].lower()
             poskeyid = -1
@@ -328,46 +364,58 @@ def createRunSet( categories, purpose=None ):
                 negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, -1 )
                 poskey = pur_categories_keys[poskeyid]
                 negkey = pur_categories_keys[1-poskeyid]
-                pur_categories.append( cvac.PurposedLabelableSeq( \
-                    pospur, categories[poskey] ) )
-                pur_categories.append( cvac.PurposedLabelableSeq( \
-                    negpur, categories[negkey] ) )
-                runset = cvac.RunSet( pur_categories )
-                classmap[poskey] = pospur
-                classmap[negkey] = negpur
-                return {'runset':runset, 'classmap':classmap}
+                addPurposedLabelablesToRunSet( runset, pospur, samples[poskey] )
+                addPurposedLabelablesToRunSet( runset, negpur, samples[negkey] )
+                addToClassmap( classmap, poskey, pospur )
+                addToClassmap( classmap, negkey, negpur )
+                return
 
-        # multi-class
+        # multi-class, assign purposes
         cnt = 0
         for key in pur_categories_keys:
-            if purpose is None:
-                purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
-            classmap[key] = purpose
-            pur_categories.append( cvac.PurposedLabelableSeq( purpose, categories[key] ) )
+            purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
+            addToClassmap( classmap, key, purpose )
+            addPurposedLabelablesToRunSet( runset, purpose, samples[key] )
             cnt = cnt+1
-            runset = cvac.RunSet( pur_categories )
-        return {'runset':runset, 'classmap':classmap}
 
-    elif type(categories) is list and len(categories)>0 and type(categories[0]) is cvac.Labelable:
+    elif type(samples) is list and len(samples)>0 and type(samples[0]) is cvac.Labelable:
         # single category - assume "unlabeled"
         if purpose is None:
             purpose = cvac.Purpose( cvac.PurposeType.UNLABELED )
-        plists = [ cvac.PurposedLabelableSeq( purpose, categories ) ]
-        runset = cvac.RunSet( plists )
-        return {'runset':runset, 'classmap':None}
+        addPurposedLabelablesToRunSet( runset, purpose, samples )
 
-    elif type(categories) is str:
+    elif type(samples) is str and isLikelyDir( samples ):
+        # single path to a directory.  Create a corpus, turn into RunSet, close corpus.
+        corpus = openCorpus( samples, corpusServer=getDefaultCorpusServer() )
+        categories, lablist = getDataSet( corpus, corpusServer=getDefaultCorpusServer() )
+        addToRunSet( runset, categories, purpose=purpose, classmap=classmap )
+        closeCorpus( corpus, corpusServer=getDefaultCorpusServer() )
+        
+    elif type(samples) is str and not isLikelyDir( samples ):
         # single file, create an unlabeled entry
-        fpath = getCvacPath( categories )
+        fpath = getCvacPath( samples )
         labelable = getLabelable( fpath )
         if purpose is None:
             purpose = cvac.Purpose( cvac.PurposeType.UNLABELED )
-        plists = [ cvac.PurposedLabelableSeq( purpose, [labelable] ) ]
-        runset = cvac.RunSet( plists )
-        return {'runset':runset, 'classmap':None}
+        addPurposedLabelablesToRunSet( runset, purpose, [labelable] )
         
     else:
-        raise RuntimeError( "don't know how to create a RunSet from ", type(categories) )
+        raise RuntimeError( "don't know how to create a RunSet from ", type(samples) )
+
+def createRunSet( samples, purpose=None ):
+    '''Add all samples from the argument to a new RunSet.
+    Determine whether this is a two-class (positive and negative)
+    or a multiclass dataset and create the RunSet appropriately.
+    Input argument can also be a string to a single file.
+    Note that the positive and negative classes might not be
+    determined correctly automatically.  Specifiy a single Purpose
+    if all samples will have the same purpose.
+    Return the mapping from Purpose (class ID) to label name.'''
+
+    runset = cvac.RunSet()
+    classmap = {}
+    addToRunSet( runset, samples, purpose, classmap )
+    return {'runset':runset, 'classmap':classmap}
 
 def getFileServer( configString ):
     '''Obtain a reference to a remote FileServer.
