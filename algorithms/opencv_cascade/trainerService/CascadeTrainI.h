@@ -113,10 +113,10 @@ class CascadeTrainI : public cvac::DetectorTrainer
   virtual void setVerbosity(::Ice::Int, const ::Ice::Current& = ::Ice::Current() );
   virtual ::cvac::TrainerPropertiesPrx getTrainerProperties(const ::Ice::Current& = ::Ice::Current());
   void writeBgFile( const RunSetWrapper& rsw, const std::string& bgFilename, 
-                    int* pNumNeg );
+                    int* pNumNeg, std::string datadir );
 
   bool createSamples( const RunSetWrapper& rsw, const SamplesParams& params,
-                    const std::string& vecFilename, int* pNumPos);
+                    const std::string& vecFilename, int* pNumPos, std::string datadir);
   bool createClassifier( const std::string& tempDir, 
                          const std::string& vecFname, 
                          const std::string& bgName,
