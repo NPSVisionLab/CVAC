@@ -133,11 +133,10 @@ bool cvac::directoryExists(const std::string& directory)
 ///////////////////////////////////////////////////////////////////////////////
 bool cvac::fileExists(const std::string& _abspath)
 {
-	struct stat tBuff;
-	if(stat(_abspath.c_str(),&tBuff)==0)
-		return true;
-	else
-		return false;
+    if(stat(_abspath.c_str(),&tBuff)==0)
+      return true;
+    else
+      return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -296,8 +295,8 @@ std::string cvac::getBaseFileName(const std::string& fileName)
 ///////////////////////////////////////////////////////////////////////////////
 std::string cvac::getFileExtension(const std::string& _path)
 {
-   std::string::size_type dot = _path.find_first_of(".");	//rfind
-   return std::string(_path.begin() + dot + 1,_path.end());
+    std::string::size_type dot = _path.find_first_of(".");	//rfind
+    return std::string(_path.begin() + dot + 1,_path.end());
 }
 
 
