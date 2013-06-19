@@ -41,6 +41,8 @@ def getFSPath( cvacPath ):
         cvacPath = cvacPath.sub.path
     elif type(cvacPath) is cvac.Substrate:
         cvacPath = cvacPath.path
+    elif type(cvacPath) is cvac.DetectorData:
+        cvacPath = cvacPath.file
     CVAC_DataDir = "data"
     if not cvacPath.directory.relativePath:
         path = CVAC_DataDir+"/"+cvacPath.filename
@@ -257,8 +259,8 @@ def printRunSetInfo( runset ):
             print("directory with Purpose '{0}'; not listing members"\
                   .format( purposeText ) )
         elif type(plist) is cvac.PurposedLabelableSeq:
-            print("sequence with Purpose '{0}' and these members:"\
-                  .format( purposeText ) )
+            print("sequence with Purpose '{0}' and {1} labeled artifacts:"\
+                  .format( purposeText, len(plist.labeledArtifacts) ) )
             printSubstrateInfo( plist.labeledArtifacts, indent="  " )
         else:
             raise RuntimeError("unexpected plist type "+type(plist))
@@ -348,8 +350,15 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         pur_categories = []
         pur_categories_keys = sorted( samples.keys() )
 
+        if len(samples) is 1:
+            # single category - assume "unpurposed"
+            if purpose is None:
+                purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
+            addPurposedLabelablesToRunSet( runset, purpose, samples.values()[0] )
+            return
+        
         # if it's two classes, maybe one is called "pos" and the other "neg"?
-        if len(samples) is 2:
+        elif len(samples) is 2:
             alow = pur_categories_keys[0].lower()
             blow = pur_categories_keys[1].lower()
             poskeyid = -1
@@ -379,9 +388,9 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
             cnt = cnt+1
 
     elif type(samples) is list and len(samples)>0 and type(samples[0]) is cvac.Labelable:
-        # single category - assume "unlabeled"
+        # single category - assume "unpurposed"
         if purpose is None:
-            purpose = cvac.Purpose( cvac.PurposeType.UNLABELED )
+            purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
         addPurposedLabelablesToRunSet( runset, purpose, samples )
 
     elif type(samples) is str and isLikelyDir( samples ):
@@ -392,11 +401,11 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         closeCorpus( corpus, corpusServer=getDefaultCorpusServer() )
         
     elif type(samples) is str and not isLikelyDir( samples ):
-        # single file, create an unlabeled entry
+        # single file, create an unpurposed entry
         fpath = getCvacPath( samples )
         labelable = getLabelable( fpath )
         if purpose is None:
-            purpose = cvac.Purpose( cvac.PurposeType.UNLABELED )
+            purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
         addPurposedLabelablesToRunSet( runset, purpose, [labelable] )
         
     else:
@@ -632,8 +641,8 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
     The detectorData can be either a cvac.DetectorData object or simply
      a filename of a pre-trained model.  Naturally, the model has to be
      compatible with the detector.
-    The runset can be either a cvac.RunSet object, filename to a single
-     file that is to be tested, or a directory path.
+    The runset can be either a cvac.RunSet object or anything that
+    createRunSet can turn into a RunSet.
     If a callback receiver is specified, this function returns nothing,
     otherwise, the obtained results are returned.'''
 
@@ -644,13 +653,17 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
     elif not type(detectorData) is cvac.DetectorData:
         raise RuntimeError("detectorData must be either filename or cvac.DetectorData")
 
-    # create a RunSet out of a filename or directory path
-    if type(runset) is str:
+    # if not given an actual cvac.RunSet, try to create a RunSet
+    if type(runset) is cvac.RunSet:
+        pass
+    elif type(runset) is dict and not runset['runset'] is None\
+        and type(runset['runset']) is cvac.RunSet:
+        #classmap = runset['classmap']
+        runset = runset['runset']
+    else:
         res = createRunSet( runset )
+        #classmap = res['classmap']
         runset = res['runset']
-        classmap = res['classmap']
-    elif not type(runset) is cvac.RunSet:
-        raise RuntimeError("runset must either be a filename, directory, or cvac.RunSet")
 
     # ICE functionality to enable bidirectional connection for callback
     adapter = ic.createObjectAdapter("")
@@ -677,7 +690,7 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
 def getPurposeName( purpose ):
     '''Returns a string to identify the purpose or an
     int to identify a multiclass class ID.'''
-    if purpose.ptype is cvac.PurposeType.UNLABELED:
+    if purpose.ptype is cvac.PurposeType.UNPURPOSED:
         return "unlabeled"
     elif purpose.ptype is cvac.PurposeType.POSITIVE:
         return "positive"
