@@ -37,7 +37,7 @@
  *****************************************************************************/
 #include <iostream>
 #include <vector>
-#include <libgen.h>  // for dirname and basename
+
 
 #include <Ice/Communicator.h>
 #include <Ice/Initialize.h>
@@ -118,8 +118,8 @@ std::string getSubstrateFileName( const cvac::Labelable& lbl, const std::string&
 cvac::FilePath* getCvacPath( const std::string& fsPath, const std::string& CVAC_DataDir="" )
 {
   // todo: should figure out what CVAC.DataDir is and parse that out, too
-  const char* relPath = dirname( (char*) fsPath.c_str() );
-  const char* filename = basename( (char*) fsPath.c_str() );
+  const std::string relPath = getFileDirectory( fsPath );
+  const std::string filename = getFileName( fsPath );
   cvac::DirectoryPath directory = DirectoryPath();
   directory.relativePath = relPath;
   FilePath* fp = new FilePath();
@@ -276,7 +276,7 @@ CvSeq* CascadeDetectI::detectObjects( const CallbackHandlerPrx& callback, const 
   }
   localAndClientMsg(VLogger::DEBUG, callback, "About to process 2 %s\n", fullname.c_str());
   cvClearMemStorage( storage );
-  float scale_factor = 1.2; // TODO: make this part of detector parameters
+  float scale_factor = 1.2f; // TODO: make this part of detector parameters
   CvSeq* objects =
     cvHaarDetectObjects( img, cascade, storage, scale_factor, 1 );
 

@@ -27,6 +27,7 @@ NpsBagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
 
 #Trainers
 BOWTrainer.Proxy = bowTrain:tcp -p 10103
+CascadeTrain.Proxy = CascadeTrain:tcp -p 10107
 
 DetectorCallback.Client.Endpoints=default
 TrainerCallback.Client.Endpoints=default
