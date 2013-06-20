@@ -780,24 +780,23 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
             identical += 1
     print('{0} out of {1} results had identical labels'.format( identical, len( results ) ))
 
-wnd = None
 def initGraphics():
-    global wnd
-    if not wnd:
-        try:
-            wnd = tk.Tk()
-            wnd.title('results')
-        except:
-            wnd = None
-            raise RuntimeError("cannot display images - do you have PIL installed?")
+    try:
+        wnd = tk.Tk()
+        wnd.title('results')
+    except:
+        wnd = None
+        raise RuntimeError("cannot display images - do you have PIL installed?")
+    return wnd
 
 def showImage( img ):
     # open window, convert image into displayable photo
+    wnd = initGraphics()
     photo = ImageTk.PhotoImage( img )
     
     # make the window the size of the image
     # position coordinates of wnd 'upper left corner'
-    x = 500
+    x = 0
     y = 0
     w = photo.width()
     h = photo.height()
@@ -808,9 +807,10 @@ def showImage( img ):
     panel.pack(side='top', fill='both', expand='yes')    
     # save the panel's image from 'garbage collection'
     panel.image = photo
-    
+
     # start the event loop
     wnd.mainloop()
+    wnd = None
 
 def drawResults( results ):
     if not results:
@@ -836,26 +836,69 @@ def drawResults( results ):
         print("no labels and/or no substrates, nothing to draw");
         return
 
+    # print out some summary information
     sys.stdout.softspace=False;
     for subpath in sorted( substrates.keys() ):
         numlabels = len( substrates[subpath] )
         print("{0} ({1} label{2})".format( subpath, numlabels, ("s","")[numlabels==1] ))
 
+    # render the substrates with respective labels
+    showImagesWithLabels( substrates )
+
+def drawLabelables( lablist, maxsize=None ):
+    # first, collect all image substrates of the labels
+    substrates = {}
+    for lbl in lablist:
+        if lbl.sub.isImage:
+            subpath = getFSPath( lbl.sub )
+            if subpath in substrates:
+                substrates[subpath].append( lbl )
+            else:
+                substrates[subpath] = [lbl]
+    if not substrates:
+        print("no labels and/or no substrates, nothing to draw");
+        return
+    showImagesWithLabels( substrates, maxsize )
+
+def showImagesWithLabels( substrates, maxsize=None ):
+    '''Takes a dictionary of type dict[file_system_path] = [Labelable] as
+    input and renders every image with labels overlaid.  The size
+    parameter can be used to display all images at the same size.'''
     # now draw
-    initGraphics()
     for subpath in substrates:
         img = Image.open( subpath )
+        scale = 1.0
+        if not maxsize is None:
+            scalex = float(img.size[0])/float(maxsize[0])
+            scaley = float(img.size[1])/float(maxsize[1])
+            scale = max( scalex, scaley )
+            maxsize = int(img.size[0]/scale), int(img.size[1]/scale)
+            img = img.resize( maxsize, Image.NEAREST ) # favor speed over quality
         for lbl in substrates[subpath]:
             # draw poly into the image
             if type(lbl) is cvac.LabeledLocation:
                 if type( lbl.loc ) is cvac.BBox:
+                    a = lbl.loc.x/scale
+                    b = lbl.loc.y/scale
+                    c = a+lbl.loc.width/scale
+                    d = b+lbl.loc.height/scale
                     draw = ImageDraw.Draw( img )
-                    a = lbl.loc.x
-                    b = lbl.loc.y
-                    c = a+lbl.loc.width
-                    d = b+lbl.loc.height
                     draw.line([(a,b), (c,b), (c,d), (a,d), (a,b)], fill=255, width=2)
                     del draw
+                elif type( lbl.loc ) is cvac.Silhouette:
+                    if len(lbl.loc.points) is 0:
+                        continue
+                    if len(lbl.loc.points) is 1:
+                        raise RuntimeError("Incorrect Labelable: a single point should not be a silhouette")
+                    cpts = []
+                    for point in lbl.loc.points:
+                        cpts.append( (point.x/scale, point.y/scale) )
+                    cpts.append( cpts[0] )  # close the loop
+                    draw = ImageDraw.Draw( img )
+                    draw.line( cpts, fill=255, width=2 )
+                    del draw
+                else:
+                    print("warning: not rendering Label type {0}".format( type(lbl.loc) ))
         showImage( img )
 
 def getConfusionMatrix( results, origMap, foundMap ):
