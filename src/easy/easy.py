@@ -37,11 +37,11 @@ defaultCS = None
 def getFSPath( cvacPath ):
     '''Turn a CVAC path into a file system path'''
     # todo: obtain CVAC.DataDir
-    if type(cvacPath) is cvac.Labelable:
+    if isinstance(cvacPath, cvac.Labelable):
         cvacPath = cvacPath.sub.path
-    elif type(cvacPath) is cvac.Substrate:
+    elif isinstance(cvacPath, cvac.Substrate):
         cvacPath = cvacPath.path
-    elif type(cvacPath) is cvac.DetectorData:
+    elif isinstance(cvacPath, cvac.DetectorData):
         cvacPath = cvacPath.file
     CVAC_DataDir = "data"
     if not cvacPath.directory.relativePath:
@@ -187,7 +187,7 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
 
     if type(corpus) is str:
         corpus = openCorpus( corpusServer, corpus )
-    elif not type(corpus) is cvac.Corpus:
+    elif not isinstance(corpus, cvac.Corpus):
         raise RuntimeError( "unexpected type for corpus:", type(corpus) )
 
     # print 'requires:', corpusServer.getDataSetRequiresLocalMirror( corpus )
@@ -244,10 +244,10 @@ def printRunSetInfo( runset ):
     the runset and a classmap, as returned by createRunSet.'''
     classmap = None
     if type(runset) is dict and not runset['runset'] is None\
-        and type(runset['runset']) is cvac.RunSet:
+        and isinstance(runset['runset'], cvac.RunSet):
         classmap = runset['classmap']
         runset = runset['runset']
-    if not runset or not type(runset) is cvac.RunSet:
+    if not runset or not isinstance(runset, cvac.RunSet):
         print("no (proper) runset, nothing to print")
         return
     sys.stdout.softspace=False;
@@ -255,10 +255,10 @@ def printRunSetInfo( runset ):
         purposeText = plist.pur.ptype
         if purposeText is cvac.PurposeType.MULTICLASS:
             purposeText = "{0}, classID={1}".format( purposeText, plist.pur.classID)
-        if type(plist) is cvac.PurposedDirectory:
+        if isinstance(plist, cvac.PurposedDirectory):
             print("directory with Purpose '{0}'; not listing members"\
                   .format( purposeText ) )
-        elif type(plist) is cvac.PurposedLabelableSeq:
+        elif isinstance(plist, cvac.PurposedLabelableSeq):
             print("sequence with Purpose '{0}' and {1} labeled artifacts:"\
                   .format( purposeText, len(plist.labeledArtifacts) ) )
             printSubstrateInfo( plist.labeledArtifacts, indent="  " )
@@ -272,7 +272,7 @@ def printRunSetInfo( runset ):
 
 def getPurpose( purpose ):
     '''Try to convert the input in to cvac.Purpose'''
-    if type(purpose) is cvac.Purpose:
+    if isinstance(purpose, cvac.Purpose):
         pass # all ok
     elif type(purpose) is str:
         # try to convert str to Purpose
@@ -295,7 +295,7 @@ def getPurposedLabelableSeq( runset, purpose ):
     if not runset.purposedLists:
         return None
     for purposedList in runset.purposedLists:
-        if type(purposedList) is cvac.PurposedLabelableSeq \
+        if isinstance(purposedList, cvac.PurposedLabelableSeq) \
            and purposedList.pur==purpose:
             return purposedList
     return None
@@ -325,11 +325,11 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
     Take a look at the documentation for createRunSet for details.'''
     rnst = runset
     if type(runset) is dict and not runset['runset'] is None\
-        and type(runset['runset']) is cvac.RunSet:
+        and isinstance(runset['runset'], cvac.RunSet):
         if classmap is None:
             classmap = runset['classmap']
         rnst = runset['runset']
-    if rnst is None or not type(rnst) is cvac.RunSet:
+    if rnst is None or not isinstance(rnst, cvac.RunSet):
         raise RuntimeError("No runset given - use createRunSet instead")
         
     # convert purpose if given, but not proper type
@@ -390,7 +390,7 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
             addPurposedLabelablesToRunSet( rnst, purpose, samples[key] )
             cnt = cnt+1
 
-    elif type(samples) is list and len(samples)>0 and type(samples[0]) is cvac.Labelable:
+    elif type(samples) is list and len(samples)>0 and isinstance(samples[0], cvac.Labelable):
         # single category - assume "unpurposed"
         if purpose is None:
             purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
@@ -513,14 +513,14 @@ def collectSubstrates( runset ):
     substrates that occur in this runset'''
     substrates = set()
     for plist in runset.purposedLists:
-        if type(plist) is cvac.PurposedDirectory:
+        if isinstance(plist, cvac.PurposedDirectory):
             raise RuntimeError("cannot deal with PurposedDirectory yet")
-        elif type(plist) is cvac.PurposedLabelableSeq:
+        elif isinstance(plist, cvac.PurposedLabelableSeq):
             for lab in plist.labeledArtifacts:
                 if not lab.sub in substrates:
                     substrates.add( lab.sub )
         else:
-            raise RuntimeError("unexpected subclass of PurposedList")
+            raise RuntimeError("unexpected subclass of PurposedList: "+type(plist))
     return substrates
 
 def putAllFiles( fileserver, runset ):
@@ -536,7 +536,7 @@ def putAllFiles( fileserver, runset ):
     uploadedFiles = []
     existingFiles = []
     for sub in substrates:
-        if not type(sub) is cvac.Substrate:
+        if not isinstance(sub, cvac.Substrate):
             raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
         if not fileserver.exists( sub.path ):
             putFile( fileserver, sub.path )
@@ -559,7 +559,7 @@ def deleteAllFiles( fileserver, uploadedFiles ):
     deletedFiles = []
     notDeletedFiles = []
     for path in uploadedFiles:
-        if not type(path) is cvac.FilePath:
+        if not isinstance(path, cvac.FilePath):
             raise RuntimeError("Unexpected type found instead of cvac.FilePath:", type(path))
         try:
             fileserver.deleteFile( path )
@@ -661,10 +661,10 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
         raise RuntimeError("detectorData must be either filename or cvac.DetectorData")
 
     # if not given an actual cvac.RunSet, try to create a RunSet
-    if type(runset) is cvac.RunSet:
+    if isinstance(runset, cvac.RunSet):
         pass
     elif type(runset) is dict and not runset['runset'] is None\
-        and type(runset['runset']) is cvac.RunSet:
+        and isinstance(runset['runset'], cvac.RunSet):
         #classmap = runset['classmap']
         runset = runset['runset']
     else:
@@ -876,8 +876,8 @@ def showImagesWithLabels( substrates, maxsize=None ):
             img = img.resize( maxsize, Image.NEAREST ) # favor speed over quality
         for lbl in substrates[subpath]:
             # draw poly into the image
-            if type(lbl) is cvac.LabeledLocation:
-                if type( lbl.loc ) is cvac.BBox:
+            if isinstance(lbl, cvac.LabeledLocation):
+                if isinstance( lbl.loc, cvac.BBox):
                     a = lbl.loc.x/scale
                     b = lbl.loc.y/scale
                     c = a+lbl.loc.width/scale
@@ -885,7 +885,7 @@ def showImagesWithLabels( substrates, maxsize=None ):
                     draw = ImageDraw.Draw( img )
                     draw.line([(a,b), (c,b), (c,d), (a,d), (a,b)], fill=255, width=2)
                     del draw
-                elif type( lbl.loc ) is cvac.Silhouette:
+                elif isinstance( lbl.loc, cvac.Silhouette):
                     if len(lbl.loc.points) is 0:
                         continue
                     if len(lbl.loc.points) is 1:
