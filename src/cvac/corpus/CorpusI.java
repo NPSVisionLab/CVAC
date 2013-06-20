@@ -273,7 +273,10 @@ abstract public class CorpusI extends Corpus
         {
             relativePath += "/" + subdir; // always forward slash never \
         }
-        Label label = new Label(true, subdir, new HashMap<String,String>(0), new Semantics(""));
+        String lname = subdir;
+        if (lname.equals(""))
+            lname = labelName;
+        Label label = new Label(true, lname, new HashMap<String,String>(0), new Semantics(""));
 
         float confidence = 1.0f;
         int added = dir_SampleList.addAllSamplesInDir( directory, label, confidence, 

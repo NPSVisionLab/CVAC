@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import util.Data_IO_Utils;
 
 /**
  * Implementation for the CorpusService
@@ -84,19 +85,18 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
         }
 
         // TODO: this ugly path mangling should be in a utility function "getFSPath"
-        java.net.URL location = getClass().getProtectionDomain().getCodeSource().getLocation();
-        String cwd = location.getFile();
-        if (!cwd.endsWith( "/lib/Corpus.jar" ))
-        {
-            logger.log(Level.SEVERE, "unexpected cwd, can't deduce absolute path");
-            //debug
-            //return null;
-            cwd = System.getProperty("user.dir") + "/lib/Corpus.jar";
-        }
-        cwd = cwd.substring( 0, cwd.length()-15 );
-        String filename = cwd + File.separator + dataDir + File.separator
-                + file.directory.relativePath + File.separator
-                + file.filename;
+//        java.net.URL location = getClass().getProtectionDomain().getCodeSource().getLocation();
+//        String cwd = location.getFile();
+//        if (!cwd.endsWith( "/lib/Corpus.jar" ))
+//        {
+//            logger.log(Level.SEVERE, "unexpected cwd, can't deduce absolute path");
+//            //debug
+//            //return null;
+//            cwd = System.getProperty("user.dir") + "/lib/Corpus.jar";
+//        }
+//        cwd = cwd.substring( 0, cwd.length()-15 );
+        // TODO check for relative path for data dir and make absolute and move to a utils java class
+        String filename = Data_IO_Utils.getFSPath(file,  dataDir);
         logger.log(Level.INFO, "request for openCorpus( {0} )", filename);
         try {
             CorpusI cs = cc.addCorpusFromConfig( new File(filename) );
