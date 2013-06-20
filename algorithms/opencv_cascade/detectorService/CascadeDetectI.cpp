@@ -92,19 +92,6 @@ CascadeDetectI::~CascadeDetectI()
   cvReleaseMemStorage( &storage );
 }
 
-// TODO: move into fileUtils
-/** Turn a CVAC path into a file system path
- */
-std::string getFSPath( const cvac::FilePath& fp, const std::string& CVAC_DataDir="" )
-{
-  std::string path;
-  cout<< "yes weh're here!" << fp.directory.relativePath << "!" << endl;
-  if (fp.directory.relativePath.empty())
-    path = CVAC_DataDir+"/"+fp.filename;
-  else
-    path = CVAC_DataDir+"/"+fp.directory.relativePath+"/"+fp.filename;
-  return path;
-}
 
 // TODO: make this a utility function
 std::string getSubstrateFileName( const cvac::Labelable& lbl, const std::string& CVAC_DataDir="" )

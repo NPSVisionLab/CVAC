@@ -95,7 +95,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
 //            cwd = System.getProperty("user.dir") + "/lib/Corpus.jar";
 //        }
 //        cwd = cwd.substring( 0, cwd.length()-15 );
-        // TODO check for relative path for data dir and make absolute and move to a utils java class
+        
         String filename = Data_IO_Utils.getFSPath(file,  dataDir);
         logger.log(Level.INFO, "request for openCorpus( {0} )", filename);
         try {

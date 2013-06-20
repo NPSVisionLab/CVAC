@@ -389,6 +389,15 @@ public class Data_IO_Utils {
         localFile.getParentFile().mkdirs();
         return localFile.getPath();
     }
+    
+    public static String getFSPath(cvac.FilePath file,  String CVAC_DataDir){
+         // TODO check for relative path for data dir and make absolute and move to a utils java class
+         String filename = CVAC_DataDir + File.separator
+                + file.directory.relativePath + File.separator
+                + file.filename;
+         return filename;
+    }
+    
 
 //    public static void batchfile_PGM_Conversion(String inputImageFile, String convertedFileTgt) {
 //
