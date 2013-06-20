@@ -38,3 +38,4 @@
  *****/
 std::vector<std::string> expandSeq_fromFile(const std::string& filename, const std::string& expandSubfolder);
 std::vector<std::string> expandSeq_fromFile(const std::string& filename);
+bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>& _inPaths);

@@ -133,6 +133,7 @@ bool cvac::directoryExists(const std::string& directory)
 ///////////////////////////////////////////////////////////////////////////////
 bool cvac::fileExists(const std::string& _abspath)
 {
+    struct stat tBuff;
     if(stat(_abspath.c_str(),&tBuff)==0)
       return true;
     else

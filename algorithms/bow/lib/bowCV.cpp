@@ -79,6 +79,7 @@ bowCV::bowCV()
 	cv::initModule_nonfree();	//it should be for using SIFT or SURF. 	
 
 	filenameVocabulary = "logTrain_Vocabulary.xml.gz";
+    filenameSVM = "logTrain_svm.xml.gz";
 }
 
 bowCV::~bowCV()
@@ -459,11 +460,10 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 	ofile << nameDetector << std::endl;
 	ofile << nameExtractor << std::endl;
 	ofile << nameMatcher << std::endl;
-	ofile << filenameVocabulary << std::endl;	
+	ofile << filenameVocabulary << std::endl;		
 	
-	string _svmName = "logTrain_svm.xml.gz";
-	ofile << _svmName << endl;
-	_fullFilePathList = _filepathForSavingResult + "/" + _svmName;
+	ofile << filenameSVM << endl;
+	_fullFilePathList = _filepathForSavingResult + "/" + filenameSVM;
 	classifierSVM.save(_fullFilePathList.c_str());
 	
 	ofile.close();
