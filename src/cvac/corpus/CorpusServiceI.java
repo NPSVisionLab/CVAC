@@ -89,7 +89,9 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
         if (!cwd.endsWith( "/lib/Corpus.jar" ))
         {
             logger.log(Level.SEVERE, "unexpected cwd, can't deduce absolute path");
-            return null;
+            //debug
+            //return null;
+            cwd = System.getProperty("user.dir") + "/lib/Corpus.jar";
         }
         cwd = cwd.substring( 0, cwd.length()-15 );
         String filename = cwd + File.separator + dataDir + File.separator

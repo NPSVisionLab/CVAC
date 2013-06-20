@@ -242,8 +242,23 @@ abstract public class CorpusI extends Corpus
 //                    String folder = replacedUnixPath.replaceFirst("\\$MEDIA_ROOT", unixPath_RootDir);  // Backslashes convert to Reg-exp       
 //                    int len = folder.length();
 //                    String sub = dir.substring(len+1);
+                    
+                    // Since the data set can have folders within folders, we need
+                    // to pass into the LabelablelistI this information.  Only the top level
+                    // folders are the catagories.
+                    String nextdir;
                     String sub = subdirs[i].getName();
-                    LabelableListI samplelist = new LabelableListI(sub, this, sub);
+                    if (sub.equals("")){
+                        sub = getName();
+                    }
+                    if (directory.getPath().equals(m_dataSetFolder))
+                        nextdir = sub;
+                    else {
+                        nextdir = directory.getPath().substring(this.m_dataSetFolder.length() + 1) +
+                                   File.separator + sub;
+                    }
+  
+                    LabelableListI samplelist = new LabelableListI(sub, this, nextdir);
                     this.addCategory(samplelist);   
                     queue.add(samplelist);
                 }
