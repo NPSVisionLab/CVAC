@@ -2,7 +2,7 @@ package cvac.corpus;
 
 import com.ice.tar.TarEntry;
 import com.ice.tar.TarInputStream;
-import cvac.CorpusCallback;
+import cvac.CorpusCallbackPrx;
 import cvac.Labelable;
 import org.apache.commons.io.FileUtils;
 import java.io.BufferedInputStream;
@@ -153,7 +153,7 @@ public class CommonDataSet extends CorpusI {
     }
     
     @Override
-    void createLocalMirror( CorpusCallback cb )
+    void createLocalMirror( CorpusCallbackPrx cb )
     {
         // does a local mirror exist already?
         if ( localMirrorExists() )

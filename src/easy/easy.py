@@ -37,11 +37,11 @@ defaultCS = None
 def getFSPath( cvacPath ):
     '''Turn a CVAC path into a file system path'''
     # todo: obtain CVAC.DataDir
-    if type(cvacPath) is cvac.Labelable:
+    if isinstance(cvacPath, cvac.Labelable):
         cvacPath = cvacPath.sub.path
-    elif type(cvacPath) is cvac.Substrate:
+    elif isinstance(cvacPath, cvac.Substrate):
         cvacPath = cvacPath.path
-    elif type(cvacPath) is cvac.DetectorData:
+    elif isinstance(cvacPath, cvac.DetectorData):
         cvacPath = cvacPath.file
     CVAC_DataDir = "data"
     if not cvacPath.directory.relativePath:
@@ -148,8 +148,8 @@ class CorpusCallbackI(cvac.CorpusCallback):
     corpus = None
     def corpusMirrorProgress( self, corp, numtasks, currtask, taskname, details,
             percentCompleted, current=None ):
-        print("Downloading corpus {0}, task {1}/{2}: {3} ({4}%)".\
-              format( corp.name, currtask, numtasks, taskname ))
+        print("message from CorpusServer: mirroring corpus {0}, task {1}/{2}: {3} ({4}%)".\
+              format( corp.name, currtask, numtasks, taskname, percentCompleted ))
     def corpusMirrorCompleted(self, corp, current=None):
         self.corpus = corp
 
@@ -187,7 +187,7 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
 
     if type(corpus) is str:
         corpus = openCorpus( corpusServer, corpus )
-    elif not type(corpus) is cvac.Corpus:
+    elif not isinstance(corpus, cvac.Corpus):
         raise RuntimeError( "unexpected type for corpus:", type(corpus) )
 
     # print 'requires:', corpusServer.getDataSetRequiresLocalMirror( corpus )
@@ -244,10 +244,10 @@ def printRunSetInfo( runset ):
     the runset and a classmap, as returned by createRunSet.'''
     classmap = None
     if type(runset) is dict and not runset['runset'] is None\
-        and type(runset['runset']) is cvac.RunSet:
+        and isinstance(runset['runset'], cvac.RunSet):
         classmap = runset['classmap']
         runset = runset['runset']
-    if not runset or not type(runset) is cvac.RunSet:
+    if not runset or not isinstance(runset, cvac.RunSet):
         print("no (proper) runset, nothing to print")
         return
     sys.stdout.softspace=False;
@@ -255,10 +255,10 @@ def printRunSetInfo( runset ):
         purposeText = plist.pur.ptype
         if purposeText is cvac.PurposeType.MULTICLASS:
             purposeText = "{0}, classID={1}".format( purposeText, plist.pur.classID)
-        if type(plist) is cvac.PurposedDirectory:
+        if isinstance(plist, cvac.PurposedDirectory):
             print("directory with Purpose '{0}'; not listing members"\
                   .format( purposeText ) )
-        elif type(plist) is cvac.PurposedLabelableSeq:
+        elif isinstance(plist, cvac.PurposedLabelableSeq):
             print("sequence with Purpose '{0}' and {1} labeled artifacts:"\
                   .format( purposeText, len(plist.labeledArtifacts) ) )
             printSubstrateInfo( plist.labeledArtifacts, indent="  " )
@@ -272,7 +272,7 @@ def printRunSetInfo( runset ):
 
 def getPurpose( purpose ):
     '''Try to convert the input in to cvac.Purpose'''
-    if type(purpose) is cvac.Purpose:
+    if isinstance(purpose, cvac.Purpose):
         pass # all ok
     elif type(purpose) is str:
         # try to convert str to Purpose
@@ -295,7 +295,7 @@ def getPurposedLabelableSeq( runset, purpose ):
     if not runset.purposedLists:
         return None
     for purposedList in runset.purposedLists:
-        if type(purposedList) is cvac.PurposedLabelableSeq \
+        if isinstance(purposedList, cvac.PurposedLabelableSeq) \
            and purposedList.pur==purpose:
             return purposedList
     return None
@@ -323,12 +323,13 @@ def addToClassmap( classmap, key, purpose ):
 def addToRunSet( runset, samples, purpose=None, classmap=None ):
     '''Add samples to a given RunSet.
     Take a look at the documentation for createRunSet for details.'''
+    rnst = runset
     if type(runset) is dict and not runset['runset'] is None\
-        and type(runset['runset']) is cvac.RunSet:
-        if not classmap:
+        and isinstance(runset['runset'], cvac.RunSet):
+        if classmap is None:
             classmap = runset['classmap']
-        runset = runset['runset']
-    if runset is None or not type(runset) is cvac.RunSet:
+        rnst = runset['runset']
+    if rnst is None or not isinstance(rnst, cvac.RunSet):
         raise RuntimeError("No runset given - use createRunSet instead")
         
     # convert purpose if given, but not proper type
@@ -341,7 +342,7 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         # all categories get identical purposes
         for key in samples.keys():
             addToClassmap( classmap, key, purpose )
-        addPurposedLabelablesToRunSet( runset, purpose, categories.values() )
+        addPurposedLabelablesToRunSet( rnst, purpose, categories.values() )
 
     elif type(samples) is dict:
         # multiple categories, try to guess the purpose and
@@ -354,7 +355,9 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
             # single category - assume "unpurposed"
             if purpose is None:
                 purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
-            addPurposedLabelablesToRunSet( runset, purpose, samples.values()[0] )
+            else:
+                addToClassmap( classmap, samples.keys()[0], purpose )
+            addPurposedLabelablesToRunSet( rnst, purpose, samples.values()[0] )
             return
         
         # if it's two classes, maybe one is called "pos" and the other "neg"?
@@ -373,8 +376,8 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
                 negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, -1 )
                 poskey = pur_categories_keys[poskeyid]
                 negkey = pur_categories_keys[1-poskeyid]
-                addPurposedLabelablesToRunSet( runset, pospur, samples[poskey] )
-                addPurposedLabelablesToRunSet( runset, negpur, samples[negkey] )
+                addPurposedLabelablesToRunSet( rnst, pospur, samples[poskey] )
+                addPurposedLabelablesToRunSet( rnst, negpur, samples[negkey] )
                 addToClassmap( classmap, poskey, pospur )
                 addToClassmap( classmap, negkey, negpur )
                 return
@@ -384,14 +387,18 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         for key in pur_categories_keys:
             purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
             addToClassmap( classmap, key, purpose )
-            addPurposedLabelablesToRunSet( runset, purpose, samples[key] )
+            addPurposedLabelablesToRunSet( rnst, purpose, samples[key] )
             cnt = cnt+1
 
-    elif type(samples) is list and len(samples)>0 and type(samples[0]) is cvac.Labelable:
+    elif type(samples) is list and len(samples)>0 and isinstance(samples[0], cvac.Labelable):
         # single category - assume "unpurposed"
         if purpose is None:
             purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
-        addPurposedLabelablesToRunSet( runset, purpose, samples )
+        else:
+            for lbl in samples:
+                if lbl.lab.hasLabel:
+                    addToClassmap( classmap, lbl.lab.name, purpose )
+        addPurposedLabelablesToRunSet( rnst, purpose, samples )
 
     elif type(samples) is str and isLikelyDir( samples ):
         # single path to a directory.  Create a corpus, turn into RunSet, close corpus.
@@ -403,10 +410,10 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
     elif type(samples) is str and not isLikelyDir( samples ):
         # single file, create an unpurposed entry
         fpath = getCvacPath( samples )
-        labelable = getLabelable( fpath )
+        labelable = getLabelable( fpath )  # no label text, hence nothing for the classmap
         if purpose is None:
             purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
-        addPurposedLabelablesToRunSet( runset, purpose, [labelable] )
+        addPurposedLabelablesToRunSet( rnst, purpose, [labelable] )
         
     else:
         raise RuntimeError( "don't know how to create a RunSet from ", type(samples) )
@@ -423,7 +430,7 @@ def createRunSet( samples, purpose=None ):
 
     runset = cvac.RunSet()
     classmap = {}
-    addToRunSet( runset, samples, purpose, classmap )
+    addToRunSet( runset, samples, purpose=purpose, classmap=classmap )
     return {'runset':runset, 'classmap':classmap}
 
 def getFileServer( configString ):
@@ -506,14 +513,14 @@ def collectSubstrates( runset ):
     substrates that occur in this runset'''
     substrates = set()
     for plist in runset.purposedLists:
-        if type(plist) is cvac.PurposedDirectory:
+        if isinstance(plist, cvac.PurposedDirectory):
             raise RuntimeError("cannot deal with PurposedDirectory yet")
-        elif type(plist) is cvac.PurposedLabelableSeq:
+        elif isinstance(plist, cvac.PurposedLabelableSeq):
             for lab in plist.labeledArtifacts:
                 if not lab.sub in substrates:
                     substrates.add( lab.sub )
         else:
-            raise RuntimeError("unexpected subclass of PurposedList")
+            raise RuntimeError("unexpected subclass of PurposedList: "+type(plist))
     return substrates
 
 def putAllFiles( fileserver, runset ):
@@ -529,7 +536,7 @@ def putAllFiles( fileserver, runset ):
     uploadedFiles = []
     existingFiles = []
     for sub in substrates:
-        if not type(sub) is cvac.Substrate:
+        if not isinstance(sub, cvac.Substrate):
             raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
         if not fileserver.exists( sub.path ):
             putFile( fileserver, sub.path )
@@ -552,7 +559,7 @@ def deleteAllFiles( fileserver, uploadedFiles ):
     deletedFiles = []
     notDeletedFiles = []
     for path in uploadedFiles:
-        if not type(path) is cvac.FilePath:
+        if not isinstance(path, cvac.FilePath):
             raise RuntimeError("Unexpected type found instead of cvac.FilePath:", type(path))
         try:
             fileserver.deleteFile( path )
@@ -654,10 +661,10 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
         raise RuntimeError("detectorData must be either filename or cvac.DetectorData")
 
     # if not given an actual cvac.RunSet, try to create a RunSet
-    if type(runset) is cvac.RunSet:
+    if isinstance(runset, cvac.RunSet):
         pass
     elif type(runset) is dict and not runset['runset'] is None\
-        and type(runset['runset']) is cvac.RunSet:
+        and isinstance(runset['runset'], cvac.RunSet):
         #classmap = runset['classmap']
         runset = runset['runset']
     else:
@@ -703,7 +710,7 @@ def getPurposeName( purpose ):
     else:
         raise RuntimeError("unexpected cvac.PurposeType")
 
-def getLabelText( label, classmap=None ):
+def getLabelText( label, classmap=None, guess=False ):
     '''Return a label text for the label: either
     "unlabeled" or the name of the label or whatever
     Purpose this label maps to.'''
@@ -715,7 +722,10 @@ def getLabelText( label, classmap=None ):
         if type(mapped) is cvac.Purpose:
             text = getPurposeName( mapped )
             if type(text) is int:
-                text = 'class {0}'.format( text )
+                if guess and text.isdigit():
+                    text = 'class {0}'.format( text )
+                else:
+                    text = '{0}'.format( text )
         elif type(mapped) is str:
             text = mapped
         else:
@@ -723,13 +733,15 @@ def getLabelText( label, classmap=None ):
                                 type(mapped) )
     return text
 
-def printResults( results, foundMap=None, origMap=None ):
+def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
     '''Print detection results as specified in a ResultSet.
     If classmaps are specified, the labels are mapped
     (replaced by) purposes: the foundMap maps found labels and
-    the origMap maps the original labels, if any.
-    The classmap is a dictionary mapping either label to Purpose
-    or label to string.  Since detectors do not produce Purposes,
+    the origMap maps the original labels.  The maps are Python
+    dictionaries, mapping either a label to a Purpose or a label
+    to a string.
+
+    If inverseMap=True: Since detectors do not produce Purposes,
     but the foundMap maps labels to Purposes, it is assumed that
     the users wishes to replace a label that hints at the Purpose
     with the label that maps to that same Purpose.  For example,
@@ -738,28 +750,29 @@ def printResults( results, foundMap=None, origMap=None ):
     Hence, we would replace '12' with 'face'.'''
     
     # create inverse map for found labels
-    labelPurposeLabelMap = {}
-    if foundMap:
-        for key in foundMap.keys():
-            pur = foundMap[key]
-            if not type(pur) is cvac.Purpose:
-                break
-            id = getPurposeName( pur )
-            if type(id) is int:
-                id = str(id)
-            labelPurposeLabelMap[id] = key
-    if labelPurposeLabelMap:
-        foundMap = labelPurposeLabelMap
+    if inverseMap:
+        labelPurposeLabelMap = {}
+        if foundMap:
+            for key in foundMap.keys():
+                pur = foundMap[key]
+                if not type(pur) is cvac.Purpose:
+                    break
+                id = getPurposeName( pur )
+                if type(id) is int:
+                    id = str(id)
+                    labelPurposeLabelMap[id] = key
+        if labelPurposeLabelMap:
+            foundMap = labelPurposeLabelMap
     
     print('received a total of {0} results:'.format( len( results ) ))
     identical = 0
     for res in results:
         names = []
         for lbl in res.foundLabels:
-            foundLabel = getLabelText( lbl.lab, foundMap )
+            foundLabel = getLabelText( lbl.lab, foundMap, guess=True )
             names.append(foundLabel)
         numfound = len(res.foundLabels)
-        origname = getLabelText( res.original.lab, origMap )
+        origname = getLabelText( res.original.lab, origMap, guess=False )
         print("result for {0} ({1}): found {2} label{3}: {4}".format(
             res.original.sub.path.filename, origname,
             numfound, ("s","")[numfound==1], ', '.join(names) ))
@@ -767,24 +780,23 @@ def printResults( results, foundMap=None, origMap=None ):
             identical += 1
     print('{0} out of {1} results had identical labels'.format( identical, len( results ) ))
 
-wnd = None
 def initGraphics():
-    global wnd
-    if not wnd:
-        try:
-            wnd = tk.Tk()
-            wnd.title('results')
-        except:
-            wnd = None
-            raise RuntimeError("cannot display images - do you have PIL installed?")
+    try:
+        wnd = tk.Tk()
+        wnd.title('results')
+    except:
+        wnd = None
+        raise RuntimeError("cannot display images - do you have PIL installed?")
+    return wnd
 
 def showImage( img ):
     # open window, convert image into displayable photo
+    wnd = initGraphics()
     photo = ImageTk.PhotoImage( img )
     
     # make the window the size of the image
     # position coordinates of wnd 'upper left corner'
-    x = 500
+    x = 0
     y = 0
     w = photo.width()
     h = photo.height()
@@ -795,9 +807,10 @@ def showImage( img ):
     panel.pack(side='top', fill='both', expand='yes')    
     # save the panel's image from 'garbage collection'
     panel.image = photo
-    
+
     # start the event loop
     wnd.mainloop()
+    wnd = None
 
 def drawResults( results ):
     if not results:
@@ -823,26 +836,69 @@ def drawResults( results ):
         print("no labels and/or no substrates, nothing to draw");
         return
 
+    # print out some summary information
     sys.stdout.softspace=False;
     for subpath in sorted( substrates.keys() ):
         numlabels = len( substrates[subpath] )
         print("{0} ({1} label{2})".format( subpath, numlabels, ("s","")[numlabels==1] ))
 
+    # render the substrates with respective labels
+    showImagesWithLabels( substrates )
+
+def drawLabelables( lablist, maxsize=None ):
+    # first, collect all image substrates of the labels
+    substrates = {}
+    for lbl in lablist:
+        if lbl.sub.isImage:
+            subpath = getFSPath( lbl.sub )
+            if subpath in substrates:
+                substrates[subpath].append( lbl )
+            else:
+                substrates[subpath] = [lbl]
+    if not substrates:
+        print("no labels and/or no substrates, nothing to draw");
+        return
+    showImagesWithLabels( substrates, maxsize )
+
+def showImagesWithLabels( substrates, maxsize=None ):
+    '''Takes a dictionary of type dict[file_system_path] = [Labelable] as
+    input and renders every image with labels overlaid.  The size
+    parameter can be used to display all images at the same size.'''
     # now draw
-    initGraphics()
     for subpath in substrates:
         img = Image.open( subpath )
+        scale = 1.0
+        if not maxsize is None:
+            scalex = float(img.size[0])/float(maxsize[0])
+            scaley = float(img.size[1])/float(maxsize[1])
+            scale = max( scalex, scaley )
+            maxsize = int(img.size[0]/scale), int(img.size[1]/scale)
+            img = img.resize( maxsize, Image.NEAREST ) # favor speed over quality
         for lbl in substrates[subpath]:
             # draw poly into the image
-            if type(lbl) is cvac.LabeledLocation:
-                if type( lbl.loc ) is cvac.BBox:
+            if isinstance(lbl, cvac.LabeledLocation):
+                if isinstance( lbl.loc, cvac.BBox):
+                    a = lbl.loc.x/scale
+                    b = lbl.loc.y/scale
+                    c = a+lbl.loc.width/scale
+                    d = b+lbl.loc.height/scale
                     draw = ImageDraw.Draw( img )
-                    a = lbl.loc.x
-                    b = lbl.loc.y
-                    c = a+lbl.loc.width
-                    d = b+lbl.loc.height
                     draw.line([(a,b), (c,b), (c,d), (a,d), (a,b)], fill=255, width=2)
                     del draw
+                elif isinstance( lbl.loc, cvac.Silhouette):
+                    if len(lbl.loc.points) is 0:
+                        continue
+                    if len(lbl.loc.points) is 1:
+                        raise RuntimeError("Incorrect Labelable: a single point should not be a silhouette")
+                    cpts = []
+                    for point in lbl.loc.points:
+                        cpts.append( (point.x/scale, point.y/scale) )
+                    cpts.append( cpts[0] )  # close the loop
+                    draw = ImageDraw.Draw( img )
+                    draw.line( cpts, fill=255, width=2 )
+                    del draw
+                else:
+                    print("warning: not rendering Label type {0}".format( type(lbl.loc) ))
         showImage( img )
 
 def getConfusionMatrix( results, origMap, foundMap ):

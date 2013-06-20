@@ -12,6 +12,16 @@ import cvac
 
 import easy
 
+# first some detections on a pre-built model
+detector = easy.getDetector( "OpenCVCascadeDetector:default -p 10102" )
+results = easy.detect( detector, "detectors/haarcascade_frontalface_alt.xml", "testImg/italia.jpg" )
+#results = easy.detect( detector, "detectors/haarcascade_frontalface_alt.xml", runset )
+easy.printResults( results )
+easy.drawResults( results )
+
+print("not training yet")
+quit()
+
 # face corpus
 corpus = easy.openCorpus( "corpus/Faces94.properties" )
 
@@ -25,8 +35,3 @@ res = easy.createRunSet( categories )
 runset = res['runset']
 classmap = res['classmap']
 
-detector = easy.getDetector( "OpenCVCascadeDetector:default -p 10102" )
-results = easy.detect( detector, "detectors/haarcascade_frontalface_alt.xml", "italia.jpg" )
-#results = easy.detect( detector, "detectors/haarcascade_frontalface_alt.xml", runset )
-easy.printResults( results )
-easy.drawResults( results )

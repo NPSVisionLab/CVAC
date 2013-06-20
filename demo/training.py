@@ -8,11 +8,6 @@
 import easy
 import zipfile
 
-testset = easy.createRunSet( "testImg" )
-easy.printRunSetInfo( testset )
-#print testset
-#TODO: should say hasLabel = False, confidence = 0
-#quit()
 #
 # create a RunSet from corporate logo images
 #

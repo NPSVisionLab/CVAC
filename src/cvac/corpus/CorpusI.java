@@ -1,6 +1,6 @@
 package cvac.corpus;
 
-import cvac.CorpusCallback;
+import cvac.CorpusCallbackPrx;
 import cvac.FilePath;
 import cvac.Labelable;
 import cvac.Substrate;
@@ -141,7 +141,7 @@ abstract public class CorpusI extends Corpus
 
     abstract Labelable[] getLabels();
 
-    abstract void createLocalMirror(CorpusCallback cb);
+    abstract void createLocalMirror(CorpusCallbackPrx cb);
 
     /*
      *Load all the images

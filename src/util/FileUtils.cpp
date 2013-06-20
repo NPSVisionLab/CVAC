@@ -128,6 +128,18 @@ bool cvac::directoryExists(const std::string& directory)
    return false;
 }
 
+
+//Refer: http://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
+///////////////////////////////////////////////////////////////////////////////
+bool cvac::fileExists(const std::string& _abspath)
+{
+    struct stat tBuff;
+    if(stat(_abspath.c_str(),&tBuff)==0)
+      return true;
+    else
+      return false;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 std::string cvac::getFileDirectory(const std::string& fileName)
 {
@@ -280,6 +292,15 @@ std::string cvac::getBaseFileName(const std::string& fileName)
    return std::string(onlyFileName.begin(),onlyFileName.begin()+dot);
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::getFileExtension(const std::string& _path)
+{
+    std::string::size_type dot = _path.find_first_of(".");	//rfind
+    return std::string(_path.begin() + dot + 1,_path.end());
+}
+
+
 // TODO: please add documentation.
 // TODO: I am a bit afraid of this - a recursive delete is dangerous.  has anybody checked if this follows symbolic links???
 bool cvac::deleteDirectory(const std::string& path) 
@@ -398,7 +419,7 @@ bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile)
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
           fprintf(stderr, "!!!!Admin rights required for creating a symbolic link!!!!\n");   
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-      }
+      }	  
       printf("failed to create symbolic link for %s\n", toFile.c_str());
       printf("symbolic link name %s\n", fromFile.c_str());
       printf("Error %d\n", err);

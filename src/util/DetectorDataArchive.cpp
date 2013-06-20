@@ -202,3 +202,41 @@ std::vector<std::string> expandSeq_fromFile(const std::string& filename)
   // Expand subfolder to the usual Current Working Directory
   return(expandSeq_fromFile(filename, ""));
 }
+
+bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>& _inPaths)
+{
+  //we need to add some error handling routines
+  struct archive *a;
+  struct archive_entry *entry;
+  struct stat st;
+  int tBuffSize = 1024;//8192;
+  char* tBuff= new char[tBuffSize];  
+
+  a = archive_write_new();  
+  archive_write_set_format_zip(a);
+  archive_write_open_filename(a, _outpath.c_str());
+  for(unsigned int k=0;k<_inPaths.size();k++)
+  {
+    string tFilename = getFileName(_inPaths[k]);
+    stat(_inPaths[k].c_str(), &st);
+    entry = archive_entry_new();     
+    archive_entry_copy_stat(entry, &st);
+    archive_entry_set_pathname(entry, tFilename.c_str());
+    archive_write_header(a, entry);
+
+    std::ifstream is(_inPaths[k].c_str(),std::ios::binary);
+    is.seekg(0,std::ios::beg);
+    while(!is.eof())
+    {
+      is.read(tBuff,tBuffSize);
+      archive_write_data(a, tBuff, tBuffSize);    
+    }
+    is.close();  
+   
+    archive_entry_free(entry);
+  }
+  archive_write_finish(a);
+  delete [] tBuff; 
+
+  return true;
+}
