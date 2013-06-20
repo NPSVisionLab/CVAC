@@ -10,13 +10,13 @@ for another without modifying your code (much).
 
 Download
 ------------
-[Binary installers](http://www.movesinstitute.org/) will soon be available for
-various operating systems.
-
+Please see the [Wiki pages](https://github.com/NPSVisionLab/CVAC/wiki) for complete instructions.
+The [Downloads](https://github.com/NPSVisionLab/CVAC/wiki/Downloading-CVAC) page also lists
+binary installers for various operating systems.
 The source code can be obtained by cloning the repository, 
 either via the "Clone" button above or via the command line git tool
 (`git clone https://github.com/NPSVisionLab/CVAC.git localCvacDirectory`).
-More detail is on the [Wiki pages](https://github.com/NPSVisionLab/CVAC/wiki).
+Again, more detail is on the [Wiki pages](https://github.com/NPSVisionLab/CVAC/wiki).
 
 Documentation
 ------------
