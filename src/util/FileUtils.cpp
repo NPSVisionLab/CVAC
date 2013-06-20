@@ -504,6 +504,20 @@ std::string cvac::getTempFilename( const std::string & basedir)
     return tempString;
 }
 
+
+/** Turn a CVAC path into a file system path
+ */
+std::string cvac::getFSPath( const cvac::FilePath& fp, const std::string& CVAC_DataDir )
+{
+  //TODO check for relative path for CVAC_DataDir and make absolute
+  std::string path;
+  if (fp.directory.relativePath.empty())
+    path = CVAC_DataDir+"/"+fp.filename;
+  else
+    path = CVAC_DataDir+"/"+fp.directory.relativePath+"/"+fp.filename;
+  return path;
+}
+
 /*
 BaseException(const std::string& newMsg) { //const std::string &newMsg
 

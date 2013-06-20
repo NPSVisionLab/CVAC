@@ -80,19 +80,6 @@ BowICEI::~BowICEI()
 	pBowCV = NULL;
 }
 
-// TODO: move into fileUtils
-/** Turn a CVAC path into a file system path
- */
-std::string getFSPath( const cvac::FilePath& fp, const std::string& CVAC_DataDir="" )
-{
-  std::string path;
-  if (fp.directory.relativePath.empty())
-    path = CVAC_DataDir+"/"+fp.filename;
-  else
-    path = CVAC_DataDir+"/"+fp.directory.relativePath+"/"+fp.filename;
-  return path;
-}
-
                           // Client verbosity
 void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const ::Ice::Current& current)
 {

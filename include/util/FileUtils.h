@@ -174,5 +174,14 @@ namespace cvac
 
    std::string getTempFilename( const std::string& basedir="" );
 
+   /** Turn a CVAC path info a file system path
+    * @param fp The filepath to change
+    * @param CVAC_DataDir The CVAC data directory 
+    * @return a string that concatinates CVAC_Dir and the relative path and
+    * filename defined in fp.
+    */
+   std::string getFSPath(const cvac::FilePath &fp, 
+                         const std::string &CVAC_DataDir = "");
+
 };
 #endif // __FILEUTILS_H_INCLUDED__
