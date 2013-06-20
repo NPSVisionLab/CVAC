@@ -148,8 +148,8 @@ class CorpusCallbackI(cvac.CorpusCallback):
     corpus = None
     def corpusMirrorProgress( self, corp, numtasks, currtask, taskname, details,
             percentCompleted, current=None ):
-        print("Downloading corpus {0}, task {1}/{2}: {3} ({4}%)".\
-              format( corp.name, currtask, numtasks, taskname ))
+        print("message from CorpusServer: mirroring corpus {0}, task {1}/{2}: {3} ({4}%)".\
+              format( corp.name, currtask, numtasks, taskname, percentCompleted ))
     def corpusMirrorCompleted(self, corp, current=None):
         self.corpus = corp
 
