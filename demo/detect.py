@@ -34,7 +34,7 @@ easy.printResults( results )
 # flags but for various corporate logos
 print("------- Bag of Words results for corporate logos: -------")
 modelfile = "detectors/bowCorporateLogoModel.zip"
-imgfile = "testImg/corporate_logos_collection.jpg"
+imgfile = "corporate_logos/shell/shell2.png"
 results = easy.detect( detector, modelfile, imgfile )
 easy.printResults( results )
 
@@ -42,7 +42,7 @@ easy.printResults( results )
 # print("------- Deformable Parts Model results for logos: -------")
 # detector = easy.getDetector( "dpmDetect:default -p 10114" )
 # modelfile = "detectors/dpmCorporateLogoModel.zip"
-# imgfile = "testImg/corporate_logos_collection.jpg"
+# imgfile = "corporate_logos/shell/shell2.png"
 # results = easy.detect( detector, modelfile, imgfile )
 # easy.printResults( results )
 

@@ -323,12 +323,13 @@ def addToClassmap( classmap, key, purpose ):
 def addToRunSet( runset, samples, purpose=None, classmap=None ):
     '''Add samples to a given RunSet.
     Take a look at the documentation for createRunSet for details.'''
+    rnst = runset
     if type(runset) is dict and not runset['runset'] is None\
         and type(runset['runset']) is cvac.RunSet:
-        if not classmap:
+        if classmap is None:
             classmap = runset['classmap']
-        runset = runset['runset']
-    if runset is None or not type(runset) is cvac.RunSet:
+        rnst = runset['runset']
+    if rnst is None or not type(rnst) is cvac.RunSet:
         raise RuntimeError("No runset given - use createRunSet instead")
         
     # convert purpose if given, but not proper type
@@ -341,7 +342,7 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         # all categories get identical purposes
         for key in samples.keys():
             addToClassmap( classmap, key, purpose )
-        addPurposedLabelablesToRunSet( runset, purpose, categories.values() )
+        addPurposedLabelablesToRunSet( rnst, purpose, categories.values() )
 
     elif type(samples) is dict:
         # multiple categories, try to guess the purpose and
@@ -354,7 +355,9 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
             # single category - assume "unpurposed"
             if purpose is None:
                 purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
-            addPurposedLabelablesToRunSet( runset, purpose, samples.values()[0] )
+            else:
+                addToClassmap( classmap, samples.keys()[0], purpose )
+            addPurposedLabelablesToRunSet( rnst, purpose, samples.values()[0] )
             return
         
         # if it's two classes, maybe one is called "pos" and the other "neg"?
@@ -373,8 +376,8 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
                 negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, -1 )
                 poskey = pur_categories_keys[poskeyid]
                 negkey = pur_categories_keys[1-poskeyid]
-                addPurposedLabelablesToRunSet( runset, pospur, samples[poskey] )
-                addPurposedLabelablesToRunSet( runset, negpur, samples[negkey] )
+                addPurposedLabelablesToRunSet( rnst, pospur, samples[poskey] )
+                addPurposedLabelablesToRunSet( rnst, negpur, samples[negkey] )
                 addToClassmap( classmap, poskey, pospur )
                 addToClassmap( classmap, negkey, negpur )
                 return
@@ -384,14 +387,18 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         for key in pur_categories_keys:
             purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
             addToClassmap( classmap, key, purpose )
-            addPurposedLabelablesToRunSet( runset, purpose, samples[key] )
+            addPurposedLabelablesToRunSet( rnst, purpose, samples[key] )
             cnt = cnt+1
 
     elif type(samples) is list and len(samples)>0 and type(samples[0]) is cvac.Labelable:
         # single category - assume "unpurposed"
         if purpose is None:
             purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
-        addPurposedLabelablesToRunSet( runset, purpose, samples )
+        else:
+            for lbl in samples:
+                if lbl.lab.hasLabel:
+                    addToClassmap( classmap, lbl.lab.name, purpose )
+        addPurposedLabelablesToRunSet( rnst, purpose, samples )
 
     elif type(samples) is str and isLikelyDir( samples ):
         # single path to a directory.  Create a corpus, turn into RunSet, close corpus.
@@ -403,10 +410,10 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
     elif type(samples) is str and not isLikelyDir( samples ):
         # single file, create an unpurposed entry
         fpath = getCvacPath( samples )
-        labelable = getLabelable( fpath )
+        labelable = getLabelable( fpath )  # no label text, hence nothing for the classmap
         if purpose is None:
             purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
-        addPurposedLabelablesToRunSet( runset, purpose, [labelable] )
+        addPurposedLabelablesToRunSet( rnst, purpose, [labelable] )
         
     else:
         raise RuntimeError( "don't know how to create a RunSet from ", type(samples) )
@@ -423,7 +430,7 @@ def createRunSet( samples, purpose=None ):
 
     runset = cvac.RunSet()
     classmap = {}
-    addToRunSet( runset, samples, purpose, classmap )
+    addToRunSet( runset, samples, purpose=purpose, classmap=classmap )
     return {'runset':runset, 'classmap':classmap}
 
 def getFileServer( configString ):
@@ -703,7 +710,7 @@ def getPurposeName( purpose ):
     else:
         raise RuntimeError("unexpected cvac.PurposeType")
 
-def getLabelText( label, classmap=None ):
+def getLabelText( label, classmap=None, guess=False ):
     '''Return a label text for the label: either
     "unlabeled" or the name of the label or whatever
     Purpose this label maps to.'''
@@ -715,7 +722,10 @@ def getLabelText( label, classmap=None ):
         if type(mapped) is cvac.Purpose:
             text = getPurposeName( mapped )
             if type(text) is int:
-                text = 'class {0}'.format( text )
+                if guess and text.isdigit():
+                    text = 'class {0}'.format( text )
+                else:
+                    text = '{0}'.format( text )
         elif type(mapped) is str:
             text = mapped
         else:
@@ -723,13 +733,15 @@ def getLabelText( label, classmap=None ):
                                 type(mapped) )
     return text
 
-def printResults( results, foundMap=None, origMap=None ):
+def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
     '''Print detection results as specified in a ResultSet.
     If classmaps are specified, the labels are mapped
     (replaced by) purposes: the foundMap maps found labels and
-    the origMap maps the original labels, if any.
-    The classmap is a dictionary mapping either label to Purpose
-    or label to string.  Since detectors do not produce Purposes,
+    the origMap maps the original labels.  The maps are Python
+    dictionaries, mapping either a label to a Purpose or a label
+    to a string.
+
+    If inverseMap=True: Since detectors do not produce Purposes,
     but the foundMap maps labels to Purposes, it is assumed that
     the users wishes to replace a label that hints at the Purpose
     with the label that maps to that same Purpose.  For example,
@@ -738,28 +750,29 @@ def printResults( results, foundMap=None, origMap=None ):
     Hence, we would replace '12' with 'face'.'''
     
     # create inverse map for found labels
-    labelPurposeLabelMap = {}
-    if foundMap:
-        for key in foundMap.keys():
-            pur = foundMap[key]
-            if not type(pur) is cvac.Purpose:
-                break
-            id = getPurposeName( pur )
-            if type(id) is int:
-                id = str(id)
-            labelPurposeLabelMap[id] = key
-    if labelPurposeLabelMap:
-        foundMap = labelPurposeLabelMap
+    if inverseMap:
+        labelPurposeLabelMap = {}
+        if foundMap:
+            for key in foundMap.keys():
+                pur = foundMap[key]
+                if not type(pur) is cvac.Purpose:
+                    break
+                id = getPurposeName( pur )
+                if type(id) is int:
+                    id = str(id)
+                    labelPurposeLabelMap[id] = key
+        if labelPurposeLabelMap:
+            foundMap = labelPurposeLabelMap
     
     print('received a total of {0} results:'.format( len( results ) ))
     identical = 0
     for res in results:
         names = []
         for lbl in res.foundLabels:
-            foundLabel = getLabelText( lbl.lab, foundMap )
+            foundLabel = getLabelText( lbl.lab, foundMap, guess=True )
             names.append(foundLabel)
         numfound = len(res.foundLabels)
-        origname = getLabelText( res.original.lab, origMap )
+        origname = getLabelText( res.original.lab, origMap, guess=False )
         print("result for {0} ({1}): found {2} label{3}: {4}".format(
             res.original.sub.path.filename, origname,
             numfound, ("s","")[numfound==1], ', '.join(names) ))
