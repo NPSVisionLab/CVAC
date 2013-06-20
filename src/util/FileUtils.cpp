@@ -141,7 +141,7 @@ bool cvac::fileExists(const std::string& _abspath)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::getFilePath(const std::string& fileName)
+std::string cvac::getFileDirectory(const std::string& fileName)
 {
    std::string::size_type slash1 = fileName.find_last_of('/');
    std::string::size_type slash2 = fileName.find_last_of('\\');
@@ -462,7 +462,48 @@ void cvac::sleep(int numberOfMilliseconds)
       #else
          ::Sleep(numberOfMilliseconds);
       #endif
-  }
+   }
+
+std::string cvac::getTempFilename( const std::string & basedir)
+{
+    const char *baseName = NULL;
+    if (!basedir.empty()) 
+        baseName = basedir.c_str();
+    char *tempName;
+#ifdef WIN32
+    // Windows will not use baseName if TMPDIR variable is defined so we use tmpNam instead of
+    // _tempname so we can control the base directory if one is passed in.
+    char current[1024];
+    if (baseName == NULL)
+    { // No base directory so let the TMPDIR variable pick the  name.
+        tempName = _tempnam(baseName, NULL);
+    } else
+    { // tmpname only works in the current dir so change to where we want temp file
+        _getcwd(current, 1024);
+        if (_chdir(baseName) != -1)
+        { // directory exists
+            tempName = tmpnam(NULL); 
+            // change directory back to original one 
+            _chdir(current);
+            strcpy(current, baseName);
+            strcat(current, tempName);
+            // tmpname puts a '.' at end of filename of windows this fails if its going to be a directory so get rid of it.
+            int len = strlen(current);
+            if (current[len-1] == '.')
+                current[len-1] = 0;
+            tempName = current;
+        }else
+        { // the basename directory does not exist so let windows give use the tempfile name
+            tempName = _tempnam(baseName, NULL);
+        }
+    }
+#else
+    tempName = tempnam(baseName, NULL);
+#endif /* WIN32 */
+    std::string tempString = tempName;
+    return tempString;
+}
+
 /*
 BaseException(const std::string& newMsg) { //const std::string &newMsg
 

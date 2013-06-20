@@ -30,8 +30,8 @@ try:
 except ImportError as ex:
     print("  failed:")
     print("  Please add the directory in which paths.py is located to your PYTHONPATH.")
-    print("  If you only have paths.py.in, then you should either get a binary")
-    print("  of CVAC or run the CMake build process.")
+    print("  If you only have paths.py.in, then you should either obtain a binary")
+    print("  distribution package of CVAC or run the CMake build process.")
     print("  Detailed error message: {0}".format( ex ));
 
 print("Trying to import easy... ")

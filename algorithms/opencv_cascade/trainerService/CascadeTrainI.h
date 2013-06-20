@@ -47,6 +47,54 @@
 #include <util/processRunSet.h>
 #include <util/ServiceMan.h>
 
+class SamplesParams
+{
+ public:
+  int numSamples;
+  int width;
+  int height;
+};
+
+// TODO: change to K's class name
+class RunSetWrapper {
+public:
+  RunSetWrapper(const cvac::RunSet& rs ): runset(rs) { }
+
+public:
+  const cvac::RunSet &runset;
+};
+
+class TrainerPropertiesI : public cvac::TrainerProperties
+{
+ public:
+   /**
+    * Client access fuctions
+    */
+   virtual void setWindowSize(const cvac::Size &wsize,
+                               const Ice::Current& = ::Ice::Current() );
+   virtual bool canSetWindowSize(
+                               const ::Ice::Current& = ::Ice::Current() );
+   virtual cvac::Size getWindowSize(
+                               const ::Ice::Current& = ::Ice::Current() );
+   virtual void setSensitivity(Ice::Double falseAlarmRate, Ice::Double recall,
+                               const ::Ice::Current& = ::Ice::Current() );
+   virtual bool canSetSensitivity(
+                               const ::Ice::Current& = ::Ice::Current() );
+   virtual void getSensitivity(Ice::Double &falseAlarmRate, Ice::Double &recall,
+                               const ::Ice::Current& = ::Ice::Current() );
+ public:
+  int numStages;
+  int featureType; // CvFeatureParams::HAAR, LBP, or HOG
+  int boost_type;
+  float minHitRate;
+  float maxFalseAlarm;
+  float weight_trim_rate;
+  int max_depth;
+  int weak_count;
+  int width;
+  int height;
+};
+
 class CascadeTrainI : public cvac::DetectorTrainer
 {
  public:
@@ -64,11 +112,22 @@ class CascadeTrainI : public cvac::DetectorTrainer
   virtual ::std::string getDescription(const ::Ice::Current& = ::Ice::Current() );
   virtual void setVerbosity(::Ice::Int, const ::Ice::Current& = ::Ice::Current() );
   virtual ::cvac::TrainerPropertiesPrx getTrainerProperties(const ::Ice::Current& = ::Ice::Current());
+  void writeBgFile( const RunSetWrapper& rsw, const std::string& bgFilename, 
+                    int* pNumNeg, std::string datadir );
 
+  bool createSamples( const RunSetWrapper& rsw, const SamplesParams& params,
+                    const std::string& vecFilename, int* pNumPos, std::string datadir);
+  bool createClassifier( const std::string& tempDir, 
+                         const std::string& vecFname, 
+                         const std::string& bgName,
+                         int numPos, int numNeg, 
+                         const TrainerPropertiesI *trainProps );
  private:
   bool  fInitialized;    	
   int   m_cvacVerbosity;
   cvac::ServiceManager *mServiceMan;
+  Ice::ObjectAdapterPtr mAdapter;
+  TrainerPropertiesI *mTrainProps;
 };
 
 #endif //_CascadeTrainI_H__
