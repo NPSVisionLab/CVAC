@@ -228,13 +228,11 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
     }
   }
 
-  std::string tCurdir = getCurrentWorkingDirectory();  
-#ifdef WIN32
-  char *tTempDir_Char = _tempnam(tCurdir.c_str(), NULL);
-#else
-  char *tTempDir_Char = tempnam(tCurdir.c_str(), NULL);
-#endif /* WIN32 */
-  std::string tTempDir = tTempDir_Char;  
+  srand((unsigned)time(NULL));
+  std::ostringstream tConvNum2Str;
+  tConvNum2Str << rand();
+  std::string tTempStr = "bowDetectorData_" + tConvNum2Str.str();
+  std::string tTempDir = CVAC_DataDir + "/" + tTempStr;  
   makeDirectory(tTempDir);  //For saving bow training results temporary  
 
   localAndClientMsg(VLogger::INFO, _callback, 
@@ -244,13 +242,9 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
   bool fTrain = pBowCV->train_run(tTempDir, logfile_BowTrainResult, mServiceMan);
 
   // Tell ServiceManager that we are done listening for stop
-  mServiceMan->clearStop();
+  mServiceMan->clearStop();  
 
-  srand((unsigned)time(NULL));
-  std::ostringstream tConvNum2Str;
-  tConvNum2Str << rand();
-
-  std::string tFilenameDetectorData = "bowDetectorData_" + tConvNum2Str.str() + ".zip";
+  std::string tFilenameDetectorData = tTempStr + ".zip";
   std::string tDirectoryDetectorData = CVAC_DataDir;
   if(!fTrain)
   {
