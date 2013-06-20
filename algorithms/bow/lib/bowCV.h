@@ -76,7 +76,7 @@ public:
 	bowCV();
 	~bowCV();	
 	
-        bool                    isInitialized();
+    bool            isInitialized();
 	bool			train_initialize(const string& _detectorName,const string& _extractorName,const string& _matcherName,int _nCluster);
 	bool			train_parseTrainList(const string& _filepathTrain,const string& _filenameTrainList);
 	void			train_stackTrainImage(const string& _fullpath,const int& _classID);	
@@ -96,6 +96,10 @@ private:
 	//bool			runTrainFull(const string& _filepathTrain,const string& _filenameTrainList,const string& _filepathForSavingResult,const string& _filenameForSavingResult);	//This function is not good to the ICE project.
 	//void			setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses );
 	//void			setSVMTrainAutoParams( CvParamGrid& c_grid, CvParamGrid& gamma_grid,CvParamGrid& p_grid, CvParamGrid& nu_grid,CvParamGrid& coef_grid, CvParamGrid& degree_grid );	
+
+public:
+    string				filenameVocabulary;	
+    string              filenameSVM;
 	
 protected:
 	Mat					_img;
@@ -106,9 +110,7 @@ protected:
 	string				_fullFilePathImg;
 	string				_fullFilePathList;
 	Mat					mVocabulary;
-	string				filenameTrainResult;
-	string				filenameVocabulary;	
-	
+	string				filenameTrainResult;	
 
 private:
 	int								cntCluster;
