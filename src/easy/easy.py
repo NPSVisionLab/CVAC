@@ -220,26 +220,36 @@ def printCategoryInfo( categories ):
         klen = len( categories[key] )
         print("{0} ({1} artifact{2})".format( key, klen, ("s","")[klen==1] ))
 
-def printSubstrateInfo( labelList, indent="" ):
+def printSubstrateInfo( labelList, indent="", printLabels=False ):
     if not labelList:
         print("no labelList, nothing to print")
         return
     substrates = {}
+    labels = {}
     for lb in labelList:
         # subpath = getFSPath( lb.sub.path )  # print file system paths
         subpath = lb.sub.path.directory.relativePath +\
                   "/" + lb.sub.path.filename # print cvac.FilePath
         if subpath in substrates:
             substrates[subpath] = substrates[subpath]+1
+            if printLabels:
+                labels[subpath].append( [getLabelText(lb.lab)] )
         else:
             substrates[subpath] = 1
+            if printLabels:
+                labels[subpath] = [getLabelText(lb.lab)]
     sys.stdout.softspace=False;
     for subpath in sorted( substrates.keys() ):
         numlabels = substrates[subpath]
-        print("{0}{1} ({2} label{3})".\
-              format( indent, subpath, numlabels, ("s","")[numlabels==1] ))
+        if printLabels:
+            print("{0}{1} ({2} label{3}): {4}".\
+                  format( indent, subpath, numlabels, ("s","")[numlabels==1],
+                          ', '.join(labels[subpath]) ))
+        else:
+            print("{0}{1} ({2} label{3})".\
+                  format( indent, subpath, numlabels, ("s","")[numlabels==1] ))
 
-def printRunSetInfo( runset ):
+def printRunSetInfo( runset, printLabels=False ):
     '''You can pass in an actual cvac.RunSet or a dictionary with
     the runset and a classmap, as returned by createRunSet.'''
     classmap = None
@@ -261,7 +271,8 @@ def printRunSetInfo( runset ):
         elif isinstance(plist, cvac.PurposedLabelableSeq):
             print("sequence with Purpose '{0}' and {1} labeled artifacts:"\
                   .format( purposeText, len(plist.labeledArtifacts) ) )
-            printSubstrateInfo( plist.labeledArtifacts, indent="  " )
+            printSubstrateInfo( plist.labeledArtifacts, indent="  ",
+                                printLabels=printLabels )
         else:
             raise RuntimeError("unexpected plist type "+type(plist))
     if classmap:
@@ -716,6 +727,8 @@ def getLabelText( label, classmap=None, guess=False ):
     Purpose this label maps to.'''
     if not label.hasLabel:
         return "unlabeled"
+    if label.name is "":
+        return "<empty>"
     text = label.name
     if classmap and text in classmap:
         mapped = classmap[text]

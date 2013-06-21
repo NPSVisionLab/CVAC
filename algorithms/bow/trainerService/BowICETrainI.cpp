@@ -244,8 +244,10 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
   // Tell ServiceManager that we are done listening for stop
   mServiceMan->clearStop();  
 
+  // Store the DetectorData (model) in a zip archive at location
+  // CVAC_DataDir/tDirectoryDetectorData/tFilenameDetectorData
   std::string tFilenameDetectorData = tTempStr + ".zip";
-  std::string tDirectoryDetectorData = CVAC_DataDir;
+  std::string tDirectoryDetectorData = "";
   if(!fTrain)
   {
     deleteDirectory(tTempDir);
@@ -268,7 +270,7 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
       tListFiles.push_back(tTempDir + "/" + logfile_BowTrainResult);
       tListFiles.push_back(tTempDir + "/" + pBowCV->filenameVocabulary);
       tListFiles.push_back(tTempDir + "/" + pBowCV->filenameSVM);
-      if(!writeZipArchive(tDirectoryDetectorData + "/" + tFilenameDetectorData,tListFiles))
+      if(!writeZipArchive(CVAC_DataDir + "/" + tFilenameDetectorData,tListFiles))
       {
         localAndClientMsg(VLogger::ERROR, NULL,
           "Detector data is not generated correctly.\n");

@@ -38,14 +38,21 @@ imgfile = "corporate_logos/shell/shell2.png"
 results = easy.detect( detector, modelfile, imgfile )
 easy.printResults( results )
 
-# test the same image with a different detector type and model
-# print("------- Deformable Parts Model results for logos: -------")
-# detector = easy.getDetector( "dpmDetect:default -p 10114" )
-# modelfile = "detectors/dpmCorporateLogoModel.zip"
-# imgfile = "corporate_logos/shell/shell2.png"
-# results = easy.detect( detector, modelfile, imgfile )
-# easy.printResults( results )
-
+# test the same image with a different detector type and model;
+print("------- Deformable Parts Model results for Starbucks logo: -------")
+try:
+    detector = easy.getDetector( "dpmDetect:default -p 10114" )
+    modelfile = "detectors/dpmStarbucksLogo.zip"
+    imgfile = "corporate_logos/shell/shell2.png"
+    results = easy.detect( detector, modelfile, imgfile )
+    easy.printResults( results )
+    imgfile = "corporate_logos/starbucks/starbucks-logo.png"
+    results = easy.detect( detector, modelfile, imgfile )
+    easy.printResults( results )
+except:
+    print("DPM detector not installed: if desired, please obtain it via\n"\
+          "https://github.com/NPSVisionLab/PartsBasedDetector")
+    
 # yet another detector type
 print("------- Viola-Jones cascades for face detection: -------")
 detector = easy.getDetector( "OpenCVCascadeDetector:default -p 10102" )
