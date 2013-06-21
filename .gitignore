@@ -24,6 +24,7 @@ UserCMakeLists.txt
 *.so
 *.dylib
 *.a
+*.pyc
 
 # CMake files #
 #############
@@ -52,26 +53,3 @@ nbproject
 Icon?
 ehthumbs.db
 Thumbs.db
-
-include/version.h
-/.bowTest/
-/data/Caltech101/.meta/
-/data/CvacCorpusTest/.meta/
-/data/Faces94/.meta/
-algorithms/ScreenShotDetection/detectorService/ssClient_Sample.py
-algorithms/ScreenShotDetection/detectorService/ssDetectionI.py
-algorithms/ScreenShotDetection/source/ssDetection.py
-algorithms/ScreenShotDetection/source/ssDetection.pyc
-algorithms/ScreenShotDetection/source/ssDetectionOpenCV.py
-algorithms/ScreenShotDetection/source/ssDetectionOpenCV.pyc
-algorithms/ScreenShotDetection/trainerService/ssDetectionTrainI.py
-algorithms/ScreenShotDetection/trainerService/ssTrainingClient_Sample.py
-data/Caltech101/
-data/corpus/.Faces94.properties.swp
-data/Faces94/
-data/LabelMeCarsTest/
-data/s6to/cascade_negatives.txt
-data/s70s/cascade_negatives.txt
-data/s8e0/cascade_negatives.txt
-data/screenshots/
-data/smallcars/
