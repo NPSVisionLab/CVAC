@@ -45,9 +45,9 @@ easy.printCategoryInfo( categories2 )
 # Because we don't specify it, this guesses the specific Purpose that
 # is assigned to the labels.
 # Also obtain this mapping from Purpose to label name, called "classmap."
-rs1 = easy.createRunSet( categories1['US_flag']+categories2['us'], "1" )
-easy.addToRunSet( rs1, categories1['KO_flag']+categories2['kr'], "2" )
-easy.addToRunSet( rs1, categories1['CA_flag']+categories2['ca'], "3" )
+rs1 = easy.createRunSet( categories1['CA_flag']+categories2['ca'], "0" )
+easy.addToRunSet( rs1, categories1['KO_flag']+categories2['kr'], "1" )
+easy.addToRunSet( rs1, categories1['US_flag']+categories2['us'], "2" )
 print("\n=== The Corpora combined into one RunSet: ===");
 easy.printRunSetInfo( rs1 )
 
@@ -88,17 +88,8 @@ easy.printResults( results2, origMap=rs2['classmap'], foundMap=rs2['classmap'] )
 
 wait()
 print("------- With appropriate classmaps for original and found labels: -------")
-foundmp = {'1':'2', '2':'3', '3':'1'}
+foundmp = {'0':'1', '1':'3', '2':'2'}
 easy.printResults( results2, origMap=rs2['classmap'], foundMap=foundmp )
 
 print("------- Same, now mapped back from Purpose to original Label: -------")
-foundmp = {'1':'US_flag', '2':'KO_flag', '3':'CA_flag'}
 easy.printResults( results2, origMap=rs2['classmap'], foundMap=foundmp, inverseMap=True )
-
-
-#import pdb
-#pdb.set_trace()
-
-quit()
-
-cs = easy.getCorpusServer("CorpusServer:default -p 10011")
