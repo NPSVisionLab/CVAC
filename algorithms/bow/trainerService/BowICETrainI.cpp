@@ -287,7 +287,7 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
   DetectorData detectorData;
   // Method 1	
   detectorData.type = ::cvac::FILE;
-  detectorData.file.directory.relativePath = tDirectoryDetectorData;
+  detectorData.file.directory.relativePath = ((tDirectoryDetectorData==CVAC_DataDir)?"":tDirectoryDetectorData);
   detectorData.file.filename = tFilenameDetectorData;  
 
   // Method 2
