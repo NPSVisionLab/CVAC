@@ -83,18 +83,6 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
             mAdapter = __current.adapter;
             initialize();
         }
-
-        // TODO: this ugly path mangling should be in a utility function "getFSPath"
-//        java.net.URL location = getClass().getProtectionDomain().getCodeSource().getLocation();
-//        String cwd = location.getFile();
-//        if (!cwd.endsWith( "/lib/Corpus.jar" ))
-//        {
-//            logger.log(Level.SEVERE, "unexpected cwd, can't deduce absolute path");
-//            //debug
-//            //return null;
-//            cwd = System.getProperty("user.dir") + "/lib/Corpus.jar";
-//        }
-//        cwd = cwd.substring( 0, cwd.length()-15 );
         
         String filename = Data_IO_Utils.getFSPath(file,  dataDir);
         logger.log(Level.INFO, "request for openCorpus( {0} )", filename);

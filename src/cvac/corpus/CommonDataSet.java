@@ -347,64 +347,6 @@ public class CommonDataSet extends CorpusI {
 
             case ZIP:
             {
-//                final int UNZIP_BUFFER = 2048;
-//                byte buff[];
-//                int amtRead;
-//                ZipInputStream zis = null;
-//                String outFilename = "";
-//
-//                try {
-//                    zis = new ZipInputStream(new FileInputStream(compressedFileSrc));
-//                    ZipEntry entry;
-// 
-//                    while ((entry = zis.getNextEntry()) != null) {
-//                        long esize = entry.getSize();
-//                        outFilename = destFileDir + File.separator + entry.getName();
-//                        if (entry.isDirectory())
-//                        {
-//                            logger.info("Creating directory: " + outFilename);
-//                            boolean success = (new File(outFilename)).mkdirs();
-//                            if (!success)
-//                            {
-//                                logger.warning("Could not create directory, anticipate further unzip problems: "
-//                                               + outFilename);
-//                            }
-//                            continue;
-//                        }
-//                        logger.info("Unzipping: " + outFilename);
-// 
-//                        byte[] buffer = new byte[10240];
-//                        int size;
-//                        FileOutputStream fos =
-//                            new FileOutputStream(outFilename);
-//                        BufferedOutputStream bos =
-//                            new BufferedOutputStream(fos, buffer.length);
-//                        try
-//                        {
-//                            while ((size = zis.read(buffer, 0, buffer.length)) != -1) {
-//                                bos.write(buffer, 0, size);
-//                            }
-//                        }
-//                        catch(Exception e) {
-//                            String msg = ("Read/Write Error while extracting from zip-Input-Stream." + e.toString());
-//                            logger.warning(msg);
-//                            zis.skip(esize);
-//                        }
-//                        bos.flush();
-//                        bos.close();
-//                    }
-//                }
-//                catch(FileNotFoundException e) {
-//                    String msg = ("Error using specified files for extracting with zip.\n" + 
-//                                  "Compressed Source: " + compressedFileSrc.getPath() + "\n" +
-//                                  "Destination File: "  + outFilename + "\n" + e.toString());
-//                    logger.warning(msg);
-//                    removeMetaFlg();
-//                }
-//                catch(Exception e) {
-//                    String msg = ("Error while extracting from zip-Input-Stream." + e.toString());
-//                    logger.warning(msg);
-//                }
                 ZipFile zipFile = new ZipFile(compressedFileSrc);
                 InputStream in = null;
                 BufferedOutputStream out = null;
