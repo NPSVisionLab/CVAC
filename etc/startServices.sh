@@ -27,7 +27,7 @@ ${ICEDIR}/bin/icebox --Ice.Config=config.icebox &
 # Java services, via Java IceBox
 if [ "${JAVAEXE}" != "" ]
 then
-    ${JAVAEXE} -cp "${ICEDIR}/lib/Ice.jar:${INSTALLDIR}/bin/FileServer.jar:${INSTALLDIR}/bin/Corpus.jar:${INSTALLDIR}/3rdparty/lib/labelme.jar:${INSTALLDIR}/3rdparty/lib/javabuilder.jar:${INSTALLDIR}/3rdparty/lib/commons-io-1.3.2.jar:${INSTALLDIR}/3rdparty/lib/javatar-2.5.jar" \
+    ${JAVAEXE} -cp "${ICEDIR}/lib/Ice.jar:${INSTALLDIR}/bin/FileServer.jar:${INSTALLDIR}/bin/Corpus.jar:${INSTALLDIR}/3rdparty/lib/labelme.jar:${INSTALLDIR}/3rdparty/lib/javabuilder.jar:${INSTALLDIR}/3rdparty/lib/commons-io-2.4.jar:${INSTALLDIR}/3rdparty/lib/javatar-2.5.jar" \
         IceBox.Server --Ice.Config=config.java_icebox &
 fi
 

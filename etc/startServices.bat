@@ -25,7 +25,7 @@ start "CVAC Services (C++)" "cmd /K ""%ICEDIR%/bin/icebox.exe" --Ice.Config=conf
 if "%JAVAEXE%" neq "" goto startjava
 goto next
 :startjava
-    start "CVAC Services (Java)" "cmd /K ""%JAVAEXE%" -cp "%ICEDIR%/lib/Ice.jar;%ICEBOXJAR%;%JARDIR%/FileServer.jar;%JARDIR%/Corpus.jar;%THRDPARTYLIBDIR%/labelme.jar;%THRDPARTYLIBDIR%/javabuilder.jar;%THRDPARTYLIBDIR%/commons-io-1.3.2.jar;%THRDPARTYLIBDIR%/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox"
+    start "CVAC Services (Java)" "cmd /K ""%JAVAEXE%" -cp "%ICEDIR%/lib/Ice.jar;%ICEBOXJAR%;%JARDIR%/FileServer.jar;%JARDIR%/Corpus.jar;%THRDPARTYLIBDIR%/labelme.jar;%THRDPARTYLIBDIR%/javabuilder.jar;%THRDPARTYLIBDIR%/commons-io-2.4.jar;%THRDPARTYLIBDIR%/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox"
 :next
 REM Python services that are listed in python.config
 if "%PYTHONEXE%" neq "" (if exist "%INSTALLDIR%/python.config" goto startpython)
