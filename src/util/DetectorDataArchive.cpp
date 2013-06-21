@@ -209,8 +209,6 @@ bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>&
   struct archive *a;
   struct archive_entry *entry;
   struct stat st;
-  int tBuffSize = 1024;//8192;
-  char* tBuff= new char[tBuffSize];  
 
   a = archive_write_new();  
   archive_write_set_format_zip(a);
@@ -222,21 +220,36 @@ bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>&
     entry = archive_entry_new();     
     archive_entry_copy_stat(entry, &st);
     archive_entry_set_pathname(entry, tFilename.c_str());
-    archive_write_header(a, entry);
+    archive_write_header(a, entry);  
 
-    std::ifstream is(_inPaths[k].c_str(),std::ios::binary);
-    is.seekg(0,std::ios::beg);
-    while(!is.eof())
+    std::ifstream is(_inPaths[k].c_str(),std::ios::binary);    
+    if(!is.is_open())
     {
-      is.read(tBuff,tBuffSize);
-      archive_write_data(a, tBuff, tBuffSize);    
+      std::cout << "The target file: "
+        << _inPaths[k].c_str() 
+        << " may not exist or has a problem.\n";
+      return false;
     }
-    is.close();  
-   
+
+    is.seekg (0, is.end);
+    int tBuffSize = is.tellg();
+    is.seekg (0, is.beg);
+    char* tBuff = new char[tBuffSize]; 
+    if(tBuff == 0 || tBuff == NULL)
+    {
+      std::cout << "The target file: "
+        << _inPaths[k].c_str() 
+        << " is too big to be compressed.\n";
+      return false;
+    }
+    is.read(tBuff,tBuffSize);
+    archive_write_data(a, tBuff, tBuffSize);    
+    is.close(); 
+    delete [] tBuff;
+
     archive_entry_free(entry);
   }
-  archive_write_finish(a);
-  delete [] tBuff; 
+  archive_write_finish(a);  
 
   return true;
 }
