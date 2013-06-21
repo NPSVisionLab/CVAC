@@ -295,6 +295,7 @@ ResultSetV2 CascadeDetectI::convertResults( const Labelable& original, CvSeq* fo
     box->height = r.rect.height;
     
     LabeledLocation* newLocation = new LabeledLocation();
+    newLocation->lab.hasLabel = true;
     newLocation->lab.name = cascade_name;
     newLocation->loc = box;
     
