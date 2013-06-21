@@ -96,10 +96,10 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     def test_getDataSet(self):
         print('getDataSet')
         dataRoot = cvac.DirectoryPath( "corpus" );
-        corpusConfigFile1 = cvac.FilePath( dataRoot, "Caltech101.properties" )
+        corpusConfigFile1 = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
         corpus1 = self.cs.openCorpus( corpusConfigFile1 )
         if not corpus1:
-            raise RuntimeError("Could not open Caltech101 corpus")
+            raise RuntimeError("Could not open CvacCorpusTest corpus")
         try:
             labels = self.cs.getDataSet( corpus1 )
             raise RuntimeError("the CorpusServer should not be able to get the data",
