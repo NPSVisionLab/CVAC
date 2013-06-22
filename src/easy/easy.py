@@ -1,9 +1,12 @@
-#
-# Easy Computer Vision
-#
-# easy.py is a high-level interface to CVAC, the
-# Computer Vision Algorithm Collection.
-#
+'''
+Easy Computer Vision
+
+easy.py is a high-level interface to the underlying metadata
+description syntax and to the multi-language service-oriented
+architecture.  Its goal is to hide the lower-leve complexities
+and to provide, uhm, easy access functions to its functionality.
+'''
+
 from __future__ import print_function
 import os
 import sys, traceback
@@ -148,7 +151,7 @@ class CorpusCallbackI(cvac.CorpusCallback):
     corpus = None
     def corpusMirrorProgress( self, corp, numtasks, currtask, taskname, details,
             percentCompleted, current=None ):
-        print("message from CorpusServer: mirroring corpus {0}, task {1}/{2}: {3} ({4}%)".\
+        print("CorpusServer: mirroring '{0}', task {1}/{2}: {3} ({4}%)".\
               format( corp.name, currtask, numtasks, taskname, percentCompleted ))
     def corpusMirrorCompleted(self, corp, current=None):
         self.corpus = corp
@@ -522,6 +525,8 @@ def getFile( fileserver, filepath ):
 def collectSubstrates( runset ):
     '''obtain a set (a list without duplicates) of all
     substrates that occur in this runset'''
+    if type(runset) is dict:
+        runset = runset['runset']
     substrates = set()
     for plist in runset.purposedLists:
         if isinstance(plist, cvac.PurposedDirectory):
@@ -654,7 +659,8 @@ class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
         self.allResults.extend( r2.results )
 
 def detect( detector, detectorData, runset, callbackRecv=None ):
-    '''Synchronously run detection with the specified detector,
+    '''
+    Synchronously run detection with the specified detector,
     trained model, and optional callback receiver.
     The detectorData can be either a cvac.DetectorData object or simply
      a filename of a pre-trained model.  Naturally, the model has to be
@@ -662,7 +668,8 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
     The runset can be either a cvac.RunSet object or anything that
     createRunSet can turn into a RunSet.
     If a callback receiver is specified, this function returns nothing,
-    otherwise, the obtained results are returned.'''
+    otherwise, the obtained results are returned.
+    '''
 
     # create a cvac.DetectorData object out of a filename
     if type(detectorData) is str:
@@ -756,26 +763,27 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
 
     If inverseMap=True: Since detectors do not produce Purposes,
     but the foundMap maps labels to Purposes, it is assumed that
-    the users wishes to replace a label that hints at the Purpose
+    the user wishes to replace a label that hints at the Purpose
     with the label that maps to that same Purpose.  For example,
     a result label of '12' is assumed to be a class ID.  The
     classmap might map 'face' to a Purpose(MULTICLASS, 12).
     Hence, we would replace '12' with 'face'.'''
     
     # create inverse map for found labels
+    purposeLabelMap = {}
     if inverseMap:
-        labelPurposeLabelMap = {}
         if foundMap:
             for key in foundMap.keys():
                 pur = foundMap[key]
                 if not type(pur) is cvac.Purpose:
                     break
-                id = getPurposeName( pur )
-                if type(id) is int:
-                    id = str(id)
-                    labelPurposeLabelMap[id] = key
-        if labelPurposeLabelMap:
-            foundMap = labelPurposeLabelMap
+                pid = getPurposeName( pur )
+                if type(pid) is int:
+                    pid = str(pid)
+                    if pid in purposeLabelMap:
+                        purposeLabelMap[pid] += ", " +key
+                    else:
+                        purposeLabelMap[pid] = key
     
     print('received a total of {0} results:'.format( len( results ) ))
     identical = 0
@@ -783,9 +791,17 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
         names = []
         for lbl in res.foundLabels:
             foundLabel = getLabelText( lbl.lab, foundMap, guess=True )
+            if purposeLabelMap and foundLabel in purposeLabelMap:
+                foundLabel = purposeLabelMap[foundLabel]
             names.append(foundLabel)
         numfound = len(res.foundLabels)
         origname = getLabelText( res.original.lab, origMap, guess=False )
+        if origMap and purposeLabelMap:
+            # also map the original label to purpose and back, which removes
+            # ambiguities in case two labels map to the same purpose
+            if res.original.lab in origMap and \
+                    str(origMap[res.original.lab]) in purposeLabelMap:
+                origname = purposeLabelMap[ str(origMap[res.original.lab]) ]
         print("result for {0} ({1}): found {2} label{3}: {4}".format(
             res.original.sub.path.filename, origname,
             numfound, ("s","")[numfound==1], ', '.join(names) ))

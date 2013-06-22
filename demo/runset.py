@@ -1,9 +1,8 @@
-#
-# Easy!  mini tutorial
-#
-# Create a RunSet in several ways, use it for detection and evaluation
-#
-# matz 6/18/2013
+'''
+Easy!  mini tutorial
+Create a RunSet in several ways, use it for detection and evaluation
+matz 6/18/2013
+'''
 
 import easy
 import cvac
