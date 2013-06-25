@@ -83,13 +83,11 @@ CascadeDetectI::CascadeDetectI(ServiceManager *sman)
   , cascade(NULL)
 {
   mServiceMan = sman;
-  storage = cvCreateMemStorage();
 }
 
 CascadeDetectI::~CascadeDetectI()
 {
-  cvReleaseHaarClassifierCascade( &cascade );
-  cvReleaseMemStorage( &storage );
+  delete cascade;
 }
 
 
@@ -152,16 +150,14 @@ void CascadeDetectI::initialize( ::Ice::Int verbosity,
   // TODO: get size from the detector parameters
   
   // load cascade from XML file
-  cascade = cvLoadHaarClassifierCascade( dpath.c_str(), detsize );
-  if( cascade == NULL )
+  cascade = new cv::CascadeClassifier;
+  if (cascade->load(dpath.c_str()) == false)
   {
     localAndClientMsg( VLogger::WARN, NULL,
                        "unable to load classifier from %s\n", dpath.c_str());
     fInitialized = false;
     return;
   }
-
-  storage = cvCreateMemStorage();
   cascade_name = data.file.filename;
 
   localAndClientMsg(VLogger::INFO, NULL, "CascadeDetector initialized.\n");
@@ -177,8 +173,7 @@ bool CascadeDetectI::isInitialized(const ::Ice::Current& current)
  
 void CascadeDetectI::destroy(const ::Ice::Current& current)
 {
-  cvReleaseHaarClassifierCascade( &cascade );
-  cvReleaseMemStorage( &storage );
+  delete cascade;
   fInitialized = false;
 }
 std::string CascadeDetectI::getName(const ::Ice::Current& current)
@@ -241,7 +236,7 @@ void CascadeDetectI::process( const Ice::Identity &client,
 /** run the cascade on the image described in lbl,
  *  return the objects (rectangles) that were found
  */
-CvSeq* CascadeDetectI::detectObjects( const CallbackHandlerPrx& callback, const cvac::Labelable& lbl )
+std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& callback, const cvac::Labelable& lbl )
 {
   localAndClientMsg(VLogger::DEBUG, callback, "in detectObjects\n");
   CvSeq* objects = NULL;
@@ -252,31 +247,35 @@ CvSeq* CascadeDetectI::detectObjects( const CallbackHandlerPrx& callback, const 
 /** run the cascade on the image described in lbl,
  *  return the objects (rectangles) that were found
  */
-CvSeq* CascadeDetectI::detectObjects( const CallbackHandlerPrx& callback, const std::string& fullname )
+std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& callback, const std::string& fullname )
 {
+  std::vector<cv::Rect> results;
+  cv::Mat src_img, gray_img, eq_img;
   localAndClientMsg(VLogger::DEBUG, callback, "About to process 1 %s\n", fullname.c_str());
-  IplImage *img = cvLoadImage( fullname.c_str() );
-  if( !img )
+  src_img = cv::imread( fullname.c_str(), CV_LOAD_IMAGE_COLOR );
+  if( src_img.data == NULL )
   {
     localAndClientMsg(VLogger::WARN, callback, "cannot open %s\n", fullname.c_str());
-    return NULL;
+    return results;
   }
   localAndClientMsg(VLogger::DEBUG, callback, "About to process 2 %s\n", fullname.c_str());
-  cvClearMemStorage( storage );
+  cv::cvtColor(src_img, gray_img, CV_RGB2GRAY);
+  cv::equalizeHist(gray_img, eq_img);
   float scale_factor = 1.2f; // TODO: make this part of detector parameters
-  CvSeq* objects =
-    cvHaarDetectObjects( img, cascade, storage, scale_factor, 1 );
+  int min_neighbors = 3; // TODO: make this a parameter
+  int flags = 0;       // TODO: make this a parameter
+  cv::Size size(24, 24);  // TODO: make this a parameter
+  
+  cascade->detectMultiScale(eq_img, results, scale_factor, min_neighbors, flags, size); 
 
-  cvReleaseImage( &img );
-
-  return objects;
+  return results;
 }
 
 /** convert from OpenCV result to CVAC ResultSet
  */
-ResultSetV2 CascadeDetectI::convertResults( const Labelable& original, CvSeq* foundObjects )
+ResultSetV2 CascadeDetectI::convertResults( const Labelable& original, std::vector<cv::Rect> rects)
 {	
-  int detcount = (foundObjects ? foundObjects->total : 0);
+  int detcount = rects.size();
   localAndClientMsg(VLogger::DEBUG, NULL, "detections: %d\n", detcount);
   
   Result tResult;
@@ -284,15 +283,15 @@ ResultSetV2 CascadeDetectI::convertResults( const Labelable& original, CvSeq* fo
   // to be returned in foundLabels.
   tResult.original = new Labelable( original );
 
-  for( int i = 0; i < detcount; i++ )
+  for (std::vector<cv::Rect>::iterator it = rects.begin(); it != rects.end(); ++it)
   {
-    CvAvgComp r = *((CvAvgComp*) cvGetSeqElem( foundObjects, i ));
+    cv::Rect r = *it;
     
     BBox* box = new BBox();
-    box->x = r.rect.x;
-    box->y = r.rect.y;
-    box->width = r.rect.width;
-    box->height = r.rect.height;
+    box->x = r.x;
+    box->y = r.y;
+    box->width = r.width;
+    box->height = r.height;
     
     LabeledLocation* newLocation = new LabeledLocation();
     newLocation->lab.hasLabel = true;
@@ -319,11 +318,11 @@ ResultSetV2 detectFunc(DetectorPtr detector, const char *fname)
   }
 
   // do the actual detection
-  CvSeq* objects;
-  objects = detI->detectObjects( (DetectorCallbackHandlerPrx)NULL, fname );
+  std::vector<cv::Rect> results;
+  results = detI->detectObjects( (DetectorCallbackHandlerPrx)NULL, fname );
 
   // convert to ResultSet and return
   LabelablePtr original = new Labelable();
-  ResultSetV2 resSet = detI->convertResults( *original, objects );
+  ResultSetV2 resSet = detI->convertResults( *original, results );
   return resSet;
 }

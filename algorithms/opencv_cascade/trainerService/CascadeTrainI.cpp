@@ -294,6 +294,7 @@ bool CascadeTrainI::createSamples( const RunSetWrapper& rsw,
   for (it = posRectlabels.begin(); it < posRectlabels.end(); it++)
   {
     cvac::RectangleLabels recLabel = *it;
+    bool skipFile = false;
     if (recLabel.rects.size() <= 0)
     { // No rectangle so use the whole image
         int w, h;
@@ -317,6 +318,8 @@ bool CascadeTrainI::createSamples( const RunSetWrapper& rsw,
            getImageWidthHeight(recLabel.filename, w, h);
            if (w >= params.width && h >= params.height)
                infoFile << recLabel.filename << " 1 0 0 " << w << " " << h;
+           else
+               skipFile = true;
        } else
        {
           // fileName, # of objects, x, y, width, height
@@ -332,9 +335,10 @@ bool CascadeTrainI::createSamples( const RunSetWrapper& rsw,
           }
        }
     }
-    cnt++;
+    if (skipFile == false)
+        cnt++;
     // NO EXTRA BLANK LINE after the last sample, or cvhaartraining.cpp can fail on: "CV_Assert(elements_read == 1);"
-    if ((cnt) < imgCnt)
+    if ((cnt < imgCnt) && skipFile == false)
         infoFile << endl;
   }
   infoFile.flush();
@@ -362,6 +366,8 @@ bool CascadeTrainI::createClassifier( const string& tempDir,
       precalcIdxBufSize = 256;
   bool baseFormatSave = false;
   CvCascadeParams cascadeParams;
+  cascadeParams.winSize.width = trainProps->width;
+  cascadeParams.winSize.height = trainProps->height;
   CvCascadeBoostParams stageParams;
   Ptr<CvFeatureParams> featureParams[] = 
   { Ptr<CvFeatureParams>(new CvHaarFeatureParams),
@@ -408,7 +414,8 @@ void CascadeTrainI::process(const Ice::Identity &client,
   std::string tempDir = getTempFilename( CVAC_DataDir );
   makeDirectory( tempDir );
   RunSetWrapper rsw( runset );
-  string bgName = tempDir + "/cascade_negatives.txt";
+  //string bgName = tempDir + "/cascade_negatives.txt";
+  string bgName = "cascade_negatives.txt";
   int numNeg = 0;
   writeBgFile( rsw, bgName, &numNeg, CVAC_DataDir );
 
@@ -423,9 +430,10 @@ void CascadeTrainI::process(const Ice::Identity &client,
   std::string vecFname = "cascade_positives.vec";
   int numPos = 0;
   createSamples( rsw, samplesParams, vecFname, &numPos, CVAC_DataDir);
-  // invoke the actual training
+  // invoke the actual training vec file needs sample samples
+  // where sample = (numPos + (numStages-1)* (1 - minHitRate) * numPos) + S
   if (createClassifier( tempDir, vecFname, bgName,
-                    numPos, numNeg, mTrainProps ))
+                    (int)(numPos * 0.9), numNeg, mTrainProps ))
 
 
   {
@@ -433,7 +441,12 @@ void CascadeTrainI::process(const Ice::Identity &client,
       // TODO: zip the resulting file
       DetectorData detectorData;
       detectorData.type = ::cvac::FILE;
-      detectorData.file.directory.relativePath = tempDir;
+      // remove data from directory path since we will add it again
+      int len = CVAC_DataDir.length();
+      if (tempDir.substr(0,len-1).compare(CVAC_DataDir))
+          detectorData.file.directory.relativePath = tempDir.substr(len+1);
+      else
+          detectorData.file.directory.relativePath = tempDir;
       detectorData.file.filename = "cascade.xml";
   
       callback->createdDetector(detectorData);
