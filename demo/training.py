@@ -1,9 +1,8 @@
-#
-# Easy!  mini tutorial
-#
-# Build a model for object detection
-#
-# matz 6/18/2013
+'''
+Easy!  mini tutorial
+Build a model for object detection
+matz 6/18/2013
+'''
 
 import easy
 import zipfile
@@ -28,6 +27,7 @@ trainedModel = easy.train( trainer, trainset )
 # interest to algorithm developers since it is algorithm-specific
 #
 zipfname = easy.getFSPath( trainedModel )
+print("{0}".format( zipfname ))
 zipf = zipfile.ZipFile( zipfname )
 print("Training model stored in file {0}; file contents:\n{1}".\
       format( zipfname, zipf.namelist()))

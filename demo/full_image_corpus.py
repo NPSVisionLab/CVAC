@@ -1,9 +1,8 @@
-#
-# Easy!  mini tutorial
-#
-# Utilize a Corpus of images with full-image labels
-#
-# matz 6/19/2013
+'''
+Easy!  mini tutorial
+Utilize a Corpus of images with full-image labels
+matz 6/19/2013
+'''
 
 import easy
 
@@ -51,7 +50,7 @@ easy.addToRunSet( rs1, categories1['US_flag']+categories2['us'], "2" )
 print("\n=== The Corpora combined into one RunSet: ===");
 easy.printRunSetInfo( rs1 )
 
-# The runset can again be used for training and testing
+# A runset can be used for training or for testing
 print("------- Bag of Words results for corporate logos: -------")
 detector = easy.getDetector( "bowTest:default -p 10104" )
 modelfile = "detectors/bowUSKOCA.zip"

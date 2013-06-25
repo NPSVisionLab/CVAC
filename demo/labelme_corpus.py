@@ -1,10 +1,9 @@
-#
-# Easy!  mini tutorial
-#
-# Obtain labeled data from a LabelMe server.
-# See http://new-labelme.csail.mit.edu/Release3.0
-#
-# matz 6/19/2013
+'''
+Easy!  mini tutorial
+Obtain labeled data from a LabelMe server.
+See http://new-labelme.csail.mit.edu/Release3.0
+matz 6/19/2013
+'''
 
 import easy
 
@@ -34,6 +33,12 @@ for key in categories.keys():
         cars.append( categories[key] )
 print("There are {0} car-related labels.".format( len(cars) ))
 
+# Note that Labels are cached in the CorpusServer, but the corpus currently
+# needs to re-mirror if the CorpusServer is restarted because Labels are
+# not stored to disk.  Images are stored to disk.
+
+quit()  # done for now
+
 # Train a detector on license plates
 trainer = easy.getTrainer( "bowTrain:default -p 10103 ")
 trainset = easy.createRunSet( license_plates, "pos" )
@@ -47,7 +52,3 @@ detector = easy.getDetector( "bowTest:default -p 10104" )
 results = easy.detect( detector, licenseplateModel, testset )
 
 printResults( results )
-
-# Note that Labels are cached in the CorpusServer, but the corpus currently
-# needs to re-mirror if the CorpusServer is restarted because Labels are
-# not stored to disk.  Images are stored to disk.

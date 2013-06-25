@@ -1,9 +1,8 @@
-#
-# Easy!  mini tutorial
-#
-# Apply a pre-trained detector to an image
-#
-# matz 6/17/2013
+'''
+Easy!  mini tutorial
+Apply a pre-trained detector to an image
+matz 6/17/2013
+'''
 
 import easy
 
@@ -11,8 +10,7 @@ import easy
 detector = easy.getDetector( "bowTest:default -p 10104" )
 
 # a model for distinguishing Canadian, Korean, and US flags,
-# trained previously with a BOW-specific trainer and stored
-# in a file
+# trained previously with a BOW-specific trainer and stored in a file
 modelfile = "detectors/bowUSKOCA.zip"
 
 # a test image; the location is relative to the "CVAC.DataDir"
@@ -24,11 +22,10 @@ results = easy.detect( detector, modelfile, imgfile )
 # you can print the results with Easy!'s pretty-printer;
 # we will explain the meaning of the "unlabeled" and the number
 # of the found label later.
+# or you can always print variables directly (uncomment the next line):
+# print("{0}".format( results ))
 print("------- Bag of Words results for flags: -------")
 easy.printResults( results )
-
-# or you can print the results directly (uncomment the next line):
-# print("{0}".format( results ))
 
 # let's try a different model, pre-trained not for
 # flags but for various corporate logos
