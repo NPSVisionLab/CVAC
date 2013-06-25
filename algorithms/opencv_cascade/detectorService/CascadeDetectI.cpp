@@ -145,10 +145,6 @@ void CascadeDetectI::initialize( ::Ice::Int verbosity,
   }
   localAndClientMsg( VLogger::DEBUG_1, NULL, "initializing with %s\n", dpath.c_str());
 
-  // set parameters
-  CvSize detsize = cvSize( 24, 24 );
-  // TODO: get size from the detector parameters
-  
   // load cascade from XML file
   cascade = new cv::CascadeClassifier;
   if (cascade->load(dpath.c_str()) == false)
@@ -178,7 +174,7 @@ void CascadeDetectI::destroy(const ::Ice::Current& current)
 }
 std::string CascadeDetectI::getName(const ::Ice::Current& current)
 {
-  return "OpenCV CascadeDetector";
+  return "OpenCVCascadeDetector";
 }
 std::string CascadeDetectI::getDescription(const ::Ice::Current& current)
 {
@@ -265,8 +261,8 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
   int min_neighbors = 3; // TODO: make this a parameter
   int flags = 0;       // TODO: make this a parameter
   cv::Size size(24, 24);  // TODO: make this a parameter
-  
-  cascade->detectMultiScale(eq_img, results, scale_factor, min_neighbors, flags, size); 
+  cv::Size orig = cascade->getOriginalWindowSize();
+  cascade->detectMultiScale(eq_img, results, scale_factor, min_neighbors, flags, orig); 
 
   return results;
 }
