@@ -13,6 +13,8 @@ UserCMakeLists.txt
 /Doxyfile
 /build*
 /dist
+/data/Faces94
+/data/Caltech101
 
 # Compiled source #
 ###################

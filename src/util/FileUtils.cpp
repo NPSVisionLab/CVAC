@@ -486,7 +486,9 @@ std::string cvac::getTempFilename( const std::string & basedir)
             // change directory back to original one 
             _chdir(current);
             strcpy(current, baseName);
-            strcat(current, tempName);
+            // Keep file seperators as forward slashes
+            strcat(current, "/");
+            strcat(current, &tempName[1]);
             // tmpname puts a '.' at end of filename of windows this fails if its going to be a directory so get rid of it.
             int len = strlen(current);
             if (current[len-1] == '.')
