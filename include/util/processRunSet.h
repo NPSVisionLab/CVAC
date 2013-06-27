@@ -107,5 +107,10 @@ namespace cvac
     * file names.  These links are stored in the directory name returned and should be
     * deleted after the run set is finished being processed.
     */
-   std::string fixupRunSet( RunSet &runset);
+   std::string fixupRunSet( RunSet &runset, const std::string &CVAC_DataDir);
+
+   /**
+    * Return the remote address name of the client given this current.
+    */
+   std::string getClientName(const Ice::Current &cur);
 }

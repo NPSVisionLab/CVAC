@@ -441,19 +441,6 @@ bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile)
   return(false);  // Notify clients that call was known to have failed  
 }
 
-std::string cvac::expandFilename(std::string filename, std::string prefixDir)
-{
-    std::string result; 
-    if ((filename.length() > 1 && filename[1] == ':' )||
-        filename[0] == '/' ||
-        filename[0] == '\\')
-    {  // absolute path
-        result = filename;
-    } else { // prepend our prefix
-        result = (prefixDir + "/" + filename);
-    }
-    return result;
-}
 
 void cvac::sleep(int numberOfMilliseconds)
    {
