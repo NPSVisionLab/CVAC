@@ -552,7 +552,7 @@ std::string cvac::getClientName(const Ice::Current &cur)
     {
         char local[256];
         char remote[256];
-        int rval = sscanf(cstring.c_str(), "local address = %[^' '] address = %[^':']", &local, &remote);
+        int rval = sscanf(cstring.c_str(), "local address = %[^' '] address = %[^':']", local, remote);
         if (rval == 2)
         {
             std::string rstr = remote;
