@@ -90,13 +90,6 @@ CascadeDetectI::~CascadeDetectI()
   delete cascade;
 }
 
-
-// TODO: make this a utility function
-std::string getSubstrateFileName( const cvac::Labelable& lbl, const std::string& CVAC_DataDir="" )
-{
-  return getFSPath( lbl.sub.path, CVAC_DataDir );
-}
-
 // Client verbosity
 void CascadeDetectI::initialize( ::Ice::Int verbosity,
                                  const ::DetectorData& data,
@@ -219,7 +212,7 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
 {
   localAndClientMsg(VLogger::DEBUG, callback, "in detectObjects\n");
   CvSeq* objects = NULL;
-  string fullname = getSubstrateFileName( lbl, m_CVAC_DataDir );
+  string fullname = getFSPath( lbl.sub.path, m_CVAC_DataDir );
   return detectObjects( callback, fullname );
 }
 

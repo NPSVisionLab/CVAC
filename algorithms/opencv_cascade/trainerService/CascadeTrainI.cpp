@@ -152,7 +152,29 @@ void CascadeTrainI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& cur
   return (IceProxy::cvac::TrainerProperties *)mTrainProps;
 }
 
-
+void CascadeTrainI::addDataPath(RunSet runset, const std::string &CVAC_DataDir)
+{
+    unsigned int i;
+    for (i = 0; i < runset.purposedLists.size(); i++)
+    {
+        cvac::PurposedLabelableSeq* lab = static_cast<cvac::PurposedLabelableSeq*>(runset.purposedLists[i].get());
+        // expand the file names
+        LabelableList artifacts = lab->labeledArtifacts;
+        std::vector<LabelablePtr>::iterator it;
+        for (it = artifacts.begin(); it < artifacts.end(); it++)
+        {
+            LabelablePtr lptr = (*it);
+            Substrate sub = lptr->sub;
+            FilePath  filePath = sub.path;
+            std::string fname;
+            fname = cvac::getFSPath(filePath, CVAC_DataDir);
+            filePath.directory.relativePath = getFileDirectory(fname);
+            filePath.filename = getFileName(fname);
+            sub.path = filePath;
+            lptr->sub = sub;
+        }
+    }
+}
 
 
 void CascadeTrainI::writeBgFile( const RunSetWrapper& rsw, 
@@ -181,21 +203,7 @@ void CascadeTrainI::writeBgFile( const RunSetWrapper& rsw,
     {
         // Store training-input data to vectors
         cvac::PurposedLabelableSeq* lab = static_cast<cvac::PurposedLabelableSeq*>(runset.purposedLists[i].get());
-        // expand the file names
-        // TODO call the utils fixupRunSet function.
         LabelableList artifacts = lab->labeledArtifacts;
-        std::vector<LabelablePtr>::iterator it;
-        for (it = artifacts.begin(); it < artifacts.end(); it++)
-        {
-            LabelablePtr lptr = (*it);
-            Substrate sub = lptr->sub;
-            FilePath  filePath = sub.path;
-            std::string fname = filePath.directory.relativePath;
-            fname = cvac::expandFilename(fname, CVAC_DataDir);
-            filePath.directory.relativePath = fname;
-            sub.path = filePath;
-            lptr->sub = sub;
-        }
         imgCnt += cvac::processLabelArtifactsToRects(&artifacts, 
                                     NULL, &negRectlabels, true);
      }
@@ -246,14 +254,11 @@ bool static getImageWidthHeight(std::string filename, int &width, int &height)
 
 bool CascadeTrainI::createSamples( const RunSetWrapper& rsw, 
                                    const SamplesParams& params,
+                    const string& infoFilename,
                     const string& vecFilename, int* pNumPos, string CVAC_DataDir
                     )
 {
-  
-  // TODO: put this file into tempDir (member variable? parameter?)
-  string infoFilename = "cascade_positives.txt";
-  // TODO: similar to above, iterate over rsw but this time only POSITIVE
-  // see the code from the old OpenCV Performance on what to create
+ 
   bool showsamples = false;
 
   unsigned int i;
@@ -270,18 +275,6 @@ bool CascadeTrainI::createSamples( const RunSetWrapper& rsw,
         // expand the file names
         // TODO call the utils fixupRunSet function.
         LabelableList artifacts = lab->labeledArtifacts;
-        std::vector<LabelablePtr>::iterator it;
-        for (it = artifacts.begin(); it < artifacts.end(); it++)
-        {
-            LabelablePtr lptr = (*it);
-            Substrate sub = lptr->sub;
-            FilePath  filePath = sub.path;
-            std::string fname = filePath.directory.relativePath;
-            fname = cvac::expandFilename(fname, CVAC_DataDir);
-            filePath.directory.relativePath = fname;
-            sub.path = filePath;
-            lptr->sub = sub;
-        }
         imgCnt += cvac::processLabelArtifactsToRects(&artifacts, getImageWidthHeight, &posRectlabels, true);
      }
   }
@@ -409,16 +402,27 @@ void CascadeTrainI::process(const Ice::Identity &client,
     localAndClientMsg(VLogger::WARN, callback, _resStr.c_str());
     return;
   }
-
+  // Since createSamples fails if there is a space in a file name we will create a temporary runset
+  // and provide symbolic links to files that name spaces in there names.
+  cvac::RunSet tempRunSet = runset;
+  // Add the cvac data dir to the directories in the runset
+  addDataPath(tempRunSet, CVAC_DataDir);
+  // The symbolic links are created in a tempdir so lets remember it so we can delete it at the end
+  // This is not quite working with relative paths so waiting for runset iterator
+  //std::string tempRSDir = fixupRunSet(tempRunSet, CVAC_DataDir);
   // Iterate over runset, inserting each POSITIVE Labelable into
   // the input file to "createsamples".  Add each NEGATIVE into
   // the bgFile.  Put both created files into a tempdir.
-  // TODO:
   std::string tempDir = getTempFilename( CVAC_DataDir );
   makeDirectory( tempDir );
-  RunSetWrapper rsw( runset );
+  RunSetWrapper rsw( tempRunSet );
+  // We can't put the bgName and infoName in the tempdir without
+  // changing cvSamples since it assumes that this files location is the root
+  // directory for the data.
   //string bgName = tempDir + "/cascade_negatives.txt";
+  //string infoName = tempDir + "/cascade_positives.txt";
   string bgName = "cascade_negatives.txt";
+  string infoName = "cascade_positives.txt";
   int numNeg = 0;
   writeBgFile( rsw, bgName, &numNeg, CVAC_DataDir );
 
@@ -430,9 +434,9 @@ void CascadeTrainI::process(const Ice::Identity &client,
   samplesParams.height = mTrainProps->height;
 
   // run createsamples
-  std::string vecFname = "cascade_positives.vec";
+  std::string vecFname = tempDir + "/cascade_positives.vec";
   int numPos = 0;
-  createSamples( rsw, samplesParams, vecFname, &numPos, CVAC_DataDir);
+  createSamples( rsw, samplesParams, infoName, vecFname, &numPos, CVAC_DataDir);
   // invoke the actual training vec file needs sample samples
   // where sample = (numPos + (numStages-1)* (1 - minHitRate) * numPos) + S
 
@@ -492,6 +496,7 @@ void CascadeTrainI::process(const Ice::Identity &client,
   {
       localAndClientMsg(VLogger::INFO, callback, "Cascade training failed.\n");
   }
+  //deleteDirectory(tempRSDir);
 }
 
 //----------------------------------------------------------------------------
