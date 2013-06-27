@@ -86,8 +86,8 @@ class TrainerPropertiesI : public cvac::TrainerProperties
   int numStages;
   int featureType; // CvFeatureParams::HAAR, LBP, or HOG
   int boost_type;
-  float minHitRate;
-  float maxFalseAlarm;
+  double minHitRate;
+  double maxFalseAlarm;
   float weight_trim_rate;
   int max_depth;
   int weak_count;

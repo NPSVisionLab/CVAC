@@ -82,6 +82,8 @@ public:
     
     ::Ice::ObjectAdapterPtr  getAdapter() { return mAdapter; }
 
+
+
 private:
     ::Ice::ObjectAdapterPtr         mAdapter;
     cvac::CVAlgorithmService*       mService;
@@ -143,7 +145,6 @@ void cvac::ServiceManager::stopService()
         mStopState = Stopped;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 void cvac::ServiceManager::waitForStopService()
 {
@@ -180,6 +181,7 @@ void cvac::ServiceManager::setStoppable()
 {
     mStopState = Running;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 bool cvac::ServiceManager::isStopCompleted()
 {
@@ -188,7 +190,6 @@ bool cvac::ServiceManager::isStopCompleted()
     else
         return false;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 std::string cvac::ServiceManager::getServiceName()
