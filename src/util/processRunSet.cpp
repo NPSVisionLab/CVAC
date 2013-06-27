@@ -44,7 +44,7 @@
 #endif
 #include <util/processRunSet.h>
 #include <util/ServiceMan.h>
-
+#include <Ice/Ice.h>
 using namespace Ice;
 using namespace cvac;
 
@@ -529,4 +529,26 @@ std::string cvac::fixupRunSet(RunSet &run)
         }
     }
     return tempString;
+}
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::getClientName(const Ice::Current &cur)
+{
+    std::string res = "localhost";
+    std::string cstring = cur.con->toString();
+    if (cstring.empty())
+       return res;
+    else
+    {
+        char local[256];
+        char remote[256];
+        int rval = sscanf(cstring.c_str(), "local address = %[^' '] address = %[^':']", &local, &remote);
+        if (rval == 2)
+        {
+            std::string rstr = remote;
+            // replace dots with underscores
+            std::replace(rstr.begin(), rstr.end(), '.','_');
+            return rstr; 
+        }
+    }
+     return res;
 }

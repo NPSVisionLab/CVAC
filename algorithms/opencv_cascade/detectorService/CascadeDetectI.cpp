@@ -97,22 +97,6 @@ std::string getSubstrateFileName( const cvac::Labelable& lbl, const std::string&
   return getFSPath( lbl.sub.path, CVAC_DataDir );
 }
 
-// TODO: move into fileUtils
-/** Turn a file system path into a CVAC FilePath
- */
-cvac::FilePath* getCvacPath( const std::string& fsPath, const std::string& CVAC_DataDir="" )
-{
-  // todo: should figure out what CVAC.DataDir is and parse that out, too
-  const std::string relPath = getFileDirectory( fsPath );
-  const std::string filename = getFileName( fsPath );
-  cvac::DirectoryPath directory = DirectoryPath();
-  directory.relativePath = relPath;
-  FilePath* fp = new FilePath();
-  fp->directory = directory;
-  fp->filename = filename;
-  return fp;
-}
-
 // Client verbosity
 void CascadeDetectI::initialize( ::Ice::Int verbosity,
                                  const ::DetectorData& data,
@@ -130,18 +114,17 @@ void CascadeDetectI::initialize( ::Ice::Int verbosity,
   }
   else	//for a zip file
   { 
-    // Use utils un-compression to get zip file names
-    // Filepath is relative to 'CVAC_DataDir'
-    std::string archiveFilePath = getFSPath( data.file );  
-    std::vector<std::string> fileNameStrings = 
-      expandSeq_fromFile( archiveFilePath, getName( current ));
-    
-    // Need to strip off extra zeros  (matz: todo: not sure what that means)
-    // TODO: don't use cwd here but a temp dir under CVAC.DataDir instead
-    std::string directory = std::string(getCurrentWorkingDirectory().c_str());
-    std::string name = getName(current);
-    dpath.reserve(directory.length() + name.length() + 3);
-    dpath = directory + "/." + name;
+
+     // Get the default CVAC data directory as defined in the config file
+     std::string expandedSubfolder = "";
+     // Use utils un-compression to get zip file names
+     // Filepath is relative to 'CVAC_DataDir'
+     std::string archiveFilePath; 
+     archiveFilePath = getFSPath( data.file, m_CVAC_DataDir );
+     expandedSubfolder = archiveFilePath + "_";
+     std::vector<std::string> fileNameStrings =
+                expandSeq_fromFile(archiveFilePath, expandedSubfolder);
+     dpath = expandedSubfolder + "/" + fileNameStrings[0];    
   }
   localAndClientMsg( VLogger::DEBUG_1, NULL, "initializing with %s\n", dpath.c_str());
 
@@ -154,7 +137,7 @@ void CascadeDetectI::initialize( ::Ice::Int verbosity,
     fInitialized = false;
     return;
   }
-  cascade_name = data.file.filename;
+  cascade_name = dpath;
 
   localAndClientMsg(VLogger::INFO, NULL, "CascadeDetector initialized.\n");
   fInitialized = true;
@@ -260,8 +243,7 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
   float scale_factor = 1.2f; // TODO: make this part of detector parameters
   int min_neighbors = 3; // TODO: make this a parameter
   int flags = 0;       // TODO: make this a parameter
-  cv::Size size(24, 24);  // TODO: make this a parameter
-  cv::Size orig = cascade->getOriginalWindowSize();
+  cv::Size orig = cascade->getOriginalWindowSize(); // TODO: make this a parameter, for now use same as cascade
   cascade->detectMultiScale(eq_img, results, scale_factor, min_neighbors, flags, orig); 
 
   return results;

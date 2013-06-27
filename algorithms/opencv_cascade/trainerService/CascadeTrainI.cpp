@@ -45,6 +45,7 @@
 #include <util/FileUtils.h>
 #include <util/ServiceMan.h>
 #include <util/processLabels.h>
+#include <util/DetectorDataArchive.h>
 
 #include "opencv2/core/core.hpp"
 #include "opencv2/core/internal.hpp"
@@ -169,7 +170,7 @@ void CascadeTrainI::writeBgFile( const RunSetWrapper& rsw,
   // for labelable in it ...
   // Save stored data from RunSet to OpenCv negative samples file
 
-  int i;
+  unsigned int i;
   std::vector<RectangleLabels> negRectlabels;
   int imgCnt = 0;
   const cvac::RunSet &runset = rsw.runset;
@@ -255,7 +256,7 @@ bool CascadeTrainI::createSamples( const RunSetWrapper& rsw,
   // see the code from the old OpenCV Performance on what to create
   bool showsamples = false;
 
-  int i;
+  unsigned int i;
   std::vector<RectangleLabels> posRectlabels;
   int imgCnt = 0;
   const cvac::RunSet &runset = rsw.runset;
@@ -397,7 +398,8 @@ void CascadeTrainI::process(const Ice::Identity &client,
 {	
   TrainerCallbackHandlerPrx callback =
     TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());		
-
+  // Get the remote client name to use to save cascade file 
+  std::string clientName = cvac::getClientName(current);
   Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
   const std::string CVAC_DataDir = props->getProperty("CVAC.DataDir");
 
@@ -433,42 +435,59 @@ void CascadeTrainI::process(const Ice::Identity &client,
   createSamples( rsw, samplesParams, vecFname, &numPos, CVAC_DataDir);
   // invoke the actual training vec file needs sample samples
   // where sample = (numPos + (numStages-1)* (1 - minHitRate) * numPos) + S
-  if (createClassifier( tempDir, vecFname, bgName,
-                    (int)(numPos * 0.9), numNeg, mTrainProps ))
 
+  // Tell ServiceManager that we will listen for stop
+  mServiceMan->setStoppable();
 
+  bool created = createClassifier( tempDir, vecFname, bgName,
+                    (int)(numPos * 0.9), numNeg, mTrainProps );
+
+  // Tell ServiceManager that we are done listening for stop
+  mServiceMan->clearStop();  
+  if (created)
   {
+      std::string cascadeName = "cascade";
+      std::string cascadeFileName = cascadeName + ".xml";
+      std::string newCascadeZipName = cascadeName + "_" + clientName + ".zip";
       // return the resulting trained model
-      // TODO: zip the resulting file
-      DetectorData detectorData;
-      detectorData.type = ::cvac::FILE;
-      std::string cascadeName = "cascade.xml";
-      //TODO: create a sand box to store client data based upon the connection it came from.
-      // But for now put the cascade file in the data directory.
-      std::string oldname = tempDir + "/" + cascadeName;
-      std::string newname = CVAC_DataDir + "/" + cascadeName;
-      // remove old cascade file if it exists
-      remove(newname.c_str());
-      // move the cascade file out of the temp directory
-      if (rename(oldname.c_str(), newname.c_str()) != 0)
+      std::string tPathUsageOrder = tempDir + "/usageOrder.txt";
+      std::ofstream tusageFile;
+      tusageFile.open(tPathUsageOrder.c_str(),std::ofstream::out);
+    
+      if(tusageFile.is_open())
       {
-          localAndClientMsg(VLogger::ERROR, callback, "Could not rename cascade file!.\n");
+          tusageFile << cascadeFileName << std::endl;      
+          tusageFile.close();
+
+          std::vector<std::string> tListFiles;
+          tListFiles.push_back(tempDir + "/usageOrder.txt");
+          tListFiles.push_back(tempDir + "/" + cascadeFileName);
+      
+          if(!writeZipArchive(CVAC_DataDir + "/" + newCascadeZipName,tListFiles))
+          {
+              localAndClientMsg(VLogger::ERROR, NULL,
+                  "Detector data is not generated correctly.\n");
+              return;
+          }
+          DetectorData detectorData;
+          detectorData.type = ::cvac::FILE;
+      
+          std::string newCascadeName = cascadeName + "_" + clientName + ".xml";
+          //TODO: create a sand box to store client data based upon the connection it came from.
+     
+          deleteDirectory(tempDir);
+    
+          detectorData.file.filename = newCascadeZipName;
+          detectorData.type = ::cvac::FILE;
+          detectorData.file.directory.relativePath = ""; 
+          callback->createdDetector(detectorData);
+  
+          localAndClientMsg(VLogger::INFO, callback, "Cascade training done.\n");
       }else
       {
-          deleteDirectory(tempDir);
+          localAndClientMsg(VLogger::ERROR, NULL,
+            "Archive file did not contain a file ordering in 'usageOrder.txt'. Returning empty vector<string>.");
       }
-      // remove data from directory path since we will add it again
-      /*int len = CVAC_DataDir.length();
-      if (tempDir.substr(0,len-1).compare(CVAC_DataDir))
-          detectorData.file.directory.relativePath = tempDir.substr(len+1);
-      else
-          detectorData.file.directory.relativePath = tempDir;*/
-      
-      detectorData.file.filename = "cascade.xml";
-  
-      callback->createdDetector(detectorData);
-  
-      localAndClientMsg(VLogger::INFO, callback, "Cascade training done.\n");
   }else
   {
       localAndClientMsg(VLogger::INFO, callback, "Cascade training failed.\n");
