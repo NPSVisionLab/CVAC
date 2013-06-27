@@ -159,12 +159,6 @@ namespace cvac
    * @param tgtFile
    */
    bool makeSymlinkFile(const std::string linkFullPath, const std::string tgtFile);
-   /** Expand filename based on relative/absolute and config setting
-   * API command.
-   * @param fileName file name to change if its a relative path
-   * @param prefixDir string to prepend
-   */
-   std::string expandFilename(std::string fileName, std::string prefixDir);
 
    /** Return a unique temporary file name.  If basedir is not defined 
    * then the file name is in the current systems temporary file .

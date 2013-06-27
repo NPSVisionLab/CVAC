@@ -395,15 +395,27 @@ static std::string _makeDirectories(std::string tempName, DirectoryPath dirPath)
         return result;
     int lastIdx = 0;
 #ifdef WIN32
+    bool backSlash = false;
     int idx = dirPath.relativePath.find(':', 1);
     if (idx != -1)
     {
         // We have a drive letter, lets ignore this
         lastIdx = idx + 1;
     }
-    if (dirPath.relativePath[lastIdx] == '\\')
-         lastIdx++;   // ignore a first backslash
-    idx = dirPath.relativePath.find('\\', lastIdx);
+    // We need to support both forward and backward slashes
+    idx = dirPath.relativePath.find('\\', 0);
+    if (idx != -1)
+    { // We assume we have backslashes in the path
+        backSlash = true;
+        if (dirPath.relativePath[lastIdx] == '\\')
+             lastIdx++;   // ignore a first backslash
+        idx = dirPath.relativePath.find('\\', lastIdx);
+    }else
+    {
+        if (dirPath.relativePath[lastIdx] == '/')
+             lastIdx++;   // ignore a first slash
+        idx =  dirPath.relativePath.find('/', lastIdx);
+    }
 #else
     if (dirPath.relativePath[lastIdx] == '/')
          lastIdx++;   // ignore a first slash
@@ -419,7 +431,10 @@ static std::string _makeDirectories(std::string tempName, DirectoryPath dirPath)
         makeDirectory(result);
         lastIdx = idx+1;
 #ifdef WIN32
-        idx = dirPath.relativePath.find('\\', lastIdx);
+        if (backSlash)
+            idx = dirPath.relativePath.find('\\', lastIdx);
+        else
+            idx = dirPath.relativePath.find('/', lastIdx);
 #else
         idx = dirPath.relativePath.find('/', lastIdx);
 #endif /* WIN32 */
@@ -470,15 +485,9 @@ std::string cvac::getLegalPath(std::string putLinksDir, FilePath filePath, bool 
  * Fixes the RunSet files so they don't contain spaces.
  * Returns the directory of symbolic links created.  This will need to be deleted after the run set is used.
  */
-std::string cvac::fixupRunSet(RunSet &run)
+std::string cvac::fixupRunSet(RunSet &run, const std::string &CVAC_DataDir)
 {
-    std::string dir = getCurrentWorkingDirectory();
-#ifdef WIN32
-    char *tempName = _tempnam(dir.c_str(), NULL);
-#else
-    char *tempName = tempnam(dir.c_str(), NULL);
-#endif /* WIN32 */
-    std::string tempString = tempName;
+    std::string tempString = getTempFilename(CVAC_DataDir);
    
     // Step through the Runset changing bad file names.
     std::vector<PurposedListPtr>::iterator it;
@@ -500,7 +509,9 @@ std::string cvac::fixupRunSet(RunSet &run)
                 LabelablePtr lptr = *lIt;
                 Substrate sub = lptr->sub;
                 FilePath  filePath = sub.path;
-                std::string fname = filePath.directory.relativePath;
+                std::string fname = tempString; 
+                fname +=  "/";
+                fname += filePath.directory.relativePath;
                 fname += std::string("/");
                 fname += filePath.filename;
                 // symlink needed?
