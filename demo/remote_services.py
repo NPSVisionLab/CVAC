@@ -7,6 +7,7 @@ matz 6/17/2013
 import easy
 
 #
+# Example 1: Test on a remote machine.
 # specify the host name of the service
 #
 host = "-h vision.nps.edu"
@@ -34,3 +35,16 @@ print("------- Remote detection, local result display: -------")
 detector = easy.getDetector( "OpenCVCascadeDetector:default -p 10102 "+host )
 results = easy.detect( detector, modelfile, rs1 )
 easy.printResults( results )
+
+#
+# Example 2:
+# Train on a remote machine, obtain the model file, and test locally.
+# Assume the files are on the remote machine, or transfer with putAllFiles.
+#
+trainer = easy.getTrainer( "bowTrain:default -p 10103 "+ host) # remote
+trainset = easy.createRunSet( "trainImg" );
+trainedModel = easy.train( trainer, trainset )
+easy.getFile( fileserver, trainedModel.file )  # downloads the model from remote
+print("{0}".format(trainedModel))
+detector = easy.getDetector( "bowTest:default -p 10104" ) # local service
+results = easy.detect( detector, trainedModel, testset )

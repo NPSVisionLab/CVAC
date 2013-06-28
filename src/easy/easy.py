@@ -82,15 +82,17 @@ def isLikelyDir( path ):
             return True
     return False
         
-def getLabelable( cvacPath, labelText=None ):
+def getLabelable( filepath, labelText=None ):
     '''Create a Labelable wrapper around the file, assigning
     a textual label if specified.'''
+    if type(filepath) is str:
+        filepath = getCvacPath( filepath )
     if labelText:
         label = cvac.Label( True, labelText, None, cvac.Semantics() )
     else:
         label = cvac.Label( False, "", None, cvac.Semantics() )
-    isVideo = isLikelyVideo( cvacPath )
-    substrate = cvac.Substrate( not isVideo, isVideo, cvacPath, 0, 0 )
+    isVideo = isLikelyVideo( filepath )
+    substrate = cvac.Substrate( not isVideo, isVideo, filepath, 0, 0 )
     labelable = cvac.Labelable( 0.0, label, substrate )
     return labelable
 
@@ -414,6 +416,15 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
                     addToClassmap( classmap, lbl.lab.name, purpose )
         addPurposedLabelablesToRunSet( rnst, purpose, samples )
 
+    elif isinstance(samples, cvac.Labelable):
+        # single sample - assume "unpurposed"
+        if purpose is None:
+            purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
+        else:
+            if samples.lab.hasLabel:
+                addToClassmap( classmap, lbl.lab.name, purpose )
+        addPurposedLabelablesToRunSet( rnst, purpose, [samples] )
+
     elif type(samples) is str and isLikelyDir( samples ):
         # single path to a directory.  Create a corpus, turn into RunSet, close corpus.
         corpus = openCorpus( samples, corpusServer=getDefaultCorpusServer() )
@@ -524,8 +535,10 @@ def getFile( fileserver, filepath ):
 
 def collectSubstrates( runset ):
     '''obtain a set (a list without duplicates) of all
-    substrates that occur in this runset'''
-    if type(runset) is dict:
+    substrates that occur in this runset or result set'''
+    if isinstance( runset, cvac.ResultSetV2 ):
+        return _collectSubstratesFromResults( runset )
+    elif type(runset) is dict:
         runset = runset['runset']
     substrates = set()
     for plist in runset.purposedLists:
@@ -538,6 +551,25 @@ def collectSubstrates( runset ):
         else:
             raise RuntimeError("unexpected subclass of PurposedList: "+type(plist))
     return substrates
+
+def _collectSubstratesFromResults( results ):
+    ''''
+    Collect all image substrates of found labels;
+    if the foundLabel doesn't have a path, use the path from
+    the original
+    ''''
+    substrates = {}
+    for res in results:
+        for lbl in res.foundLabels:
+            if lbl.sub.isImage:
+                if not lbl.sub.path.filename:
+                    subpath = getFSPath( res.original )
+                else:
+                    subpath = getFSPath( lbl )
+                if subpath in substrates:
+                    substrates[subpath].append( lbl )
+                else:
+                    substrates[subpath] = [lbl]
 
 def putAllFiles( fileserver, runset ):
     '''Make sure all files in the RunSet are available on the remote site;
@@ -849,18 +881,7 @@ def drawResults( results ):
     # first, collect all image substrates of found labels;
     # if the foundLabel doesn't have a path, use the path from
     # the original
-    substrates = {}
-    for res in results:
-        for lbl in res.foundLabels:
-            if lbl.sub.isImage:
-                if not lbl.sub.path.filename:
-                    subpath = getFSPath( res.original )
-                else:
-                    subpath = getFSPath( lbl )
-                if subpath in substrates:
-                    substrates[subpath].append( lbl )
-                else:
-                    substrates[subpath] = [lbl]
+    substrates = collectSubstrates( results )
     if not substrates:
         print("no labels and/or no substrates, nothing to draw");
         return
@@ -938,3 +959,15 @@ def getConfusionMatrix( results, origMap, foundMap ):
         pass
     confmat = numpy.empty( (catsize+1, catsize+1) )
     return confmat
+
+def sortIntoFolders( results, outfolder, multi="highest"):
+    '''
+    Sort the substrates from the original labels into subfolders of
+    "outfolder" corresponding to the found labels;
+    if multiple labels were found per original, consider only
+    the label with the highest confidence unless otherwise
+    specified.  Create symlinks if possible.
+    '''
+    # collect substrates and their labels
+    substrates = collectSubstrates( results )
+
