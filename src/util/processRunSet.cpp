@@ -226,8 +226,11 @@ void cvac::processRunSet(DetectorPtr detector,
                     continue;
                 } else { 
                     // prepend our prefix in a way visible to symlink filePath
-                    filePath.directory.relativePath = (pathPrefix + "/" + filePath.directory.relativePath);
-                    fname = filePath.directory.relativePath;
+                    // symbolic links require full paths for the targets
+                    std::string cwd = getCurrentWorkingDirectory();
+                    std::string abspath = cwd.c_str();
+                    abspath += "/" + pathPrefix + "/" + filePath.directory.relativePath;
+                    fname = abspath;
                     
                     localAndClientMsg(VLogger::DEBUG_2, NULL, "Labelable using relative paths\n");
                 }
@@ -509,7 +512,8 @@ std::string cvac::fixupRunSet(RunSet &run, const std::string &CVAC_DataDir)
                 LabelablePtr lptr = *lIt;
                 Substrate sub = lptr->sub;
                 FilePath  filePath = sub.path;
-                std::string fname = tempString; 
+                std::string cwd = getCurrentWorkingDirectory();
+                std::string fname = cwd.c_str(); 
                 fname +=  "/";
                 fname += filePath.directory.relativePath;
                 fname += std::string("/");

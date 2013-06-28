@@ -152,6 +152,11 @@ void CascadeTrainI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& cur
   return (IceProxy::cvac::TrainerProperties *)mTrainProps;
 }
 
+/**
+ * Prepend the CVAC_DataDir to the runset's filepath directories.  
+ * @param The runset to modify
+ * @param The directory path to prepend.
+ **/
 void CascadeTrainI::addDataPath(RunSet runset, const std::string &CVAC_DataDir)
 {
     unsigned int i;
@@ -408,8 +413,7 @@ void CascadeTrainI::process(const Ice::Identity &client,
   // Add the cvac data dir to the directories in the runset
   addDataPath(tempRunSet, CVAC_DataDir);
   // The symbolic links are created in a tempdir so lets remember it so we can delete it at the end
-  // This is not quite working with relative paths so waiting for runset iterator
-  //std::string tempRSDir = fixupRunSet(tempRunSet, CVAC_DataDir);
+  std::string tempRSDir = fixupRunSet(tempRunSet, CVAC_DataDir);
   // Iterate over runset, inserting each POSITIVE Labelable into
   // the input file to "createsamples".  Add each NEGATIVE into
   // the bgFile.  Put both created files into a tempdir.
@@ -496,7 +500,7 @@ void CascadeTrainI::process(const Ice::Identity &client,
   {
       localAndClientMsg(VLogger::INFO, callback, "Cascade training failed.\n");
   }
-  //deleteDirectory(tempRSDir);
+  deleteDirectory(tempRSDir);
 }
 
 //----------------------------------------------------------------------------
