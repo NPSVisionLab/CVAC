@@ -95,8 +95,9 @@ module cvac {
    * LabelProperties.  The Semantics refer to a URL that specifies the
    * meaning of the name strings.
    */
+  const bool CVACFALSE = false;
   struct Label {
-    bool hasLabel;
+    bool hasLabel = CVACFALSE;
     string name;
     LabelProperties properties;
     Semantics semantix;
