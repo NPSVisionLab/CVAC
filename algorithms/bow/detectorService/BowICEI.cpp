@@ -200,7 +200,7 @@ ResultSetV2 BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilen
 	std::string _ffullname = std::string(fullfilename);
 	localAndClientMsg(VLogger::DEBUG_1, NULL, "%s is processing.\n", _ffullname.c_str());
 	BowICEI* _bowCV = static_cast<BowICEI*>(detector.get());
-        float confidence = 0.0f;
+        float confidence = 0.5f; // TODO: obtain some confidence from BOW
         bool result = _bowCV->pBowCV->detect_run(fullfilename, _bestClass);
 
     if(true == result) {

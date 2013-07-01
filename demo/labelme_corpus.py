@@ -19,7 +19,7 @@ easy.printCategoryInfo( categories )
 
 # draw the images and their annotations, one image at a time,
 # at a given maximum size (width, height)
-#easy.drawLabelables( lablist, (512, 512) )
+easy.drawLabelables( lablist, (512, 512) )
 print("-----------")
 
 # pick a subset: all license plates

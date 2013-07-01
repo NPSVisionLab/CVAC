@@ -176,7 +176,7 @@ module cvac {
    */
   class LabeledVideoSegment extends Labelable {
     VideoSeekTime start;    // must be specified; if this segments gets faded in (or other soft transition),
-                            // and last are expected to be all-inclusive (including the transition)
+                            // start and last are expected to be all-inclusive (including the transition)
     VideoSeekTime last;     // ==NULL iff only one frame, otherwise inclusive to last frame of this segment
     VideoSeekTime startAfterTx;  // if smooth transition, when is the transition done and when does the segment really starts?
     VideoSeekTime lastBeforeTx;  // if smooth transition, what is the last non-transition frame of the segment

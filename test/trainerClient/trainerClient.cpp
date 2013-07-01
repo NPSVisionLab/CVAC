@@ -325,8 +325,8 @@ int TrainerClientApp::run(int argc, char* argv[])
 				videoLabel->sub.path.directory.relativePath = std::string(argv[2]);				
 				videoLabel->interp = cvac::DISCRETE;	//If a enum. variable is not initialized, it causes error in debug mode.
 				
- 				std::string _filename = getFSPath(videoLabel->sub.path, CVAC_DataDir);
- 				parseFrame_SBD(_filename,"AnnotationShortTrain.txt",_vFrameListInput);								
+ 				std::string _filepath = getFSPath(videoLabel->sub.path, CVAC_DataDir);							
+ 				parseFrame_SBD(_filepath,"AnnotationShortTrain.txt",_vFrameListInput);								
 
 				for(unsigned int k=0;k<_vFrameListInput.size();k++)
 				{	
