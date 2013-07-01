@@ -435,7 +435,7 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
             purpose = _determineDefaultPurpose( lbl, purpose, classmap )
             if lbl.lab.hasLabel:
                 addToClassmap( classmap, lbl.lab.name, purpose )
-            addPurposedLabelablesToRunSet( rnst, purpose, lbl )
+            addPurposedLabelablesToRunSet( rnst, purpose, [lbl] )
 
     elif isinstance(samples, cvac.Labelable):
         # single sample - assume "unpurposed"
