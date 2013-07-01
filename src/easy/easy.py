@@ -10,6 +10,7 @@ and to provide, uhm, easy access functions to its functionality.
 from __future__ import print_function
 import os
 import sys, traceback
+import shutil
 # paths should setup the PYTHONPATH.  If you special requirements
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
@@ -292,7 +293,9 @@ def getPurpose( purpose ):
         pass # all ok
     elif type(purpose) is str:
         # try to convert str to Purpose
-        if "pos" in purpose.lower():
+        if "unpurpose" in purpose.lower():
+            purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED, -1 )
+        elif "pos" in purpose.lower():
             purpose = cvac.Purpose( cvac.PurposeType.POSITIVE, -1 )
         elif "neg" in purpose.lower():
             purpose = cvac.Purpose( cvac.PurposeType.NEGATIVE, -1 )
@@ -319,6 +322,9 @@ def getPurposedLabelableSeq( runset, purpose ):
 def addPurposedLabelablesToRunSet( runset, purpose, labelables ):
     '''Append labelables to a sequence with the same purpose.
     If the runset does not have one, add a new sequence.'''
+    # make sure we're getting a list of Labelables
+    assert( labelables and type(labelables) is list and \
+            isinstance( labelables[0], cvac.Labelable ) )
     # see if runset already has a list with these purposes
     seq = getPurposedLabelableSeq( runset, purpose )
     if seq:
@@ -335,7 +341,21 @@ def addToClassmap( classmap, key, purpose ):
         if key in classmap and not classmap[key]==purpose:
             raise RuntimeError("purpose mismatch, won't add new samples")
         classmap[key] = purpose
-		       		
+
+def _determineDefaultPurpose( label, purpose, classmap ):
+    '''
+    If a purpose is given, return that.  If not, return the purpose in the
+    classmap mapping from label to Purpose.  If not found, return UNPURPOSED.
+    '''
+    if not purpose is None:
+        return purpose
+    if isinstance(label, cvac.Labelable) and label.lab.hasLabel and label.lab.name in classmap:
+        return classmap[label.lab.name]
+    assert( type(label) is str )
+    if label in classmap:
+        return classmap[label]
+    return cvac.Purpose( cvac.PurposeType.UNPURPOSED )
+    
 def addToRunSet( runset, samples, purpose=None, classmap=None ):
     '''Add samples to a given RunSet.
     Take a look at the documentation for createRunSet for details.'''
@@ -358,7 +378,7 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         # all categories get identical purposes
         for key in samples.keys():
             addToClassmap( classmap, key, purpose )
-        addPurposedLabelablesToRunSet( rnst, purpose, categories.values() )
+            addPurposedLabelablesToRunSet( rnst, purpose, samples[key] )
 
     elif type(samples) is dict:
         # multiple categories, try to guess the purpose and
@@ -369,15 +389,14 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
 
         if len(samples) is 1:
             # single category - assume "unpurposed"
-            if purpose is None:
-                purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
-            else:
-                addToClassmap( classmap, samples.keys()[0], purpose )
+            purpose = _determineDefaultPurpose( samples.keys()[0], purpose, classmap )
             addPurposedLabelablesToRunSet( rnst, purpose, samples.values()[0] )
             return
         
         # if it's two classes, maybe one is called "pos" and the other "neg"?
-        elif len(samples) is 2:
+        elif len(samples) is 2 \
+              and not pur_categories_keys[0] in classmap \
+              and not pur_categories_keys[1] in classmap:
             alow = pur_categories_keys[0].lower()
             blow = pur_categories_keys[1].lower()
             poskeyid = -1
@@ -399,30 +418,32 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
                 return
 
         # multi-class, assign purposes
-        cnt = 0
+        cnt = 0 # todo: obtain the first unused classID, as per classmap
         for key in pur_categories_keys:
-            purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
+            # honor Purpose assignments from a given classmap:
+            if key in classmap:
+                purpose = classmap[key]
+            else:
+                purpose = cvac.Purpose( cvac.PurposeType.MULTICLASS, cnt )
             addToClassmap( classmap, key, purpose )
             addPurposedLabelablesToRunSet( rnst, purpose, samples[key] )
             cnt = cnt+1
 
     elif type(samples) is list and len(samples)>0 and isinstance(samples[0], cvac.Labelable):
         # single category - assume "unpurposed"
-        if purpose is None:
-            purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
-        else:
-            for lbl in samples:
-                if lbl.lab.hasLabel:
-                    addToClassmap( classmap, lbl.lab.name, purpose )
-        addPurposedLabelablesToRunSet( rnst, purpose, samples )
+        for lbl in samples:
+            purpose = _determineDefaultPurpose( lbl, purpose, classmap )
+            if lbl.lab.hasLabel:
+                addToClassmap( classmap, lbl.lab.name, purpose )
+            addPurposedLabelablesToRunSet( rnst, purpose, lbl )
 
     elif isinstance(samples, cvac.Labelable):
         # single sample - assume "unpurposed"
         if purpose is None:
-            purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
+            purpose = _determineDefaultPurpose( samples, purpose, classmap )
         else:
             if samples.lab.hasLabel:
-                addToClassmap( classmap, lbl.lab.name, purpose )
+                addToClassmap( classmap, samples.lab.name, purpose )
         addPurposedLabelablesToRunSet( rnst, purpose, [samples] )
 
     elif type(samples) is str and isLikelyDir( samples ):
@@ -443,7 +464,7 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
     else:
         raise RuntimeError( "don't know how to create a RunSet from ", type(samples) )
 
-def createRunSet( samples, purpose=None ):
+def createRunSet( samples, purpose=None, classmap=None ):
     '''Add all samples from the argument to a new RunSet.
     Determine whether this is a two-class (positive and negative)
     or a multiclass dataset and create the RunSet appropriately.
@@ -454,7 +475,8 @@ def createRunSet( samples, purpose=None ):
     Return the mapping from Purpose (class ID) to label name.'''
 
     runset = cvac.RunSet()
-    classmap = {}
+    if classmap is None:
+        classmap={}
     addToRunSet( runset, samples, purpose=purpose, classmap=classmap )
     return {'runset':runset, 'classmap':classmap}
 
@@ -536,7 +558,9 @@ def getFile( fileserver, filepath ):
 def collectSubstrates( runset ):
     '''obtain a set (a list without duplicates) of all
     substrates that occur in this runset or result set'''
-    if isinstance( runset, cvac.ResultSetV2 ):
+    if not runset:
+        return set()
+    if type(runset) is list and isinstance(runset[0], cvac.Result):
         return _collectSubstratesFromResults( runset )
     elif type(runset) is dict:
         runset = runset['runset']
@@ -553,11 +577,11 @@ def collectSubstrates( runset ):
     return substrates
 
 def _collectSubstratesFromResults( results ):
-    ''''
+    '''
     Collect all image substrates of found labels;
-    if the foundLabel doesn't have a path, use the path from
+    if the foundLabel does not have a path, use the path from
     the original
-    ''''
+    '''
     substrates = {}
     for res in results:
         for lbl in res.foundLabels:
@@ -570,6 +594,7 @@ def _collectSubstratesFromResults( results ):
                     substrates[subpath].append( lbl )
                 else:
                     substrates[subpath] = [lbl]
+    return substrates
 
 def putAllFiles( fileserver, runset ):
     '''Make sure all files in the RunSet are available on the remote site;
@@ -748,7 +773,7 @@ def getPurposeName( purpose ):
     '''Returns a string to identify the purpose or an
     int to identify a multiclass class ID.'''
     if purpose.ptype is cvac.PurposeType.UNPURPOSED:
-        return "unlabeled"
+        return "unpurposed"
     elif purpose.ptype is cvac.PurposeType.POSITIVE:
         return "positive"
     elif purpose.ptype is cvac.PurposeType.NEGATIVE:
@@ -960,14 +985,104 @@ def getConfusionMatrix( results, origMap, foundMap ):
     confmat = numpy.empty( (catsize+1, catsize+1) )
     return confmat
 
-def sortIntoFolders( results, outfolder, multi="highest"):
+def getHighestConfidenceLabel( lablist ):
+    '''
+    Return the label in the list that has the highest confidence.
+    If multiple labels have the same high confidence, the first of these
+    is returned.
+    '''
+    highest = None
+    maxconf = 0.0
+    for lbl in lablist:
+        if lbl.confidence>maxconf:
+            highest = lbl
+    return highest
+
+def sortIntoFolders( results, outfolder, multi="highest", symlink=False ):
     '''
     Sort the substrates from the original labels into subfolders of
     "outfolder" corresponding to the found labels;
     if multiple labels were found per original, consider only
     the label with the highest confidence unless otherwise
-    specified.  Create symlinks if possible.
+    specified.  Create symlinks if desired and if possible (on Unix),
+    copy files by default.  CVAC.DataDir must be absolute for symlinks to work.
+    Note: this method is intended for images, not videos.
     '''
-    # collect substrates and their labels
-    substrates = collectSubstrates( results )
+    if not results:
+        print("No results, nothing to sort.")
+        return
+    if not multi.lower()=="highest":
+        raise RuntimeError("Multi-match strategy "+multi+" unknown.")
+    if symlink:
+        if not os.name.lower() is "posix":
+            raise RuntimeError("Please check if symlinks work on your platform "\
+                               "and change this code accordingly. "\
+                               "(os.name==" + os.name + ")")
 
+    # Match strategy "highest" means that a substrate gets put into at most
+    # one output folder;
+    # First collect substrates and their labels
+    substrates = collectSubstrates( results )
+    for sub in substrates.keys():
+        lbl = getHighestConfidenceLabel( substrates[sub] )
+        if lbl:
+            # create directory and symlink according to found label
+            assert( lbl.lab.hasLabel )
+            dirname = outfolder + "/" + lbl.lab.name
+            if not os.path.isdir( dirname ):
+                os.makedirs( dirname )
+            path, filename = os.path.split( sub )
+            fpath = dirname + "/" + filename
+            if symlink:
+                # create a symlink; note that "sub" must be an absolute path
+                # or else this will not work well on the OS
+                os.symlink( sub, fpath )
+            else:
+                # copy the file
+                shutil.copy2( sub, fpath )
+
+def testResultSyntax( results, runset=None ):
+    '''
+    More a unit testing routine than for user consumption, this function
+    tests whether the result data structure returned from a detector is
+    valid.  It checks the data structure composition as well as some
+    required contents and reports errors accordingly.  A boolean return
+    value signals success.
+    If a runset is given, the results\' original labels are compared
+    against the labels provided in the runset.
+    '''
+    # make sure the top-level data structure is ok
+    if not type(results) is list:
+        print("results must be a list, but is "+type(results))
+        return False
+    if not results:
+        print("empty results, nothing to test")
+        return True
+
+    if runset:
+        print("TODO: implement comparison against runset labels")
+        # there must be at least one result for every runset label
+        return False
+
+    #
+    for res in results:
+        if not isinstance( res, cvac.Result ):
+            print("Incorrect Result type: "+type(res) )
+            return False
+        for lbl in res.foundLabels:
+            if not isinstance( lbl, cvac.Labelable ):
+                print("Incorrect Labelable type: "+type(lbl))
+                return False
+            if not lbl.lab or not lbl.lab.hasLabel:
+                print("Empty Labelable should not be part of results.")
+                return False
+            if not lbl.sub.isImage and not lbl.sub.isVideo:
+                print("Label must be either video or image: "+lbl)
+                return False
+            if lbl.confidence==0.0:
+                print("For found labels, the confidence cannot be zero.")
+                return False
+            if lbl.confidence<=0.0 or lbl.confidence>1.0:
+                print("Label confidence out of (0..1] range: "+lbl.confidence)
+                return False
+    return True
