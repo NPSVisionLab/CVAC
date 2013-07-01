@@ -213,25 +213,16 @@ void cvac::processRunSet(DetectorPtr detector,
                 LabelablePtr lptr = *lIt;
                 Substrate sub = lptr->sub;
                 FilePath  filePath = sub.path;
+                filePath.directory.relativePath = pathPrefix + "/" + filePath.directory.relativePath;
                 std::string fname;
-                // If path is already absolute then leave it alone else
-                // lets prepend our pathPrefix
-                if ((filePath.directory.relativePath.length() > 1 && filePath.directory.relativePath[1] == ':' )||
-                    filePath.directory.relativePath[0] == '/' ||
-                    filePath.directory.relativePath[0] == '\\')
-                {  // absolute path
-                    fname = filePath.directory.relativePath;
-                    localAndClientMsg(VLogger::WARN, NULL,
-                                      "Labelable using absolute paths; ignoring file: %s\n", fname.c_str());
-                    continue;
-                } else { 
-                    // prepend our prefix in a way visible to symlink filePath
-                    filePath.directory.relativePath = (pathPrefix + "/" + filePath.directory.relativePath);
-                    fname = filePath.directory.relativePath;
-                    
-                    localAndClientMsg(VLogger::DEBUG_2, NULL, "Labelable using relative paths\n");
-                }
-
+                
+                // prepend our prefix in a way visible to symlink filePath
+                // symbolic links require full paths for the targets
+                std::string cwd = getCurrentWorkingDirectory();
+                std::string abspath = cwd.c_str();
+                abspath +=  "/" + filePath.directory.relativePath;
+                fname = abspath;
+       
                 fname += std::string("/");
                 fname += filePath.filename;
                 // Display full path to file entry, before symlink
@@ -509,7 +500,8 @@ std::string cvac::fixupRunSet(RunSet &run, const std::string &CVAC_DataDir)
                 LabelablePtr lptr = *lIt;
                 Substrate sub = lptr->sub;
                 FilePath  filePath = sub.path;
-                std::string fname = tempString; 
+                std::string cwd = getCurrentWorkingDirectory();
+                std::string fname = cwd.c_str(); 
                 fname +=  "/";
                 fname += filePath.directory.relativePath;
                 fname += std::string("/");
