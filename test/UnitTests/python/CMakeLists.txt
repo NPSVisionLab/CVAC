@@ -16,14 +16,6 @@ set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build/timestamp")
 
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/easy/paths.py.in ${CMAKE_CURRENT_SOURCE_DIR}/paths.py)
 
-#    Python build process
-#    configure_file(${SETUP_PY_IN} ${SETUP_PY})
-#    add_custom_command(OUTPUT ${OUTPUT}
-#                       COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} build
-#                       COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}
-#                       DEPENDS ${DEPS})
-#    install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")
-
 add_custom_target(PythonUnitTests ALL DEPENDS ${SLICE_FILES})
 
 # Test whether a Python client can connect and talk to the Corpus service
