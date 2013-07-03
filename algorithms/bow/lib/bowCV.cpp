@@ -79,6 +79,7 @@ bowCV::bowCV()
 	cv::initModule_nonfree();	//it should be for using SIFT or SURF. 	
 
 	filenameVocabulary = "logTrain_Vocabulary.xml.gz";
+    filenameSVM = "logTrain_svm.xml.gz";
 }
 
 bowCV::~bowCV()
@@ -459,11 +460,10 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 	ofile << nameDetector << std::endl;
 	ofile << nameExtractor << std::endl;
 	ofile << nameMatcher << std::endl;
-	ofile << filenameVocabulary << std::endl;	
+	ofile << filenameVocabulary << std::endl;		
 	
-	string _svmName = "logTrain_svm.xml.gz";
-	ofile << _svmName << endl;
-	_fullFilePathList = _filepathForSavingResult + "/" + _svmName;
+	ofile << filenameSVM << endl;
+	_fullFilePathList = _filepathForSavingResult + "/" + filenameSVM;
 	classifierSVM.save(_fullFilePathList.c_str());
 	
 	ofile.close();
@@ -474,7 +474,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 }
 
 
-bool bowCV::detect_run(const string& _fullfilename, int& _bestClass)
+bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,int _boxY,int _boxWidth,int _boxHeight)
 {	
 	_bestClass = -1;	
 
@@ -496,6 +496,12 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass)
 		cout << "Error - no file found matching RunSet entry: " << _fullfilename <<endl;	fflush(stdout);
 		return false;
 	}
+    else
+    {
+      Rect tRect = Rect(_boxX,_boxY,_boxWidth,_boxHeight);
+      if((tRect.width != 0) && (tRect.height != 0))
+        _img = _img(tRect);
+    }
 
 	fDetector->detect(_img, _keypoints);
 	

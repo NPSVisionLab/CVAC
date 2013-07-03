@@ -45,6 +45,7 @@
 #include <util/FileUtils.h>
 #include <util/ServiceMan.h>
 #include <util/processLabels.h>
+#include <util/DetectorDataArchive.h>
 
 #include "opencv2/core/core.hpp"
 #include "opencv2/core/internal.hpp"
@@ -110,7 +111,8 @@ void CascadeTrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& curren
 
   // Fill in the trainProps with default values;
   mTrainProps->numStages = 20;
-  mTrainProps->featureType = CvFeatureParams::HAAR; // HAAR, LBP, HOG;
+  //mTrainProps->featureType = CvFeatureParams::HAAR; // HAAR, LBP, HOG;
+  mTrainProps->featureType = CvFeatureParams::LBP; // HAAR, LBP, HOG;
   mTrainProps->boost_type = CvBoost::GENTLE;  // CvBoost::DISCRETE, REAL, LOGIT
   mTrainProps->minHitRate = 0.995F;
   mTrainProps->maxFalseAlarm = 0.5F;
@@ -150,7 +152,34 @@ void CascadeTrainI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& cur
   return (IceProxy::cvac::TrainerProperties *)mTrainProps;
 }
 
-
+/**
+ * Prepend the CVAC_DataDir to the runset's filepath directories.  
+ * @param The runset to modify
+ * @param The directory path to prepend.
+ **/
+void CascadeTrainI::addDataPath(RunSet runset, const std::string &CVAC_DataDir)
+{
+    unsigned int i;
+    for (i = 0; i < runset.purposedLists.size(); i++)
+    {
+        cvac::PurposedLabelableSeq* lab = static_cast<cvac::PurposedLabelableSeq*>(runset.purposedLists[i].get());
+        // expand the file names
+        LabelableList artifacts = lab->labeledArtifacts;
+        std::vector<LabelablePtr>::iterator it;
+        for (it = artifacts.begin(); it < artifacts.end(); it++)
+        {
+            LabelablePtr lptr = (*it);
+            Substrate sub = lptr->sub;
+            FilePath  filePath = sub.path;
+            std::string fname;
+            fname = cvac::getFSPath(filePath, CVAC_DataDir);
+            filePath.directory.relativePath = getFileDirectory(fname);
+            filePath.filename = getFileName(fname);
+            sub.path = filePath;
+            lptr->sub = sub;
+        }
+    }
+}
 
 
 void CascadeTrainI::writeBgFile( const RunSetWrapper& rsw, 
@@ -168,7 +197,7 @@ void CascadeTrainI::writeBgFile( const RunSetWrapper& rsw,
   // for labelable in it ...
   // Save stored data from RunSet to OpenCv negative samples file
 
-  int i;
+  unsigned int i;
   std::vector<RectangleLabels> negRectlabels;
   int imgCnt = 0;
   const cvac::RunSet &runset = rsw.runset;
@@ -179,21 +208,7 @@ void CascadeTrainI::writeBgFile( const RunSetWrapper& rsw,
     {
         // Store training-input data to vectors
         cvac::PurposedLabelableSeq* lab = static_cast<cvac::PurposedLabelableSeq*>(runset.purposedLists[i].get());
-        // expand the file names
-        // TODO call the utils fixupRunSet function.
         LabelableList artifacts = lab->labeledArtifacts;
-        std::vector<LabelablePtr>::iterator it;
-        for (it = artifacts.begin(); it < artifacts.end(); it++)
-        {
-            LabelablePtr lptr = (*it);
-            Substrate sub = lptr->sub;
-            FilePath  filePath = sub.path;
-            std::string fname = filePath.directory.relativePath;
-            fname = cvac::expandFilename(fname, CVAC_DataDir);
-            filePath.directory.relativePath = fname;
-            sub.path = filePath;
-            lptr->sub = sub;
-        }
         imgCnt += cvac::processLabelArtifactsToRects(&artifacts, 
                                     NULL, &negRectlabels, true);
      }
@@ -244,17 +259,14 @@ bool static getImageWidthHeight(std::string filename, int &width, int &height)
 
 bool CascadeTrainI::createSamples( const RunSetWrapper& rsw, 
                                    const SamplesParams& params,
+                    const string& infoFilename,
                     const string& vecFilename, int* pNumPos, string CVAC_DataDir
                     )
 {
-  
-  // TODO: put this file into tempDir (member variable? parameter?)
-  string infoFilename = "cascade_positives.txt";
-  // TODO: similar to above, iterate over rsw but this time only POSITIVE
-  // see the code from the old OpenCV Performance on what to create
+ 
   bool showsamples = false;
 
-  int i;
+  unsigned int i;
   std::vector<RectangleLabels> posRectlabels;
   int imgCnt = 0;
   const cvac::RunSet &runset = rsw.runset;
@@ -268,18 +280,6 @@ bool CascadeTrainI::createSamples( const RunSetWrapper& rsw,
         // expand the file names
         // TODO call the utils fixupRunSet function.
         LabelableList artifacts = lab->labeledArtifacts;
-        std::vector<LabelablePtr>::iterator it;
-        for (it = artifacts.begin(); it < artifacts.end(); it++)
-        {
-            LabelablePtr lptr = (*it);
-            Substrate sub = lptr->sub;
-            FilePath  filePath = sub.path;
-            std::string fname = filePath.directory.relativePath;
-            fname = cvac::expandFilename(fname, CVAC_DataDir);
-            filePath.directory.relativePath = fname;
-            sub.path = filePath;
-            lptr->sub = sub;
-        }
         imgCnt += cvac::processLabelArtifactsToRects(&artifacts, getImageWidthHeight, &posRectlabels, true);
      }
   }
@@ -294,6 +294,7 @@ bool CascadeTrainI::createSamples( const RunSetWrapper& rsw,
   for (it = posRectlabels.begin(); it < posRectlabels.end(); it++)
   {
     cvac::RectangleLabels recLabel = *it;
+    bool skipFile = false;
     if (recLabel.rects.size() <= 0)
     { // No rectangle so use the whole image
         int w, h;
@@ -317,6 +318,8 @@ bool CascadeTrainI::createSamples( const RunSetWrapper& rsw,
            getImageWidthHeight(recLabel.filename, w, h);
            if (w >= params.width && h >= params.height)
                infoFile << recLabel.filename << " 1 0 0 " << w << " " << h;
+           else
+               skipFile = true;
        } else
        {
           // fileName, # of objects, x, y, width, height
@@ -332,9 +335,10 @@ bool CascadeTrainI::createSamples( const RunSetWrapper& rsw,
           }
        }
     }
-    cnt++;
+    if (skipFile == false)
+        cnt++;
     // NO EXTRA BLANK LINE after the last sample, or cvhaartraining.cpp can fail on: "CV_Assert(elements_read == 1);"
-    if ((cnt) < imgCnt)
+    if ((cnt < imgCnt) && skipFile == false)
         infoFile << endl;
   }
   infoFile.flush();
@@ -362,6 +366,8 @@ bool CascadeTrainI::createClassifier( const string& tempDir,
       precalcIdxBufSize = 256;
   bool baseFormatSave = false;
   CvCascadeParams cascadeParams;
+  cascadeParams.winSize.width = trainProps->width;
+  cascadeParams.winSize.height = trainProps->height;
   CvCascadeBoostParams stageParams;
   Ptr<CvFeatureParams> featureParams[] = 
   { Ptr<CvFeatureParams>(new CvHaarFeatureParams),
@@ -390,7 +396,8 @@ void CascadeTrainI::process(const Ice::Identity &client,
 {	
   TrainerCallbackHandlerPrx callback =
     TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());		
-
+  // Get the remote client name to use to save cascade file 
+  std::string clientName = cvac::getClientName(current);
   Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
   const std::string CVAC_DataDir = props->getProperty("CVAC.DataDir");
 
@@ -400,15 +407,26 @@ void CascadeTrainI::process(const Ice::Identity &client,
     localAndClientMsg(VLogger::WARN, callback, _resStr.c_str());
     return;
   }
-
+  // Since createSamples fails if there is a space in a file name we will create a temporary runset
+  // and provide symbolic links to files that name spaces in there names.
+  cvac::RunSet tempRunSet = runset;
+  // Add the cvac data dir to the directories in the runset
+  addDataPath(tempRunSet, CVAC_DataDir);
+  // The symbolic links are created in a tempdir so lets remember it so we can delete it at the end
+  std::string tempRSDir = fixupRunSet(tempRunSet, CVAC_DataDir);
   // Iterate over runset, inserting each POSITIVE Labelable into
   // the input file to "createsamples".  Add each NEGATIVE into
   // the bgFile.  Put both created files into a tempdir.
-  // TODO:
   std::string tempDir = getTempFilename( CVAC_DataDir );
   makeDirectory( tempDir );
-  RunSetWrapper rsw( runset );
-  string bgName = tempDir + "/cascade_negatives.txt";
+  RunSetWrapper rsw( tempRunSet );
+  // We can't put the bgName and infoName in the tempdir without
+  // changing cvSamples since it assumes that this files location is the root
+  // directory for the data.
+  //string bgName = tempDir + "/cascade_negatives.txt";
+  //string infoName = tempDir + "/cascade_positives.txt";
+  string bgName = "cascade_negatives.txt";
+  string infoName = "cascade_positives.txt";
   int numNeg = 0;
   writeBgFile( rsw, bgName, &numNeg, CVAC_DataDir );
 
@@ -420,29 +438,69 @@ void CascadeTrainI::process(const Ice::Identity &client,
   samplesParams.height = mTrainProps->height;
 
   // run createsamples
-  std::string vecFname = "cascade_positives.vec";
+  std::string vecFname = tempDir + "/cascade_positives.vec";
   int numPos = 0;
-  createSamples( rsw, samplesParams, vecFname, &numPos, CVAC_DataDir);
-  // invoke the actual training
-  if (createClassifier( tempDir, vecFname, bgName,
-                    numPos, numNeg, mTrainProps ))
+  createSamples( rsw, samplesParams, infoName, vecFname, &numPos, CVAC_DataDir);
+  // invoke the actual training vec file needs sample samples
+  // where sample = (numPos + (numStages-1)* (1 - minHitRate) * numPos) + S
 
+  // Tell ServiceManager that we will listen for stop
+  mServiceMan->setStoppable();
 
+  bool created = createClassifier( tempDir, vecFname, bgName,
+                    (int)(numPos * 0.9), numNeg, mTrainProps );
+
+  // Tell ServiceManager that we are done listening for stop
+  mServiceMan->clearStop();  
+  if (created)
   {
+      std::string cascadeName = "cascade";
+      std::string cascadeFileName = cascadeName + ".xml";
+      std::string newCascadeZipName = cascadeName + "_" + clientName + ".zip";
       // return the resulting trained model
-      // TODO: zip the resulting file
-      DetectorData detectorData;
-      detectorData.type = ::cvac::FILE;
-      detectorData.file.directory.relativePath = tempDir;
-      detectorData.file.filename = "cascade.xml";
+      std::string tPathUsageOrder = tempDir + "/usageOrder.txt";
+      std::ofstream tusageFile;
+      tusageFile.open(tPathUsageOrder.c_str(),std::ofstream::out);
+    
+      if(tusageFile.is_open())
+      {
+          tusageFile << cascadeFileName << std::endl;      
+          tusageFile.close();
+
+          std::vector<std::string> tListFiles;
+          tListFiles.push_back(tempDir + "/usageOrder.txt");
+          tListFiles.push_back(tempDir + "/" + cascadeFileName);
+      
+          if(!writeZipArchive(CVAC_DataDir + "/" + newCascadeZipName,tListFiles))
+          {
+              localAndClientMsg(VLogger::ERROR, NULL,
+                  "Detector data is not generated correctly.\n");
+              return;
+          }
+          DetectorData detectorData;
+          detectorData.type = ::cvac::FILE;
+      
+          std::string newCascadeName = cascadeName + "_" + clientName + ".xml";
+          //TODO: create a sand box to store client data based upon the connection it came from.
+     
+          deleteDirectory(tempDir);
+    
+          detectorData.file.filename = newCascadeZipName;
+          detectorData.type = ::cvac::FILE;
+          detectorData.file.directory.relativePath = ""; 
+          callback->createdDetector(detectorData);
   
-      callback->createdDetector(detectorData);
-  
-      localAndClientMsg(VLogger::INFO, callback, "Cascade training done.\n");
+          localAndClientMsg(VLogger::INFO, callback, "Cascade training done.\n");
+      }else
+      {
+          localAndClientMsg(VLogger::ERROR, NULL,
+            "Archive file did not contain a file ordering in 'usageOrder.txt'. Returning empty vector<string>.");
+      }
   }else
   {
       localAndClientMsg(VLogger::INFO, callback, "Cascade training failed.\n");
   }
+  deleteDirectory(tempRSDir);
 }
 
 //----------------------------------------------------------------------------

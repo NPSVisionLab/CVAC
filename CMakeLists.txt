@@ -217,6 +217,7 @@ IF( BUILD_DOCUMENTATION )
                 ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/util
                 ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/util
                 ${CMAKE_SOURCE_DIR}/src/easy
+                ${CMAKE_SOURCE_DIR}/demo
            )		
       string(REGEX REPLACE ";" " " CMAKE_DOXYGEN_INPUT_LIST "${CMAKE_DOXYGEN_INPUT_LIST}")
 
@@ -254,6 +255,50 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   )
   MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+
+## Setup the config.service and config.icebox files based upon detectors
+## selected by the user.  These CF_ variables are defined in the config files
+## and they get turned into comments or not.
+SET( CF_MBOST "#" )
+
+IF( BUILD_WITH_BOW )
+SET(CF_BOW "" )
+SET( CF_BOW_T "" )
+ELSE( BUILD_WITH_BOW )
+SET( CF_BOW "#" )
+SET( CF_BOW_T "#" )
+ENDIF( BUILD_WITH_BOW )
+
+IF( BUILD_WITH_OPENCVPERFORMANCE )
+SET( CF_CAS "" )
+SET( CF_CAS_T "" )
+ELSE( BUILD_WITH_OPENCVPERFORMANCE )
+SET( CF_CAS "#" )
+SET( CF_CAS_T "#" )
+ENDIF( BUILD_WITH_OPENCVPERFORMANCE )
+
+IF( BUILD_CORPUS_SERVER )
+SET( CF_CORPUS_S "")
+ELSE( BUILD_CORPUS_SERVER )
+SET( CF_CORPUS_S "#")
+ENDIF( BUILD_CORPUS_SERVER )
+
+IF( BUILD_FILESERVER )
+SET( CF_FILE_S "")
+ELSE( BUILD_FILESERVER )
+SET( CF_FILE_S "#")
+ENDIF( BUILD_FILESERVER )
+
+CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
+CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
+IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
+    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.service" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
+IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
+    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
 
 IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
     # This requires CMake 2.8 for Java support

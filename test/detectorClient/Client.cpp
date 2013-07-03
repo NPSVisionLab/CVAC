@@ -526,14 +526,13 @@ int ClientApp::verification(std::string testFilePath, DetectorPrx detector)
 	
 	if(appData->multiclassDetection)
 	{
+		std::string testFileName0 = (m_detectorName + "0." + suffix);
 		std::string testFileName1 = (m_detectorName + "1." + suffix);
 		std::string testFileName2 = (m_detectorName + "2." + suffix);
-		std::string testFileName3 = (m_detectorName + "3." + suffix);
 
-		Purpose pOne(MULTICLASS, 1), pTwo(MULTICLASS, 2), pThree(MULTICLASS, 3);
-		addToRunSet(runSet, testFilePath, testFileName1, pOne);
-		addToRunSet(runSet, testFilePath, testFileName2, pTwo);
-		addToRunSet(runSet, testFilePath, testFileName3, pThree);
+		addToRunSet(runSet, testFilePath, testFileName0, Purpose(MULTICLASS, 0));
+		addToRunSet(runSet, testFilePath, testFileName1, Purpose(MULTICLASS, 1));
+		addToRunSet(runSet, testFilePath, testFileName2, Purpose(MULTICLASS, 2));
 	}
 	else
 	{

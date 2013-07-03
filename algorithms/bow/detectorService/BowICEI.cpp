@@ -80,19 +80,6 @@ BowICEI::~BowICEI()
 	pBowCV = NULL;
 }
 
-// TODO: move into fileUtils
-/** Turn a CVAC path into a file system path
- */
-std::string getFSPath( const cvac::FilePath& fp, const std::string& CVAC_DataDir="" )
-{
-  std::string path;
-  if (fp.directory.relativePath.empty())
-    path = CVAC_DataDir+"/"+fp.filename;
-  else
-    path = CVAC_DataDir+"/"+fp.directory.relativePath+"/"+fp.filename;
-  return path;
-}
-
                           // Client verbosity
 void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const ::Ice::Current& current)
 {
@@ -119,11 +106,14 @@ void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const
                                                     data.file.filename.length());
   if (_extFile.compare("txt") == 0)
   {
-    localAndClientMsg(VLogger::DEBUG, NULL, "Initializing bag_of_words.\n");
-    localAndClientMsg(VLogger::DEBUG_1, NULL, "Initializing bag_of_words with %s/%s\n", 
-                      data.file.directory.relativePath.c_str(), data.file.filename.c_str());
-    expandedSubfolder = m_CVAC_DataDir + "/" + data.file.directory.relativePath;
-    filename = data.file.filename;
+    localAndClientMsg(VLogger::ERROR, NULL,
+      "For maintaining consistency, this approach (using txt file as a detectorData) is prohibited.\n");
+    return;
+//     localAndClientMsg(VLogger::DEBUG, NULL, "Initializing bag_of_words.\n");
+//     localAndClientMsg(VLogger::DEBUG_1, NULL, "Initializing bag_of_words with %s/%s\n", 
+//                       data.file.directory.relativePath.c_str(), data.file.filename.c_str());
+//     expandedSubfolder = m_CVAC_DataDir + "/" + data.file.directory.relativePath;
+//     filename = data.file.filename;
   }
   else	//for a zip file	//if (cvac::FILE == data.type && size == 0)
   { 
@@ -147,11 +137,12 @@ void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const
     expandedSubfolder = archiveFilePath + "_";
     std::vector<std::string> fileNameStrings =
       expandSeq_fromFile(archiveFilePath, expandedSubfolder);
-    
-    filename = logfile_BowTrainResult;
+
+    filename = fileNameStrings[0];    
+    //filename = logfile_BowTrainResult;
   }
 
-  // add the CVAC.DataDir root path and initialize from txt file
+  // add the CVAC.DataDir root path and initialize from txt file  
   fInitialized = pBowCV->detect_initialize( expandedSubfolder, filename );
 
   if (!fInitialized)
@@ -209,7 +200,7 @@ ResultSetV2 BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilen
 	std::string _ffullname = std::string(fullfilename);
 	localAndClientMsg(VLogger::DEBUG_1, NULL, "%s is processing.\n", _ffullname.c_str());
 	BowICEI* _bowCV = static_cast<BowICEI*>(detector.get());
-        float confidence = 0.0f;
+        float confidence = 0.5f; // TODO: obtain some confidence from BOW
         bool result = _bowCV->pBowCV->detect_run(fullfilename, _bestClass);
 
     if(true == result) {

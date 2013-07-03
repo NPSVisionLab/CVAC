@@ -8,12 +8,17 @@ import org.apache.commons.io.FileUtils;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -21,6 +26,9 @@ import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
+import org.apache.commons.io.IOUtils;
 import util.Data_IO_Utils;
 import util.Data_IO_Utils.FS_ObjectType;
 import util.DownloadUtils;
@@ -118,12 +126,15 @@ public class CommonDataSet extends CorpusI {
                 if ( file.isDirectory() )
                 {
                     try {
-                        FileUtils.moveDirectory( file, toDir );
+                        String moveDir = toDir.getAbsolutePath() + File.separator + file.getName();
+                        FileUtils.moveDirectory( file, new File(moveDir) );
                     }
                     catch (IOException ioe)
                     {
-                        logger.log( Level.WARNING, "couldn't move directory {0}\n",
-                                    file.getPath() );
+                        String err = "couldn't move directory " + file.getPath() + " to " +
+                                      toDir.getName() + " error: " + ioe.getMessage();
+                        logger.log( Level.WARNING, err);
+ 
                     }
                 }
                 else
@@ -172,9 +183,20 @@ public class CommonDataSet extends CorpusI {
         if (null!=moveSubdir && !moveSubdir.isEmpty())
         {
             String fromDir = m_dataSetFolder + File.separator + moveSubdir;
-            moveAllFiles( new File(fromDir), new File(m_dataSetFolder) );
+            File fDir = new File(fromDir);
+            moveAllFiles( fDir, new File(m_dataSetFolder) );
             logger.log( Level.INFO, "Moved files from subdir {0} to main dataset dir.",
                         fromDir );
+            // now remove the old directory since its empty
+            try {
+                FileUtils.deleteDirectory(fDir);
+            }
+            catch (IOException ioe)
+            {
+                String err = "couldn't delete directory " + fDir.getPath();
+                logger.log( Level.WARNING, err);
+
+            } 
         }
 
         // if no errors, write a little metadata file
@@ -325,57 +347,52 @@ public class CommonDataSet extends CorpusI {
 
             case ZIP:
             {
-                final int UNZIP_BUFFER = 2048;
-                byte buff[];
-                int amtRead;
-                ZipInputStream zis = null;
+                ZipFile zipFile = new ZipFile(compressedFileSrc);
+                InputStream in = null;
+                BufferedOutputStream out = null;
+                Enumeration<ZipEntry> entries = (Enumeration<ZipEntry>)zipFile.entries();
                 String outFilename = "";
+                byte[] buffer = new byte[10240];
+                for (ZipEntry entry : Collections.list(entries))
+                {
 
-                try {
-                    zis = new ZipInputStream(new FileInputStream(compressedFileSrc));
-                    ZipEntry entry;
- 
-                    while ((entry = zis.getNextEntry()) != null) {
-                        outFilename = destFileDir + File.separator + entry.getName();
-                        if (entry.isDirectory())
+                    outFilename = destFileDir + File.separator + entry.getName();
+                    if (entry.isDirectory())
+                    {
+                        logger.info("Creating directory: " + outFilename);
+                        boolean success = (new File(outFilename)).mkdirs();
+                        if (!success)
                         {
-                            logger.info("Creating directory: " + outFilename);
-                            boolean success = (new File(outFilename)).mkdirs();
-                            if (!success)
-                            {
-                                logger.warning("Could not create directory, anticipate further unzip problems: "
-                                               + outFilename);
-                            }
-                            continue;
+                            logger.warning("Could not create directory, anticipate further unzip problems: "
+                                           + outFilename);
                         }
-                        logger.info("Unzipping: " + outFilename);
- 
-                        int size;
-                        byte[] buffer = new byte[2048];
- 
+                        continue;
+                    }
+                    try {
+                        in = zipFile.getInputStream(entry);
                         FileOutputStream fos =
                             new FileOutputStream(outFilename);
-                        BufferedOutputStream bos =
-                            new BufferedOutputStream(fos, buffer.length);
- 
-                        while ((size = zis.read(buffer, 0, buffer.length)) != -1) {
-                            bos.write(buffer, 0, size);
-                        }
-                        bos.flush();
-                        bos.close();
+                        out = new BufferedOutputStream(fos, buffer.length);
+                        IOUtils.copy(in, out);
+                    
+                    } catch (ZipException ex){
+                        String msg = ("Zip Exception: error: " + ex.toString() + " file: " +
+                                       compressedFileSrc);
+                        logger.warning(msg);
+                    } catch (IOException ex){
+                        String msg = ("IO Exception: error: " + ex.toString() + " file: " +
+                                       compressedFileSrc);
+                        logger.warning(msg);
+                    } catch (Exception ex){
+                        String msg = ("Exception: error: " + ex.toString() + " file: " +
+                                       compressedFileSrc);
+                        logger.warning(msg);
+                    } finally {
+                        IOUtils.closeQuietly(in);
+                        IOUtils.closeQuietly(out);
                     }
                 }
-                catch(FileNotFoundException e) {
-                    String msg = ("Error using specified files for extracting with zip.\n" + 
-                                  "Compressed Source: " + compressedFileSrc.getPath() + "\n" +
-                                  "Destination File: "  + outFilename + "\n" + e.toString());
-                    logger.warning(msg);
-                    removeMetaFlg();
-                }
-                    catch(Exception e) {
-                    String msg = ("Error while extracting from zip-Input-Stream." + e.toString());
-                    logger.warning(msg);
-                }
+                
                 break;
             }
 

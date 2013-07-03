@@ -70,6 +70,14 @@ namespace cvac
      */
    bool directoryExists(const std::string& directory);
 
+   /** Does the supplied file exists?
+     * This implementation may not be able to handle the file which is larger than 2GB. 
+     * @param path (directory + filename) to verify
+     * @return True if the file exists, false if not 
+     *         but is not a directory.
+     */
+   bool fileExists(const std::string& _abspath);
+
    /** Extract just the path to the supplied fully-qualified file name.
      * \code getFileDirectory("c:/temp/foo/myFile.txt"); //returns "c:/temp/foo" \endcode
      * @param fileName the full path and file name
@@ -110,6 +118,13 @@ namespace cvac
      */
    std::string getBaseFileName(const std::string& fileName);
 
+   /**  Get the file extension, excluding the path and the filename.
+     *  \code getFileExtension("/temp/myfile.tar.gz") //returns "tar.gz" \endcode
+     *  @param path (directory + filename) 
+     *  @return Just the extension
+     */
+   std::string getFileExtension(const std::string& _path);
+
    /** Remove the contents of the directory and delete the directory.
     *  @return True if successfull
     *  @param path of the directory to remove
@@ -144,12 +159,6 @@ namespace cvac
    * @param tgtFile
    */
    bool makeSymlinkFile(const std::string linkFullPath, const std::string tgtFile);
-   /** Expand filename based on relative/absolute and config setting
-   * API command.
-   * @param fileName file name to change if its a relative path
-   * @param prefixDir string to prepend
-   */
-   std::string expandFilename(std::string fileName, std::string prefixDir);
 
    /** Return a unique temporary file name.  If basedir is not defined 
    * then the file name is in the current systems temporary file .
@@ -158,6 +167,15 @@ namespace cvac
    */
 
    std::string getTempFilename( const std::string& basedir="" );
+
+   /** Turn a CVAC path info a file system path
+    * @param fp The filepath to change
+    * @param CVAC_DataDir The CVAC data directory 
+    * @return a string that concatinates CVAC_Dir and the relative path and
+    * filename defined in fp.
+    */
+   std::string getFSPath(const cvac::FilePath &fp, 
+                         const std::string &CVAC_DataDir = "");
 
 };
 #endif // __FILEUTILS_H_INCLUDED__

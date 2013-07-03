@@ -128,6 +128,18 @@ bool cvac::directoryExists(const std::string& directory)
    return false;
 }
 
+
+//Refer: http://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
+///////////////////////////////////////////////////////////////////////////////
+bool cvac::fileExists(const std::string& _abspath)
+{
+    struct stat tBuff;
+    if(stat(_abspath.c_str(),&tBuff)==0)
+      return true;
+    else
+      return false;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 std::string cvac::getFileDirectory(const std::string& fileName)
 {
@@ -280,6 +292,15 @@ std::string cvac::getBaseFileName(const std::string& fileName)
    return std::string(onlyFileName.begin(),onlyFileName.begin()+dot);
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::getFileExtension(const std::string& _path)
+{
+    std::string::size_type dot = _path.find_first_of(".");	//rfind
+    return std::string(_path.begin() + dot + 1,_path.end());
+}
+
+
 // TODO: please add documentation.
 // TODO: I am a bit afraid of this - a recursive delete is dangerous.  has anybody checked if this follows symbolic links???
 bool cvac::deleteDirectory(const std::string& path) 
@@ -398,7 +419,7 @@ bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile)
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
           fprintf(stderr, "!!!!Admin rights required for creating a symbolic link!!!!\n");   
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-      }
+      }	  
       printf("failed to create symbolic link for %s\n", toFile.c_str());
       printf("symbolic link name %s\n", fromFile.c_str());
       printf("Error %d\n", err);
@@ -420,19 +441,6 @@ bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile)
   return(false);  // Notify clients that call was known to have failed  
 }
 
-std::string cvac::expandFilename(std::string filename, std::string prefixDir)
-{
-    std::string result; 
-    if ((filename.length() > 1 && filename[1] == ':' )||
-        filename[0] == '/' ||
-        filename[0] == '\\')
-    {  // absolute path
-        result = filename;
-    } else { // prepend our prefix
-        result = (prefixDir + "/" + filename);
-    }
-    return result;
-}
 
 void cvac::sleep(int numberOfMilliseconds)
    {
@@ -465,7 +473,9 @@ std::string cvac::getTempFilename( const std::string & basedir)
             // change directory back to original one 
             _chdir(current);
             strcpy(current, baseName);
-            strcat(current, tempName);
+            // Keep file seperators as forward slashes
+            strcat(current, "/");
+            strcat(current, &tempName[1]);
             // tmpname puts a '.' at end of filename of windows this fails if its going to be a directory so get rid of it.
             int len = strlen(current);
             if (current[len-1] == '.')
@@ -481,6 +491,20 @@ std::string cvac::getTempFilename( const std::string & basedir)
 #endif /* WIN32 */
     std::string tempString = tempName;
     return tempString;
+}
+
+
+/** Turn a CVAC path into a file system path
+ */
+std::string cvac::getFSPath( const cvac::FilePath& fp, const std::string& CVAC_DataDir )
+{
+  //TODO check for relative path for CVAC_DataDir and make absolute
+  std::string path;
+  if (fp.directory.relativePath.empty())
+    path = CVAC_DataDir+"/"+fp.filename;
+  else
+    path = CVAC_DataDir+"/"+fp.directory.relativePath+"/"+fp.filename;
+  return path;
 }
 
 /*

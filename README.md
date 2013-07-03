@@ -8,7 +8,7 @@ can easily obtain data from a "corpus" of labeled objects
 for training or testing.  And you can exchange one algorithm
 for another without modifying your code (much).
 
-Download
+Documentation and Download
 ------------
 Please see the [Wiki pages](https://github.com/NPSVisionLab/CVAC/wiki) for complete instructions.
 The [Downloads](https://github.com/NPSVisionLab/CVAC/wiki/Downloading-CVAC) page also lists
@@ -33,3 +33,7 @@ More detailed instructions are on the [Wiki](https://github.com/NPSVisionLab/CVA
 5. Open a [Pull Request](https://github.com/NPSVisionLab/CVAC/pulls)
 6. Wait for the request to be merged
 
+* the [cvac:: namespace](namespacecvac.html),
+* the Python [easy](namespaceeasy.html) library,
+* an instruction manual for installing the [virtual machine](../easy/_build/html/index.html), and
+* several [mini tutorials](../easy/_build/html/index.html).

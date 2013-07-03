@@ -45,6 +45,7 @@
  * support functions for training and test samples creation.
  */
 
+
 #include "cvhaartraining.h"
 #include "_cvhaartraining.h"
 
@@ -690,6 +691,8 @@ void icvWriteVecHeader( FILE* file, int count, int width, int height )
 {
     int vecsize;
     short tmp;
+    // trbatcha addition
+    fseek(file, 0, SEEK_SET);
 
     /* number of samples */
     fwrite( &count, sizeof( count ), 1, file );
@@ -700,6 +703,9 @@ void icvWriteVecHeader( FILE* file, int count, int width, int height )
     tmp = 0;
     fwrite( &tmp, sizeof( tmp ), 1, file );
     fwrite( &tmp, sizeof( tmp ), 1, file );
+
+    // trbatcha addition
+    fseek(file, 0, SEEK_END);
 }
 
 void icvWriteVecSample( FILE* file, CvArr* sample )
@@ -735,7 +741,7 @@ int cvCreateTrainingSamplesFromInfo( const char* infoname, const char* vecfilena
     FILE* vec;
     IplImage* src=0;
     IplImage* sample;
-    int line;
+    //int line;
     int error;
     int i;
     int x, y, width, height;
@@ -803,7 +809,9 @@ int cvCreateTrainingSamplesFromInfo( const char* infoname, const char* vecfilena
         filename++;
     }
 
-    for( line = 1, error = 0, total = 0; total < num ;line++ )
+    //for( line = 1, error = 0, total = 0; total < num ;line++ )
+    // trbatcha addition
+    while (num <= 0 || total < num)
     {
         int count;
 
@@ -821,7 +829,12 @@ int cvCreateTrainingSamplesFromInfo( const char* infoname, const char* vecfilena
 
             }
         }
-        for( i = 0; (i < count) && (total < num); i++, total++ )
+        //trbatcha addition
+        else
+           if (num <= 0) break;
+
+        //for( i = 0; (i < count) && (total < num); i++, total++ )
+        for (i = 0; i < count; i++, total++)
         {
             error = ( fscanf( info, "%d %d %d %d", &x, &y, &width, &height ) != 4 );
             if( error ) break;
@@ -838,8 +851,14 @@ int cvCreateTrainingSamplesFromInfo( const char* infoname, const char* vecfilena
                 }
             }
             icvWriteVecSample( vec, sample );
+    
+            // trbatcha addition
+            if (num > 0 && total >= num) break;
         }
 
+        // trbatcha addition
+        if (num <= 0)
+            icvWriteVecHeader(vec, total, sample->width, sample->height);
         if( src )
         {
             cvReleaseImage( &src );
@@ -849,7 +868,7 @@ int cvCreateTrainingSamplesFromInfo( const char* infoname, const char* vecfilena
         {
 
 #if CV_VERBOSE
-            fprintf( stderr, "%s(%d) : parse error", infoname, line );
+            fprintf( stderr, "%s : parse error", infoname);
 #endif /* CV_VERBOSE */
 
             break;

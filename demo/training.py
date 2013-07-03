@@ -1,9 +1,8 @@
-#
-# Easy!  mini tutorial
-#
-# Build a model for object detection
-#
-# matz 6/18/2013
+'''
+Easy!  mini tutorial
+Build a model for object detection
+matz 6/18/2013
+'''
 
 import easy
 import zipfile
@@ -13,7 +12,7 @@ import zipfile
 #
 print("==== Training runset: ====")
 trainset = easy.createRunSet( "trainImg" );
-easy.printRunSetInfo( trainset )
+easy.printRunSetInfo( trainset, printLabels=True )
 
 #
 # Connect to the trainer for a Bag of Words algorithm, then
@@ -21,25 +20,26 @@ easy.printRunSetInfo( trainset )
 #
 trainer = easy.getTrainer( "bowTrain:default -p 10103 ")
 trainedModel = easy.train( trainer, trainset )
+
+#
+# Display information about the file in which the model is stored;
+# this is generally no concern to algorithm users and only of
+# interest to algorithm developers since it is algorithm-specific
+#
 zipfname = easy.getFSPath( trainedModel )
-print("Training algorithm produced a model in file {0}.".\
-      format( zipfname ) )
+print("{0}".format( zipfname ))
+zipf = zipfile.ZipFile( zipfname )
+print("Training model stored in file {0}; file contents:\n{1}".\
+      format( zipfname, zipf.namelist()))
 
 #
 # test the trained model on a separate set of images
 #
 print("==== Test runset: ====")
 testset = easy.createRunSet( "testImg" )
-easy.printRunSetInfo( testset )
+easy.printRunSetInfo( testset, printLabels=True )
 detector = easy.getDetector( "bowTest:default -p 10104" )
 results = easy.detect( detector, trainedModel, testset )
 print("==== Results: ====")
 easy.printResults( results )
 
-
-quit()
-# This fails because bow does not return a zip file
-zipf = zipfile.ZipFile( zipfname )
-print zipf.namelist()
-print("Training model stored in file {0}; contents:\n{1}".\
-      format( zipfname, zipf.namelist()))

@@ -86,8 +86,8 @@ class TrainerPropertiesI : public cvac::TrainerProperties
   int numStages;
   int featureType; // CvFeatureParams::HAAR, LBP, or HOG
   int boost_type;
-  float minHitRate;
-  float maxFalseAlarm;
+  double minHitRate;
+  double maxFalseAlarm;
   float weight_trim_rate;
   int max_depth;
   int weak_count;
@@ -116,12 +116,14 @@ class CascadeTrainI : public cvac::DetectorTrainer
                     int* pNumNeg, std::string datadir );
 
   bool createSamples( const RunSetWrapper& rsw, const SamplesParams& params,
+                    const std::string& infoFilename,
                     const std::string& vecFilename, int* pNumPos, std::string datadir);
   bool createClassifier( const std::string& tempDir, 
                          const std::string& vecFname, 
                          const std::string& bgName,
                          int numPos, int numNeg, 
                          const TrainerPropertiesI *trainProps );
+  void addDataPath(cvac::RunSet runset, const std::string &CVAC_DataDir);
  private:
   bool  fInitialized;    	
   int   m_cvacVerbosity;

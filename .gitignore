@@ -13,6 +13,8 @@ UserCMakeLists.txt
 /Doxyfile
 /build*
 /dist
+/data/Faces94
+/data/Caltech101
 
 # Compiled source #
 ###################
@@ -24,6 +26,7 @@ UserCMakeLists.txt
 *.so
 *.dylib
 *.a
+*.pyc
 
 # CMake files #
 #############
@@ -52,9 +55,3 @@ nbproject
 Icon?
 ehthumbs.db
 Thumbs.db
-
-include/version.h
-/.bowTest/
-/data/Caltech101/.meta/
-/data/CvacCorpusTest/.meta/
-/data/Faces94/.meta/

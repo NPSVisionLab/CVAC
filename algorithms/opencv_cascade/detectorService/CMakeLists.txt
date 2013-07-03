@@ -16,7 +16,7 @@ SET(HEADER_FILES
 
 SET(INCLUDE_DIRS
     .
-    ${CMAKE_CURRENT_SOURCE_DIR}/../lib
+    ${LIBARCHIVE_INCLUDE}
     ${CVAC_INCLUDE_DIR}
     ${ICE_INCLUDE}
     ${CMAKE_CURRENT_BINARY_DIR}#for the generated slice files
@@ -33,7 +33,7 @@ ADD_LIBRARY(${the_target} SHARED
 TARGET_LINK_LIBRARIES(${the_target}
     utils
     ${ICE_LIBRARIES} ${ICE_BOX_LIBRARY}
-    ${OpenCV_LIBS}
+    ${OpenCV_LIBS} ${LIBARCHIVE_LIBRARY}
     )
           
 IF( NOT ${BUILD_3RDPARTY_PACKAGE} )

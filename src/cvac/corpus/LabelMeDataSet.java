@@ -159,14 +159,14 @@ public class LabelMeDataSet extends CorpusI
         int numtasks = 2;
         float percentCompleted = (float)currtask/(float)numtasks;
         currtask++;
-        callback.corpusMirrorProgress( this, currtask, numtasks, "obtaining labels", 
+        callback.corpusMirrorProgress( this, numtasks, currtask, "obtaining labels", 
                                        "downloading annotations from specified folder(s)", percentCompleted );
         initSampleLists();
 
         numtasks = dbSpecific.numberOfElements()+2;
         percentCompleted = 100*(float)currtask/(float)numtasks;
         currtask ++;
-        callback.corpusMirrorProgress( this, currtask, numtasks, "preparing for download", 
+        callback.corpusMirrorProgress( this, numtasks, currtask, "preparing for download", 
                                        "preparing local storage", percentCompleted );
         
         try {
@@ -205,7 +205,7 @@ public class LabelMeDataSet extends CorpusI
 
                 percentCompleted = 100*(float)currtask/(float)numtasks;
                 currtask ++;
-                callback.corpusMirrorProgress( this, currtask, numtasks, "downloading image "+labelmeObjnum, 
+                callback.corpusMirrorProgress( this, numtasks, currtask, "downloading image "+labelmeObjnum, 
                                                "Source: "+remoteURL, percentCompleted );
 
                 try {

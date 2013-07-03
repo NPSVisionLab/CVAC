@@ -38,6 +38,7 @@
 #include "BowICETrainI.h"
 #include <iostream>
 #include <vector>
+#include <ctime>  //for seeding the function "rand()"
 
 #include <Ice/Communicator.h>
 #include <Ice/Initialize.h>
@@ -45,6 +46,7 @@
 #include <util/processRunSet.h>
 #include <util/FileUtils.h>
 #include <util/ServiceMan.h>
+#include <util/DetectorDataArchive.h>
 using namespace cvac;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -80,7 +82,6 @@ BowICETrainI::~BowICETrainI()
 
 void BowICETrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& current)
 {
-	//lekomin: how to get these initial and tunable parameters
 	string	_nameFeature("SIFT");	//SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS
 	string	_nameDescriptor("SIFT");	//SURF, SIFT, OpponentSIFT, OpponentSURF
 	string	_nameMatcher("BruteForce-L1");	//BruteForce-L1, BruteForce, FlannBased  
@@ -203,9 +204,9 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
     {						
       std::string _filepath;
       std::string _filename;	
-      _filename = lab->labeledArtifacts[artfct]->sub.path.filename;
-      _filepath = lab->labeledArtifacts[artfct]->sub.path.directory.relativePath;
-      _filepath = expandFilename(_filepath, CVAC_DataDir);
+      std::string fullName = getFSPath(lab->labeledArtifacts[artfct]->sub.path, CVAC_DataDir);
+      _filename = getFileName(fullName);
+      _filepath = getFileDirectory(fullName);
       
       LocationPtr pLoc = NULL;
       if(lab->labeledArtifacts[artfct]->ice_isA("::cvac::LabeledLocation"))
@@ -227,31 +228,69 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
     }
   }
 
-  // Forcefully, setting the saving directory of detectorData 
-  // to the folder "tmp" under the CVAC_DataDir folder
-  std::string tmpDir = "tmp";
-  std::string dirpath = CVAC_DataDir + "/" + tmpDir;
-  makeDirectory(dirpath);	
+  srand((unsigned)time(NULL));
+  std::ostringstream tConvNum2Str;
+  tConvNum2Str << rand();
+  std::string tTempStr = "bowDetectorData_" + tConvNum2Str.str();
+  std::string tTempDir = CVAC_DataDir + "/" + tTempStr;  
+  makeDirectory(tTempDir);  //For saving bow training results temporary  
 
   localAndClientMsg(VLogger::INFO, _callback, 
-                    "Starting actual training procedure...\n"); //lekomin_suspended
+                    "Starting actual training procedure...\n"); 
   // Tell ServiceManager that we will listen for stop
   mServiceMan->setStoppable();
-  bool fTrain = pBowCV->train_run(dirpath, logfile_BowTrainResult, mServiceMan);
-  // Tell ServiceManager that we are done listening for stop
-  mServiceMan->clearStop();
+  bool fTrain = pBowCV->train_run(tTempDir, logfile_BowTrainResult, mServiceMan);
 
+  // Tell ServiceManager that we are done listening for stop
+  mServiceMan->clearStop();  
+
+  // Store the DetectorData (model) in a zip archive at location
+  // CVAC_DataDir/tDirectoryDetectorData/tFilenameDetectorData
+  std::string tFilenameDetectorData = tTempStr + ".zip";
+  std::string tDirectoryDetectorData = "";
   if(!fTrain)
   {
-    localAndClientMsg(VLogger::WARN, _callback, "Error during the training of BoW.\n");
+    deleteDirectory(tTempDir);
+    localAndClientMsg(VLogger::ERROR, _callback, "Error during the training of BoW.\n");
     return;
+  }
+  else
+  {
+    std::string tPathUsageOrder = tTempDir + "/usageOrder.txt";
+    std::ofstream tusageFile;
+    tusageFile.open(tPathUsageOrder.c_str(),std::ofstream::out);
+    
+    if(tusageFile.is_open())
+    {
+      tusageFile << logfile_BowTrainResult << std::endl;      
+      tusageFile.close();
+
+      std::vector<std::string> tListFiles;
+      tListFiles.push_back(tTempDir + "/usageOrder.txt");
+      tListFiles.push_back(tTempDir + "/" + logfile_BowTrainResult);
+      tListFiles.push_back(tTempDir + "/" + pBowCV->filenameVocabulary);
+      tListFiles.push_back(tTempDir + "/" + pBowCV->filenameSVM);
+      if(!writeZipArchive(CVAC_DataDir + "/" + tFilenameDetectorData,tListFiles))
+      {
+        localAndClientMsg(VLogger::ERROR, NULL,
+          "Detector data is not generated correctly.\n");
+        return;
+      }
+    }
+    else
+    {
+      localAndClientMsg(VLogger::ERROR, NULL,
+        "Archive file did not contain a file ordering in 'usageOrder.txt'. Returning empty vector<string>.");
+      return;
+    }
+    deleteDirectory(tTempDir);
   }
 
   DetectorData detectorData;
   // Method 1	
   detectorData.type = ::cvac::FILE;
-  detectorData.file.directory.relativePath = tmpDir;
-  detectorData.file.filename = logfile_BowTrainResult;
+  detectorData.file.directory.relativePath = ((tDirectoryDetectorData==CVAC_DataDir)?"":tDirectoryDetectorData);
+  detectorData.file.filename = tFilenameDetectorData;  
 
   // Method 2
   // 	std::vector<std::string> strSeq;
