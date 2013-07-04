@@ -446,19 +446,6 @@ bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile)
   return(false);  // Notify clients that call was known to have failed  
 }
 
-std::string cvac::expandFilename(std::string filename, std::string prefixDir)
-{
-    std::string result; 
-    if ((filename.length() > 1 && filename[1] == ':' )||
-        filename[0] == '/' ||
-        filename[0] == '\\')
-    {  // absolute path
-        result = filename;
-    } else { // prepend our prefix
-        result = (prefixDir + "/" + filename);
-    }
-    return result;
-}
 
 void cvac::sleep(int numberOfMilliseconds)
    {
@@ -491,7 +478,9 @@ std::string cvac::getTempFilename( const std::string & basedir)
             // change directory back to original one 
             _chdir(current);
             strcpy(current, baseName);
-            strcat(current, tempName);
+            // Keep file seperators as forward slashes
+            strcat(current, "/");
+            strcat(current, &tempName[1]);
             // tmpname puts a '.' at end of filename of windows this fails if its going to be a directory so get rid of it.
             int len = strlen(current);
             if (current[len-1] == '.')

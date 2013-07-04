@@ -1,58 +1,50 @@
-#
-# Easy!  mini tutorial
-#
-# Invoke a remote service, send files, receive files, receive messages
-#
-# matz 6/17/2013
+'''
+Easy!  mini tutorial
+Invoke a remote service, send files, receive files, receive messages
+matz 6/17/2013
+'''
 
 import easy
 
-#host = "-h localhost"
+#
+# Example 1: Test on a remote machine.
+# specify the host name of the service
+#
 host = "-h vision.nps.edu"
 
-# obtain a reference to a Bag of Words (BOW) detector,
-# running on a remote machine
-detector = easy.getDetector( "bowTest:default -p 10104 "+ host )
-
 #
-# create a corpus from corporate logo images
+# create a simple RunSet with just one unlabeled image
 #
-corpus = easy.openCorpus( "corporate_logos" );
-categories, lablist = easy.getDataSet( corpus )
-print('Obtained {0} labeled artifact{1} from corpus "{2}":'.format(
-    len(lablist), ("s","")[len(lablist)==1], corpus.name ));
-easy.printCategoryInfo( categories )
-
-#
-# add all samples from corpus to a RunSet,
-# also obtain a mapping from class ID to label name
-#
-res = easy.createRunSet( categories )
-runset = res['runset']
-classmap = res['classmap']
-
-
-# a model for distinguishing Canadian, Korean, and US flags,
-# trained previously with a BOW-specific trainer and stored
-# in a file
-modelfile = "detectors/bowUSKOCA.zip"
-
-# apply the detector type, using the model and testing the imgfile
-results = easy.detect( detector, modelfile, runset )
+rs1 = easy.createRunSet( "testImg/italia.jpg" )
 
 #
 # Make sure all files in the RunSet are available on the remote site;
 # it is the client's responsibility to upload them if not.
+# The putResult contains information about which files were actually transferred.
 #
 fileserver = easy.getFileServer( "FileService:default -p 10110 " + host )
-putResult = easy.putAllFiles( fileserver, runset )
+putResult = easy.putAllFiles( fileserver, rs1 )
+modelfile = "detectors/haarcascade_frontalface_alt.xml"
+if not fileserver.exists( easy.getCvacPath(modelfile) ):
+    easy.putFile( fileserver, easy.getCvacPath(modelfile) )
 
 #
-# Connect to a trainer service, train on the RunSet
+# detect remotely: note the host specification
 #
-trainer = easy.getTrainer( "bowTrain:default -p 10103 " + host)
-trainedModel = easy.train( trainer, runset )
-print("Training model stored in file: " + easy.getFSPath( trainedModel.file ))
+print("------- Remote detection, local result display: -------")
+detector = easy.getDetector( "OpenCVCascadeDetector:default -p 10102 "+host )
+results = easy.detect( detector, modelfile, rs1 )
+easy.printResults( results )
 
-# this will fail until BOW zips its results
-easy.getFile( fileserver, trainedModel )
+#
+# Example 2:
+# Train on a remote machine, obtain the model file, and test locally.
+# Assume the files are on the remote machine, or transfer with putAllFiles.
+#
+trainer = easy.getTrainer( "bowTrain:default -p 10103 "+ host) # remote
+trainset = easy.createRunSet( "trainImg" );
+trainedModel = easy.train( trainer, trainset )
+easy.getFile( fileserver, trainedModel.file )  # downloads the model from remote
+print("{0}".format(trainedModel))
+detector = easy.getDetector( "bowTest:default -p 10104" ) # local service
+results = easy.detect( detector, trainedModel, testset )

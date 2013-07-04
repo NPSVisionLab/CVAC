@@ -71,16 +71,15 @@ public:
     virtual cvac::DetectorPropertiesPrx getDetectorProperties(const ::Ice::Current& current);
 
 private:
-    cvac::ResultSetV2 convertResults( const cvac::Labelable& original, CvSeq* foundObjects );
-    CvSeq* detectObjects( const cvac::CallbackHandlerPrx& callback, const cvac::Labelable& lbl  );
-    CvSeq* detectObjects( const cvac::CallbackHandlerPrx& callback, const std::string& fullname );
+    cvac::ResultSetV2 convertResults( const cvac::Labelable& original, std::vector<cv::Rect> recs );
+    std::vector<cv::Rect> detectObjects( const cvac::CallbackHandlerPrx& callback, const cvac::Labelable& lbl  );
+    std::vector<cv::Rect> detectObjects( const cvac::CallbackHandlerPrx& callback, const std::string& fullname );
     
     cvac::ServiceManager    *mServiceMan;
     cvac::DetectorCallbackHandlerPrx callback;
     bool                     fInitialized;    
-    CvHaarClassifierCascade *cascade;
+    cv::CascadeClassifier *cascade;
     std::string              cascade_name;
-    CvMemStorage            *storage;
 
     friend cvac::ResultSetV2 detectFunc( cvac::DetectorPtr detector, const char *fname );
 };

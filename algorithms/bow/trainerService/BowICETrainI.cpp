@@ -204,9 +204,9 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
     {						
       std::string _filepath;
       std::string _filename;	
-      _filename = lab->labeledArtifacts[artfct]->sub.path.filename;
-      _filepath = lab->labeledArtifacts[artfct]->sub.path.directory.relativePath;
-      _filepath = expandFilename(_filepath, CVAC_DataDir);
+      std::string fullName = getFSPath(lab->labeledArtifacts[artfct]->sub.path, CVAC_DataDir);
+      _filename = getFileName(fullName);
+      _filepath = getFileDirectory(fullName);
       
       LocationPtr pLoc = NULL;
       if(lab->labeledArtifacts[artfct]->ice_isA("::cvac::LabeledLocation"))
