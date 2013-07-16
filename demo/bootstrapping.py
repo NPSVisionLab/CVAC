@@ -7,9 +7,6 @@ matz 6/21/2013
 import os
 import easy
 
-# Note: some of these Easy! functions are in alpha and
-# planned for beta release v0.5
-
 #
 # Create a training set from one sample each of 9 corporate logos
 #
