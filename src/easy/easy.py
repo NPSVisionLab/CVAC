@@ -48,7 +48,9 @@ def getFSPath( cvacPath ):
         cvacPath = cvacPath.path
     elif isinstance(cvacPath, cvac.DetectorData):
         cvacPath = cvacPath.file
-    if not cvacPath.directory.relativePath:
+    if isinstance( cvacPath, str ):
+        path = CVAC_DataDir+"/"+cvacPath
+    elif not cvacPath.directory.relativePath:
         path = CVAC_DataDir+"/"+cvacPath.filename
     else:
         path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
@@ -525,7 +527,16 @@ def getDefaultFileServer( detector ):
                             host, "on port 10110" )
     return fs
 
-def putFile( fileserver, filepath ):
+def putFile( fileserver, filepath, testExistence=True ):
+    '''Copy the file referenced by filepath to the specified fileserver.
+    By default, test first if the file exists on the fileserver, and only
+    putFile if it does not exist.
+    '''
+    if isinstance( filepath, str ):
+        filepath = getCvacPath( filepath )
+    if testExistence and fileserver.exists( filepath ):
+        return
+
     origFS = getFSPath( filepath )
     if not os.path.exists( origFS ):
         raise RuntimeError("Cannot obtain FS path to local file:",origFS)
@@ -612,7 +623,7 @@ def putAllFiles( fileserver, runset ):
         if not isinstance(sub, cvac.Substrate):
             raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
         if not fileserver.exists( sub.path ):
-            putFile( fileserver, sub.path )
+            putFile( fileserver, sub.path, testExistence=False )
             uploadedFiles.append( sub.path )
         else:
             existingFiles.append( sub.path )
