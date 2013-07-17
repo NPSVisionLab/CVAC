@@ -150,7 +150,6 @@ public class LabelableListI extends ArrayList<Labelable> {
                                   Label label, float confidence, DirectoryPath relativePath,
                                   boolean recursive) 
     {
-        System.out.println("****** scanning rel "+relativePath.relativePath+", dir " + directory.getPath() );
         boolean video = false;
         if (null != m_corpus){
             //if (m_corpus.getImageType() == Corpus.DataSetImageType.VIDEO) {
