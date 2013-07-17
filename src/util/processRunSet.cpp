@@ -555,3 +555,29 @@ std::string cvac::getClientName(const Ice::Current &cur)
     }
      return res;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+string cvac::getClientDirectoryName(const std::string &CVAC_DataDir, const std::string &trainerName, const std::string &clientName)
+{
+    string dirName = CVAC_DataDir + "/" + trainerName + "_" + clientName;
+    return dirName;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+string cvac::createTrainerDirectory(std::string &clientDirName)
+{
+    if (!directoryExists(clientDirName))
+    {
+        makeDirectories(clientDirName);
+    }
+    string tempDir = getTempFilename(clientDirName);
+
+    if (!makeDirectory(tempDir))
+    {
+        localAndClientMsg(VLogger::ERROR, NULL, 
+             "Unable to create trainer directory %s\n", tempDir.c_str());
+        return NULL;
+    }
+    return tempDir;
+
+}

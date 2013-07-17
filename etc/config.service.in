@@ -65,5 +65,5 @@ ${CF_CAS}OpenCVCascadeDetector.Endpoints=tcp -p 10102
 ${CF_CAS_T}OpenCVCascadeTrainer.Endpoints=tcp -p  10107
 ${CF_BOW_T}BOW_Trainer.Endpoints=tcp -p          10103
 ${CF_BOW}BOW_Detector.Endpoints=tcp -p         10104
-${CF_CORPUS_S}CorpusService.Endpoints=tcp -h localhost -p        10011
-${CF_FILE_S}FileService.Endpoints=tcp -h localhost -p          10110
+${CF_CORPUS_S}CorpusService.Endpoints=tcp -p        10011
+${CF_FILE_S}FileService.Endpoints=tcp -p          10110

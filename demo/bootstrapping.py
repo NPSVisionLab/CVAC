@@ -40,7 +40,7 @@ easy.sortIntoFolders( result1, outfolder="testresults1", multi="highest")
 #
 # We simulate this manual process here.  Note that the new folder needs to be
 # accessible from the CorpusServer, hence located under the CVAC.DataDir.
-reject_folder = "data/corporate_logos_round2/reject"
+reject_folder = easy.CVAC_DataDir + "/corporate_logos_round2/reject"
 if not os.path.isdir( reject_folder ):
     os.makedirs( reject_folder )
 nologos = ["TestKrFlag.jpg", "italia.jpg", "korean-american-flag.jpg", "TestUsFlag.jpg"]

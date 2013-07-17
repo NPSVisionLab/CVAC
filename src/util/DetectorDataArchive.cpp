@@ -54,6 +54,257 @@ using namespace std;
 #define PATH_MAX 255
 #endif
 
+static const std::string USAGE = "usageOrder.txt";
+static const std::string PROPS = "trainer.properties";
+
+
+///////////////////////////////////////////////////////////////////////////////
+cvac::DetectorDataArchive::DetectorDataArchive()
+{
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+void cvac::DetectorDataArchive::createArchive()
+{
+
+      // Here we create the training property file and
+      // the useage file in the same directory as where 
+      // the archive file is created.
+      std::string tdir = getFileDirectory(mArchiveName);
+      // Create a trainer.properties file if we have any
+      // properties to save.
+      if (!mPropNames.empty() || !mFileIds.empty())
+      {
+          std::string props = tdir + "/" + PROPS;
+          std::ofstream propFile;
+          propFile.open(props.c_str(),std::ofstream::out);
+          if (propFile.is_open())
+          { // Add all the trainer properties
+              int size = mPropNames.size();
+              int i;
+              // ":" indicates a property
+              // "=" indicates a file id 
+              for (i = 0; i < size; i++)
+              {
+                  propFile << mPropNames[i] <<  " : " << mPropValues[i] << std::endl; 
+              }
+              // add the file identifiers
+              size = mFileIds.size();
+              for (i = 0; i < size; i++)
+              { 
+                  // We need to store the filenames relative to the archive so when we unpack
+                  // the archive the names in the propfile match the contents in a relative
+                  // fashion.
+                  // TODO We currently only allow all files to be at root level.  Need
+                  // to remove the filename path relative to base directory of archive but
+                  // we currently don't know this.
+                  std::string fname;  // relative file name
+                  
+                  fname = getFileName(mFileNames[i]);
+
+                  propFile << mFileIds[i] <<  " = " << 
+                           fname << std::endl; 
+              }
+              propFile.close();
+              propFile.flush();
+          }
+      }
+      std::string tPathUsageOrder = tdir + "/" + USAGE;
+      std::ofstream tusageFile;
+      tusageFile.open(tPathUsageOrder.c_str(),std::ofstream::out);
+    
+      if(tusageFile.is_open())
+      {
+          vector<string>::iterator it;
+          // Add all the files to the useageOrder.txt file
+          for (it = mFileNames.begin(); it != mFileNames.end(); ++it)
+          {
+              tusageFile << *it << std::endl;      
+          }
+          // Add the trainer.properties file
+          if (!mFileNames.empty() || !mPropNames.empty())
+              tusageFile << PROPS << endl;
+          
+          tusageFile.close();
+          tusageFile.flush();
+
+          std::vector<std::string> tListFiles;
+          tListFiles.push_back(tdir + "/" + USAGE);
+          if (!mFileNames.empty() || !mPropNames.empty())
+              tListFiles.push_back(tdir + "/" + PROPS);
+          for (it = mFileNames.begin(); it != mFileNames.end(); ++it)
+          {
+              // Here we assume that the path to the file added by the user is correct
+              tListFiles.push_back(*it);      
+          }
+          if(!writeZipArchive(mArchiveName, tListFiles))
+          {
+              localAndClientMsg(VLogger::ERROR, NULL,
+                  "Could not write archive file %s.\n", mArchiveName);
+              throw "Could not write archive file";
+               
+          }
+      }else
+      {
+          localAndClientMsg(VLogger::ERROR, NULL,
+            "Could not create 'usageOrder.txt'in directory %s\n", tdir);
+          throw "Could not create usageOrder.txt file";
+      }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void cvac::DetectorDataArchive::unarchive(const string &archiveFile)
+{
+
+    mArchiveName = archiveFile;
+    // Clear any old trainer properties
+    mPropNames.clear();
+    mPropValues.clear();
+    mFileNames.clear();
+    mFileIds.clear();
+    // Here we unpack the archive in the directory we that contains
+    // the archive file.
+    string cdir = getFileDirectory(archiveFile);
+    expandSeq_fromFile(archiveFile, cdir);
+    // Read the trainer properties in from trainer.properties file
+    string propName = cdir + "/" + PROPS;
+    std::ifstream propfile(propName.c_str());
+    std::string line;
+    while( std::getline(propfile, line))
+    {
+        char name[512];
+        char value[512];
+        int res;
+        // See if its a property
+        int idx = line.find(":");
+        if (idx > 0)
+        {
+            if (res = sscanf(line.c_str(), "%s : %s", name, value) > 0)
+            { 
+                // We got a name value pair to save
+                mPropNames.push_back(string(name));
+                mPropValues.push_back(string(value));
+                continue;
+            }
+        } 
+        // See if its an id
+        if (res = sscanf(line.c_str(), "%s = %s", name, value) > 0)
+        {
+            // We got a name value pair to save
+            mFileIds.push_back(string(name));
+            mFileNames.push_back(string(value));
+        }
+    }
+    
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void cvac::DetectorDataArchive::setProperty(const string &name,
+                                             const string &value)
+{
+    int size = mPropNames.size();
+    int i;
+    bool found = false;
+    for (i = 0; i < size; i++)
+    {
+        if (mPropNames[i].compare(name) == 0)
+        {
+            found = true;
+            mPropValues[i] = value;
+        }
+    }
+    if (found == false)
+    {
+        mPropNames.push_back(name);
+        mPropValues.push_back(name);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+vector<string> cvac::DetectorDataArchive::getProperties()
+{
+    return mPropNames;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+string cvac::DetectorDataArchive::getProperty(const string &name)
+{
+    string empty;
+    int size = mPropNames.size();
+    int i;
+    for (i = 0; i < size; i++)
+    {
+        if (mPropNames[i].compare(name) == 0)
+        {
+            return mPropValues[i];
+        }
+    }
+    return empty;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void cvac::DetectorDataArchive::setArchiveFilename(std::string &filename)
+{
+    mArchiveName = filename;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+bool cvac::DetectorDataArchive::addFile(const std::string &identifier,
+                                        const std::string &filename)
+
+{
+    vector<string>::iterator it;
+    for (it = mFileIds.begin(); it != mFileIds.end(); ++it)
+    {
+        if ((*it).compare(identifier) == 0)
+            return false;
+    }
+    mFileIds.push_back(identifier);
+    mFileNames.push_back(filename);
+    return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+bool cvac::DetectorDataArchive::removeFile(const std::string &identifier)
+{
+    int size = mFileIds.size();
+    int i;
+    for (i = 0; i < size; i++)
+    {
+        if (mFileIds[i].compare(identifier) == 0)
+        {
+            mFileIds.erase(mFileIds.begin() + i);
+            mFileNames.erase(mFileNames.begin() + i);
+            return true;
+        }
+    }
+    return false;
+}
+///////////////////////////////////////////////////////////////////////////////
+const std::vector<std::string> cvac::DetectorDataArchive::getFileIds()
+{
+    return mFileIds;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+const std::string cvac::DetectorDataArchive::getFile(const std::string &identifier)
+{
+    std::string empty;
+    int size = mFileIds.size();
+    int i;
+    for (i = 0; i < size; i++)
+    {
+        if (mFileIds[i].compare(identifier) == 0)
+        {
+            string cdir = getFileDirectory(mArchiveName);
+            return cdir + "/" + mFileNames[i];
+        }
+    }
+    return empty;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 int copy_data(struct archive *ar, struct archive *aw)
 {
   int r;
@@ -80,6 +331,7 @@ int copy_data(struct archive *ar, struct archive *aw)
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
 // Archive file must include: 'usageOrder.txt', which allows filenames to be returned in a
 // specific argument order without relying on fancy extensions or pattern matching.  
 // Format: one filename per line.  Ordering documented by receiver for its expectations.
@@ -203,6 +455,7 @@ std::vector<std::string> expandSeq_fromFile(const std::string& filename)
   return(expandSeq_fromFile(filename, ""));
 }
 
+///////////////////////////////////////////////////////////////////////////////
 bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>& _inPaths)
 {
   //we need to add some error handling routines

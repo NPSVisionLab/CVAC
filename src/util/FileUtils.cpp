@@ -287,7 +287,7 @@ std::string cvac::getBaseFileName(const std::string& fileName)
 {
    const std::string onlyFileName = getFileName(fileName);
 
-   std::string::size_type dot = onlyFileName.find_first_of('.');
+   std::string::size_type dot = onlyFileName.find_last_of('.');
    if (dot==std::string::npos) return onlyFileName;
    return std::string(onlyFileName.begin(),onlyFileName.begin()+dot);
 }

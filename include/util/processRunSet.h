@@ -113,4 +113,22 @@ namespace cvac
     * Return the remote address name of the client given this current.
     */
    std::string getClientName(const Ice::Current &cur);
+
+   /**
+    * Get the client directory name.  This is where the service creates items for the client.  Things like 
+    * training directories, training results, etc.
+    * @param CVAC_DataDir - the root CVAC data directory
+    * @param trainerName - this is usually the service name of the trainer service.
+    * @param clientName - this is the client name of the client ice connection.  This is usually the clients IP address 
+    *                     in string form (_'s replaces .'s)
+    */
+   string getClientDirectoryName(const std::string &CVAC_DataDir, const std::string &trainerName, const std::string &clientName);
+
+   /**
+    * Create a directory to store traing data within the clientDirectoryName.  This will be a unique directory
+    * inside the client directory.  This will create the client directory if it does not exist.
+    * @param clientDirectoryName.  The name of the client directory (from getClientDirectoryName)
+    */
+   string createTrainerDirectory(std::string &clientDirectoryName);
+
 }
