@@ -54,7 +54,6 @@ using namespace std;
 #define PATH_MAX 255
 #endif
 
-static const std::string USAGE = "usageOrder.txt";
 static const std::string PROPS = "trainer.properties";
 
 
@@ -65,13 +64,9 @@ cvac::DetectorDataArchive::DetectorDataArchive()
 
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::DetectorDataArchive::createArchive()
+void cvac::DetectorDataArchive::createArchive(const std::string &tdir)
 {
 
-      // Here we create the training property file and
-      // the useage file in the same directory as where 
-      // the archive file is created.
-      std::string tdir = getFileDirectory(mArchiveName);
       // Create a trainer.properties file if we have any
       // properties to save.
       if (!mPropNames.empty() || !mFileIds.empty())
@@ -96,12 +91,12 @@ void cvac::DetectorDataArchive::createArchive()
                   // We need to store the filenames relative to the archive so when we unpack
                   // the archive the names in the propfile match the contents in a relative
                   // fashion.
-                  // TODO We currently only allow all files to be at root level.  Need
-                  // to remove the filename path relative to base directory of archive but
-                  // we currently don't know this.
                   std::string fname;  // relative file name
                   
                   fname = getFileName(mFileNames[i]);
+                  int idx = fname.find(tdir,0);
+                  if (idx == 0)
+                      fname = fname.substr(tdir.length()+1);
 
                   propFile << mFileIds[i] <<  " = " << 
                            fname << std::endl; 
@@ -110,51 +105,27 @@ void cvac::DetectorDataArchive::createArchive()
               propFile.flush();
           }
       }
-      std::string tPathUsageOrder = tdir + "/" + USAGE;
-      std::ofstream tusageFile;
-      tusageFile.open(tPathUsageOrder.c_str(),std::ofstream::out);
-    
-      if(tusageFile.is_open())
+      std::vector<std::string> tListFiles;
+      vector<string>::iterator it;
+      if (!mFileNames.empty() || !mPropNames.empty())
+          tListFiles.push_back(tdir + "/" + PROPS);
+      for (it = mFileNames.begin(); it != mFileNames.end(); ++it)
       {
-          vector<string>::iterator it;
-          // Add all the files to the useageOrder.txt file
-          for (it = mFileNames.begin(); it != mFileNames.end(); ++it)
-          {
-              tusageFile << *it << std::endl;      
-          }
-          // Add the trainer.properties file
-          if (!mFileNames.empty() || !mPropNames.empty())
-              tusageFile << PROPS << endl;
-          
-          tusageFile.close();
-          tusageFile.flush();
-
-          std::vector<std::string> tListFiles;
-          tListFiles.push_back(tdir + "/" + USAGE);
-          if (!mFileNames.empty() || !mPropNames.empty())
-              tListFiles.push_back(tdir + "/" + PROPS);
-          for (it = mFileNames.begin(); it != mFileNames.end(); ++it)
-          {
-              // Here we assume that the path to the file added by the user is correct
-              tListFiles.push_back(*it);      
-          }
-          if(!writeZipArchive(mArchiveName, tListFiles))
-          {
-              localAndClientMsg(VLogger::ERROR, NULL,
-                  "Could not write archive file %s.\n", mArchiveName);
-              throw "Could not write archive file";
-               
-          }
-      }else
+          // Here we assume that the path to the file added by the user is correct
+          tListFiles.push_back(*it);      
+      }
+      if(!writeZipArchive(mArchiveName, tListFiles))
       {
           localAndClientMsg(VLogger::ERROR, NULL,
-            "Could not create 'usageOrder.txt'in directory %s\n", tdir);
-          throw "Could not create usageOrder.txt file";
+              "Could not write archive file %s.\n", mArchiveName);
+          throw "Could not write archive file";
+           
       }
+     
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::DetectorDataArchive::unarchive(const string &archiveFile)
+void cvac::DetectorDataArchive::unarchive(const string &archiveFile, const string &cdir)
 {
 
     mArchiveName = archiveFile;
@@ -163,9 +134,6 @@ void cvac::DetectorDataArchive::unarchive(const string &archiveFile)
     mPropValues.clear();
     mFileNames.clear();
     mFileIds.clear();
-    // Here we unpack the archive in the directory we that contains
-    // the archive file.
-    string cdir = getFileDirectory(archiveFile);
     expandSeq_fromFile(archiveFile, cdir);
     // Read the trainer properties in from trainer.properties file
     string propName = cdir + "/" + PROPS;
@@ -193,7 +161,7 @@ void cvac::DetectorDataArchive::unarchive(const string &archiveFile)
         {
             // We got a name value pair to save
             mFileIds.push_back(string(name));
-            mFileNames.push_back(string(value));
+            mFileNames.push_back(cdir + "/" + string(value));
         }
     }
     
@@ -297,8 +265,7 @@ const std::string cvac::DetectorDataArchive::getFile(const std::string &identifi
     {
         if (mFileIds[i].compare(identifier) == 0)
         {
-            string cdir = getFileDirectory(mArchiveName);
-            return cdir + "/" + mFileNames[i];
+            return mFileNames[i];
         }
     }
     return empty;
@@ -332,13 +299,9 @@ int copy_data(struct archive *ar, struct archive *aw)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Archive file must include: 'usageOrder.txt', which allows filenames to be returned in a
-// specific argument order without relying on fancy extensions or pattern matching.  
-// Format: one filename per line.  Ordering documented by receiver for its expectations.
-//
 // arguments: filename: the archive (zip) file
 //            expandSubfolder: folder to extract into
-std::vector<std::string> expandSeq_fromFile(const std::string& filename, const std::string& expandSubfolder) {
+void expandSeq_fromFile(const std::string& filename, const std::string& expandSubfolder) {
   struct archive *a;
   struct archive *ext;
   struct archive_entry *entry;
@@ -421,38 +384,11 @@ std::vector<std::string> expandSeq_fromFile(const std::string& filename, const s
   archive_write_finish(ext);
 #endif
   
-  std::vector<std::string> entryFileNames;
-
-    // Read the local 'usageOrder.txt' key file which should have been extracted
-    ifstream orderingTxtFile;
-
-    std::string orderingSubfolderPath = expandSubfolder + "/usageOrder.txt";
-    orderingTxtFile.open(orderingSubfolderPath.c_str());
-
-    if(!orderingTxtFile) {
-      localAndClientMsg(VLogger::WARN, NULL, "Archive file did not contain a file ordering in 'usageOrder.txt'.  Returning empty vector<string>.");
-      return(entryFileNames);  // empty vector<string>
-    }
-
-    int lineCount = 0;
-    std::string line;
-    while(std::getline(orderingTxtFile, line))
-    {
-      entryFileNames.push_back(line);
-      lineCount++;
-    }
-
-    // An empty ordering file results in an empty vector<string> returned
-    if(0 == lineCount) {
-      localAndClientMsg(VLogger::WARN, NULL, "Archive file contained 'usageOrder.txt', but no text of filenames.  Returning empty vector<string>.");
-    }
-
-  return(entryFileNames);
 }
-std::vector<std::string> expandSeq_fromFile(const std::string& filename)
+void expandSeq_fromFile(const std::string& filename)
 {
   // Expand subfolder to the usual Current Working Directory
-  return(expandSeq_fromFile(filename, ""));
+  expandSeq_fromFile(filename, "");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

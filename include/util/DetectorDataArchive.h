@@ -47,6 +47,10 @@
  *  Common file identifiers. 
  */
 #define XMLID "XMLFILE"
+#define RESID "RESFILE"
+#define VOCID "VOCFILE"
+#define SVMID "SVMFILE"
+
 
 namespace cvac
 {
@@ -59,13 +63,13 @@ namespace cvac
         DetectorDataArchive();
 
         /**
-         * Archive the detector data.  This throws an exception
+         * Archive the detector data using relDirectory.  This throws an exception
          * if the archive cannot be created.
          */
-        void createArchive();
+        void createArchive(const std::string &relDirectory);
 
         /**
-         * Unarchive the passed in archive file.  This throws an
+         * Unarchive the passed in archive file into dir.   This throws an
          * exception of the file cannot be found or compressed.
          * If any trainer.property file existed in the archive then 
          * this DetectorDataArchive's properties are set
@@ -73,7 +77,7 @@ namespace cvac
          * @param the file to unarchive.
          * 
          */
-        void unarchive(const std::string &archiveFile);
+        void unarchive(const std::string &archiveFile, const std::string &dir);
 
         /**
          * Save a property which is a name, value pair.  When
@@ -148,9 +152,9 @@ namespace cvac
     };
 }
 
-    std::vector<std::string> expandSeq_fromFile(
+    void expandSeq_fromFile(
               const std::string& filename, const std::string& expandSubfolder);
-    std::vector<std::string> expandSeq_fromFile(const std::string& filename);
+    void expandSeq_fromFile(const std::string& filename);
     bool writeZipArchive(const std::string& _outpath,
               const std::vector<std::string>& _inPaths);
 

@@ -397,7 +397,7 @@ void CascadeTrainI::process(const Ice::Identity &client,
   TrainerCallbackHandlerPrx callback =
     TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());		
   // Get the remote client name to use to save cascade file 
-  std::string clientName = cvac::getClientName(current);
+  std::string connectName = cvac::getClientConnectionName(current);
   Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
   const std::string CVAC_DataDir = props->getProperty("CVAC.DataDir");
 
@@ -417,8 +417,9 @@ void CascadeTrainI::process(const Ice::Identity &client,
   // Iterate over runset, inserting each POSITIVE Labelable into
   // the input file to "createsamples".  Add each NEGATIVE into
   // the bgFile.  Put both created files into a tempdir.
-  std::string tempDir = getTempFilename( CVAC_DataDir );
-  makeDirectory( tempDir );
+  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getIceName(),
+                                                             connectName);
+  std::string tempDir = mServiceMan->getSandbox()->createTrainingDir(clientName);
   RunSetWrapper rsw( tempRunSet );
   // We can't put the bgName and infoName in the tempdir without
   // changing cvSamples since it assumes that this files location is the root
@@ -454,48 +455,31 @@ void CascadeTrainI::process(const Ice::Identity &client,
   mServiceMan->clearStop();  
   if (created)
   {
-      std::string cascadeName = "cascade";
-      std::string cascadeFileName = cascadeName + ".xml";
-      std::string newCascadeZipName = cascadeName + "_" + clientName + ".zip";
-      // return the resulting trained model
-      std::string tPathUsageOrder = tempDir + "/usageOrder.txt";
-      std::ofstream tusageFile;
-      tusageFile.open(tPathUsageOrder.c_str(),std::ofstream::out);
-    
-      if(tusageFile.is_open())
+      
+      DetectorDataArchive dda;
+      std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
+      std::string archiveFilename = getDateFilename(clientDir,  "cascade")+ ".zip";
+      dda.setArchiveFilename(archiveFilename);
+      dda.addFile(XMLID, tempDir + "/cascade.xml");
+      dda.createArchive(tempDir);
+      mServiceMan->getSandbox()->deleteTrainingDir(clientName);
+      DetectorData detectorData;
+      detectorData.file.filename = getFileName(archiveFilename);
+      detectorData.type = ::cvac::FILE;
+      std::string relDir;
+      int idx = clientDir.find(CVAC_DataDir.c_str(), 0, CVAC_DataDir.length());
+      if (idx == 0)
       {
-          tusageFile << cascadeFileName << std::endl;      
-          tusageFile.close();
-
-          std::vector<std::string> tListFiles;
-          tListFiles.push_back(tempDir + "/usageOrder.txt");
-          tListFiles.push_back(tempDir + "/" + cascadeFileName);
-      
-          if(!writeZipArchive(CVAC_DataDir + "/" + newCascadeZipName,tListFiles))
-          {
-              localAndClientMsg(VLogger::ERROR, NULL,
-                  "Detector data is not generated correctly.\n");
-              return;
-          }
-          DetectorData detectorData;
-          detectorData.type = ::cvac::FILE;
-      
-          std::string newCascadeName = cascadeName + "_" + clientName + ".xml";
-          //TODO: create a sand box to store client data based upon the connection it came from.
-     
-          deleteDirectory(tempDir);
-    
-          detectorData.file.filename = newCascadeZipName;
-          detectorData.type = ::cvac::FILE;
-          detectorData.file.directory.relativePath = ""; 
-          callback->createdDetector(detectorData);
-  
-          localAndClientMsg(VLogger::INFO, callback, "Cascade training done.\n");
+          relDir = clientDir.substr(CVAC_DataDir.length() + 1);
       }else
       {
-          localAndClientMsg(VLogger::ERROR, NULL,
-            "Archive file did not contain a file ordering in 'usageOrder.txt'. Returning empty vector<string>.");
+          relDir = clientDir;
       }
+      detectorData.file.directory.relativePath = relDir; 
+      callback->createdDetector(detectorData);
+
+      localAndClientMsg(VLogger::INFO, callback, "Cascade training done.\n");
+      
   }else
   {
       localAndClientMsg(VLogger::INFO, callback, "Cascade training failed.\n");
