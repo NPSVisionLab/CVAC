@@ -442,14 +442,24 @@ void CascadeTrainI::process(const Ice::Identity &client,
   std::string vecFname = tempDir + "/cascade_positives.vec";
   int numPos = 0;
   createSamples( rsw, samplesParams, infoName, vecFname, &numPos, CVAC_DataDir);
-  // invoke the actual training vec file needs sample samples
-  // where sample = (numPos + (numStages-1)* (1 - minHitRate) * numPos) + S
+  // invoke the actual training vec file needs extra positive samples
+  // so we need to figure out how many to save back.
+  // Determine the number of samples extra we need.  We need this
+  // since the algorithm 
+  // this is (Stages-1)*(1-minHitRate)*numPos + S
+  // where S = numpos / minHitRate^Stages - numpos
+  int S = int((double)numPos / 
+            pow(mTrainProps->minHitRate, mTrainProps->numStages)) - numPos;
+  int lessSamples = (int)((double)(mTrainProps->numStages -1) * 
+               (1.0 - mTrainProps->minHitRate) * double(numPos)) + S;
+  localAndClientMsg(VLogger::INFO, NULL, "Starting with positive count less " +
+                     lessSamples);
 
   // Tell ServiceManager that we will listen for stop
   mServiceMan->setStoppable();
 
   bool created = createClassifier( tempDir, vecFname, bgName,
-                    (int)(numPos * 0.9), numNeg, mTrainProps );
+                    numPos - lessSamples, numNeg, mTrainProps );
 
   // Tell ServiceManager that we are done listening for stop
   mServiceMan->clearStop();  
