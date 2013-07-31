@@ -115,8 +115,10 @@ protected:
 
 private:
   int   cntCluster;
+  int   OneClassID;
+  bool  flagOneClass;
   bool  flagName;	
-  bool  flagTrain;
+  bool  flagTrain;  
   Ptr<FeatureDetector>      fDetector;	
   Ptr<DescriptorExtractor>  dExtractor;
   Ptr<DescriptorMatcher>    dMatcher;

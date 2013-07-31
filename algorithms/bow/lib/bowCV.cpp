@@ -75,7 +75,9 @@ bowCV::bowCV()
 {	
 	flagTrain = false;
 	flagName = false;
+    flagOneClass = false;
 	cntCluster = -1;
+    OneClassID = 0;
 	cv::initModule_nonfree();	//it should be for using SIFT or SURF. 	
 
 	filenameVocabulary = "logTrain_Vocabulary.xml.gz";
@@ -369,8 +371,8 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 	for(unsigned int k=0;k<vFilenameTrain.size();k++)
 	{
 		_fullFilePathImg = vFilenameTrain[k];
-		_classID = vClassIDTrain[k];
-		
+		_classID = vClassIDTrain[k];     
+        
 		if(_classID==-1)
 			continue;
         
@@ -414,17 +416,20 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 
 	//////////////////////////////////////////////////////
 	// Way #2
-	CvSVMParams param;
+	CvSVMParams param;    
 	if(_listClassUnique.size()==1)	//Just for one class
 	{
+        flagOneClass = true;
+        OneClassID = (*_listClassUnique.begin());
 		cout << "BoW - One Class Classification \n"; fflush(stdout);
 		param.svm_type = CvSVM::ONE_CLASS;
-		param.nu = 0.1;	//empirically, this value doesn't have the effect on performance.
+		param.nu = 0.1;	//empirically, this value doesn't have the effect on performance.        
 		//param.kernel_type = CvSVM::LINEAR;	//empirically, it should NOT be linear for a better performance.
 		classifierSVM.train(trainDescriptors,trainClass,cv::Mat(),cv::Mat(),param);	
 	}
 	else
 	{
+        flagOneClass = false;
 		cout << "BoW - Multiple Classes Classification \n"; fflush(stdout);
 
 		float* _classWeight = new float[_listClassUnique.size()];
@@ -465,6 +470,9 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 	ofile << filenameSVM << endl;
 	_fullFilePathList = _filepathForSavingResult + "/" + filenameSVM;
 	classifierSVM.save(_fullFilePathList.c_str());
+
+    if(flagOneClass)
+      ofile << OneClassID << endl;
 	
 	ofile.close();
 
@@ -515,15 +523,28 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
 	// or estimated function value (regression)."
 	// Since we're using it as a multi-class classification tool,
 	// we can safely cast to int.
-	float predicted = classifierSVM.predict(_descriptors);
-	assert( fabs( predicted-((int)predicted) ) < 0.000001 );
-	_bestClass = (int) predicted;
+    float predicted = classifierSVM.predict(_descriptors);
+    assert( fabs( predicted-((int)predicted) ) < 0.000001 );
+    _bestClass = (int) predicted;
 
-	if (-1 == _bestClass) // no class found
-		return false;
+    if(!flagOneClass) //For Multi-class problem
+    {     
+      if (-1 == _bestClass) // no class found
+        return false;
 
-	else
-		return true;
+      else
+        return true;
+    }
+    else  //For one-class problem
+    {
+      //cout << "Prediction = " << _bestClass << "\n";
+      if(_bestClass==1) //in class
+        _bestClass = OneClassID;
+      else //outlier
+        _bestClass = (OneClassID==0)?1:0;
+
+      return true;
+    }	
 }
 
 
@@ -592,6 +613,24 @@ bool bowCV::detect_readTrainResult(const string& _filepath,const string& _filena
 
 	_fullpath = _filepath + "/" + _inputString;		
 	classifierSVM.load(_fullpath.c_str());
+
+    CvSVMParams tParam = classifierSVM.get_params();
+    if(tParam.svm_type == CvSVM::ONE_CLASS)
+    {
+      flagOneClass = true;
+
+      infile.getline(_buf, 255);	
+      iss.clear();	iss.str(_buf);	iss >> _inputString;
+      OneClassID = atoi(_inputString.c_str());
+      //cout << "BoW - One Class Classification \n"; fflush(stdout);
+      cout << "BoW - One Class Classification, Desirable ID = " << OneClassID << "\n"; fflush(stdout);
+    }
+    else
+    {
+      flagOneClass = false;
+      cout << "BoW - Multiple Classes Classification \n"; fflush(stdout);
+    }
+
 	infile.close();	
 
 	flagTrain = true;
@@ -629,190 +668,6 @@ bool bowCV::detect_readVocabulary( const string& _filename, Mat& _vocabulary )
 	cout << "Error - in Reading vocabulary...";	fflush(stdout);
 	return false;
 }
-
-
-/*
-bool bowCV::runTrainFull(const string& _filepathTrain,const string& _filenameTrainList,const string& _filepathForSavingResult,const string& _filenameForSavingResult)
-{
-	//////////////////////////////////////////////////////////////////////////
-	// START - Clustering (Most time-consuming step)
-	//////////////////////////////////////////////////////////////////////////
-	Mat _descriptorRepository;	
-	_fullFilePathList = _filepathTrain + "/" + _filenameTrainList;
-	ifstream ifList(_fullFilePathList.c_str());
-	if(!ifList.is_open())
-	{
-		cout << "Error - no file: " << _fullFilePathList <<endl;	fflush(stdout);
-		return false;
-	}
-
-	do
-	{
-		ifList.getline(_buf, 255);
-		string line(_buf);
-		istringstream iss(line);
-
-		iss >> _tfileName;	
-		if (_tfileName == "#")
-			continue;	
-
-		_fullFilePathImg = _filepathTrain + "/" + _tfileName;
-
-		string classStr;	//garbage
-		iss >> classStr;	//garbage	
-
-		_img = imread(_fullFilePathImg);
-		if(_img.empty())
-		{
-			ifList.close();
-			cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
-			return false;
-		}
-		fDetector->detect(_img, _keypoints);
-		dExtractor->compute(_img, _keypoints, _descriptors);
-
-		_descriptorRepository.push_back(_descriptors);		
-
-	} while (!ifList.eof());
-	ifList.close();	
-	cout << "Total number of descriptors: " << _descriptorRepository.rows << endl;	fflush(stdout);
-
-	cout << "Clustering .. " << std::endl;	fflush(stdout);
-	BOWKMeansTrainer bowTrainer(cntCluster); 
-	bowTrainer.add(_descriptorRepository);	
-	mVocabulary = bowTrainer.cluster();	
-
-	if(!train_writeVocabulary(_filepathForSavingResult + "/" + filenameVocabulary,mVocabulary))
-		return false;
-	//////////////////////////////////////////////////////////////////////////
-	// END - Clustering (Most time-consuming step)
-	//////////////////////////////////////////////////////////////////////////
-
-
-	//////////////////////////////////////////////////////////////////////////
-	// START - Setup Vocabulary
-	//////////////////////////////////////////////////////////////////////////
-	cout << "Setting Vocabulary .." << endl;	fflush(stdout);			
-	bowExtractor->setVocabulary(mVocabulary);
-	//////////////////////////////////////////////////////////////////////////
-	// START - End Vocabulary
-	//////////////////////////////////////////////////////////////////////////
-
-
-	///////////////////////////////////////////////////////////////////////////
-	// START - Train Classifier (SVM)
-	//////////////////////////////////////////////////////////////////////////
-	cout << "Training Classifier .. " << endl;	fflush(stdout);
-	map<string,Mat> trainingDescriptorsClass;	trainingDescriptorsClass.clear();
-	ifList.open(_fullFilePathList.c_str());	
-	ifList.seekg(0,ios::beg);
-	if(!ifList.is_open())
-	{
-		cout << "Error - no file: " << _fullFilePathList <<endl;	fflush(stdout);
-		return false;
-	}
-
-	do
-	{
-		ifList.getline(_buf, 255);
-		string line(_buf);
-		istringstream iss(line);		
-
-		iss >> _tfileName;	
-		if (_tfileName == "#")
-			continue;	
-
-		_fullFilePathImg = _filepathTrain + "/" + _tfileName;
-
-		string classStr;
-		iss >> classStr;
-
-		//cout<<_tfileName<<'\t'<<classStr<<endl;	fflush(stdout);
-
-		if(!classStr.compare("-1"))
-			continue;
-
-		string classID(classStr.c_str());
-
-		_img = imread(_fullFilePathImg);
-		if(_img.empty())
-		{
-			ifList.close();
-			cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
-			return false;
-		}
-
-		fDetector->detect(_img, _keypoints);
-		bowExtractor->compute(_img, _keypoints, _descriptors);
-
-		if(trainingDescriptorsClass.count(classID) == 0)//not yet created...
-		{				
-			trainingDescriptorsClass[classID].create(0,_descriptors.cols,_descriptors.type());
-		}
-		trainingDescriptorsClass[classID].push_back(_descriptors);		
-
-	} while (!ifList.eof());
-	ifList.close();	
-
-	// Train 1-vs-all SVMs	
-	for (map<string,Mat>::iterator it = trainingDescriptorsClass.begin(); it != trainingDescriptorsClass.end(); ++it) 
-	{
-		string class_ = (*it).first;
-		cout << "Training class: " << class_ << ".." << endl;	fflush(stdout);
-
-		Mat samples(0,_descriptors.cols,_descriptors.type());
-		Mat labels(0,1,CV_32FC1);
-
-		//copy class samples and label
-		samples.push_back(trainingDescriptorsClass[class_]);
-		Mat class_label = Mat::ones(trainingDescriptorsClass[class_].rows, 1, CV_32FC1);
-		labels.push_back(class_label);
-
-		//copy rest samples and label
-		for (map<string,Mat>::iterator it1 = trainingDescriptorsClass.begin(); it1 != trainingDescriptorsClass.end(); ++it1)
-		{
-			string not_class_ = (*it1).first;
-			if(not_class_[0] == class_[0]) 
-				continue;
-
-			samples.push_back(trainingDescriptorsClass[not_class_]);
-			class_label = Mat::zeros(trainingDescriptorsClass[not_class_].rows, 1, CV_32FC1);
-			labels.push_back(class_label);
-		}
-
-		Mat samples_32f; samples.convertTo(samples_32f, CV_32F);
-
-
-		//SVMTrainParamsExt svmParamsExt;
-		//CvSVMParams svmParams;
-		//CvMat class_wts_cv;
-		//setSVMParams( svmParams, class_wts_cv, labels, true );
-		//CvParamGrid c_grid, gamma_grid, p_grid, nu_grid, coef_grid, degree_grid;
-		//setSVMTrainAutoParams( c_grid, gamma_grid,  p_grid, nu_grid, coef_grid, degree_grid );
-		//classifierSVM[class_].train_auto( samples_32f, labels, Mat(), Mat(), svmParams, 10, c_grid, gamma_grid, p_grid, nu_grid, coef_grid, degree_grid );
-
-
-		classifierSVM[class_].train(samples_32f,labels);
-	}
-
-	_fullFilePathList = _filepathForSavingResult + "/" + _filenameForSavingResult;
-	ofstream ofile(_fullFilePathList.c_str());
-	ofile << filenameVocabulary << endl;
-	for (map<string,Mat>::iterator it = trainingDescriptorsClass.begin(); it != trainingDescriptorsClass.end(); ++it) 
-	{
-		string class_ = (*it).first;
-		string _svmName =  "logTrain_svm_" + class_ + ".xml.gz";
-		ofile << _svmName <<'\t' << class_ << endl;
-		_fullFilePathList = _filepathForSavingResult + "/" + _svmName;
-		classifierSVM[class_].save(_fullFilePathList.c_str());
-	}
-	ofile.close();
-
-	flagTrain = true;
-
-	return true;
-}
-*/
 
 
 //void bowCV::setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses )
