@@ -112,5 +112,6 @@ namespace cvac
    /**
     * Return the remote address name of the client given this current.
     */
-   std::string getClientName(const Ice::Current &cur);
+   std::string getClientConnectionName(const Ice::Current &cur);
+
 }

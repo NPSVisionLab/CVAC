@@ -4,7 +4,6 @@
 #
 bowIceTrain.Proxy=bowTrain:tcp -p 10000:udp -p 10000
 TrainerCallback.Client.Endpoints=default
-WireDiagramTrainer.Proxy=WireDiagramTrainer:tcp -p 10002:udp -p 10002
 CVAC_OpenCV_Trainer.Proxy=CVAC_OpenCV_Trainer:tcp -p 10005:udp -p 10005
 
 #

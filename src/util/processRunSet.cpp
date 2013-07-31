@@ -534,7 +534,7 @@ std::string cvac::fixupRunSet(RunSet &run, const std::string &CVAC_DataDir)
     return tempString;
 }
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::getClientName(const Ice::Current &cur)
+std::string cvac::getClientConnectionName(const Ice::Current &cur)
 {
     std::string res = "localhost";
     std::string cstring = cur.con->toString();

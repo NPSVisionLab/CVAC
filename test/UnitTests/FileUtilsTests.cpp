@@ -280,23 +280,11 @@ SUITE(UnitTests_cvac)
     std::string archiveFileName1("../data/detectors/" + detectZip);
     std::string subDir = archiveFileName1 + "_tmpSubDir";
 
-    std::vector<std::string> fileNameStrings = expandSeq_fromFile(archiveFileName1, subDir);
-
+    expandSeq_fromFile(archiveFileName1, subDir);
     // Check for expanded files
-    ifstream testForXml;
-    // TODO: the dot before subDir gets added by expandSeq_fromFile - design that better;
-    // usageOrder.txt is one sample file that should exist in the unzipped folder
-    std::string checkFilePath = subDir + "/usageOrder.txt";
-    testForXml.open(checkFilePath.c_str(), ifstream::in);
-
-    // File exists after extraction
-    CHECK( testForXml.is_open() );
-    if (pdebug)
-      printf("Success opening expanded file (from subfolder).\n");
-    testForXml.close();
+    
 
     // rm -f current not implemented - delete the files manually
-    CHECK( deleteFile( subDir+"/usageOrder.txt") );
     CHECK( deleteFile( subDir+"/logTrain_svm.xml.gz") );
     CHECK( deleteFile( subDir+"/logTrain_Table.txt") );
     CHECK( deleteFile( subDir+"/logTrain_Vocabulary.xml.gz") );
