@@ -117,7 +117,7 @@ void cvac::DetectorDataArchive::createArchive(const std::string &tdir)
       if(!writeZipArchive(mArchiveName, tListFiles))
       {
           localAndClientMsg(VLogger::ERROR, NULL,
-              "Could not write archive file %s.\n", mArchiveName);
+              "Could not write archive file %s.\n", mArchiveName.c_str());
           throw "Could not write archive file";
            
       }
