@@ -38,6 +38,7 @@
 #include <util/FileUtils.h>
 #include <util/Timing.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #if defined(WIN32)
    #include <direct.h> //for _mkdir()
@@ -287,7 +288,7 @@ std::string cvac::getBaseFileName(const std::string& fileName)
 {
    const std::string onlyFileName = getFileName(fileName);
 
-   std::string::size_type dot = onlyFileName.find_first_of('.');
+   std::string::size_type dot = onlyFileName.find_last_of('.');
    if (dot==std::string::npos) return onlyFileName;
    return std::string(onlyFileName.begin(),onlyFileName.begin()+dot);
 }
@@ -451,11 +452,15 @@ void cvac::sleep(int numberOfMilliseconds)
       #endif
    }
 
-std::string cvac::getTempFilename( const std::string & basedir)
+std::string cvac::getTempFilename( const std::string &basedir, 
+                                   const std::string &prefix)
 {
     const char *baseName = NULL;
+    const char *prefixName = NULL;
     if (!basedir.empty()) 
         baseName = basedir.c_str();
+    if (!prefix.empty())
+        prefixName = prefix.c_str();
     char *tempName;
 #ifdef WIN32
     // Windows will not use baseName if TMPDIR variable is defined so we use tmpNam instead of
@@ -463,7 +468,7 @@ std::string cvac::getTempFilename( const std::string & basedir)
     char current[1024];
     if (baseName == NULL)
     { // No base directory so let the TMPDIR variable pick the  name.
-        tempName = _tempnam(baseName, NULL);
+        tempName = _tempnam(baseName, prefixName);
     } else
     { // tmpname only works in the current dir so change to where we want temp file
         _getcwd(current, 1024);
@@ -475,6 +480,8 @@ std::string cvac::getTempFilename( const std::string & basedir)
             strcpy(current, baseName);
             // Keep file seperators as forward slashes
             strcat(current, "/");
+            if (prefixName != NULL)
+                strcat(current, prefixName);
             strcat(current, &tempName[1]);
             // tmpname puts a '.' at end of filename of windows this fails if its going to be a directory so get rid of it.
             int len = strlen(current);
@@ -483,16 +490,45 @@ std::string cvac::getTempFilename( const std::string & basedir)
             tempName = current;
         }else
         { // the basename directory does not exist so let windows give use the tempfile name
-            tempName = _tempnam(baseName, NULL);
+            tempName = _tempnam(baseName, prefixName);
         }
     }
 #else
-    tempName = tempnam(baseName, NULL);
+    tempName = tempnam(baseName, prefixName);
 #endif /* WIN32 */
     std::string tempString = tempName;
     return tempString;
 }
 
+std::string cvac::getDateFilename( const std::string &basedir, 
+                                   const std::string &prefix)
+{
+    
+    char tempName[128];
+    time_t curtime;
+    struct tm *timeinfo;
+    time(&curtime);
+    timeinfo = localtime(&curtime);
+    //Format is MMDDYY_HHMM
+    strftime(tempName, 128, "%m%d%y_%H%M", timeinfo);
+    std::string result;
+    std::string filename;
+    if (prefix.empty())
+    {
+        filename = tempName;
+    }else
+    {
+        filename = prefix + "_" + tempName;
+    }
+    if (basedir.empty())
+    {
+        result = filename;
+    }else
+    {
+        result = basedir + "/" + filename;
+    }
+    return result;
+}
 
 /** Turn a CVAC path into a file system path
  */

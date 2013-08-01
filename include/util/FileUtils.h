@@ -162,11 +162,22 @@ namespace cvac
 
    /** Return a unique temporary file name.  If basedir is not defined 
    * then the file name is in the current systems temporary file .
-   * @param basedir Base directory the temp filename.
+   * @param basedir - Base directory of the temp filename.
+   * @param prefix - Prefix the file name with this.
    * @return The temp file name including path.
    */
 
-   std::string getTempFilename( const std::string& basedir="" );
+   std::string getTempFilename( const std::string &basedir="",  
+                                const std::string &prefix = "");
+
+   /** Return a filename formated by the date and time.  If basedir is not defined 
+   * then the file name is a relative filename
+   * @param basedir - Base directory of the dated filename.
+   * @param prefix - Prefix the file name with prefix_.
+   * @return The dated file name including path.
+   */
+   std::string getDateFilename( const std::string &basedir = "", 
+                                   const std::string &prefix = "");
 
    /** Turn a CVAC path info a file system path
     * @param fp The filepath to change
