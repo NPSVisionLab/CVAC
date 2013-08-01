@@ -49,7 +49,6 @@
 
 #include <cv.h>
 
-
 class CascadeDetectI : public cvac::Detector
 {
 public:
