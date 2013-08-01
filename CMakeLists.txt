@@ -113,8 +113,9 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
         MESSAGE( STATUS "successfully parsed version from git: CVAC-${CVAC_VERSION}" )
      	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
                                    ${CMAKE_SOURCE_DIR}/include/version.h)
-        #Need to update the version.h.repo file so it will be up to date
-        #For someone using the source without git (like a zip file)
+        # Need to update the version.h.repo file so it will be up to date
+        # for later distribution of the source without git (like a zip file);
+        # see below.
         CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h
                        ${CMAKE_SOURCE_DIR}/include/version.h.repo)
     ENDIF( CVAC_VERSION_GIT )

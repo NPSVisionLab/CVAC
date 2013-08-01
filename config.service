@@ -61,9 +61,9 @@ Ice.MessageSizeMax=100000
 #The services
 
 #MultiBoost.Endpoints=tcp -p           10101
-#OpenCVCascadeDetector.Endpoints=tcp -p 10102
-#OpenCVCascadeTrainer.Endpoints=tcp -p  10107
+OpenCVCascadeDetector.Endpoints=tcp -p 10102
+OpenCVCascadeTrainer.Endpoints=tcp -p  10107
 BOW_Trainer.Endpoints=tcp -p          10103
 BOW_Detector.Endpoints=tcp -p         10104
-CorpusService.Endpoints=tcp -h localhost -p        10011
-FileService.Endpoints=tcp -h localhost -p          10110
+CorpusService.Endpoints=tcp -p        10011
+FileService.Endpoints=tcp -p          10110

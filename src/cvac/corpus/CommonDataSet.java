@@ -1,6 +1,7 @@
 package cvac.corpus;
 
 import com.ice.tar.TarEntry;
+import com.ice.tar.TarInputStream;
 import cvac.CorpusCallbackPrx;
 import cvac.Labelable;
 import org.apache.commons.io.FileUtils;
@@ -31,7 +32,6 @@ import org.apache.commons.io.IOUtils;
 import util.Data_IO_Utils;
 import util.Data_IO_Utils.FS_ObjectType;
 import util.DownloadUtils;
-import com.ice.tar.TarInputStream;
 
 /**
  * All common data sets use functionality in this class.  Samples and

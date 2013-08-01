@@ -704,6 +704,7 @@ def train( trainer, runset, callbackRecv=None ):
         raise RuntimeError('detectorData as BYTES has not been tested yet')
     elif callbackRecv.detectorData.type == cvac.DetectorDataType.PROVIDER:
         raise RuntimeError('detectorData as PROVIDER has not been tested yet')
+
     return callbackRecv.detectorData
 
 def getDetector( configString ):
