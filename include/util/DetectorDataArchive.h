@@ -36,6 +36,126 @@
  *(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****/
-std::vector<std::string> expandSeq_fromFile(const std::string& filename, const std::string& expandSubfolder);
-std::vector<std::string> expandSeq_fromFile(const std::string& filename);
-bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>& _inPaths);
+#ifndef __DETECTORDATAARCHIVE_H_INCLUDED__
+#define __DETECTORDATAARCHIVE_H_INCLUDED__
+
+#include <string>
+#include <vector>
+
+
+/**
+ *  Common file identifiers. 
+ */
+#define XMLID "XMLFILE"
+#define RESID "RESFILE"
+#define VOCID "VOCFILE"
+#define SVMID "SVMFILE"
+
+
+namespace cvac
+{
+    class DetectorDataArchive
+    {
+    public:
+        /**
+         * Construct a DetectorDataArchive class
+         */
+        DetectorDataArchive();
+
+        /**
+         * Archive the detector data using relDirectory.  This throws an exception
+         * if the archive cannot be created.
+         */
+        void createArchive(const std::string &relDirectory);
+
+        /**
+         * Unarchive the passed in archive file into dir.   This throws an
+         * exception of the file cannot be found or compressed.
+         * If any trainer.property file existed in the archive then 
+         * this DetectorDataArchive's properties are set
+         * to the contents of that file.
+         * @param the file to unarchive.
+         * 
+         */
+        void unarchive(const std::string &archiveFile, const std::string &dir);
+
+        /**
+         * Save a property which is a name, value pair.  When
+         * the trainer data is archived these attributes are written out to
+         * the archive.
+         */
+        void setProperty(const std::string &name,
+                                  const std::string &value);   
+        /**
+         * Get the list of properties currently defined.
+         * These can be set from an archive file or from the user or both.
+         */
+        std::vector<std::string> getProperties();
+
+        /**
+         * Get a value of a trainer property value defined by name.
+         */
+        std::string getProperty(const std::string &name);
+
+        /**
+         * Set the archive filename.  This should be the complete path
+         * and filename.
+         */
+        void setArchiveFilename(std::string &filename);
+
+        /**
+         * Add a file to the archive. A file has two parts.  An identifier 
+         * string that tells what this file is and the name of the file
+         * itself.  This assumes that it might not be possible to 
+         * determine the purpose of the file just by given its name.
+         * @param - the identifier string for the file
+         * @param - the file name.
+         * @return - returns true if the file exists and no other
+         * file in the archive has this identifier else it returns false.
+         */
+        bool addFile(const std::string &identifier, 
+                     const std::string &filename);
+
+        /**
+         * Remove the file that maps to this identifier from the archive
+         * @param - the file identifier  and file to remove
+         * @return - returns true if the identifier was removed false
+         * if the identifier was not in the archive.
+         */
+        bool removeFile(const std::string &identifier);
+
+        /**
+         * Get the list of file identifiers in a archive.
+         * @return a vector of file identifiers contained in the archive.
+         */
+        const std::vector<std::string> getFileIds();
+
+        /**
+         * Get a file name in the archive based on its identifier
+         * @param - the identifier string for the file
+         * @return - the filename in the archive that matches the identifier.
+         * The  return string is empty if there is no match.
+         */
+        const std::string getFile(const std::string &identifier);
+
+
+    private:
+        
+       
+        std::string mArchiveName;
+        std::vector<std::string> mPropNames;
+        std::vector<std::string> mPropValues;
+        std::vector<std::string> mFileNames;
+        std::vector<std::string> mFileIds;
+
+        
+    };
+}
+
+    void expandSeq_fromFile(
+              const std::string& filename, const std::string& expandSubfolder);
+    void expandSeq_fromFile(const std::string& filename);
+    bool writeZipArchive(const std::string& _outpath,
+              const std::vector<std::string>& _inPaths);
+
+#endif // __DETECTORDATAARCHIVE_H_INCLUDED__

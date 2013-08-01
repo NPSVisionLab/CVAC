@@ -37,17 +37,17 @@ except:
 #
 ic = Ice.initialize(sys.argv)
 defaultCS = None
+# IF the environment variable is set, then use that else use data
+CVAC_DataDir = os.getenv("CVAC_DATADIR", "data")
 
 def getFSPath( cvacPath ):
     '''Turn a CVAC path into a file system path'''
-    # todo: obtain CVAC.DataDir
     if isinstance(cvacPath, cvac.Labelable):
         cvacPath = cvacPath.sub.path
     elif isinstance(cvacPath, cvac.Substrate):
         cvacPath = cvacPath.path
     elif isinstance(cvacPath, cvac.DetectorData):
         cvacPath = cvacPath.file
-    CVAC_DataDir = "data"
     if isinstance( cvacPath, str ):
         path = CVAC_DataDir+"/"+cvacPath
     elif not cvacPath.directory.relativePath:

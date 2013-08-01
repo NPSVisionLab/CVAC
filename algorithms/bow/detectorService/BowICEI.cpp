@@ -104,6 +104,11 @@ void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const
   std::string filename = "";
   std::string _extFile = data.file.filename.substr( data.file.filename.rfind(".")+1,
                                                     data.file.filename.length());
+  std::string connectName = getClientConnectionName(current);
+  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getIceName(),
+                                                             connectName);                               
+  std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
+
   if (_extFile.compare("txt") == 0)
   {
     localAndClientMsg(VLogger::ERROR, NULL,
@@ -117,33 +122,24 @@ void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const
   }
   else	//for a zip file	//if (cvac::FILE == data.type && size == 0)
   { 
-    // Use utils un-compression to get zip file names
-    // Filepath is relative to 'CVAC_DataDir'
-    std::string archiveFilePath; 
-    if ( (data.file.directory.relativePath.length() > 1 
-          && data.file.directory.relativePath[1] == ':' )||
-         data.file.directory.relativePath[0] == '/' ||
-         data.file.directory.relativePath[0] == '\\')
-    {  // absolute path
-      // TODO: don't permit absolute paths!  get rid of if/else and just
-      // check in getFSPath that it's relative
-      archiveFilePath = data.file.directory.relativePath + "/" + data.file.filename;
-    } 
-    else
-    { // prepend our prefix
-      archiveFilePath = getFSPath( data.file, m_CVAC_DataDir );
-    }
-
-    expandedSubfolder = archiveFilePath + "_";
-    std::vector<std::string> fileNameStrings =
-      expandSeq_fromFile(archiveFilePath, expandedSubfolder);
-
-    filename = fileNameStrings[0];    
-    //filename = logfile_BowTrainResult;
+   
+     std::string zipfilename = getFSPath( data.file, m_CVAC_DataDir );
+     
+     DetectorDataArchive dda;
+     dda.unarchive(zipfilename, clientDir);
+     // This detector only needs an XML file
+     filename = dda.getFile(RESID);
+     if (filename.empty())
+     {
+        localAndClientMsg(VLogger::ERROR, NULL,
+          "Could not find result file in zip file.\n");
+        return;
+     }
+     // Get only the filename part
+     filename = getFileName(filename);
   }
-
   // add the CVAC.DataDir root path and initialize from txt file  
-  fInitialized = pBowCV->detect_initialize( expandedSubfolder, filename );
+  fInitialized = pBowCV->detect_initialize( clientDir, filename );
 
   if (!fInitialized)
   {

@@ -107,17 +107,29 @@ void CascadeDetectI::initialize( ::Ice::Int verbosity,
   }
   else	//for a zip file
   { 
-
-     // Get the default CVAC data directory as defined in the config file
-     std::string expandedSubfolder = "";
-     // Use utils un-compression to get zip file names
-     // Filepath is relative to 'CVAC_DataDir'
-     std::string archiveFilePath; 
-     archiveFilePath = getFSPath( data.file, m_CVAC_DataDir );
-     expandedSubfolder = archiveFilePath + "_";
-     std::vector<std::string> fileNameStrings =
-                expandSeq_fromFile(archiveFilePath, expandedSubfolder);
-     dpath = expandedSubfolder + "/" + fileNameStrings[0];    
+     std::string zipfilename = getFSPath( data.file, m_CVAC_DataDir );
+     std::string connectName = getClientConnectionName(current);
+     std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getIceName(),
+                                                             connectName);
+                                    
+     std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
+     DetectorDataArchive dda;
+     dda.unarchive(zipfilename, clientDir);
+     // This detector only needs an XML file
+     dpath = dda.getFile(XMLID);
+     if (dpath.empty())
+     {
+         localAndClientMsg( VLogger::WARN, NULL,
+                       "unable to load classifier from archive file %s\n", zipfilename.c_str());\
+         fInitialized = false;
+         return;
+     }
+  }
+  Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
+  string verbStr = props->getProperty("CVAC.ServicesVerbosity");
+  if (!verbStr.empty())
+  {
+    vLogger.setLocalVerbosityLevel( verbStr );
   }
   localAndClientMsg( VLogger::DEBUG_1, NULL, "initializing with %s\n", dpath.c_str());
 
