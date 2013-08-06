@@ -313,6 +313,7 @@ ADD_SUBDIRECTORY( etc )
 ADD_SUBDIRECTORY(src/util)
 ADD_SUBDIRECTORY(src/easy)
 ADD_SUBDIRECTORY(algorithms)
+ADD_SUBDIRECTORY(demo)
 IF( BUILD_WITH_TESTS)
   #Turn on CTest input files
   # Next include for outputing ctest results to the dash board

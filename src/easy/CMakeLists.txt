@@ -23,7 +23,7 @@ CONFIGURE_FILE(easy.py "${SLICE_OUTPUT_PYTHONDIR}/easy.py" COPYONLY)
 add_custom_target( easy ALL DEPENDS ${SLICE_FILES} )
 
 IF( BUILD_BINARY_PACKAGE )
-  INSTALL(FILES  demo.py easy.py
+  INSTALL(FILES easy.py
     DESTINATION src/easy
     COMPONENT Runtime
   )
