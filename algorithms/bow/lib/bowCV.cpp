@@ -77,7 +77,8 @@ bowCV::bowCV()
 	flagName = false;
     flagOneClass = false;
 	cntCluster = -1;
-    OneClassID = 0;
+    mInclassIDforOneClass = 1;
+    mOutclassIDforOneClass = 0;
 	cv::initModule_nonfree();	//it should be for using SIFT or SURF. 	
 
 	filenameVocabulary = "logTrain_Vocabulary.xml.gz";
@@ -116,8 +117,8 @@ bool bowCV::train_initialize(const string& _detectorName,const string& _extracto
 	}
 	else
 	{
-		nameDetector = _detectorName;
-		nameExtractor = _extractorName;
+        setProperty(BOW_DETECTOR_NAME,_detectorName);
+        setProperty(BOW_EXTRACTOR_NAME,_extractorName);
 	}
 
 	cntCluster = _nCluster;
@@ -129,7 +130,7 @@ bool bowCV::train_initialize(const string& _detectorName,const string& _extracto
 		return false;
 	}
 	else
-		nameMatcher = _matcherName;
+		setProperty(BOW_MATCHER_NAME,_matcherName);
 
 	bowExtractor = new BOWImgDescriptorExtractor(dExtractor,dMatcher);
 
@@ -163,8 +164,8 @@ bool bowCV::detect_setParameter(const string& _detectorName,const string& _extra
 	}	
 	else
 	{
-		nameDetector = _detectorName;
-		nameExtractor = _extractorName;
+        setProperty(BOW_DETECTOR_NAME,_detectorName);
+        setProperty(BOW_EXTRACTOR_NAME,_extractorName);
 	}
 
 	dMatcher = DescriptorMatcher::create(_matcherName);
@@ -174,7 +175,7 @@ bool bowCV::detect_setParameter(const string& _detectorName,const string& _extra
 		return false;
 	}
 	else
-		nameMatcher = _matcherName;
+		setProperty(BOW_MATCHER_NAME,_matcherName);
 
 	bowExtractor = new BOWImgDescriptorExtractor(dExtractor,dMatcher);
 
@@ -278,7 +279,7 @@ void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID,co
 }
 
 
-bool bowCV::train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult, cvac::ServiceManager *sman)
+bool bowCV::train_run(const string& _filepathForSavingResult,const string& _filenameForSavingLog, cvac::ServiceManager *sman)
 {
 	if(!flagName)
 	{
@@ -342,6 +343,8 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 
 	if(!train_writeVocabulary(_filepathForSavingResult + "/" + filenameVocabulary,mVocabulary))
 		return false;
+
+    setProperty(BOW_VOC_FILE,filenameVocabulary);
 	//////////////////////////////////////////////////////////////////////////
 	// END - Clustering (Most time-consuming step)
 	//////////////////////////////////////////////////////////////////////////
@@ -353,7 +356,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 	cout << "Setting Vocabulary ... " << endl;	fflush(stdout);			
 	bowExtractor->setVocabulary(mVocabulary);
 	//////////////////////////////////////////////////////////////////////////
-	// START - End Vocabulary
+	// END - Setup Vocabulary
 	//////////////////////////////////////////////////////////////////////////
 
 
@@ -420,8 +423,14 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 	if(_listClassUnique.size()==1)	//Just for one class
 	{
         flagOneClass = true;
-        OneClassID = (*_listClassUnique.begin());
+        
+        mInclassIDforOneClass = (*_listClassUnique.begin());
+        mOutclassIDforOneClass = (mInclassIDforOneClass==0)?1:0;
+        stringstream oneclassIDstream;
+        oneclassIDstream << mInclassIDforOneClass;
+        setProperty(BOW_ONECLASS_ID,oneclassIDstream.str());
 		cout << "BoW - One Class Classification \n"; fflush(stdout);
+
 		param.svm_type = CvSVM::ONE_CLASS;
 		param.nu = 0.1;	//empirically, this value doesn't have the effect on performance.        
 		//param.kernel_type = CvSVM::LINEAR;	//empirically, it should NOT be linear for a better performance.
@@ -451,30 +460,16 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 		classifierSVM.train(trainDescriptors,trainClass,cv::Mat(),cv::Mat(),param);
 		delete [] _classWeight;
 	}
-	//////////////////////////////////////////////////////
-	
 
-	_fullFilePathList = _filepathForSavingResult + "/" + _filenameForSavingResult;
-	ofstream ofile(_fullFilePathList.c_str());
-	ofile << "# This file should includes the followings:" << std::endl;
-	ofile << "# The name of Detector" << std::endl;
-	ofile << "# The name of Extractor" << std::endl;
-	ofile << "# The name of Matcher" << std::endl;
-	ofile << "# The filename of vocabulary" << std::endl;
-	ofile << "# Filenames of svm results" << std::endl;
-	ofile << nameDetector << std::endl;
-	ofile << nameExtractor << std::endl;
-	ofile << nameMatcher << std::endl;
-	ofile << filenameVocabulary << std::endl;		
+    string tSVMPath = _filepathForSavingResult + "/" + filenameSVM;
+    classifierSVM.save(tSVMPath.c_str());    
+    setProperty(BOW_SVM_FILE,filenameSVM);
+    ///////////////////////////////////////////////////////////////////////////
+    // END - Train Classifier (SVM)
+    //////////////////////////////////////////////////////////////////////////
 	
-	ofile << filenameSVM << endl;
-	_fullFilePathList = _filepathForSavingResult + "/" + filenameSVM;
-	classifierSVM.save(_fullFilePathList.c_str());
-
-    if(flagOneClass)
-      ofile << OneClassID << endl;
-	
-	ofile.close();
+    setProperty(BOW_OPENCV_VERSION,CV_VERSION);    
+    train_writeLog(_filepathForSavingResult,_filenameForSavingLog);	
 
 	flagTrain = true;
 
@@ -510,11 +505,14 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
       if((tRect.width != 0) && (tRect.height != 0))
         _img = _img(tRect);
     }
-
+    
 	fDetector->detect(_img, _keypoints);
-	
+    if(_keypoints.size()<1) //According to the version of openCV, it may cause an exceptional error.
+    {
+      cout << "Error - no feature: " << _fullfilename <<endl;	fflush(stdout);
+      return false;
+    }
 	bowExtractor->compute(_img, _keypoints, _descriptors);
-
 	// In the manual from OpenCV, it is written as follows:
 	// "If true (it is for the second argument of this function)
 	// and the problem is 2-class classification then the method
@@ -531,17 +529,15 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
     {     
       if (-1 == _bestClass) // no class found
         return false;
-
       else
         return true;
     }
     else  //For one-class problem
-    {
-      //cout << "Prediction = " << _bestClass << "\n";
+    {      
       if(_bestClass==1) //in class
-        _bestClass = OneClassID;
+        _bestClass = mInclassIDforOneClass;
       else //outlier
-        _bestClass = (OneClassID==0)?1:0;
+        _bestClass = mOutclassIDforOneClass;
 
       return true;
     }	
@@ -550,80 +546,89 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
 
 bool bowCV::detect_readTrainResult(const string& _filepath,const string& _filename)
 {	
-	string _fullpath = _filepath + "/" + _filename;
-	string _inputString;
-	
-	
-	ifstream infile(_fullpath.c_str());	
-	if(!infile.is_open())
-	{
-		cout << "Error - can't read train result from file: "
-                     << _fullpath <<endl;	
-                fflush(stdout);
-		return false;
-	}
-	
-	istringstream iss;
-	while(true)
-	{
-		infile.getline(_buf, 255);	
-		iss.clear();	iss.str(_buf);	iss >> _inputString;	
-		if (_inputString == "#")
-			continue;
-		else
-			break;
-	}	
-	string _nameDetector(_inputString);
+    string _fullpath = _filepath + "/" + _filename;
+    string _inputString;
 
-#ifdef __APPLE__
-    if (_nameDetector.compare("SURF") == 0)
+
+    ifstream infile(_fullpath.c_str());	
+    if(!infile.is_open())
     {
-		cout << "WARNING!!! SURF detector may not run well on OSX" << endl;
+      cout << "Error - can't read train result from file: "
+        << _fullpath <<endl;	
+      fflush(stdout);
+      return false;
     }
-#endif // __APPLE__
-	
-	infile.getline(_buf, 255);	
-	iss.clear();	iss.str(_buf);	iss >> _inputString;	
-	string _nameExtractor(_inputString);
 
-	infile.getline(_buf, 255);	
-	iss.clear();	iss.str(_buf);	iss >> _inputString;
-	string _nameMatcher(_inputString);
+    while(getline(infile,_inputString))
+    {
+      if(_inputString[0] =='#')
+        continue;
+      else
+      {
+        char tKey[1024];
+        char tValue[1024];
+        if(_inputString.find("=") > 0)
+        {
+            if( sscanf(_inputString.c_str(), "%s = %s", tKey, tValue) > 0 )
+              setProperty(string(tKey),string(tValue));
+        }
+      }
+    }
+    infile.close();
 
-	if(!detect_setParameter(_nameDetector,_nameExtractor,_nameMatcher))
-	{
-		cout << "Need to names of detector, extractor, and matcher with the function detect_initialize()" << endl; 
-		return false;
-	}
+  #ifdef __APPLE__
+    if (getProperty(BOW_DETECTOR_NAME).compare("SURF") == 0)
+    {
+      cout << "WARNING!!! SURF detector may not run well on OSX" << endl;
+    }
+  #endif // __APPLE__   
 
-	infile.getline(_buf, 255);	
-	iss.clear();	iss.str(_buf);	iss >> _inputString;
-	_fullpath = _filepath + "/" + _inputString;	
+    if(!detect_setParameter(getProperty(BOW_DETECTOR_NAME),
+      getProperty(BOW_EXTRACTOR_NAME),
+      getProperty(BOW_MATCHER_NAME)))
+    {
+      cout << "Need to names of detector, extractor, and matcher with the function detect_initialize()" << endl; 
+      return false;
+    }
+    
+    // Read VOC file
+    _fullpath = _filepath + "/" + getProperty(BOW_VOC_FILE);	
+    if(detect_readVocabulary(_fullpath,mVocabulary))
+    {
+      bowExtractor->setVocabulary(mVocabulary);
+    }
+    else
+      return false;    
 
-	if(detect_readVocabulary(_fullpath,mVocabulary))
-	{
-		bowExtractor->setVocabulary(mVocabulary);
-	}
-	else
-		return false;
-	
-	classifierSVM.clear();
-	infile.getline(_buf, 255);	
-	iss.clear();	iss.str(_buf);	iss >> _inputString;
+    // Read SVM file
+    _fullpath = _filepath + "/" + getProperty(BOW_SVM_FILE);		
+    classifierSVM.load(_fullpath.c_str());
 
-	_fullpath = _filepath + "/" + _inputString;		
-	classifierSVM.load(_fullpath.c_str());
+    // Read OpenCV Version    
+    _inputString = getProperty(BOW_OPENCV_VERSION);
+    if(!isCompatibleOpenCV(_inputString))
+    {       
+      cout << "For the training, OpenCV " << _inputString 
+        << " was used. But, now you are using OpenCV "
+        << CV_VERSION << ". It may cause an exceptional error." << endl; 
+      return false;
+    }
 
     CvSVMParams tParam = classifierSVM.get_params();
     if(tParam.svm_type == CvSVM::ONE_CLASS)
     {
       flagOneClass = true;
-
-      infile.getline(_buf, 255);	
-      iss.clear();	iss.str(_buf);	iss >> _inputString;
-      OneClassID = atoi(_inputString.c_str());
-      //cout << "BoW - One Class Classification \n"; fflush(stdout);
-      cout << "BoW - One Class Classification, Desirable ID = " << OneClassID << "\n"; fflush(stdout);
+      cout << "BoW - One Class Classification \n"; fflush(stdout);
+      
+      _inputString = getProperty(BOW_ONECLASS_ID);
+      if(_inputString.empty())
+        mInclassIDforOneClass = 1; //default in-class ID of one-Class SVM
+      else
+        mInclassIDforOneClass = atoi(_inputString.c_str());  
+      
+      mOutclassIDforOneClass = (mInclassIDforOneClass==0)?1:0;
+      cout << "In-class data will be represented by " << mInclassIDforOneClass << endl;
+      cout << "Out-class data will be represented by " << mOutclassIDforOneClass << endl;
     }
     else
     {
@@ -631,12 +636,11 @@ bool bowCV::detect_readTrainResult(const string& _filepath,const string& _filena
       cout << "BoW - Multiple Classes Classification \n"; fflush(stdout);
     }
 
-	infile.close();	
+    flagTrain = true;
 
-	flagTrain = true;
-
-	return true;
+    return true;
 }
+
 
 bool bowCV::train_writeVocabulary(const string& _filename,const Mat& _vocabulary)
 {
@@ -668,6 +672,82 @@ bool bowCV::detect_readVocabulary( const string& _filename, Mat& _vocabulary )
 	cout << "Error - in Reading vocabulary...";	fflush(stdout);
 	return false;
 }
+
+
+bool bowCV::isCompatibleOpenCV(const string& _version)
+{
+  if(_version.empty())
+  {
+    cout << "Because this training data is old version, it doesn't include version " 
+      << "information. Therefore, it may cause an exceptional error while processing "
+      << "images." << endl;
+    return true;
+  }
+
+  string tVersionCurrent(CV_VERSION);
+  if(_version == "2.4.2" || _version == "2.4.3")
+  {
+     if(tVersionCurrent == "2.4.2" || tVersionCurrent == "2.4.3")
+       return true;
+     else if(tVersionCurrent == "2.4.5")  //this case definitely causes error.
+       return false;
+     else
+       return false;  //the other cases should be examined.
+  }
+  else if(_version == tVersionCurrent)
+    return true;
+  else
+    return false;
+}
+
+string bowCV::getProperty(const string &_key)
+{
+    map< string,string >::iterator tPropertyItr;
+    tPropertyItr = mProperty.find(_key);
+
+    if(tPropertyItr != mProperty.end())
+      return tPropertyItr->second;
+    else
+      return string("");
+}
+
+void bowCV::setProperty(const string &_key,
+                        const string &_value)
+{
+    mProperty[_key] = _value; //if it already exists, overwrite    
+}
+
+void bowCV::train_writeLog(const string& _dir,const string& _filename)
+{
+    string tPath = _dir + "/" + _filename;
+    ofstream ofile(tPath.c_str());
+
+    if(ofile.is_open())
+    {
+      ofile << "# This file should includes the followings:" << std::endl;
+      ofile << "# Name of Detector" << std::endl;
+      ofile << "# Name of Extractor" << std::endl;
+      ofile << "# Name of Matcher" << std::endl;
+      ofile << "# Filename of vocabulary" << std::endl;
+      ofile << "# Filename of svm result" << std::endl;
+      ofile << "# OpenCV Version" << std::endl;
+      ofile << "# Optional: one-class ID" << std::endl;
+
+      map< string,string >::iterator tPropertyItr;
+      tPropertyItr = mProperty.begin();
+      for(;tPropertyItr!=mProperty.end();tPropertyItr++)
+      {
+        ofile << tPropertyItr->first << " = " 
+          << tPropertyItr->second << std::endl;
+      }
+      ofile.close();
+    }
+    else
+    {
+      cout << "Failed to write the log file for BoW" << std::endl;
+    }
+}
+
 
 
 //void bowCV::setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses )

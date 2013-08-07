@@ -43,6 +43,7 @@
 #include <fstream>
 #include <list>
 #include <vector>
+#include <map>
 #include <algorithm>
 #include <util/ServiceMan.h>
 
@@ -71,21 +72,36 @@
 using namespace cv;
 using namespace std;
 
+#define BOW_VOC_FILE "VOC_FILE"
+#define BOW_SVM_FILE "SVM_FILE"
+#define BOW_DETECTOR_NAME "DETECTOR_NAME"
+#define BOW_EXTRACTOR_NAME "EXTRACTOR_NAME"
+#define BOW_MATCHER_NAME "MATCHER_NAME"
+#define BOW_OPENCV_VERSION "OPENCV_VERSION"
+#define BOW_ONECLASS_ID "ONE-CLASS_ID"
+
 class bowCV {
 public:
   bowCV();
   ~bowCV();	
 
   bool  isInitialized();
-  bool  train_initialize(const string& _detectorName,const string& _extractorName,const string& _matcherName,int _nCluster);
-  bool  train_parseTrainList(const string& _filepathTrain,const string& _filenameTrainList);
+  bool  isCompatibleOpenCV(const string& _version);
+  bool  train_initialize(const string& _detectorName,const string& _extractorName,
+                         const string& _matcherName,int _nCluster);
+  bool  train_parseTrainList(const string& _filepathTrain,
+                             const string& _filenameTrainList);
   void  train_stackTrainImage(const string& _fullpath,const int& _classID);	
-  void  train_stackTrainImage(const string& _fullpath,const int& _classID,const int& _x,const int& _y,const int& _width,const int& _height);
-  bool  train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult, 
-                              cvac::ServiceManager *);
+  void  train_stackTrainImage(const string& _fullpath,const int& _classID,
+                              const int& _x,const int& _y,
+                              const int& _width,const int& _height);
+  bool  train_run(const string& _filepathForSavingResult,
+                  const string& _filenameForSavingLog, 
+                  cvac::ServiceManager *);  
 
   bool  detect_initialize(const string& _filepath,const string& _filename);	
-  bool  detect_setParameter(const string& _detectorName,const string& _extractorName,const string& _matcherName);	
+  bool  detect_setParameter(const string& _detectorName,const string& _extractorName,
+                            const string& _matcherName);	
   bool  detect_readTrainResult(const string& _filepath,const string& _filename);	
   bool  detect_run(const string& _fullfilename, int& _bestClass,
                    int _boxX=0,int _boxY=0,int _boxWidth=0,int _boxHeight=0);
@@ -93,7 +109,10 @@ public:
 
   private:
   bool  train_writeVocabulary(const string& _filename,const Mat& _vocabulary);
+  void  train_writeLog(const string& _dir,const string& _filename);
   bool  detect_readVocabulary( const string& _filename, Mat& _vocabulary );
+  string  getProperty(const string &_key);
+  void  setProperty(const string &_key,const string &_value);
   //bool  runTrainFull(const string& _filepathTrain,const string& _filenameTrainList,const string& _filepathForSavingResult,const string& _filenameForSavingResult);	//This function is not good to the ICE project.
   //void  setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses );
   //void  setSVMTrainAutoParams( CvParamGrid& c_grid, CvParamGrid& gamma_grid,CvParamGrid& p_grid, CvParamGrid& nu_grid,CvParamGrid& coef_grid, CvParamGrid& degree_grid );	
@@ -111,20 +130,19 @@ protected:
   string            _fullFilePathImg;
   string            _fullFilePathList;
   Mat               mVocabulary;
-  string            filenameTrainResult;	
+  string            filenameTrainResult;
+  map< string,string > mProperty;   
 
 private:
   int   cntCluster;
-  int   OneClassID;
+  int   mInclassIDforOneClass;
+  int   mOutclassIDforOneClass;
   bool  flagOneClass;
   bool  flagName;	
   bool  flagTrain;  
   Ptr<FeatureDetector>      fDetector;	
   Ptr<DescriptorExtractor>  dExtractor;
-  Ptr<DescriptorMatcher>    dMatcher;
-  string  nameDetector;
-  string  nameExtractor;
-  string  nameMatcher;
+  Ptr<DescriptorMatcher>    dMatcher;  
   Ptr<BOWImgDescriptorExtractor>  bowExtractor;
   CvSVM   classifierSVM;
   std::vector<string>  vFilenameTrain;
