@@ -228,8 +228,7 @@ int TrainerClientApp::run(int argc, char* argv[])
 		fMultiClass = true;
 		fImage = false;
 	}
-	else if( (trainer->ice_getIdentity().name == "WireDiagramTrainer")  || 
-		(trainer->ice_getIdentity().name == "OpenCVCascadeTrainer"))
+	else if( trainer->ice_getIdentity().name == "OpenCVCascadeTrainer" )
 	{
 		fMultiClass = false;
 		fImage = true;
@@ -290,7 +289,7 @@ int TrainerClientApp::run(int argc, char* argv[])
 			//pbox = new BBox(55,4,528,256);
 			addToRunSet(runSet, "trainImg/ca", "ca0007.jpg", 3);
 		}
-		else	//ex. WireDiagramTrainer or CVAC_OpenCV_Trainer
+		else	// CVAC_OpenCV_Trainer
 		{
 			Purpose positive;
 			positive.ptype = POSITIVE;
