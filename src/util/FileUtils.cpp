@@ -301,7 +301,7 @@ std::string cvac::getFileExtension(const std::string& _path)
     std::string _str = std::string(_path.begin() + dot + 1,_path.end());
 
     std::string tRes = _str;
-    std::transform( _str.begin(), _str.end(), tRes.begin(), tolower );  //for uppercase: toupper
+    std::transform( _str.begin(), _str.end(), tRes.begin(), ::tolower );  //for uppercase: toupper
     
     return tRes;
 }
