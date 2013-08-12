@@ -71,6 +71,11 @@ INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/testImg
        COMPONENT data
       )
       
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/corporate_logos
+       DESTINATION data
+       COMPONENT data
+      )
+      
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/lib/python
        DESTINATION lib
        COMPONENT Runtime
