@@ -60,9 +60,9 @@ Ice.MessageSizeMax=100000
 
 #The services
 
-${CF_CAS}OpenCVCascadeDetector.Endpoints=tcp -p 10102
-${CF_CAS_T}OpenCVCascadeTrainer.Endpoints=tcp -p  10107
-${CF_BOW_T}BOW_Trainer.Endpoints=tcp -p          10103
-${CF_BOW}BOW_Detector.Endpoints=tcp -p         10104
-${CF_CORPUS_S}CorpusService.Endpoints=tcp -p        10011
-${CF_FILE_S}FileService.Endpoints=tcp -p          10110
+OpenCVCascadeDetector.Endpoints=tcp -p 10102
+OpenCVCascadeTrainer.Endpoints=tcp -p  10107
+BOW_Trainer.Endpoints=tcp -p          10103
+BOW_Detector.Endpoints=tcp -p         10104
+CorpusService.Endpoints=tcp -p        10011
+FileService.Endpoints=tcp -p          10110

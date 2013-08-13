@@ -288,6 +288,8 @@ SUITE(UnitTests_cvac)
     CHECK( deleteFile( subDir+"/logTrain_svm.xml.gz") );
     CHECK( deleteFile( subDir+"/logTrain_Table.txt") );
     CHECK( deleteFile( subDir+"/logTrain_Vocabulary.xml.gz") );
+    CHECK( deleteFile( subDir+"/trainer.properties") );
+    CHECK( directoryExists(subDir) ); // we expect this temp dir to NOT delete itself
     CHECK( deleteDirectory( subDir) );
   }
 
