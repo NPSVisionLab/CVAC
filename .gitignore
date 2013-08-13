@@ -13,6 +13,9 @@ UserCMakeLists.txt
 /Doxyfile
 /build*
 /dist
+/data/Faces94
+/data/Caltech101
+config.icebox
 
 # Compiled source #
 ###################
@@ -53,4 +56,4 @@ nbproject
 Icon?
 ehthumbs.db
 Thumbs.db
-config.icebox
+
