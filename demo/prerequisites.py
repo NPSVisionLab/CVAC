@@ -14,15 +14,6 @@ except ImportError as ex:
     print("  Please add /your/CVAC_dir/3rdparty/ICE/python to PYTHONPATH.")
     print("  Detailed error message: {0}".format( ex ));
 
-print("Trying to import opencv... ")
-try:
-    import cv
-    print("  succeeded.")
-except ImportError as ex:
-    print("  failed:")
-    print("  Please add /your/CVAC_dir/3rdparty/opencv/lib/python2.6/site-packages to PYTHONPATH.")
-    print("  Detailed error message: {0}".format( ex ));
-
 print("Trying to import cvac... ")
 try:
     import cvac

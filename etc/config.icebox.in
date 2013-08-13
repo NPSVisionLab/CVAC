@@ -59,7 +59,6 @@ Ice.Admin.Endpoints=tcp -p 9997 -h 127.0.0.1
 #
 # The local services that this icebox should start up
 #
-${CF_MBOST}IceBox.Service.MultiBoost=MultiBoostIceService:create --Ice.Config=config.service
 ${CF_CAS}IceBox.Service.OpenCVCascadeDetector=OpenCVCascadeDetector:create --Ice.Config=config.service
 ${CF_CAS_T}IceBox.Service.OpenCVCascadeTrainer=OpenCVCascadeTrainer:create --Ice.Config=config.service
 ${CF_BOW}IceBox.Service.BOW_Detector=bowICEServer:create --Ice.Config=config.service

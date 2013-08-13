@@ -185,7 +185,7 @@ void cvac::DetectorDataArchive::setProperty(const string &name,
     if (found == false)
     {
         mPropNames.push_back(name);
-        mPropValues.push_back(name);
+        mPropValues.push_back(value);
     }
 }
 
