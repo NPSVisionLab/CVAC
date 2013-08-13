@@ -119,7 +119,7 @@ public class LabelMeDataSet extends CorpusI
         }
         catch (MWException ex) {
             logger.log( Level.WARNING, "error connecting to LabelMe");
-            logger.log( Level.FINE, "exception is: ", ex);
+            logger.log( Level.WARNING, "exception is: ", ex);
         }
         finally {
             MWArray.disposeArray(folderList);

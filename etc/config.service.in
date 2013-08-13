@@ -60,7 +60,6 @@ Ice.MessageSizeMax=100000
 
 #The services
 
-${CF_MBOST}MultiBoost.Endpoints=tcp -p           10101
 ${CF_CAS}OpenCVCascadeDetector.Endpoints=tcp -p 10102
 ${CF_CAS_T}OpenCVCascadeTrainer.Endpoints=tcp -p  10107
 ${CF_BOW_T}BOW_Trainer.Endpoints=tcp -p          10103

@@ -264,7 +264,6 @@ ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 ## Setup the config.service and config.icebox files based upon detectors
 ## selected by the user.  These CF_ variables are defined in the config files
 ## and they get turned into comments or not.
-SET( CF_MBOST "#" )
 
 IF( BUILD_WITH_BOW )
 SET(CF_BOW "" )
@@ -309,11 +308,13 @@ IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
     # This requires CMake 2.8 for Java support
     ADD_SUBDIRECTORY( src )
 ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
+
 ADD_SUBDIRECTORY( etc )
 ADD_SUBDIRECTORY(src/util)
 ADD_SUBDIRECTORY(src/easy)
 ADD_SUBDIRECTORY(algorithms)
 ADD_SUBDIRECTORY(demo)
+
 IF( BUILD_WITH_TESTS)
   #Turn on CTest input files
   # Next include for outputing ctest results to the dash board
@@ -339,4 +340,3 @@ IF ( BUILD_BINARY_PACKAGE )
     ADD_SUBDIRECTORY( etc/pack_binary )
 ENDIF ( BUILD_BINARY_PACKAGE )
 
-INCLUDE (trunk/UserCMakeLists.txt OPTIONAL)

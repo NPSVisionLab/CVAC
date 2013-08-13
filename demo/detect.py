@@ -51,13 +51,10 @@ except:
           "https://github.com/NPSVisionLab/PartsBasedDetector")
     
 # yet another detector type
-try:
-    print("------- Viola-Jones cascades for face detection: -------")
-    detector = easy.getDetector( "OpenCVCascadeDetector:default -p 10102" )
-    modelfile = "detectors/haarcascade_frontalface_alt.xml"
-    imgfile = "testImg/italia.jpg"
-    results = easy.detect( detector, modelfile, imgfile )
-    easy.drawResults( results )
-except:
-    print("OpenCVPerformance detector not installed.\n")
+print("------- Viola-Jones cascades for face detection: -------")
+detector = easy.getDetector( "OpenCVCascadeDetector:default -p 10102" )
+modelfile = "detectors/haarcascade_frontalface_alt.xml"
+imgfile = "testImg/italia.jpg"
+results = easy.detect( detector, modelfile, imgfile )
+easy.printResults( results )
 
