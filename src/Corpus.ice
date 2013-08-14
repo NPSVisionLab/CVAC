@@ -28,7 +28,7 @@ module cvac {
   interface CorpusCallback {
     /** The CorpusService might or might not call this function to provide
       * updates about the mirror creation progress.
-      * @param corpus Which Corpus this progress report is for.
+      * @param corp Which Corpus this progress report is for.
       * @param numtasks How many tasks there are in total, e.g. download
       *               and extract would be numtasks==2.
       * @param currtask What the number of the current task is, e.g. download==1.
@@ -37,7 +37,7 @@ module cvac {
       * @param percentCompleted A percentage between 0.0 and 1.0, concerning
                       only the current task.
     */
-    void corpusMirrorProgress( Corpus corpus, 
+    void corpusMirrorProgress( Corpus corp, 
             int numtasks, int currtask, string taskname, string details,
             float percentCompleted );
 
