@@ -47,4 +47,5 @@ trainedModel = easy.train( trainer, trainset )
 easy.getFile( fileserver, trainedModel.file )  # downloads the model from remote
 print("{0}".format(trainedModel))
 detector = easy.getDetector( "bowTest:default -p 10104" ) # local service
+testset = easy.createRunSet("testImg","UNPURPOSED"  )
 results = easy.detect( detector, trainedModel, testset )
