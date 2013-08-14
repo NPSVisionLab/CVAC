@@ -44,8 +44,11 @@ nologos = ["TestKrFlag.jpg", "italia.jpg", "korean-american-flag.jpg", "TestUsFl
 for nologo in nologos:
     for classID in range(9):
         fname = "testresults1/{0}/{1}".format( classID, nologo )
-        if os.path.isfile( fname ):           
-            os.rename( fname, reject_folder + "/" + nologo )
+        if os.path.isfile( fname ): 
+            newf =  reject_folder + "/" + nologo
+            if (os.path.isfile(newf)):
+                os.unlink(newf) #If file exists delete it (required for some OS's)    
+            os.rename( fname, newf)
 
 # Create the new training set and combine it with the trainset1.
 # (Alternatively, in the previous step, manually sort the wrong
