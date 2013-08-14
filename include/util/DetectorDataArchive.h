@@ -74,8 +74,8 @@ namespace cvac
          * If any trainer.property file existed in the archive then 
          * this DetectorDataArchive's properties are set
          * to the contents of that file.
-         * @param the file to unarchive.
-         * 
+         * @param archiveFile the file to unarchive.
+         * @param dir Write all unarchived files into this directory.
          */
         void unarchive(const std::string &archiveFile, const std::string &dir);
 
@@ -108,8 +108,8 @@ namespace cvac
          * string that tells what this file is and the name of the file
          * itself.  This assumes that it might not be possible to 
          * determine the purpose of the file just by given its name.
-         * @param - the identifier string for the file
-         * @param - the file name.
+         * @param identifier - the identifier string for the file
+         * @param filename - the file name.
          * @return - returns true if the file exists and no other
          * file in the archive has this identifier else it returns false.
          */
@@ -118,7 +118,7 @@ namespace cvac
 
         /**
          * Remove the file that maps to this identifier from the archive
-         * @param - the file identifier  and file to remove
+         * @param identifier - the file identifier  and file to remove
          * @return - returns true if the identifier was removed false
          * if the identifier was not in the archive.
          */
@@ -132,7 +132,7 @@ namespace cvac
 
         /**
          * Get a file name in the archive based on its identifier
-         * @param - the identifier string for the file
+         * @param identifier - the identifier string for the file
          * @return - the filename in the archive that matches the identifier.
          * The  return string is empty if there is no match.
          */

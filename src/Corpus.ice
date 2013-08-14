@@ -37,7 +37,7 @@ module cvac {
       * @param percentCompleted A percentage between 0.0 and 1.0, concerning
                       only the current task.
     */
-    void corpusMirrorProgress( Corpus corp, 
+    void corpusMirrorProgress( Corpus corpus, 
             int numtasks, int currtask, string taskname, string details,
             float percentCompleted );
 
