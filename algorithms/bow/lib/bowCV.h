@@ -97,7 +97,8 @@ public:
                               const int& _width,const int& _height);
   bool  train_run(const string& _filepathForSavingResult,
                   const string& _filenameForSavingLog, 
-                  cvac::ServiceManager *);  
+                  cvac::ServiceManager *,
+                  float _oneclassNu = 0.1);  
 
   bool  detect_initialize(const string& _filepath,const string& _filename);	
   bool  detect_setParameter(const string& _detectorName,const string& _extractorName,
@@ -107,12 +108,12 @@ public:
                    int _boxX=0,int _boxY=0,int _boxWidth=0,int _boxHeight=0);
 
 
-  private:
-  bool  train_writeVocabulary(const string& _filename,const Mat& _vocabulary);
-  void  train_writeLog(const string& _dir,const string& _filename);
-  bool  detect_readVocabulary( const string& _filename, Mat& _vocabulary );
+private:
+  bool    train_writeVocabulary(const string& _filename,const Mat& _vocabulary);
+  void    train_writeLog(const string& _dir,const string& _filename);
+  bool    detect_readVocabulary( const string& _filename, Mat& _vocabulary );
   string  getProperty(const string &_key);
-  void  setProperty(const string &_key,const string &_value);
+  void    setProperty(const string &_key,const string &_value);
   //bool  runTrainFull(const string& _filepathTrain,const string& _filenameTrainList,const string& _filepathForSavingResult,const string& _filenameForSavingResult);	//This function is not good to the ICE project.
   //void  setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses );
   //void  setSVMTrainAutoParams( CvParamGrid& c_grid, CvParamGrid& gamma_grid,CvParamGrid& p_grid, CvParamGrid& nu_grid,CvParamGrid& coef_grid, CvParamGrid& degree_grid );	
@@ -144,7 +145,7 @@ private:
   Ptr<DescriptorExtractor>  dExtractor;
   Ptr<DescriptorMatcher>    dMatcher;  
   Ptr<BOWImgDescriptorExtractor>  bowExtractor;
-  CvSVM   classifierSVM;
+  CvSVM  classifierSVM;
   std::vector<string>  vFilenameTrain;
   std::vector<int>     vClassIDTrain;
   std::vector<int>     vBoundX,vBoundY;
