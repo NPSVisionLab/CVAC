@@ -319,7 +319,7 @@ IF( BUILD_WITH_TESTS)
   #Turn on CTest input files
   # Next include for outputing ctest results to the dash board
   #INCLUDE(CTest) add this to send stuff to dash board
-  # Next include for setting up pre and post ctests execution
+  # Next include for setting up CTEST_CONFIGURATION_TYPE
   #CONFIGURE_FILE(CTestCustom.cmake.in ${CMAKE_BINARY_DIR}/CTestCustom.cmake)
   ENABLE_TESTING()
   SET( BUILD_UNIT_TESTS ON )

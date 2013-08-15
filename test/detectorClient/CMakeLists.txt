@@ -58,6 +58,15 @@ ELSE (WIN32)
 ENDIF (WIN32)
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/etc/runIceTest.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/runIceTest.${SCRIPT_EXT})
 
+IF( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+    FILE( TO_NATIVE_PATH ${ICE_ROOT}/bin ICE_BIN_DIR_NATIVE )
+    FILE( TO_NATIVE_PATH ${LIBARCHIVE_BIN_DIR} LIBARCHIVE_BIN_DIR_NATIVE )
+    FILE( TO_NATIVE_PATH ${OpenCV_DIR}/bin OpenCV_BIN_DIR_NATIVE )
+    SET (ENV_PATH "${LIBARCHIVE_BIN_DIR_NATIVE}\;${ICE_BIN_DIR_NATIVE}\;${OpenCV_BIN_DIR_NATIVE}" )
+ELSE( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+    SET (ENV_PATH "${ICE_ROOT}/bin:$ENV{PATH}" )
+ENDIF( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+
 # Ice Box Test Client CTest Suite:
 # To get debug output go to visualStudio directory and run ctest --verbose
 # All IceBoxClient tests return 0 on success ('EXIT_SUCCESS'), and 1 on failure ('EXIT_FAILURE')
@@ -71,15 +80,19 @@ IF (BUILD_WITH_BOW)
              )
     # note that a missing PATH to bzip2 in 3rdparty/ICE/bin might cause problems
     SET_TESTS_PROPERTIES( detectorClient_BowDetector_NPS
-          PROPERTIES ENVIRONMENT "PATH=${ICE_ROOT}/bin:$ENV{PATH}" )
+          PROPERTIES ENVIRONMENT "PATH=${ENV_PATH}" )
 
     # local service; each of these starts an IceBox in the script
     ADD_TEST(detectorClient_BowDetector
              ${CVAC_ROOT_DIR}/bin/detectorClient BagOfWordsUSKOCA testImg ${CVAC_ROOT_DIR}/config.client
              )
+    SET_TESTS_PROPERTIES( detectorClient_BowDetector
+          PROPERTIES ENVIRONMENT "PATH=${ENV_PATH}" )
     ADD_TEST(detectorClient_BowDetector_Verify
              ${CVAC_ROOT_DIR}/bin/detectorClient BagOfWordsUSKOCA CTest ${CVAC_ROOT_DIR}/config.client verifyresults
              )
+    SET_TESTS_PROPERTIES( detectorClient_BowDetector_Verify
+          PROPERTIES ENVIRONMENT "PATH=${ENV_PATH}" )
     INSTALL( FILES ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT}
                    DESTINATION bin
                    COMPONENT Runtime

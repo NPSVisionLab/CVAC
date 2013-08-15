@@ -176,6 +176,13 @@ bool cvac::makeDirectories(const std::string& dirPath)
     if (dirPath.empty())
         return false;
     int lastIdx = 0;
+    if ((dirPath.length() > 1 && 
+          dirPath[1] == ':' )||
+          dirPath[0] == '/' ||
+          dirPath[0] == '\\')
+    {  // absolute path
+        result = "/";
+    }
 #ifdef WIN32
     int idx = dirPath.find(':', 1);
     if (idx != -1)
@@ -199,7 +206,7 @@ bool cvac::makeDirectories(const std::string& dirPath)
     std::string substr;
     if (idx > 0)
     {
-        std::string substr = dirPath.substr(0, idx - lastIdx);
+        std::string substr = dirPath.substr(lastIdx, idx - lastIdx);
         vLogger.printv(VLogger::DEBUG_2,
                        "makeDirectories: first path substr: %s\n", substr.c_str());
         if (!makeDirectory(substr))
@@ -342,7 +349,7 @@ bool cvac::deleteDirectory(const std::string& path)
 
     // finally, let's clean up
     closedir (pdir); // close the directory
-    if (!_rmdir(path.c_str())) return false; // delete the directory
+    if (_rmdir(path.c_str()) != 0) return false; // delete the directory
     return true;
 }
 #else // not windows
