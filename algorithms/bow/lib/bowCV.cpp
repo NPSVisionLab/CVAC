@@ -317,7 +317,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
             sman->stopCompleted();
             return false;
         }
-
+		
 		_rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
 		if((_rect.width != 0) && (_rect.height != 0))
 			_img = _img(_rect);
@@ -364,7 +364,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 	// START - Train Classifier (SVM)
 	//////////////////////////////////////////////////////////////////////////
 	cout << "Training Classifier ... " << endl;	fflush(stdout);
-
+	
 	Mat trainDescriptors;	trainDescriptors.create(0,bowExtractor->descriptorSize(),bowExtractor->descriptorType());
 	Mat trainClass;	trainClass.create(0,1,CV_32FC1);
 	int _classID;	
@@ -385,11 +385,11 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
             return false;
         }
 		_img = imread(_fullFilePathImg);
-
+		
 		_rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
 		if((_rect.width != 0) && (_rect.height != 0))
 			_img = _img(_rect);
-
+		
 		fDetector->detect(_img, _keypoints);
 		bowExtractor->compute(_img, _keypoints, _descriptors);
 		trainDescriptors.push_back(_descriptors);
@@ -408,7 +408,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
 	//CvParamGrid c_grid, gamma_grid, p_grid, nu_grid, coef_grid, degree_grid;
 	//setSVMTrainAutoParams( c_grid, gamma_grid,  p_grid, nu_grid, coef_grid, degree_grid );
 	//classifierSVM[class_].train_auto( samples_32f, labels, Mat(), Mat(), svmParams, 10, c_grid, gamma_grid, p_grid, nu_grid, coef_grid, degree_grid );
-
+	
 
 	/*
 	//////////////////////////////////////////////////////
@@ -467,7 +467,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,const string& _file
     ///////////////////////////////////////////////////////////////////////////
     // END - Train Classifier (SVM)
     //////////////////////////////////////////////////////////////////////////
-
+	
     setProperty(BOW_OPENCV_VERSION,CV_VERSION);    
     train_writeLog(_filepathForSavingResult,_filenameForSavingLog);	
 
