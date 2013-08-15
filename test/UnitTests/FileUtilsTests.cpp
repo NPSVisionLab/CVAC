@@ -58,6 +58,8 @@ typedef pair<std::string, std::string> Str_Pair;
 
 bool pdebug = true;// (VLogger::DEBUG_2 <= cvac::vLogger.getBaseLevel());
 
+extern char *CVAC_DataDir;
+
 SUITE(UnitTests_cvac)
 {
   // Declared inside this Test suite  
@@ -276,8 +278,15 @@ SUITE(UnitTests_cvac)
     printf("cvacLibArchiveExpand\n");
     // Test: with subfolder
     // Expand files from source archive
-    std::string detectZip = "bowUSKOCA.zip";
-    std::string archiveFileName1("../data/detectors/" + detectZip);
+    // try and find CVAC_DataDir
+    std::string dir;
+    if (CVAC_DataDir != NULL)
+        dir = CVAC_DataDir;
+    else
+        dir = "../data";
+    cout << "Using Data directory: " << dir << endl;
+    dir += "/detectors/bowUSKOCA.zip";
+    std::string archiveFileName1(dir);
     std::string subDir = archiveFileName1 + "_tmpSubDir";
 
     expandSeq_fromFile(archiveFileName1, subDir);
