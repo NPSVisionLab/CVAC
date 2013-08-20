@@ -43,3 +43,17 @@ except ImportError as ex:
     print("  Please add the directory in which easy.py is located to your PYTHONPATH.")
     print("  That's either /your/CVAC_dir/lib/python or /your/CVAC_dir/src/easy.")
     print("  Detailed error message: {0}".format( ex ));
+
+import os, sys
+from datetime import datetime, date
+print("Writing environment report file 'python_env.txt'...")
+repfile = open('python_env.txt', 'w')
+repfile.write('Your environment as found by demo/prerequisites.py.\n')
+repfile.write('Generated on ' + str(date.today()) + ' at ' + str(datetime.now()) + '.\n')
+repfile.write('Current working directory: '+ str(os.getcwd()) + '\n' )
+repfile.write('Python executable location and version: ' + sys.executable + ', ' + sys.version + '.\n')
+repfile.write('Python final sys.path: ' + str(sys.path) + '\n')
+repfile.write('Environment variables:\n')
+for key in sorted( os.environ ):
+    val = os.environ.get( key )
+    repfile.write('  ' + key + ' = ' + val + '\n')
