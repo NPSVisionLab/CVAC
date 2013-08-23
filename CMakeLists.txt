@@ -78,6 +78,10 @@ IF (WIN32)
    ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
    ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
    ADD_DEFINITIONS(-DNOMINMAX)
+   # The java services need local host specified to run on windows 8
+   SET(HOST "-h localhost")
+ELSEIF (WIN32)
+   SET(HOST "")
 ENDIF (WIN32)
 
 # ADD -fPIC to g++ because it's hard for the script to figure out 
