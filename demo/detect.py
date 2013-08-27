@@ -52,7 +52,7 @@ except:
     
 # yet another detector type
 print("------- Viola-Jones cascades for face detection: -------")
-detector = easy.getDetector( "OpenCVCascadeDetector:default -p 10102" )
+detector = easy.getDetector( "OpenCVCascadeDetector:default -h vision.nps.edu -p 10102" )
 modelfile = "detectors/haarcascade_frontalface_alt.xml"
 imgfile = "testImg/italia.jpg"
 results = easy.detect( detector, modelfile, imgfile )
