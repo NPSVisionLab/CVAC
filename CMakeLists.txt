@@ -64,6 +64,9 @@ ELSE()
 ENDIF()
 ENDFOREACH()
 
+SET (ICE_ENCODE "#")
+SET(HOST "")
+
 IF (WIN32)
    SET(CMAKE_DEBUG_POSTFIX  "d")
 
@@ -80,8 +83,12 @@ IF (WIN32)
    ADD_DEFINITIONS(-DNOMINMAX)
    # The java services need local host specified to run on windows 8
    SET(HOST "-h localhost")
-ELSEIF (WIN32)
-   SET(HOST "")
+   #If windows 8 (ie ice 3.5) then uncomment the use ice 1.0 encoding (vs 1.1)
+   IF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+       SET (ICE_ENCODE "")
+   ELSE ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+       SET (ICE_ENCODE "#")
+   ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
 ENDIF (WIN32)
 
 # ADD -fPIC to g++ because it's hard for the script to figure out 
