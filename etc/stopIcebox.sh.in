@@ -14,8 +14,8 @@ then
         if [ "`which pkill`"  != "" ];
         then
             # pkill seems to work better than killall
-            # echo pkill -xf "${PYTHON_EXECUTABLE} $LINE"
-            pkill -xf "/usr/bin/python $LINE"
+            #echo pkill -xf "${PYTHON_EXECUTABLE} $LINE"
+            pkill -xf "${PYTHON_EXECUTABLE} $LINE"
         else
             # echo killall $LINE
             killall $LINE

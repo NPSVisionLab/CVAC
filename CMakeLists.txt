@@ -64,6 +64,9 @@ ELSE()
 ENDIF()
 ENDFOREACH()
 
+SET (ICE_ENCODE "#")
+SET(HOST "")
+
 IF (WIN32)
    SET(CMAKE_DEBUG_POSTFIX  "d")
 
@@ -86,8 +89,6 @@ IF (WIN32)
    ELSE ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
        SET (ICE_ENCODE "#")
    ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
-ELSEIF (WIN32)
-   SET(HOST "")
 ENDIF (WIN32)
 
 # ADD -fPIC to g++ because it's hard for the script to figure out 
