@@ -3,7 +3,7 @@
 # service. The following line sets the endpoints for this adapter.
 #
 
-#Ice.Default.EncodingVersion=1.0
+${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
 
 Ice.ACM.Server=0
 
