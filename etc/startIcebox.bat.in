@@ -1,6 +1,6 @@
 @echo off
 @setlocal
-set 3rdPARTYDIR=${CMAKE_SOURCE_DIR}/3rdparty/lib
+set _3rdPARTYDIR=${CMAKE_SOURCE_DIR}/3rdparty/lib
 set JARDIR=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
 set ICEBOXJAR=${IceBox.jar} 
 set PATH=bin;${ICE_ROOT}/bin;${OpenCV_LIB_DIR_OPT}/../bin;${LIBARCHIVE_BIN_DIR};${LIBZIP_BIN_DIR};${OpenCV_DIR}/common/tbb/ia32/vc9;${OpenCV_DIR}/python/2.6;%PATH%
@@ -10,7 +10,7 @@ start "CVAC Services (C++)" "cmd /K ""${ICE_BOX_EXECUTABLE}" --Ice.Config=config
 if "${START_JAVA_SERVICES}" == "1" goto startjava
 goto next
 :startjava
-    start "CVAC Services (Java)" "cmd /K ""${Java_JAVA_EXECUTABLE}" -cp "${Ice.jar};%ICEBOXJAR%;%JARDIR%/FileServer.jar;%JARDIR%/Corpus.jar;%3rdPARTYDIR%/labelme.jar;%3rdPARTYDIR%/javabuilder.jar;%3rdPARTYDIR%/commons-io-2.4.jar;%3rdPARTYDIR%/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox"
+    start "CVAC Services (Java)" "cmd /K ""${Java_JAVA_EXECUTABLE}" -cp "${Ice.jar};%ICEBOXJAR%;%JARDIR%/FileServer.jar;%JARDIR%/Corpus.jar;%_3rdPARTYDIR%/labelme.jar;%_3rdPARTYDIR%/javabuilder.jar;%_3rdPARTYDIR%/commons-io-2.4.jar;%_3rdPARTYDIR%/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox"
 :next
 REM Python services that are listed in python.config
 if "${PYTHON_EXECUTABLE}" neq "" (if exist "${CMAKE_SOURCE_DIR}/python.config" goto startpython)

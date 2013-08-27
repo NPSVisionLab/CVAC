@@ -3,7 +3,7 @@
 # service. The following line sets the endpoints for this adapter.
 #
 
-#Ice.Default.EncodingVersion=1.0
+${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
 
 Ice.ACM.Server=0
 
@@ -64,5 +64,5 @@ OpenCVCascadeDetector.Endpoints=tcp -p 10102
 OpenCVCascadeTrainer.Endpoints=tcp -p  10107
 BOW_Trainer.Endpoints=tcp -p          10103
 BOW_Detector.Endpoints=tcp -p         10104
-CorpusService.Endpoints=tcp -p        10011
-FileService.Endpoints=tcp -p          10110
+CorpusService.Endpoints=tcp ${HOST} -p        10011
+FileService.Endpoints=tcp ${HOST} -p          10110

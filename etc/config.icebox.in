@@ -10,7 +10,7 @@
 # IceBox.ServiceManager configuration
 #
 
-#Ice.Default.EncodingVersion=1.0
+${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
 
 #
 # The IceBox instance name is used to set the category field of the
