@@ -23,6 +23,16 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/include ${ICE_ROOT}/lib ${ICE_ROOT}/slice
         COMPONENT IceExt
         PATTERN *.pdb EXCLUDE
        )
+#Windows needs all the dll files
+IF(WIN32)
+INSTALL(DIRECTORY   ${ICE_ROOT}/bin
+        DESTINATION 3rdparty/ICE
+        USE_SOURCE_PERMISSIONS
+        COMPONENT IceExt
+        PATTERN *.dll
+       )
+ENDIF(WIN32)
+
 INSTALL(PROGRAMS ${ICE_SLICE_EXECUTABLE}
                  ${ICE_SLICE2JAVA_EXECUTABLE} 
                  ${ICE_SLICE2PY_EXECUTABLE}
