@@ -23,6 +23,12 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/include ${ICE_ROOT}/lib ${ICE_ROOT}/slice
         COMPONENT IceExt
         PATTERN *.pdb EXCLUDE
        )
+INSTALL(DIRECTORY   ${ICE_ROOT}/python
+        DESTINATION 3rdparty/ICE
+        USE_SOURCE_PERMISSIONS
+        COMPONENT IceExt
+        PATTERN *.pyc EXCLUDE
+       )
 #Windows needs all the dll files
 IF(WIN32)
 INSTALL(DIRECTORY   ${ICE_ROOT}/bin
@@ -71,6 +77,12 @@ INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
        COMPONENT LibArchiveExt
       )
 
+IF( WIN32 )
+INSTALL(DIRECTORY ${LIBARCHIVE_BIN_DIR}
+       DESTINATION 3rdparty/libarchive
+       COMPONENT LibArchiveExt
+      )
+ENDIF( WIN32 )
 # OpenCV needs to be isolated in some staging area.  You need
 # to configure this CMake to pull OpenCV from there.
 # OpenCV_DIR points to the shared/OpenCV subdirectory.
