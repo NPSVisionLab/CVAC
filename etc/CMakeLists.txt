@@ -33,6 +33,8 @@ ENDIF (WIN32)
 CONFIGURE_FILE( startIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/startIcebox.${SCRIPT_EXT} )
 CONFIGURE_FILE( stopIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/stopIcebox.${SCRIPT_EXT} )
 
+INCLUDE (UserCMakeLists.txt OPTIONAL)
+
 IF( NOT BUILD_3RDPARTY_PACKAGE )
 INSTALL(PROGRAMS
                      ${CMAKE_SOURCE_DIR}/bin/startIcebox.${SCRIPT_EXT}
