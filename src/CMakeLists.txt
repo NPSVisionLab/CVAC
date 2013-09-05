@@ -38,7 +38,7 @@ ADD_CUSTOM_COMMAND(
     COMMAND "${ICE_SLICE2JAVA_EXECUTABLE}"  ARGS ${SLICE_FILES} ${SLICE_ARGS}
     DEPENDS ${SLICE_FILES}
     WORKING_DIRECTORY "${CVAC_ROOT_DIR}/src"
-    COMMENT "Generating .java files from ${SLICE_FILES} using ${SLICE_ARGS}") 
+    COMMENT "Generating (slicing) .java files from .ice sources")
 MESSAGE ( STATUS "Java source files will be created from Slice definitions using this command:" )
 
 MESSAGE ( STATUS "${ICE_SLICE2JAVA_EXECUTABLE} ${SLICE_FILES} ${SLICE_ARGS}" )

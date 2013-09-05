@@ -16,6 +16,7 @@ UserCMakeLists.txt
 /data/Faces94
 /data/Caltech101
 config.icebox
+config.service
 
 # Compiled source #
 ###################
