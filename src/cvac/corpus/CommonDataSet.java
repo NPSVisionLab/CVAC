@@ -179,7 +179,6 @@ public class CommonDataSet extends CorpusI {
 
         // if specified, move the data from this subdir to the main dataset dir
         String moveSubdir = properties.getProperty("main_subdir");
-        System.out.println("---------- got main_subdir: " + moveSubdir);
         if (null!=moveSubdir && !moveSubdir.isEmpty())
         {
             String fromDir = m_dataSetFolder + File.separator + moveSubdir;
@@ -215,9 +214,11 @@ public class CommonDataSet extends CorpusI {
     public boolean localMirrorExists()
     {
         // where shall this mirror live?
-        // for now, it's a fixed location based on the corpus name
+        // for now, it's a fixed location based on the corpus name.
+        // Note that tentfile is NOT the .meta data folder, a temp folder
+        // for downloading and uncompressing archives.
         File tentfile = new File( m_dataSetFolder );
-        if (tentfile.exists())
+        if (tentfile.isDirectory())
         {
             // check if the metadata is present and complete, if so, this mirror exists already
             if (m_metaStatusFile.exists() )
@@ -226,9 +227,10 @@ public class CommonDataSet extends CorpusI {
             }
             
             // if not: something else is in this folder, and we can't handle that right now
-            //            throw new RuntimeException("data dir exists already but no metadata file ("
-            //      +m_metaStatusFile.getAbsolutePath()
-            //      +"); aborting because no plan B available");
+            logger.log( Level.SEVERE, "data dir exists already but no metadata file; "
+                        + "continuing, but failure is likely imminent");
+            logger.log( Level.SEVERE, "metadata file: "
+                        + m_metaStatusFile.getAbsolutePath());
         }
         return false;
     }
@@ -350,7 +352,8 @@ public class CommonDataSet extends CorpusI {
                 ZipFile zipFile = new ZipFile(compressedFileSrc);
                 InputStream in = null;
                 BufferedOutputStream out = null;
-                Enumeration<ZipEntry> entries = (Enumeration<ZipEntry>)zipFile.entries();
+                Enumeration<? extends ZipEntry> entries = 
+                    (Enumeration<? extends ZipEntry>)zipFile.entries();
                 String outFilename = "";
                 byte[] buffer = new byte[10240];
                 for (ZipEntry entry : Collections.list(entries))
@@ -413,7 +416,11 @@ public class CommonDataSet extends CorpusI {
 
                 TarInputStream tis = null;
                 try {                                                                               // Input (.tar)
-                    tis = new TarInputStream(new BufferedInputStream(new FileInputStream(archiveFile.getAbsoluteFile())));
+                    File af = archiveFile.getAbsoluteFile();
+                    BufferedInputStream bis = new BufferedInputStream(new FileInputStream( af ) );
+                    logger.warning( "This fails on OSX' JavaVM for unknown reasons: new TarInputStream(..." + af + "..)" );
+                    tis = new TarInputStream( bis );
+                    logger.warning( "This statement isn't reached on OSX." );
                 }
                 catch(IOException fileIOEx)
                 {
