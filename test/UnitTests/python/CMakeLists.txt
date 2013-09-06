@@ -10,10 +10,6 @@ IF( NOT PYTHON_EXECUTABLE )
   MESSAGE( FATAL_ERROR "Python executable not found: cannot run Python UnitTests" )
 ENDIF( NOT PYTHON_EXECUTABLE )
 
-set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
-set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
-set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build/timestamp")
-
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/easy/paths.py.in ${CMAKE_CURRENT_SOURCE_DIR}/paths.py)
 
 add_custom_target(PythonUnitTests ALL DEPENDS ${SLICE_FILES})
