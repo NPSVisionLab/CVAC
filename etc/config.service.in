@@ -66,3 +66,4 @@ BOW_Trainer.Endpoints=tcp -p          10103
 BOW_Detector.Endpoints=tcp -p         10104
 CorpusService.Endpoints=tcp ${HOST} -p        10011
 FileService.Endpoints=tcp ${HOST} -p          10110
+RSItrTest_Detector.Endpoints=tcp -p          10109
