@@ -63,4 +63,5 @@ ${CF_CAS}IceBox.Service.OpenCVCascadeDetector=OpenCVCascadeDetector:create --Ice
 ${CF_CAS_T}IceBox.Service.OpenCVCascadeTrainer=OpenCVCascadeTrainer:create --Ice.Config=config.service
 ${CF_BOW}IceBox.Service.BOW_Detector=bowICEServer:create --Ice.Config=config.service
 ${CF_BOW_T}IceBox.Service.BOW_Trainer=bowICEServerTrain:create --Ice.Config=config.service
+${CF_RSI}IceBox.Service.RSItrTest_Detector=RSItrICEServer:create --Ice.Config=config.service
 
