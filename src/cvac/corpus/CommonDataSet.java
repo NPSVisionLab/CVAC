@@ -350,7 +350,7 @@ public class CommonDataSet extends CorpusI {
                 ZipFile zipFile = new ZipFile(compressedFileSrc);
                 InputStream in = null;
                 BufferedOutputStream out = null;
-                Enumeration<ZipEntry> entries = (Enumeration<ZipEntry>)zipFile.entries();
+                Enumeration<? extends ZipEntry> entries = (Enumeration<? extends ZipEntry>)zipFile.entries();
                 String outFilename = "";
                 byte[] buffer = new byte[10240];
                 for (ZipEntry entry : Collections.list(entries))
