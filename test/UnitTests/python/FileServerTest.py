@@ -166,19 +166,18 @@ class FileServerTest(unittest.TestCase):
         print('getFile remote')
         getFS = self.dataDir+"/"+self.getFSPath( putFilePath )
         if os.path.exists( getFS ):
-            raise RuntimeError("Local file exists already - cannot continue. file: "+getFS)
-#            raise RuntimeError("Cannot obtain path to store file on file system,",
-#                               "see comments. file: "+getFS)
-        fgetFS = open( getFS, 'wb' )
-        recvbytes = fsr.getFile( putFilePath )
-        fgetFS.write( recvbytes )
-        fgetFS.close()
+            print("Local file exists already - cannot getFile remote. file: "+getFS)
+        else:
+            fgetFS = open( getFS, 'wb' )
+            recvbytes = fsr.getFile( putFilePath )
+            fgetFS.write( recvbytes )
+            fgetFS.close()
 
-        # now compare the results and delete the local file
-        if not self.filesAreEqual( origFS, getFS ):
-            raise RuntimeError("File was not 'put' or subsequently 'get' correctly to.",
-                               "Please check, then remove manually: "+getFS)
-        os.remove( getFS )
+            # now compare the results and delete the local file
+            if not self.filesAreEqual( origFS, getFS ):
+                raise RuntimeError("File was not 'put' or subsequently 'get' correctly to.",
+                                   "Please check, then remove manually: "+getFS)
+            os.remove( getFS )
 
         # delete the file on the remote side and check that it's gone
         print('deleteFile remote')

@@ -21,6 +21,8 @@ OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use '
 OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
+OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" ON)
+
 
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
 
@@ -308,6 +310,12 @@ SET( CF_FILE_S "")
 ELSE( BUILD_FILESERVER )
 SET( CF_FILE_S "#")
 ENDIF( BUILD_FILESERVER )
+
+IF( BUILD_WITH_RSI )
+SET(CF_RSI "" )
+ELSE( BUILD_WITH_RSI )
+SET( CF_RSI "#" )
+ENDIF( BUILD_WITH_RSI )
 
 CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
 CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
