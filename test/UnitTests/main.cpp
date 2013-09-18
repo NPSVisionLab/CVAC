@@ -38,11 +38,15 @@
 #include <UnitTest++.h>
 #include <stdio.h>
 #include <iostream>
+#include "util/FileUtils.h"
 
+char *CVAC_DataDir = NULL;
 
 int main(int argc, char **argv)
 {
+   cvac::vLogger.setLocalVerbosityLevel( VLogger::INFO );
+   if (argc == 2)
+       CVAC_DataDir = argv[1];
    int allTests_rtn = UnitTest::RunAllTests();
-   getchar();
    return allTests_rtn;
 }

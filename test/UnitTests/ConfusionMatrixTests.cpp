@@ -119,8 +119,7 @@ using namespace std;
       int runsetIdx = ((int)(*runsetIt).ptype - 1);
       int resultIdx = (((int)(*testResultsIt).ptype) - 1);
 
-      printf("\n");
-      printf("Test| adding Result at: [%d][%d]\n", runsetIdx, resultIdx);
+      // printf("Test|   adding Result at: [%d][%d]\n", runsetIdx, resultIdx);
 
       cMatrix.addResult((*runsetIt), (*testResultsIt));
       testResultsIt++;
@@ -128,8 +127,8 @@ using namespace std;
   }
 
   TEST(ConfusionMatrix_1by1_onlyP_check_N)
-  { printf("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
-    printf("Test| ConfusionMatrix_1by1_onlyP_check_N\n");
+  {
+    printf("ConfusionMatrix_1by1_onlyP_check_N\n");
     RunSet runSet;
     Purpose positive(POSITIVE, 0), negative(NEGATIVE, 0);
 
@@ -147,8 +146,8 @@ using namespace std;
   }
 
   TEST(ConfusionMatrix_2by2_noCorrectDetections)
-  { printf("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
-    printf("Test| ConfusionMatrix_2by2_noCorrectDetections\n");
+  {
+    printf("ConfusionMatrix_2by2_noCorrectDetections\n");
     RunSet runSet;
     Purpose positive(POSITIVE, 0), negative(NEGATIVE, 0);
 
@@ -169,8 +168,8 @@ using namespace std;
   }
 
   TEST(ConfusionMatrix_2by2_oneHitPerMatrixElement)
-  { printf("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
-    printf("Test| ConfusionMatrix_2by2_oneHitPerMatrixElement\n");
+  {
+    printf("ConfusionMatrix_2by2_oneHitPerMatrixElement\n");
     RunSet runSet;
     Purpose positive(POSITIVE, 0), negative(NEGATIVE, 0);
 
@@ -192,8 +191,8 @@ using namespace std;
   }
 
   TEST(ConfusionMatrix_2by2_3p_1n)
-  { printf("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
-    printf("Test| ConfusionMatrix_2by2_3p_1n\n");
+  {
+    printf("ConfusionMatrix_2by2_3p_1n\n");
     RunSet runSet;
     Purpose positive(POSITIVE, 0), negative(NEGATIVE, 0);
 
@@ -215,7 +214,8 @@ using namespace std;
   }
 
   TEST(ConfusionMatrix_MultiClass_Test)
-  { printf("Test| MultiClass_Test_1_2_3\n");
+  {
+    printf("MultiClass_Test_1_2_3\n");
     RunSet runSet;
     Purpose pOne(MULTICLASS, 1), pTwo(MULTICLASS, 2), pThree(MULTICLASS, 3);
 

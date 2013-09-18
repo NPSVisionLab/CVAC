@@ -63,31 +63,34 @@ namespace cvac
    * Here it is assumed that the detector pointer really points to a
    * DetectorI (a detector instance).
    */
-   typedef cvac::ResultSetV2 (*DoDetectFunc) (cvac::DetectorPtr detector, const char *filename);
+   typedef ResultSetV2 (*DoDetectFunc) ( DetectorPtr detector, const char *filename);
 
    /**
    * Process a RunSet calling the passed in DoDetectFunc for each file in
    * to be processed and then calling the DetectorCallbacHandler with that
    * result.
    */
-   void processRunSet(cvac::DetectorPtr detector,
-                      const cvac::DetectorCallbackHandlerPrx &client,
+   void processRunSet(DetectorPtr detector,
+                      const DetectorCallbackHandlerPrx &client,
                       DoDetectFunc detectFunc, 
-                      const cvac::RunSet &run, 
+                      const RunSet &run, 
                       const std::string &pathPrefix,
-                      cvac::ServiceManager *servMan);
+                      ServiceManager *servMan);
+
+   void sendResultsToClient( const DetectorCallbackHandlerPrx &client, 
+                             const ResultSetV2& results );
 
    // Check for any chars within the string that could upset the detector
-   bool containsIllegalChars(cvac::FilePath filePath);
+   bool containsIllegalChars(FilePath filePath);
    
    // Skip detector execution on input files that match undesired substring(s)
    //bool shouldIgnore(FilePath filePath);
 
 
-   void addToRunSet( cvac::RunSet& runSet, const std::string& relativePath,
-	   const std::string& filename, const cvac::Purpose& purpose,cvac::LocationPtr loc = NULL);	// Using Purpose
-   void addToRunSet( cvac::RunSet& runSet, const std::string& relativePath,
-                     const std::string& filename, int classID,cvac::LocationPtr loc = NULL);	// Using ID of Class
+   void addToRunSet( RunSet& runSet, const std::string& relativePath,
+	   const std::string& filename, const Purpose& purpose, LocationPtr loc = NULL);	// Using Purpose
+   void addToRunSet( RunSet& runSet, const std::string& relativePath,
+                     const std::string& filename, int classID, LocationPtr loc = NULL);	// Using ID of Class
 
    // Pair the old filename and the new symlink filename in a map 
    void addFilenamePair(const std::string& filename, const std::string& symLinkName);
@@ -97,12 +100,18 @@ namespace cvac
    /** Return path of a new symlink if fname contains illegal chars, or original path otherwise.
     *  The map between old and new names is managed directly by clients outside this function.
     */
-   std::string getLegalPath(std::string tempDir, cvac::FilePath filePath, bool &newSymlink);
+   std::string getLegalPath(std::string tempDir, FilePath filePath, bool &newSymlink);
    
    /**
     * Fix the Run Set by linking files with illegal names (containing spaces) to valid
     * file names.  These links are stored in the directory name returned and should be
     * deleted after the run set is finished being processed.
     */
-   std::string fixupRunSet(cvac::RunSet &runset);
+   std::string fixupRunSet( RunSet &runset, const std::string &CVAC_DataDir);
+
+   /**
+    * Return the remote address name of the client given this current.
+    */
+   std::string getClientConnectionName(const Ice::Current &cur);
+
 }

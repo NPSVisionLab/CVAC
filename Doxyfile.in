@@ -41,7 +41,7 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 
 INPUT                  = @CMAKE_DOXYGEN_INPUT_LIST@
-FILE_PATTERNS          = *.cpp *.h* *.java *.ice
+FILE_PATTERNS          = *.cpp *.h* *.java *.ice *.py
 EXTENSION_MAPPING      = ice=C++
 STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@
 RECURSIVE              = NO
@@ -54,6 +54,9 @@ EXCLUDE_SYMBOLS        = __* \
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
+
+# also extract private members?
+EXTRACT_PRIVATE        = YES
 
 # The IMAGE_PATH tag can be used to specify one or more files or
 # directories that contain image that are included in the documentation (see
@@ -74,7 +77,8 @@ ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
 PREDEFINED             = "extends=:public" \
-                         "module=namespace"
+                         "module=namespace" \
+                         "interface=class"
 
 #---------------------------------------------------------------------------
 # configuration options related to source browsing

@@ -1,0 +1,22 @@
+@echo off
+@setlocal
+set _3rdPARTYDIR=${CMAKE_SOURCE_DIR}/3rdparty/lib
+set JARDIR=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+set ICEBOXJAR=${IceBox.jar} 
+set PATH=bin;${ICE_ROOT}/bin;${OpenCV_LIB_DIR_OPT}/../bin;${LIBARCHIVE_BIN_DIR};${LIBZIP_BIN_DIR};${OpenCV_DIR}/common/tbb/ia32/vc9;%PATH%
+chdir "${CVAC_ROOT_DIR}"
+start "CVAC Services (C++)" "cmd /K ""${ICE_BOX_EXECUTABLE}" --Ice.Config=config.icebox"
+
+if "${START_JAVA_SERVICES}" == "1" goto startjava
+goto next
+:startjava
+    start "CVAC Services (Java)" "cmd /K ""${Java_JAVA_EXECUTABLE}" -cp "${Ice.jar};%ICEBOXJAR%;%JARDIR%/FileServer.jar;%JARDIR%/Corpus.jar;%_3rdPARTYDIR%/labelme.jar;%_3rdPARTYDIR%/javabuilder.jar;%_3rdPARTYDIR%/commons-io-2.4.jar;%_3rdPARTYDIR%/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox"
+:next
+REM Python services that are listed in python.config
+if "${PYTHON_EXECUTABLE}" neq "" (if exist "${CMAKE_SOURCE_DIR}/python.config" goto startpython)
+goto next2
+:startpython
+    for /F "eol=# tokens=*" %%A in (${CMAKE_SOURCE_DIR}/python.config) do start "CVAC Service (Python)" "cmd /K ""${PYTHON_EXECUTABLE}" %%A"
+:next2
+echo CVAC services launched
+exit /b 0

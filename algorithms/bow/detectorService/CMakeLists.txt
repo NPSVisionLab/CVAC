@@ -36,4 +36,17 @@ TARGET_LINK_LIBRARIES(bowICEServer
     ${OpenCV_LIBS}
     )
           
+IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
+IF(WIN32)
+INSTALL( TARGETS bowICEServer
+               DESTINATION bin
+               COMPONENT Runtime
+             )
+ELSE (WIN32)
+INSTALL( TARGETS bowICEServer
+               DESTINATION lib
+               COMPONENT Runtime
+             )
 
+ENDIF (WIN32)
+ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )

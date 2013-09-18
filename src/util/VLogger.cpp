@@ -62,10 +62,20 @@ void VLogger::setLocalVerbosityLevel(Levels localLevel) {
 void VLogger::setLocalVerbosityLevel(std::string verbosityStr) {
 
   if(verbosityStr.empty()) {
-    localAndClientMsg(VLogger::WARN, NULL, "Unable to locate 'CVAC.ServicesVerbosity' property, specified in config.service\n");
-  } 
-  else {  // Proceed: set
-
+    localAndClientMsg(VLogger::WARN, NULL, "No verbosity level specified\n");
+  } else {
+    for (unsigned int lv=0; lv<levelText->size(); lv++)
+      {
+#ifdef WIN32
+	  if (_stricmp(levelText->at(lv).c_str(), verbosityStr.c_str())==0)
+#else // WIN32
+	  if (strcasecmp(levelText->at(lv).c_str(), verbosityStr.c_str())==0)
+#endif // WIN32
+	  {
+	  setLocalVerbosityLevel((VLogger::Levels)lv);
+	  return;
+	}
+      }
     int servicesVerbosity = atoi(verbosityStr.c_str());
     setLocalVerbosityLevel((VLogger::Levels)servicesVerbosity);
   }
@@ -80,7 +90,7 @@ VLogger::Levels VLogger::getIntLevel(int intLevel) {
   switch(intLevel) {
     case 0: return SILENT;
       break;
-    case 1: return ERROR_V;
+    case 1: return ERROR;
       break;
     case 2: return WARN;
       break;
@@ -95,7 +105,7 @@ VLogger::Levels VLogger::getIntLevel(int intLevel) {
     case 7: return DEBUG_3;
 
     default:
-      localAndClientMsg(VLogger::ERROR_V, NULL, "Unable to map integer level: %d to VLogger::Levels.\n", intLevel);
+      localAndClientMsg(VLogger::ERROR, NULL, "Unable to map integer level: %d to VLogger::Levels.\n", intLevel);
       return(DEBUG_3);
   }
 }

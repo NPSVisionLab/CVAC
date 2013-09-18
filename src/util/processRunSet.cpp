@@ -44,7 +44,7 @@
 #endif
 #include <util/processRunSet.h>
 #include <util/ServiceMan.h>
-
+#include <Ice/Ice.h>
 using namespace Ice;
 using namespace cvac;
 
@@ -88,6 +88,7 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
     dir = opendir(filename);
     if (dir == NULL)
         return;
+
     while ((walker = readdir(dir)) != NULL)
     {
 
@@ -117,8 +118,16 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
                     strcpy(tempName, filename);
                     strcat(tempName, "/");
                     strcat(tempName, walker->d_name);
+                    Labelable *label = new Labelable();  // Ice will clean up so don't delete
+                    label->sub.path.filename = std::string(walker->d_name);
+                    label->sub.path.directory.relativePath = std::string(filename);
 
                     ResultSetV2 res = (*_detectFunc)(_detect, tempName);
+                    // put the "original" label into the result set
+                    for (unsigned int idx=0; idx<res.results.size(); idx++)
+                    {
+                         res.results[idx].original = label;
+                    }
                     _callback->foundNewResults(res);
                 }
                 nextSuffix = suffixes[i++];
@@ -204,23 +213,16 @@ void cvac::processRunSet(DetectorPtr detector,
                 LabelablePtr lptr = *lIt;
                 Substrate sub = lptr->sub;
                 FilePath  filePath = sub.path;
+                filePath.directory.relativePath = pathPrefix + "/" + filePath.directory.relativePath;
                 std::string fname;
-                // If path is already absolute then leave it alone else
-                // lets prepend our pathPrefix
-                if ((filePath.directory.relativePath.length() > 1 && filePath.directory.relativePath[1] == ':' )||
-                    filePath.directory.relativePath[0] == '/' ||
-                    filePath.directory.relativePath[0] == '\\')
-                {  // absolute path
-                    fname = filePath.directory.relativePath;
-                    localAndClientMsg(VLogger::DEBUG_2, NULL, "Labelable using absolute paths\n");
-                } else { 
-                    // prepend our prefix in a way visible to symlink filePath
-                    filePath.directory.relativePath = (pathPrefix + "/" + filePath.directory.relativePath);
-                    fname = filePath.directory.relativePath;
-                    
-                    localAndClientMsg(VLogger::DEBUG_2, NULL, "Labelable using relative paths\n");
-                }
-
+                
+                // prepend our prefix in a way visible to symlink filePath
+                // symbolic links require full paths for the targets
+                std::string cwd = getCurrentWorkingDirectory();
+                std::string abspath = cwd.c_str();
+                abspath +=  "/" + filePath.directory.relativePath;
+                fname = abspath;
+       
                 fname += std::string("/");
                 fname += filePath.filename;
                 // Display full path to file entry, before symlink
@@ -243,12 +245,16 @@ void cvac::processRunSet(DetectorPtr detector,
                 // 'result' is a vector of result objects
                 ResultSetV2 result = (*detectFunc)(detector, symlinkFullPath.c_str());
 
-                // If we used a symbolic link restore the result data to match the original file
+                // put the "original" label into the result set
+                for (unsigned int idx=0; idx<result.results.size(); idx++)
+                {
+                  result.results[idx].original = lptr;
+                  // printf("inserted original: %s\n", result.results[idx].original->lab.name.c_str());
+                }
+                
+                // If we used a symbolic link, delete it
                 if (newSymlink)
                 {
-                    Result res = result.results[0];
-                    res.original->sub.path.filename = filePath.filename;
-                    res.original->sub.path.directory.relativePath = filePath.directory.relativePath;
                     deleteDirectory(tempString);
                 }
 
@@ -274,6 +280,9 @@ void cvac::processRunSet(DetectorPtr detector,
                 dirptr->directory.relativePath[0] == '\\')
             {  // absolute path
                 fname = dirptr->directory.relativePath;
+                localAndClientMsg(VLogger::WARN, NULL,
+                                  "Labelable using absolute paths; ignoring file: %s\n", fname.c_str());
+                continue;
             } else { // prepend our prefix
 
                 fname = (pathPrefix + "/" + dirptr->directory.relativePath);
@@ -377,15 +386,27 @@ static std::string _makeDirectories(std::string tempName, DirectoryPath dirPath)
         return result;
     int lastIdx = 0;
 #ifdef WIN32
+    bool backSlash = false;
     int idx = dirPath.relativePath.find(':', 1);
     if (idx != -1)
     {
         // We have a drive letter, lets ignore this
         lastIdx = idx + 1;
     }
-    if (dirPath.relativePath[lastIdx] == '\\')
-         lastIdx++;   // ignore a first backslash
-    idx = dirPath.relativePath.find('\\', lastIdx);
+    // We need to support both forward and backward slashes
+    idx = dirPath.relativePath.find('\\', 0);
+    if (idx != -1)
+    { // We assume we have backslashes in the path
+        backSlash = true;
+        if (dirPath.relativePath[lastIdx] == '\\')
+             lastIdx++;   // ignore a first backslash
+        idx = dirPath.relativePath.find('\\', lastIdx);
+    }else
+    {
+        if (dirPath.relativePath[lastIdx] == '/')
+             lastIdx++;   // ignore a first slash
+        idx =  dirPath.relativePath.find('/', lastIdx);
+    }
 #else
     if (dirPath.relativePath[lastIdx] == '/')
          lastIdx++;   // ignore a first slash
@@ -401,7 +422,10 @@ static std::string _makeDirectories(std::string tempName, DirectoryPath dirPath)
         makeDirectory(result);
         lastIdx = idx+1;
 #ifdef WIN32
-        idx = dirPath.relativePath.find('\\', lastIdx);
+        if (backSlash)
+            idx = dirPath.relativePath.find('\\', lastIdx);
+        else
+            idx = dirPath.relativePath.find('/', lastIdx);
 #else
         idx = dirPath.relativePath.find('/', lastIdx);
 #endif /* WIN32 */
@@ -421,8 +445,10 @@ static std::string _makeDirectories(std::string tempName, DirectoryPath dirPath)
 
 /** Return path of a new symlink if fname contains illegal chars, or original path otherwise.
  *  The map between old and new names is managed directly by clients outside this function.
+ *  If links need to be created, they'll be put into putLinksDir,
+ *  which will be created on demand.
  */
-std::string cvac::getLegalPath(std::string tempName, FilePath filePath, bool &newSymlink) {
+std::string cvac::getLegalPath(std::string putLinksDir, FilePath filePath, bool &newSymlink) {
 
   //if(!shouldIgnore(filePath)) {  // No detection or symlink on these patterns
 
@@ -431,8 +457,8 @@ std::string cvac::getLegalPath(std::string tempName, FilePath filePath, bool &ne
       // We have a illegal character so we need to make a symbolic link using the tempName as the root directory.
       // To insure that we don't have any conflicts we will follow the same directory structure but use the
       // tempname as the root dir.
-      makeDirectory(tempName);
-      std::string directories = _makeDirectories(tempName, filePath.directory);
+      makeDirectory(putLinksDir);
+      std::string directories = _makeDirectories(putLinksDir, filePath.directory);
       newSymlink = true;
       std::string fullName = directories + "/" + filePath.filename;
       std::string linkFileName_withPath = getSymlinkSubstitution(fullName);  // cvac procedure to make symlink
@@ -450,15 +476,9 @@ std::string cvac::getLegalPath(std::string tempName, FilePath filePath, bool &ne
  * Fixes the RunSet files so they don't contain spaces.
  * Returns the directory of symbolic links created.  This will need to be deleted after the run set is used.
  */
-std::string cvac::fixupRunSet(RunSet &run)
+std::string cvac::fixupRunSet(RunSet &run, const std::string &CVAC_DataDir)
 {
-    std::string dir = getCurrentWorkingDirectory();
-#ifdef WIN32
-    char *tempName = _tempnam(dir.c_str(), NULL);
-#else
-    char *tempName = tempnam(dir.c_str(), NULL);
-#endif /* WIN32 */
-    std::string tempString = tempName;
+    std::string tempString = getTempFilename(CVAC_DataDir);
    
     // Step through the Runset changing bad file names.
     std::vector<PurposedListPtr>::iterator it;
@@ -480,7 +500,10 @@ std::string cvac::fixupRunSet(RunSet &run)
                 LabelablePtr lptr = *lIt;
                 Substrate sub = lptr->sub;
                 FilePath  filePath = sub.path;
-                std::string fname = filePath.directory.relativePath;
+                std::string cwd = getCurrentWorkingDirectory();
+                std::string fname = cwd.c_str(); 
+                fname +=  "/";
+                fname += filePath.directory.relativePath;
                 fname += std::string("/");
                 fname += filePath.filename;
                 // symlink needed?
@@ -509,4 +532,26 @@ std::string cvac::fixupRunSet(RunSet &run)
         }
     }
     return tempString;
+}
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::getClientConnectionName(const Ice::Current &cur)
+{
+    std::string res = "localhost";
+    std::string cstring = cur.con->toString();
+    if (cstring.empty())
+       return res;
+    else
+    {
+        char local[256];
+        char remote[256];
+        int rval = sscanf(cstring.c_str(), "local address = %[^' '] address = %[^':']", local, remote);
+        if (rval == 2)
+        {
+            std::string rstr = remote;
+            // replace dots with underscores
+            std::replace(rstr.begin(), rstr.end(), '.','_');
+            return rstr; 
+        }
+    }
+     return res;
 }

@@ -1,9 +1,10 @@
 #ifndef _CORPUS_ICE
 #define _CORPUS_ICE
 
+#include <Ice/Identity.ice>
 #include "Data.ice"
 
-module cvacslice {
+module cvac {
 
   /** A Corpus, which describes the metadata for a collection of
     * images or videos.
@@ -27,7 +28,7 @@ module cvacslice {
   interface CorpusCallback {
     /** The CorpusService might or might not call this function to provide
       * updates about the mirror creation progress.
-      * @param corpus Which Corpus this progress report is for.
+      * @param corp Which Corpus this progress report is for.
       * @param numtasks How many tasks there are in total, e.g. download
       *               and extract would be numtasks==2.
       * @param currtask What the number of the current task is, e.g. download==1.
@@ -48,12 +49,13 @@ module cvacslice {
 
   /** Handles download, mirror, extraction, modification of a Corpus.
    *  Corpus data items and functions are separated into "class Corpus" and
-   *  "interface CorpusService" because of two reasons:
+   *  "interface CorpusService" for two reasons:
    *  1) ICE has to create fewer proxy classes, and
    *  2) only one CorpusService has to run and can deal with many corpora.
    *
-   *  Construction of a new Corpus can currently only be accomplished through
-   *  editing of a property file which contains all relevant information.
+   *  Construction of a new Corpus can be accomplished through
+   *  editing of a property file which contains all relevant information or
+   *  through the createCorpus method which parses a few common file structures.
    *  
    *  A single CorpusService instance generally runs alongside the client code,
    *  but in the case of a remote Corpus, that instance might talk to other
@@ -66,15 +68,34 @@ module cvacslice {
      */
     Corpus openCorpus( cvac::FilePath file );
 
+    /** A corpus, once opened, is cached in the CorpusService and does not
+     *  update itself if the file system or properties file change.  To
+     *  re-open the corpus and re-load the cache, close it first.  Otherwise,
+     *  closing is optional.
+     */
+    void closeCorpus( Corpus corp );
+
     /** Write Corpus to a metadata file. 
      */
     void saveCorpus( Corpus corp, cvac::FilePath file );
 
+    /** Does this Corpus require a "download" before the meta data
+      * can be obtained?
+      */
+    bool getDataSetRequiresLocalMirror( Corpus corp );
+
+    /** Has a local mirror already been created?  This will return true only
+      * if this corpus requires a download, not for one that is local to
+      * begin with.
+      */
+    bool localMirrorExists( Corpus corp );
+    
     /** Download, extract, and keep caller informed via CorpusCallback.
       * A mirror can contain the actual files or just enough metadata about
       * the files so as to construct a LabelableList.
+      * The callback adapter (cb) must be of type CorpusCallback.
       */
-    void createLocalMirror( Corpus corp, CorpusCallback cb );
+    void createLocalMirror( Corpus corp, Ice::Identity cb );
 
     /** Obtain the actual data items in the corpus.  This will fail if
      *  the Corpus isImmutableMirror and createLocalMirror has not been
@@ -86,6 +107,13 @@ module cvacslice {
      *  fail if the Corpus isImmutableMirror.
      */
     void addLabelable( Corpus corp, cvac::LabelableList addme );
+
+    /** A few common file system structures can be parsed into a Corpus.
+     *  Most notably, a path that has subdirectories with images in each
+     *  is treated as a Corpus containing these images, each with a full-substrate
+     *  label corresponding to the subdirectory name.
+     */
+    Corpus createCorpus( cvac::DirectoryPath dir );
   };
 };
 

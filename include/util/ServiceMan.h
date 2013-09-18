@@ -39,11 +39,14 @@
 #define __SERVICEMAN_H__
 
 #include <string>
+#include <vector>
 //#include <Ice/Ice.h>
 //#include <IceBox/IceBox.h>
 //#include <Services.h>
 
 
+#define TRAIN_PREFIX "train_"
+#define SANDBOX "sboxes"
 
 /**
  * Functions to manage a CVAC service.  Programs that take a long time to
@@ -57,13 +60,94 @@ namespace cvac
     class ServiceManagerIceService; 
     class CVAlgorithmService;
     /**
+     * ClientSandbox - keep track of the client resources handed out.
+     */
+    class ClientSandbox
+    {
+    public:
+        ClientSandbox(const std::string &clientName,
+                      const std::string &CVAC_DataDir);
+        /**
+         * Get the current training directory
+         */
+        std::string getTrainingDir(){ return _trainDir; }
+        /**
+         * Delete the old training directory if it exists and creat a new one
+         */
+        std::string createTrainingDir();
+        /**
+         * Delete the current training directory
+         */
+        void deleteTrainingDir();
+        /*
+         * If the client directory does not exist create it and return it
+         */
+        std::string getClientDir();
+        /**
+         * Get the client name
+         */
+        std::string getClientName() { return _clientName; }
+    private:
+        std::string _clientName;
+        std::string _cvacDataDir;
+        std::string _trainDir;
+        std::string _clientDir;
+    };
+
+    /**
+     * SandboxManager - Manage allocation of directory and file resources for Services.
+     */
+    class SandboxManager
+    {
+    public:
+        /**
+         * Look and see what directories are there from the last time we where run
+         * and add them to the sandbox list. Clean up any training directories that
+         * failed to get cleaned up because of an exception or early stop.
+         */
+        SandboxManager(const std::string &CVAC_DataDir);
+
+        /**
+         * Request a client name.  This name is based on the service
+         * name and the connection client name gotten from the service manager.
+         */
+        std::string createClientName(const std::string &serviceName,
+                                     const std::string &connectionName); 
+        /**
+         * Create a training directory in the client directory.  If the client directory
+         * does not exist then create it.
+         */
+        std::string createTrainingDir(const std::string &clientName);
+        /**
+         * Delete the training directory.
+         */
+        void deleteTrainingDir(const std::string &clientName);
+        /**
+         * Get the clients training directory
+         */
+        std::string getTrainingDir(const std::string &clientName);
+
+        /**
+         * Create a client directory if this is the first time we have seen this client
+         * else return the existing client directory.
+         */
+        std::string createClientDir(const std::string &clientName);
+        
+    private:
+        std::string mCVAC_DataDir;
+        std::vector<ClientSandbox> mSandboxes;
+        
+   
+    };
+
+    /**
      * Class to manage the Ice Service functions
      */
     //class ServiceManager : public ::IceBox::Service
     class ServiceManager
     {
     public:
-        typedef enum StopStateType {None, Running, Stopping, Stopped};
+        typedef enum StopStateType {None, Running, Stopping, Stopped} StopState;
         /**
          * Constructor for creating a cvac Detector service.
          * Parms: The Detector instance to be served by this service.
@@ -145,15 +229,18 @@ namespace cvac
         /*
          * Return the ice service
          */
-        void*         getIceService() { return mIceService; }
+        void* getIceService() { return mIceService; }
+
+        SandboxManager  *getSandbox() { return mSandbox; }
+  
+        void createSandbox();
 
     private:
-        //::Ice::ObjectAdapterPtr         mAdapter;
-        //cvac::CVAlgorithmService*       mService;
         std::string                     mServiceName;
         std::string                     mIceName;
         int                             mStopState;
         ServiceManagerIceService*       mIceService;
+        SandboxManager*                 mSandbox;
     };
 }
 

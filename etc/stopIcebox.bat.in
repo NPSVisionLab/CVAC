@@ -1,0 +1,9 @@
+@echo off
+@setlocal
+set PATH=%PATH%;${ICE_ROOT}/bin
+chdir "${CVAC_ROOT_DIR}"
+"${ICE_BOX_ADMIN}" --Ice.Config=config.admin shutdown
+"${ICE_BOX_ADMIN}" --Ice.Config=config.java_admin shutdown
+if "${PYTHON_EXECUTABLE}" neq "" taskkill /FI "WINDOWTITLE eq CVAC Service (Python)" /IM python.exe
+echo CVAC services stopped
+exit /b 0

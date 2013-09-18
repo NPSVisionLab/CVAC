@@ -1,0 +1,44 @@
+@echo off
+@setlocal
+rem Usage: runIceTest [ctest] det1 det2 ..."
+rem
+PATH=${ICE_ROOT}/bin;%PATH%
+chdir "${CVAC_ROOT_DIR}"
+if "%1" equ "" (
+    echo "Pass in the names of the detectors to run"
+    exit /b 1
+)
+set CTEST="testImg"
+set VERIFY=""
+if "%1" equ "CTest" (
+    set CTEST=%1
+    set VERIFY="verifyresults"
+    shift;
+)
+
+call "${CMAKE_SOURCE_DIR}/bin/startIcebox.bat"
+rem a timeout causes a weird error in MSVS: 
+rem "ERROR: Input redirection is not supported, exiting the process immediately."
+rem however, it might be required if the icebox starts up slowly
+rem timeout /T 1
+echo "startIcebox returned"
+
+:next
+if "%1" neq "" (
+    echo "Running detector %1"
+    if %VERIFY% equ "" (
+        "${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX}" %1 %CTEST% ${CVAC_ROOT_DIR}/config.client 
+    ) else (
+        "${OUTPUT_BINDIR}/${APP_NAME}${CMAKE_DEBUG_POSTFIX}" %1 %CTEST% ${CVAC_ROOT_DIR}/config.client %VERIFY%
+    )
+    if ERRORLEVEL 1 (
+        echo "Detector %1 failed"
+        ${CMAKE_SOURCE_DIR}/bin/stopIcebox.bat
+        exit /b 1
+    )
+    shift
+    goto :next
+)
+echo "Stopping icebox"
+${CMAKE_SOURCE_DIR}/bin/stopIcebox.bat
+exit /b 0

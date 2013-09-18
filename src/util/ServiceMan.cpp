@@ -42,6 +42,9 @@
 #include <Ice/Ice.h>
 #include <IceBox/IceBox.h>
 
+using namespace cvac;
+
+
 class cvac::ServiceManagerIceService : public ::IceBox::Service
 {
 public:
@@ -50,6 +53,7 @@ public:
         mManager = man;
         mAdapter = NULL;
         mService = serv;
+
     }
     /**
      * The start function called by IceBox to start this service.
@@ -59,11 +63,12 @@ public:
                   const ::Ice::StringSeq&)
     {
         localAndClientMsg(VLogger::INFO, NULL, "%s: starting\n", mManager->getServiceName().c_str());
-	    mManager->setIceName(name);
-	    mManager->clearStop();
 	    mAdapter = communicator->createObjectAdapter(name);
+	    mManager->clearStop();
+        mManager->setIceName(name);
 	    mAdapter->add(mService, communicator->stringToIdentity(mManager->getServiceName()));
 	    mAdapter->activate();
+        mManager->createSandbox();
 	    localAndClientMsg(VLogger::INFO, NULL, "Service started: %s\n", 
                     mManager->getServiceName().c_str());
     }
@@ -82,6 +87,8 @@ public:
     
     ::Ice::ObjectAdapterPtr  getAdapter() { return mAdapter; }
 
+
+
 private:
     ::Ice::ObjectAdapterPtr         mAdapter;
     cvac::CVAlgorithmService*       mService;
@@ -94,6 +101,7 @@ cvac::ServiceManager::ServiceManager()
  
     mIceService = NULL;
     mStopState = None;
+    mSandbox = NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -133,7 +141,11 @@ std::string cvac::ServiceManager::getDataDir()
 	localAndClientMsg(VLogger::DEBUG, NULL, "CVAC Data directory configured as: %s \n", dataDir.c_str());
     return dataDir;
 }
-
+///////////////////////////////////////////////////////////////////////////////
+void cvac::ServiceManager::createSandbox()
+{
+    mSandbox = new SandboxManager(getDataDir());
+}
 ///////////////////////////////////////////////////////////////////////////////
 void cvac::ServiceManager::stopService()
 {
@@ -142,7 +154,6 @@ void cvac::ServiceManager::stopService()
     else
         mStopState = Stopped;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 void cvac::ServiceManager::waitForStopService()
@@ -180,6 +191,7 @@ void cvac::ServiceManager::setStoppable()
 {
     mStopState = Running;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 bool cvac::ServiceManager::isStopCompleted()
 {
@@ -188,7 +200,6 @@ bool cvac::ServiceManager::isStopCompleted()
     else
         return false;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 std::string cvac::ServiceManager::getServiceName()
@@ -206,4 +217,144 @@ std::string cvac::ServiceManager::getIceName()
 void cvac::ServiceManager::setIceName(std::string name)
 {
     mIceName = name;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// SandboxManager classes
+///////////////////////////////////////////////////////////////////////////////
+
+cvac::ClientSandbox::ClientSandbox(const std::string &clientName, 
+                                  const std::string &CVAC_DataDir )
+{
+    _clientName = clientName;
+    _cvacDataDir = CVAC_DataDir;
+}
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::ClientSandbox::createTrainingDir()
+{
+    if (!_trainDir.empty())
+    {// Get rid of old training directory 
+        deleteDirectory(_trainDir);
+    }
+    if (_clientDir.empty())
+    {
+        getClientDir();
+    }
+    _trainDir = getTempFilename(_clientDir , "train_");   
+    if (directoryExists(_trainDir))
+    { // This should never happen
+        deleteDirectory(_trainDir);
+    } 
+    makeDirectories(_trainDir);   
+    return _trainDir;
+    
+}
+
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::ClientSandbox::getClientDir()
+{
+    if (_clientDir.empty())
+    {
+        _clientDir = _cvacDataDir + "/" + SANDBOX + "/" + _clientName;
+        if (!directoryExists(_clientDir))
+        {
+            makeDirectories(_clientDir);
+        }
+    }
+    return _clientDir;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void cvac::ClientSandbox::deleteTrainingDir()
+{
+    if (!_trainDir.empty())
+    {
+        deleteDirectory(_trainDir);
+        _trainDir.erase();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+cvac::SandboxManager::SandboxManager(const std::string & CVAC_DataDir)
+{
+    mCVAC_DataDir = CVAC_DataDir;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::SandboxManager::createClientName(const std::string &serviceName,
+                                             const std::string &connectionName)
+{
+    std::string clientName = serviceName + "_" + connectionName;
+    std::vector<ClientSandbox>::iterator it;
+    for (it = mSandboxes.begin(); it < mSandboxes.end(); ++it)
+    {
+        ClientSandbox sbox = (*it);
+        if (clientName.compare(sbox.getClientName()) == 0)
+        {
+            return clientName;
+        }
+    }
+    // We don't have that client name so add a new sandbox
+    ClientSandbox *sandbox = new ClientSandbox(clientName, mCVAC_DataDir);
+    mSandboxes.push_back(*sandbox);
+    return clientName;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::SandboxManager::createTrainingDir(const std::string &clientName)
+{
+    std::vector<ClientSandbox>::iterator it;
+    for (it = mSandboxes.begin(); it < mSandboxes.end(); ++it)
+    {
+        if (clientName.compare((*it).getClientName()) == 0)
+        {
+           return (*it).createTrainingDir();
+        }
+    }
+    std::string empty;
+    return empty;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void cvac::SandboxManager::deleteTrainingDir(const std::string &clientName)
+{
+    std::vector<ClientSandbox>::iterator it;
+    for (it = mSandboxes.begin(); it < mSandboxes.end(); ++it)
+    {
+        if (clientName.compare((*it).getClientName()) == 0)
+        {
+           (*it).deleteTrainingDir();
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::SandboxManager::getTrainingDir(const std::string &clientName)
+{
+    std::vector<ClientSandbox>::iterator it;
+    for (it = mSandboxes.begin(); it < mSandboxes.end(); ++it)
+    {
+        if (clientName.compare((*it).getClientName()) == 0)
+        {
+           return (*it).getTrainingDir();
+        }
+    }
+    std::string empty;
+    return empty;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::SandboxManager::createClientDir(const std::string &clientName)
+{
+    std::vector<ClientSandbox>::iterator it;
+    for (it = mSandboxes.begin(); it < mSandboxes.end(); ++it)
+    {
+        if (clientName.compare((*it).getClientName()) == 0)
+        {
+           return (*it).getClientDir();
+        }
+    }
+    std::string empty;
+    return empty;
 }

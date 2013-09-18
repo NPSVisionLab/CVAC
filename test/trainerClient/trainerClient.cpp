@@ -217,6 +217,7 @@ int TrainerClientApp::run(int argc, char* argv[])
 	bool fImage = false;	//lekomin: obtain from MediaType
 
 	std::string trainerName = trainer->ice_getIdentity().name;
+    printf("Using trainer %s\n", trainerName.c_str());
 	if(trainerName == "bowTrain")
 	{
 		fMultiClass = true;
@@ -227,8 +228,7 @@ int TrainerClientApp::run(int argc, char* argv[])
 		fMultiClass = true;
 		fImage = false;
 	}
-	else if( (trainer->ice_getIdentity().name == "WireDiagramTrainer")  || 
-		(trainer->ice_getIdentity().name == "CVAC_OpenCV_Trainer"))
+	else if( trainer->ice_getIdentity().name == "OpenCVCascadeTrainer" )
 	{
 		fMultiClass = false;
 		fImage = true;
@@ -289,7 +289,7 @@ int TrainerClientApp::run(int argc, char* argv[])
 			//pbox = new BBox(55,4,528,256);
 			addToRunSet(runSet, "trainImg/ca", "ca0007.jpg", 3);
 		}
-		else	//ex. WireDiagramTrainer or CVAC_OpenCV_Trainer
+		else	// CVAC_OpenCV_Trainer
 		{
 			Purpose positive;
 			positive.ptype = POSITIVE;
@@ -324,7 +324,7 @@ int TrainerClientApp::run(int argc, char* argv[])
 				videoLabel->sub.path.directory.relativePath = std::string(argv[2]);				
 				videoLabel->interp = cvac::DISCRETE;	//If a enum. variable is not initialized, it causes error in debug mode.
 				
- 				std::string _filepath = expandFilename(videoLabel->sub.path.directory.relativePath, CVAC_DataDir);
+ 				std::string _filepath = getFSPath(videoLabel->sub.path, CVAC_DataDir);							
  				parseFrame_SBD(_filepath,"AnnotationShortTrain.txt",_vFrameListInput);								
 
 				for(unsigned int k=0;k<_vFrameListInput.size();k++)

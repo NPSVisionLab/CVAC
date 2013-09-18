@@ -1,8 +1,10 @@
 package cvac.corpus;
 
+import cvac.CorpusCallbackPrx;
 import cvac.FilePath;
 import cvac.Labelable;
 import cvac.Substrate;
+import cvac.corpus.LabelableListI;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
@@ -18,44 +20,56 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import cvacslice.Corpus;
+import cvac.Corpus;
+import cvac.DirectoryPath;
+import cvac.Label;
+import cvac.Semantics;
+import util.Data_IO_Utils;
 
-/*
-import mediaanalyst.GUI_Desktop.Constants;
-import mediaanalyst.Main;
-import mediaanalyst.dataset.DataSetMirror.DataSetLocType;
-import mediaanalyst.utility_code.Code_Utils;
-import mediaanalyst.utility_code.Data_IO_Utils;
-*/
 /**
  * A corpus represents a set of images, videos, or other media,
  * often annotated with labels.
+ * 
+ * Corpora/datasets that have a "web" source such as Caltech101 will be downloaded
+ * to some extent, and the local copy will be considered an 
+ * "immutable mirror".  Only locally created datasets will be mutable.
+ *
  * @author tomb, jcs, matz
  */
-abstract public class CorpusI extends Corpus {
+abstract public class CorpusI extends Corpus 
+{
+    static class CorpusConfigurationException extends Exception
+    {
+
+        protected CorpusConfigurationException(String string) {
+            super( string );
+        }
+    }
+    
     public static final String[] IMAGE_SUFFIXES = {".jpg",".jpeg",".png", ".pgm"};
     public static final String[] VIDEO_SUFFIXES = {".3g2", ".3gp", ".4xm", ".ajp", ".amc", ".amv", ".asf", ".ass", ".avi", ".bik", ".dpg", ".dsv", ".dv", ".dvf", ".dvx", ".flc", ".flv", ".gvi", ".hdmov", ".hdv", ".heu", ".ivf", ".k3g", ".m2p", ".m2ts", ".mjp", ".mkv", ".mmv", ".mod", ".modd", ".moff", ".mov", ".mp4", ".mpb", ".mpg", ".mswmm", ".mvb", ".mve", ".mxf", ".nsv", ".ogv", ".pva", ".rm", ".rms", ".rv", ".s2k", ".scm", ".smk", ".smv", ".sol", ".srt", ".ssa", ".str", ".sub", ".svi", ".tod", ".tp", ".ts", ".vc1", ".vid", ".vod", ".vp6", ".vp7", ".vqa", ".wm", ".wma", ".wmdb", ".wmv", ".xas", ".xma"};
 
     protected static Logger logger = Logger.getLogger(Corpus.class.getName());
+    static String rootDataDir;  // set by CorpusServiceI during initialization
     public static void setLogger( Logger lg ) { logger = lg; }
     
-    protected String                  m_name,
-                                      m_description,
-                                      m_dataSetFolder;     // Top-Level containing folder for DataSet
-    protected String                  m_homepage;
+    protected String m_dataSetFolder = null;     // Top-Level containing folder for DataSet
     
 //    private LoaderThread              m_loader_thread;
     protected Map<String, LabelableListI> m_images;
     private boolean                   m_spacesUsed = false;
     private boolean errorShown = false;
     
-    public CorpusI() {
+    public CorpusI(String name, String description, String homepageURL, boolean isImmutableMirror)
+    {
+        super( name, description, homepageURL, isImmutableMirror );
         m_images = new HashMap<String, LabelableListI>();
+        setDataDirBasedOnName();
 //        m_loader_thread = null;
     }
     
     public String getHomepage() {
-        return m_homepage;
+        return homepageURL;
     }
 
     public boolean pathsUseSpaces() {
@@ -66,33 +80,49 @@ abstract public class CorpusI extends Corpus {
         // m_spacesUsed = Code_Utils.stringHasSpaces(fullDatasetPath);
         // return m_spacesUsed;
     }
+    
+    /** Has a local mirror already been created?  This will return true only
+      * if this corpus requires a download, not for one that is local to
+      * begin with.
+      */
+    public abstract boolean localMirrorExists();
 
     // Advises if load operation is still ongoing
-    public boolean isStillLoading() {
-        return false;
+    private boolean hasFinishedLoading() {
+        return true;
 //        return (null!=m_loader_thread && m_loader_thread.isAlive());
     }
 
-    abstract public void setName(String n);
+    private void setDataDirBasedOnName()
+    {
+        if(null != m_dataSetFolder) {
+            throw new RuntimeException("we dont expect m_dataSetFolder to be set");
+        }
+        assert(null!=rootDataDir && !rootDataDir.equals(""));
+        m_dataSetFolder = rootDataDir + File.separator + this.name;
+    }
 
     public String getName() {
-        return m_name;
+        return name;
     }
 
     public void setDescription(String d){
-        m_description = d;
         if (null==d)
         {
-            m_description = "";
+            description = "";
+        }
+        else
+        {
+            description = d;
         }
     }
 
     public String getDescription() {
-        return m_description;
+        return description;
     }
     
     void setHomepage(String homepage) {
-        m_homepage = homepage;
+        homepageURL = homepage;
     }
     
     public String getDatasetFolder() {
@@ -109,44 +139,39 @@ abstract public class CorpusI extends Corpus {
     
     abstract public void removeSample(String category);
 
+    abstract Labelable[] getLabels();
+
+    abstract void createLocalMirror(CorpusCallbackPrx cb);
+
     /*
      *Load all the images
      * from top-level folder and all categories
      */
-    /*
-    public void loadImages(DataSetMirror dsm)
+    public void loadImages()
     {
         errorShown = false;
-        String iLoc = dsm.getInitLocation();
         
-        // Substitute System media_root_dir for '$MEDIA_ROOT' substring 
-        if(DataSetLocType.LOCAL == dsm.getInitLocationType()) {
-            
-            String replacedUnixPath = Data_IO_Utils.unixPathStr(iLoc);
-            String mediaRootDirStr = Main.getEngine().getDataDir().getPath();
-            String unixPath_RootDir = Data_IO_Utils.unixPathStr(mediaRootDirStr);
-            replacedUnixPath = replacedUnixPath.replaceFirst("\\$MEDIA_ROOT", unixPath_RootDir);  // Backslashes convert to Reg-exp
-
-            iLoc = replacedUnixPath;
-        }
-        
-        File dir = new File(iLoc);
+        File dir = new File( m_dataSetFolder );
         LinkedList<LabelableListI> queue = new LinkedList<LabelableListI>();
         for(LabelableListI sl : m_images.values()){
             queue.add(sl);   
         }
-        int added = loadImagesFromDir(m_name, dir, "", queue);
+        logger.log( Level.FINE, "loading images from corpus main data directory, {0}",
+                    m_dataSetFolder );
+        int added = loadImagesFromDir( name, dir, "", queue, false );
         if (0==added)
         {
             // don't worry too much about this, it's the root directory and not an empty category
-            logger.log(Level.FINE, "Sample directory {0} does not exist or is empty", m_name);
+            logger.log(Level.FINE, "Sample directory {0} does not exist or is empty", name);
         }
         LabelableListI sl;
         while (queue.peek() != null)
         {
             sl = queue.remove();
-            File subdir = new File( iLoc+File.separator+sl.getSubdir() );
-            added = loadImagesFromDir(sl.getName(), subdir, sl.getSubdir(), queue);
+            File subdir = new File( m_dataSetFolder+File.separator+sl.getSubdir() );
+            logger.log( Level.FINE, "loading images from corpus sub-directory, {0}",
+                        subdir.getPath() );
+            added = loadImagesFromDir(sl.getName(), subdir, sl.getSubdir(), queue, true);
             if (0==added)
             {
                 // worry a bit more about this, this is an empty category
@@ -158,10 +183,10 @@ abstract public class CorpusI extends Corpus {
             }
         }
     }
-     * 
-     */
+
     
     public class DirNameFilter implements FilenameFilter {
+        @Override
         public boolean accept (File dir, String name)
         {
             // ignore any .name directories
@@ -189,11 +214,16 @@ abstract public class CorpusI extends Corpus {
      * don't add a LabelableListI if no files are in this directory.
      *
      */
-    protected int loadImagesFromDir(String name, File directory, String subdir, LinkedList<LabelableListI> queue){
-        LabelableListI dir_SampleList = m_images.get(name);
+    protected int loadImagesFromDir(String labelName, File directory, 
+                                    String subdir, LinkedList<LabelableListI> queue, 
+                                    boolean recurse)
+    {
+        logger.log( Level.INFO, "loadImagesFromDir {0}, {1}, {2}", 
+                    new Object[]{labelName, directory.getPath(), subdir } );
+        LabelableListI dir_SampleList = m_images.get(labelName);
         if (null==dir_SampleList)
         {
-            dir_SampleList = new LabelableListI(name, this, subdir);
+            dir_SampleList = new LabelableListI(labelName, this, subdir);
         }
         // for now, clear list so we don't add
         // duplicates if the dataset gets "opened" multiple times
@@ -202,25 +232,59 @@ abstract public class CorpusI extends Corpus {
         File subdirs[] = directory.listFiles(new DirNameFilter());
         if (null != subdirs && subdirs.length > 0){
             for (int i = 0; i < subdirs.length; i++){
-                if (!samplesHasSubDir(subdirs[i].getName()) ){
-                    String dir = subdirs[i].getAbsolutePath();
-                    String dsfolder = this.m_dataSetFolder;
-                    String replacedUnixPath = "TODO"; // Data_IO_Utils.unixPathStr(dsfolder);
-                    String mediaRootDirStr = "TODO"; //Main.getEngine().getDataDir().getPath();
-                    String unixPath_RootDir = "TODO"; //Data_IO_Utils.unixPathStr(mediaRootDirStr);
-                    String folder = replacedUnixPath.replaceFirst("\\$MEDIA_ROOT", unixPath_RootDir);  // Backslashes convert to Reg-exp       
-                    int len = folder.length();
-                    String sub = dir.substring(len+1);
-                    LabelableListI samplelist = new LabelableListI(sub, this, sub);
+                if (!samplesHasSubDir(subdirs[i].getName()) )
+                {
+                    // no idea what this does - will remove.
+//                    String dir = subdirs[i].getAbsolutePath();
+//                    String dsfolder = this.m_dataSetFolder;
+//                    String replacedUnixPath = Data_IO_Utils.unixPathStr(dsfolder);
+//                    String unixPath_RootDir = Data_IO_Utils.unixPathStr( rootDataDir );
+//                    String folder = replacedUnixPath.replaceFirst("\\$MEDIA_ROOT", unixPath_RootDir);  // Backslashes convert to Reg-exp       
+//                    int len = folder.length();
+//                    String sub = dir.substring(len+1);
+                    
+                    // Since the data set can have folders within folders, we need
+                    // to pass into the LabelablelistI this information.  Only the top level
+                    // folders are the catagories.
+                    String nextdir;
+                    String sub = subdirs[i].getName();
+                    if (sub.equals("")){
+                        sub = getName();
+                    }
+                    if (directory.getPath().equals(m_dataSetFolder))
+                        nextdir = sub;
+                    else {
+                        nextdir = directory.getPath().substring(this.m_dataSetFolder.length() + 1) +
+                                   File.separator + sub;
+                    }
+  
+                    LabelableListI samplelist = new LabelableListI(sub, this, nextdir);
                     this.addCategory(samplelist);   
                     queue.add(samplelist);
                 }
             }
         }
-        int added = dir_SampleList.addAllSamplesInDir(directory);
+        String relativePath = name;
+        if (subdir.isEmpty())
+        {
+            subdir = "";  // ensure non-null for initializing Label
+        }
+        else
+        {
+            relativePath += "/" + subdir; // always forward slash never \
+        }
+        String lname = subdir;
+        if (lname.equals(""))
+            lname = labelName;
+        Label label = new Label(true, lname, new HashMap<String,String>(0), new Semantics(""));
+
+        float confidence = 1.0f;
+        int added = dir_SampleList.addAllSamplesInDir( directory, label, confidence, 
+                                                       new DirectoryPath( relativePath ), 
+                                                       recurse );
         if (!dir_SampleList.isEmpty())
         {
-            m_images.put(name, dir_SampleList);
+            m_images.put(labelName, dir_SampleList);
         }
         return added;
     }
@@ -322,6 +386,7 @@ abstract public class CorpusI extends Corpus {
         // Grab all directories inside the DataSet folder, filter out '.meta'
         FileFilter all_nonMetaFolders = new FileFilter() {
             
+            @Override
             public boolean accept(File file) {  // boolean Filter callback
                 return (file.isDirectory() && !(".meta".equals(file.getName())));
             }
@@ -333,8 +398,14 @@ abstract public class CorpusI extends Corpus {
             File curImageCatDir = new File(m_dataSetFolder);
             if(curImageCatDir.isDirectory()) {
             
-                    dir_SampleList = new LabelableListI(curImageCatDir.getName(), this, curImageCatDir.getName());
-                    int added = dir_SampleList.addAllSamplesInDir(curImageCatDir);
+                    String labelname = curImageCatDir.getName();
+                    dir_SampleList = new LabelableListI(labelname, this, curImageCatDir.getName());
+                    Label label = new Label(true, labelname, new HashMap<String,String>(0), new Semantics(""));
+                    float confidence = 1.0f;
+                    DirectoryPath relPath = new DirectoryPath( name+"/"+curImageCatDir );
+                    boolean recurse = true;
+                    int added = dir_SampleList.addAllSamplesInDir(curImageCatDir, label, 
+                                                                  confidence, relPath, recurse);
                     if (0==added)
                     {
                        logger.log(Level.WARNING, "Sample directory {0} does not exist or is empty", 
@@ -354,15 +425,19 @@ abstract public class CorpusI extends Corpus {
             File[] imageCategoryDirs = topLevelDir.listFiles(all_nonMetaFolders);
             if (null == imageCategoryDirs || 0 == imageCategoryDirs.length){
                 // We assume that all the images are in this directory
-                String name = topLevelDir.getName();
-                dir_SampleList = new LabelableListI(name, this, name);
-                int added = dir_SampleList.addAllSamplesInDir(topLevelDir);
+                String topDirName = topLevelDir.getName();
+                dir_SampleList = new LabelableListI(topDirName, this, topDirName);
+                Label label = new Label(true, topDirName, new HashMap<String,String>(0), new Semantics(""));
+                float confidence = 1.0f;
+                DirectoryPath relPath = new DirectoryPath( name+"/"+topDirName );
+                boolean recurse = true;
+                int added = dir_SampleList.addAllSamplesInDir(topLevelDir, label, confidence, relPath, recurse);
                 if (0==added)
                 {
                    logger.log(Level.WARNING, "Sample directory {0} does not exist or is empty", 
                            topLevelDir.getPath());
                 }
-                m_images.put(name, dir_SampleList);
+                m_images.put(topDirName, dir_SampleList);
             }else {
                 for(File curImageCatDir : imageCategoryDirs) {
                     if(!curImageCatDir.isDirectory()) {
@@ -370,8 +445,14 @@ abstract public class CorpusI extends Corpus {
                     }
                     else { // Create and add Samples for all images in directory to its LabelableListI in the array
 
-                        dir_SampleList = new LabelableListI(curImageCatDir.getName(), this, curImageCatDir.getName());
-                        int added = dir_SampleList.addAllSamplesInDir(curImageCatDir);
+                        String labelname = curImageCatDir.getName();
+                        dir_SampleList = new LabelableListI(labelname, this, curImageCatDir.getName());
+                        Label label = new Label(true, labelname, new HashMap<String,String>(0), new Semantics(""));
+                        float confidence = 0.0f;
+                        DirectoryPath relPath = new DirectoryPath( name+"/"+labelname );
+                        boolean recurse = true;
+                        int added = dir_SampleList.addAllSamplesInDir(curImageCatDir, label, 
+                                                                      confidence, relPath, recurse);
                         if (0==added)
                         {
                            logger.log(Level.WARNING, "Sample directory {0} does not exist or is empty", 
@@ -417,4 +498,7 @@ abstract public class CorpusI extends Corpus {
     }
 */
     abstract public Properties getProperties();
+    
+    abstract void configureFromProperties(Properties config)
+        throws CorpusConfigurationException;
 }

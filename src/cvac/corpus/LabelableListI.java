@@ -12,12 +12,8 @@ import cvac.Substrate;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
-
-import cvacslice.Corpus;
-//import mediaanalyst.GUI_Desktop.Constants;
-
-//class Corpus {};
-
+import cvac.Corpus;
+import cvac.Label;
 
 /**
  * LabelableListI is either a category of images within a DataSet (such as "dolphins"
@@ -27,7 +23,6 @@ import cvacslice.Corpus;
  * @author tomb
  */
 public class LabelableListI extends ArrayList<Labelable> {
-
     /** user-given name of the Collection (which is a piece of the RunSet)
      */
     private String m_name;
@@ -145,10 +140,15 @@ public class LabelableListI extends ArrayList<Labelable> {
     }
     /** LabelableI data points to each file
      * 
-     * @param directory
+     * @param directory Collect files from this directory.
+     * @param label The label that these Labelables will git.
+     * @param confidence What confidence to assign to the Labelable.
+     * @param relativePath The path to get to this folder.
      * @return the number of samples added
      */
-    public int addAllSamplesInDir(File directory) 
+    public int addAllSamplesInDir(File directory, 
+                                  Label label, float confidence, DirectoryPath relativePath,
+                                  boolean recursive) 
     {
         boolean video = false;
         if (null != m_corpus){
@@ -165,9 +165,10 @@ public class LabelableListI extends ArrayList<Labelable> {
                     // TODO: helper function createSubstrateFrom( directory, imageFiles[i] )
                     Labelable sample = new Labelable();
                     FilePath path;
-                    path = new FilePath(new DirectoryPath(directory.getPath()), 
-                            imageFiles[i].getName());
+                    path = new FilePath( relativePath, imageFiles[i].getName());
                     sample.sub = new Substrate(true, false, path, -1, -1);
+                    sample.confidence = confidence;
+                    sample.lab = label;
                     this.add(sample);
                 }
                 cnt += imageFiles.length;
@@ -180,12 +181,35 @@ public class LabelableListI extends ArrayList<Labelable> {
                 for (int i = 0; i < videoFiles.length; i++){
                     Labelable sample = new Labelable();
                     FilePath path;
-                    path = new FilePath(new DirectoryPath(directory.getPath()), 
-                            videoFiles[i].getName());
+                    path = new FilePath( relativePath, videoFiles[i].getName());
                     sample.sub = new Substrate(false, true, path, -1, -1);
+                    sample.confidence = confidence;
+                    sample.lab = label;
                     this.add(sample);
                 }
                 cnt +=  videoFiles.length;
+            }
+        }
+        if (recursive)
+        {
+            File files[] = directory.listFiles();
+            if (null!=files)
+            {
+                for ( File file : files )
+                {
+                    if ( file.isDirectory() && 
+                         !(file.getName().equals(".")
+                           || file.getName().equals("..")
+                           || file.getName().equals(".meta")
+                           ))
+                    {
+                        DirectoryPath newRelativePath = (DirectoryPath) relativePath.clone();
+                        newRelativePath.relativePath = 
+                            relativePath.relativePath + "/" + file.getName();
+                        cnt += addAllSamplesInDir( file, label, confidence,
+                                                   newRelativePath, true );
+                    }
+                }
             }
         }
         return cnt;

@@ -1,5 +1,6 @@
 # CVAC-specific #
 #################
+include/version.h
 src/util/Data.*
 src/util/Services.*
 test/UnitTests/Data.*
@@ -10,6 +11,12 @@ UserCMakeLists.txt
 /3rdparty
 /doc/html
 /Doxyfile
+/build*
+/dist
+/data/Faces94
+/data/Caltech101
+config.icebox
+config.service
 
 # Compiled source #
 ###################
@@ -21,6 +28,7 @@ UserCMakeLists.txt
 *.so
 *.dylib
 *.a
+*.pyc
 
 # CMake files #
 #############
@@ -49,3 +57,4 @@ nbproject
 Icon?
 ehthumbs.db
 Thumbs.db
+

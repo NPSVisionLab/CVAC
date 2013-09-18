@@ -82,18 +82,22 @@ public:
 		{
 			const ::Result& result = resultSet.results[resultIndex];
 			int numLabelsFound = result.foundLabels.size();
-			localAndClientMsg(VLogger::INFO, NULL, "Found %d labels in %s\n", numLabelsFound, result.original->sub.path.filename.c_str());
+			localAndClientMsg(VLogger::INFO, NULL, "Found %d label%s in %s\n", 
+					  numLabelsFound, 
+					  (numLabelsFound==1)?"":"s",
+					  result.original->sub.path.filename.c_str());
             std::string className;
             if (result.foundLabels.size() > 0)
             {
 				className = result.foundLabels[0]->lab.name;
-				localAndClientMsg(VLogger::DEBUG_1, NULL, "Class name: %s\n", className.c_str());
+				localAndClientMsg(VLogger::INFO, NULL, "Class name: %s\n", className.c_str());
 			}
 			// Print Video labels if found
 			for (int labelIdx = 0; labelIdx < numLabelsFound; labelIdx++)
 			{
-				LabelablePtr label = result.foundLabels[labelIdx];				
-				if(label->ice_isA("::cvac::LabeledVideoSegment", current))	//For verifying available typeIDs, use "ice_ids" or "ice_id" 
+				LabelablePtr label = result.foundLabels[labelIdx];	
+				//For verifying available typeIDs, use "ice_ids" or "ice_id" 			
+				if(label->ice_isA("::cvac::LabeledVideoSegment", current))
 				{
 					LabeledVideoSegmentPtr vid = LabeledVideoSegmentPtr::dynamicCast(label);
 					localAndClientMsg(VLogger::INFO, NULL, "Frame number: %d\n", vid->start.time);
@@ -152,7 +156,11 @@ public:
 
 	void message(::Ice::Int level, const ::std::string& messageString, const ::Ice::Current& current) 
 	{
-		localAndClientMsg(VLogger::INFO, NULL, "Detector reports: %s\n", messageString.c_str());
+	  // append \n if detector didn't append it
+		localAndClientMsg(VLogger::DEBUG, NULL, "Detector reports: %s%s", 
+				  messageString.c_str(),
+				  (messageString.length()==0 || 
+				   messageString.c_str()[messageString.length()-1]!='\n')?"\n":"");
 	};
 };
 
@@ -214,23 +222,51 @@ private:
     int SBD_TRUTH_TOLERANCE;
 };
 
+/** print usage information
+ */
+void usage( char* argv[] )
+{
+  printf("usage: %s data detector folder [config [verifyresults]]\n"
+	 "       data:          archive with DetectorData\n"
+	 "       detector:      name of the detector\n"
+	 "       folder:        which images or videos to process\n"
+	 "       config:        configuration file for ICE\n"
+	 "       verifyresults: compare results against known-good results\n",
+	 argv[0]
+	 );
+}
 
 // =============================================================================
-// Usage: <exe filename> <detector xml or zipFile from config> <name of the detector> 
+// Usage: <exe filename> <zipFile from config> <name of the detector> 
 //        [path to directory of images to process] [flag: 'verifyresults']
 int main(int argc, char* argv[])
 {
 	int mainResult;
 
+#if 0
+    std::string val = getenv( "PATH" );
+    cout << "PATH=" << val << endl;
+    return -1;
+#endif //0
+
 	try
 	{
+		if((argc < 2) || (argc > 6)) 
+		{	// Wrong arguments
+			localAndClientMsg(VLogger::WARN, NULL, 
+					  "Too many or too few arguments (%d).\n", argc);
+			usage( argv );
+			return EXIT_FAILURE;
+		}
+
 		ClientAppData appData;
 		ClientApp app(&appData);
 		int res = 0;
-		std::string configstr = "config.client"; // Assumed to run from CVAC root, or use optional argument to specify
+		// Assumed to run from CVAC root, or use optional argument to specify
+		std::string configstr = "config.client";
 		app.m_detectorName = std::string(argv[1]);
 
-		if(app.m_detectorName == "BagOfWordsUSKOCA")
+        if(app.m_detectorName.find("BagOfWordsUSKOCA")!=std::string::npos)
 		{
 			appData.multiclassDetection = true;
 		}
@@ -240,12 +276,6 @@ int main(int argc, char* argv[])
       localAndClientMsg(VLogger::DEBUG_2, NULL, "Verifying shot boundary detector\n");
 			appData.videoInputType = true;
 			appData.needSBDVerified = true;
-		}
-
-		if((argc < 2) || (argc > 6)) 
-		{	// Wrong arguments
-			localAndClientMsg(VLogger::WARN, NULL, "Too many or too few arguments, received count of: %d.\n", argc);
-			return EXIT_FAILURE;
 		}
 
 		if((4 == argc) || (5 == argc)) 
@@ -276,7 +306,7 @@ int main(int argc, char* argv[])
 		//sleep(1000);
 		return EXIT_FAILURE;
 	}
-	localAndClientMsg(VLogger::WARN, NULL, "End result was: %d\n", mainResult);
+	localAndClientMsg(VLogger::DEBUG, NULL, "End result was: %d\n", mainResult);
 	return mainResult;
 }
 
@@ -324,7 +354,7 @@ DetectorPrx ClientApp::initIceConnection(std::string detectorNameStr)
     // note that we need an ObjectAdapter to permit bidirectional communication
     // if we want to get past firewalls without Glacier2
 
-    localAndClientMsg(VLogger::INFO, NULL, "IceBox test client: created callbackHandler proxy\n");
+    localAndClientMsg(VLogger::DEBUG, NULL, "IceBox test client: created callbackHandler proxy\n");
                 
     if(!detector)
     {
@@ -374,14 +404,19 @@ DetectorPrx ClientApp::initIceConnection(std::string detectorNameStr)
 
 int ClientApp::run(int argc, char* argv[])
 {
+  string verbStr = communicator()->getProperties()->getProperty("CVAC.ClientVerbosity");
+  if (!verbStr.empty())
+  {
+      vLogger.setLocalVerbosityLevel( verbStr );
+  }
   localAndClientMsg(VLogger::DEBUG_2, NULL, "App 2nd arg (testFileFolder): %s\n", argv[2]);
   std::string testFileFolder = std::string(argv[2]);
 
   if(argc < 3 || argc > 5)  // Warn wrong args
   {
-	localAndClientMsg(VLogger::ERROR_V, NULL,
+	localAndClientMsg(VLogger::ERROR, NULL,
 	"not enough or too many command line arguments\n", appName());
-	localAndClientMsg(VLogger::ERROR_V, NULL,
+	localAndClientMsg(VLogger::ERROR, NULL,
 	"<exe filename> <detector xml or zipFile from config> <name of the detector> [path to directory of images to process] [flag: 'verifyresults']\n");
 	return EXIT_FAILURE;
   }
@@ -389,14 +424,14 @@ int ClientApp::run(int argc, char* argv[])
   // Connect to detector
   DetectorPrx detector = initIceConnection(m_detectorName);
   if(NULL == detector.get()) {
-    localAndClientMsg(VLogger::ERROR_V, NULL, "Could not connect to CVAC Ice Services\n");
+    localAndClientMsg(VLogger::ERROR, NULL, "Could not connect to CVAC Ice Services\n");
     return EXIT_FAILURE;
   }
 
   int resultInit = initializeDetector(detector);
   if((EXIT_SUCCESS != resultInit) || (false == detector->isInitialized())) {
       
-    localAndClientMsg(VLogger::ERROR_V, NULL, "Detector->isInitialized() failed.  Aborting IceTestClient.\n");
+    localAndClientMsg(VLogger::ERROR, NULL, "Detector->isInitialized() failed.  Aborting IceTestClient.\n");
     return(EXIT_FAILURE);
   }
   else {
@@ -409,7 +444,7 @@ int ClientApp::run(int argc, char* argv[])
 	  std::string lastArgStr = std::string(argv[4]);
 	  if(-1 == lastArgStr.find("verifyresults")) 
 	  {
-		  localAndClientMsg(VLogger::ERROR_V, NULL, "Invalid value for argument #5: %s.  CMakeLists.txt must specify token: 'verifyresults'\n", argv[4]);
+		  localAndClientMsg(VLogger::ERROR, NULL, "Invalid value for argument #5: %s.  CMakeLists.txt must specify token: 'verifyresults'\n", argv[4]);
 		  return(EXIT_FAILURE);
 	  }
 		
@@ -491,14 +526,13 @@ int ClientApp::verification(std::string testFilePath, DetectorPrx detector)
 	
 	if(appData->multiclassDetection)
 	{
+		std::string testFileName0 = (m_detectorName + "0." + suffix);
 		std::string testFileName1 = (m_detectorName + "1." + suffix);
 		std::string testFileName2 = (m_detectorName + "2." + suffix);
-		std::string testFileName3 = (m_detectorName + "3." + suffix);
 
-		Purpose pOne(MULTICLASS, 1), pTwo(MULTICLASS, 2), pThree(MULTICLASS, 3);
-		addToRunSet(runSet, testFilePath, testFileName1, pOne);
-		addToRunSet(runSet, testFilePath, testFileName2, pTwo);
-		addToRunSet(runSet, testFilePath, testFileName3, pThree);
+		addToRunSet(runSet, testFilePath, testFileName0, Purpose(MULTICLASS, 0));
+		addToRunSet(runSet, testFilePath, testFileName1, Purpose(MULTICLASS, 1));
+		addToRunSet(runSet, testFilePath, testFileName2, Purpose(MULTICLASS, 2));
 	}
 	else
 	{
@@ -635,7 +669,7 @@ int ClientApp::initializeDetector(DetectorPrx detector)
 	// If a detector dat file was passed then use that instead of getting it from the config file
 	if (m_detectorData.length() > 0)
 	{
-		detectorData.file.directory.relativePath = getFilePath(m_detectorData);
+		detectorData.file.directory.relativePath = getFileDirectory(m_detectorData);
 		detectorData.file.filename = getFileName(m_detectorData);
 	}
 	else
@@ -646,7 +680,9 @@ int ClientApp::initializeDetector(DetectorPrx detector)
 		
 		if (filename.length() == 0)
 		{
-			localAndClientMsg(VLogger::WARN, NULL, "No .DetectorFilename pair found for %s.\n", m_detectorName.c_str());
+			localAndClientMsg(VLogger::WARN, NULL,
+					  "No .DetectorFilename pair found for %s.\n", 
+					  m_detectorName.c_str());
 			return EXIT_FAILURE;
 		}
 		
@@ -666,8 +702,9 @@ int ClientApp::initializeDetector(DetectorPrx detector)
 	}
 	try
 	{
-		localAndClientMsg(VLogger::INFO, NULL, "Initializing detector with relativePath: %s\n", detectorData.file.directory.relativePath.c_str());
-		localAndClientMsg(VLogger::INFO, NULL, "Initializing detector with filename: %s\n", detectorData.file.filename.c_str());
+		localAndClientMsg(VLogger::INFO, NULL, "Initializing detector: %s/%s\n", 
+				  detectorData.file.directory.relativePath.c_str(),
+				  detectorData.file.filename.c_str());
 		detector->initialize(5, detectorData);
 		localAndClientMsg(VLogger::DEBUG, NULL, "IceBox test client: initialized the detector\n");
 	}

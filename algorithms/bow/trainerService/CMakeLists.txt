@@ -36,3 +36,16 @@ TARGET_LINK_LIBRARIES(bowICEServerTrain
     utils
     )
 
+IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
+IF (WIN32)
+INSTALL( TARGETS bowICEServerTrain
+               DESTINATION bin
+               COMPONENT Runtime
+             )
+ELSE (WIN32)
+INSTALL( TARGETS bowICEServerTrain
+               DESTINATION lib
+               COMPONENT Runtime
+             )
+ENDIF (WIN32)
+ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )
