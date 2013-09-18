@@ -40,16 +40,63 @@ set(CPACK_COMPONENT_DATA_DISPLAY_NAME "CVAC sample data" )
 # set(CPACK_INSTALL_PREFIX ${CVAC_VERSION_DIR} )
 
 # Binary distribution of CVAC: only built files, binary dependencies,
-# and some sample data
+# python install distribution (containing ice, easy, and cvac, python client
+# files), c++ client files (detectorClient and trainerClient).
+# Everything required to run CVAC without building from source.
 
+# We need to copy cvac, Ice, and easy to the build directory for packing
+# python distribution.
+
+# Set locations and variables
+SET (SLICE_OUTPUT_PATH "${SLICE_OUTPUT_PYTHONDIR}")
+SET (PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/pythonBuild")
+SET (PYTHON_PACK_NAME "EasyComputerVision")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
+IF (WIN32)
+    SET (PYTHON_PACK_FILE "${PYTHON_PACK_NAME}-${CVAC_VERSION}.win32.zip")
+ELSE (WIN32)
+    #Fill in XXX with correct name
+    SET (PYTHON_PACK_FILE "${PYTHON_PACK_NAME}-${CVAC_VERSION}.XXX.tar")
+ENDIF (WIN32)
+
+# First copy over cvac
+FILE (GLOB ICE_FILES ${SLICE_OUTPUT_PATH}/*_ice.py)
+FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/cvac)
+FILE (COPY ${SLICE_OUTPUT_PATH}/cvac DESTINATION ${PYTHON_BUILD_DIR}
+      PATTERN *.py)
+
+# Next copy over easy. 
+FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
+      PATTERN *.py)
+
+
+# Next copy over ice. Since we need to change directory name
+# from python to ice copy over the files
+FILE (GLOB ICE_FILES ${ICE_ROOT}/python/*)
+FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/ice)
+
+# Run setup.py to build the python distribution file
+CONFIGURE_FILE(setup.py.in "${PYTHON_BUILD_DIR}/setup.py")
+ADD_CUSTOM_COMMAND(OUTPUT ${PYTHON_BUILD_DIR}/timestamp
+                  COMMAND ${PYTHON_EXECUTABLE} setup.py bdist
+                  COMMAND ${CMAKE_COMMAND} -E touch ${PYTHON_BUILD_DIR}/timestamp
+                  DEPENDS ${SLICE_OUTPUT_PATH}/cvac/__init__.py
+                  WORKING_DIRECTORY ${PYTHON_BUILD_DIR}
+                  )
+ADD_CUSTOM_TARGET (TARGET ALL DEPENDS ${PYTHON_BUILD_DIR}/timestamp)
 # Select Generator by OS
 IF(WIN32)
     SET( SCRIPT_EXT bat )
   SET(CPACK_GENERATOR "NSIS")
-ELSE()
+ELSE(WIN32)
     SET( SCRIPT_EXT sh )
   SET(CPACK_GENERATOR "TGZ")
 ENDIF(WIN32)
+
+INSTALL(FILES ${PYTHON_BUILD_DIR}/dist/${PYTHON_PACK_FILE}
+       DESTINATION python
+       COMPONENT Runtime 
+      )
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/corpus
        DESTINATION data
@@ -183,6 +230,12 @@ INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/python
       DESTINATION 3rdParty/opencv
        COMPONENT ThirdParty
       ) 
+# Add script commands to execute after the install
+INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/etc/doWinInstall.${SCRIPT_EXT} 
+       DESTINATION bin
+       COMPONENT Runtime
+      )
+SET (CPACK_NSIS_EXTRA_INSTALL_COMMANDS "ExecWait '\\\"$INSTDIR\\\\bin\\\\doWinInstall $INSTDIR\\\"'")
 
 ELSE (WIN32)
 #If not windows need the libs for the shared libraries
