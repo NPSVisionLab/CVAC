@@ -41,6 +41,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
+#include <list>
+#include <vector>
+#include <map>
+#include <algorithm>
 #include <util/ServiceMan.h>
 
 #include <opencv2/opencv.hpp>
@@ -68,59 +72,83 @@
 using namespace cv;
 using namespace std;
 
+#define BOW_VOC_FILE "VOC_FILE"
+#define BOW_SVM_FILE "SVM_FILE"
+#define BOW_DETECTOR_NAME "DETECTOR_NAME"
+#define BOW_EXTRACTOR_NAME "EXTRACTOR_NAME"
+#define BOW_MATCHER_NAME "MATCHER_NAME"
+#define BOW_OPENCV_VERSION "OPENCV_VERSION"
+#define BOW_ONECLASS_ID "ONE-CLASS_ID"
+
 class bowCV {
 public:
-	bowCV();
-	~bowCV();	
-	
-	bool			train_initialize(const string& _detectorName,const string& _extractorName,const string& _matcherName,int _nCluster);
-	bool			train_parseTrainList(const string& _filepathTrain,const string& _filenameTrainList);
-	void			train_stackTrainImage(const string& _fullpath,const int& _classID);	
-	void			train_stackTrainImage(const string& _fullpath,const int& _classID,const int& _x,const int& _y,const int& _width,const int& _height);
-	bool			train_run(const string& _filepathForSavingResult,const string& _filenameForSavingResult, 
-                              cvac::ServiceManager *);
+  bowCV();
+  ~bowCV();	
 
-	bool			detect_initialize(const string& _filepath,const string& _filename);	
-	bool			detect_setParameter(const string& _detectorName,const string& _extractorName,const string& _matcherName);	
-	bool			detect_readTrainResult(const string& _filepath,const string& _filename);	
-	bool			detect_run(const string& _fullfilename, int& _bestClass);
-	
+  bool  isInitialized();
+  bool  isCompatibleOpenCV(const string& _version);
+  bool  train_initialize(const string& _detectorName,const string& _extractorName,
+                         const string& _matcherName,int _nCluster);
+  bool  train_parseTrainList(const string& _filepathTrain,
+                             const string& _filenameTrainList);
+  void  train_stackTrainImage(const string& _fullpath,const int& _classID);	
+  void  train_stackTrainImage(const string& _fullpath,const int& _classID,
+                              const int& _x,const int& _y,
+                              const int& _width,const int& _height);
+  bool  train_run(const string& _filepathForSavingResult,
+                  const string& _filenameForSavingLog, 
+                  cvac::ServiceManager *,
+                  float _oneclassNu = 0.1);  
+
+  bool  detect_initialize(const string& _filepath,const string& _filename);	
+  bool  detect_setParameter(const string& _detectorName,const string& _extractorName,
+                            const string& _matcherName);	
+  bool  detect_readTrainResult(const string& _filepath,const string& _filename);	
+  bool  detect_run(const string& _fullfilename, int& _bestClass,
+                   int _boxX=0,int _boxY=0,int _boxWidth=0,int _boxHeight=0);
+
 
 private:
-	bool			train_writeVocabulary(const string& _filename,const Mat& _vocabulary);
-	bool			detect_readVocabulary( const string& _filename, Mat& _vocabulary );
-	//bool			runTrainFull(const string& _filepathTrain,const string& _filenameTrainList,const string& _filepathForSavingResult,const string& _filenameForSavingResult);	//This function is not good to the ICE project.
-	//void			setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses );
-	//void			setSVMTrainAutoParams( CvParamGrid& c_grid, CvParamGrid& gamma_grid,CvParamGrid& p_grid, CvParamGrid& nu_grid,CvParamGrid& coef_grid, CvParamGrid& degree_grid );	
-	
+  bool    train_writeVocabulary(const string& _filename,const Mat& _vocabulary);
+  void    train_writeLog(const string& _dir,const string& _filename);
+  bool    detect_readVocabulary( const string& _filename, Mat& _vocabulary );
+  string  getProperty(const string &_key);
+  void    setProperty(const string &_key,const string &_value);
+  //bool  runTrainFull(const string& _filepathTrain,const string& _filenameTrainList,const string& _filepathForSavingResult,const string& _filenameForSavingResult);	//This function is not good to the ICE project.
+  //void  setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses );
+  //void  setSVMTrainAutoParams( CvParamGrid& c_grid, CvParamGrid& gamma_grid,CvParamGrid& p_grid, CvParamGrid& nu_grid,CvParamGrid& coef_grid, CvParamGrid& degree_grid );	
+
+public:
+  string  filenameVocabulary;	
+  string  filenameSVM;
+
 protected:
-	Mat					_img;
-	Mat					_descriptors;
-	vector<KeyPoint>	_keypoints;
-	string				_tfileName;
-	char				_buf[255];
-	string				_fullFilePathImg;
-	string				_fullFilePathList;
-	Mat					mVocabulary;
-	string				filenameTrainResult;
-	string				filenameVocabulary;	
-	
+  Mat               _img;
+  Mat               _descriptors;
+  vector<KeyPoint>  _keypoints;
+  string            _tfileName;
+  char              _buf[255];
+  string            _fullFilePathImg;
+  string            _fullFilePathList;
+  Mat               mVocabulary;
+  string            filenameTrainResult;
+  map< string,string > mProperty;   
 
 private:
-	int								cntCluster;
-	bool							flagName;	
-	bool							flagTrain;
-	Ptr<FeatureDetector>			fDetector;	
-	Ptr<DescriptorExtractor>		dExtractor;
-	Ptr<DescriptorMatcher>			dMatcher;
-	string							nameDetector;
-	string							nameExtractor;
-	string							nameMatcher;
-	Ptr<BOWImgDescriptorExtractor>	bowExtractor;
-	CvSVM							classifierSVM;
-	std::vector<string>				vFilenameTrain;
-	std::vector<int>				vClassIDTrain;
-	std::vector<int>				vBoundX,vBoundY;
-	std::vector<int>				vBoundWidth,vBoundHeight;
+  int   cntCluster;
+  int   mInclassIDforOneClass;
+  int   mOutclassIDforOneClass;
+  bool  flagOneClass;
+  bool  flagName;	
+  bool  flagTrain;  
+  Ptr<FeatureDetector>      fDetector;	
+  Ptr<DescriptorExtractor>  dExtractor;
+  Ptr<DescriptorMatcher>    dMatcher;  
+  Ptr<BOWImgDescriptorExtractor>  bowExtractor;
+  CvSVM  classifierSVM;
+  std::vector<string>  vFilenameTrain;
+  std::vector<int>     vClassIDTrain;
+  std::vector<int>     vBoundX,vBoundY;
+  std::vector<int>     vBoundWidth,vBoundHeight;
 };
 #endif	//_BOWCV_H__
