@@ -1,17 +1,17 @@
 @echo off
 @setlocal
 REM Edit the the INSTALLDIR line below with where the distribution was installed
-set INSTALLDIR=
+set INSTALLDIR=__INSTALL_PATH__
 if "%INSTALLDIR%" neq "" goto continue
 echo "Install Directory must be set for startServices script to work!"
 exit /b 1
 :continue
 REM If running the Java services (Corpus, FileServer, etc) edit JAVAEXE
 REM and set to the path of the java executable
-set JAVAEXE=
+set JAVAEXE=__JAVA_PATH__
 REM If running any Python services set in python.config set the path to
 REM the Python 2.6 executable below
-set PYTHONEXE=
+set PYTHONEXE=__PYTHON_PATH__
 set THRDPARTYDIR=%INSTALLDIR%/3rdparty
 set THRDPARTYLIBDIR=%INSTALLDIR%/3rdparty/lib
 set JARDIR=%INSTALLDIR%/bin

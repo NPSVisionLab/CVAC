@@ -1,15 +1,15 @@
 @echo off
 @setlocal
-set INSTALLDIR=""
+set INSTALLDIR=__INSTALL_PATH__
 if "%INSTALLDIR" neq "" goto goto continue
 echo "Install Directory must be set for startServices script to work!"
 exit /b 1
 :continue
 REM If running any Python services set in python.config set the path to
 REM the Python 2.6 executable below
-set PYTHONEXE=""
+set PYTHONEXE=__PYTHON_PATH__
 set ICEDIR=%INSTALLDIR%/3rdparty/ICE
-set PATH=%PATH%;%ICEDIR%/bin
+set PATH="%PATH%;%ICEDIR%/bin"
 chdir "%INSTALLDIR%"
 "%ICEDIR%/bin/iceadmin.exe" --Ice.Config=config.admin shutdown
 "%ICEDIR%/bin/iceadmin.exe" --Ice.Config=config.java_admin shutdown

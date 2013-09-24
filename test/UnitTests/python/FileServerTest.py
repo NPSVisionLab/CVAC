@@ -3,7 +3,6 @@ from __future__ import print_function
 # paths sets up the PYTHONPATH so this is not needed to be setup by the user
 # to run just this test, use "ctest -R PythonFileServerTest --verbose"
 import sys, traceback
-import paths
 import Ice
 import Ice
 import IcePy
