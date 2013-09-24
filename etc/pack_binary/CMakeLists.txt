@@ -37,34 +37,78 @@ set(CPACK_COMPONENT_DATA_DISPLAY_NAME "CVAC sample data" )
 
 # change the install prefix to CVAC-version, since CPack will install into a zip-style archive
 # set(CPACK_SET_DESTDIR true)
-# set(CPACK_INSTALL_PREFIX ${CVAC_VERSION_DIR} )
+# set(CPACK_INSTALL_PREFIX ${CVAC_VERSION_DIR} ) 
+# Binary distribution of CVAC: only built files, binary dependencies, 
+# python install distribution (containing ice, easy, and cvac, python client 
+# files), c++ client files (detectorClient and trainerClient).  
+# Everything required to run CVAC without building from source.  
+# We need to copy cvac, Ice, and easy to the build directory for packing 
+# python distribution.  
+# Set locations and variables 
+SET (SLICE_OUTPUT_PATH "${SLICE_OUTPUT_PYTHONDIR}") 
+SET (PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/python") 
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
 
-# Binary distribution of CVAC: only built files, binary dependencies,
-# and some sample data
+# First copy over cvac
+FILE (GLOB ICE_FILES ${SLICE_OUTPUT_PATH}/*_ice.py)
+FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/cvac)
+FILE (COPY ${SLICE_OUTPUT_PATH}/cvac DESTINATION ${PYTHON_BUILD_DIR}
+      PATTERN *.py)
 
+# Next copy over easy. 
+FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
+      PATTERN *.py)
+
+
+# Next copy over ice. Since we need to change directory name
+# from python to ice copy over the files
+FILE (GLOB ICE_FILES ${ICE_ROOT}/python/*)
+FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/ice)
+
+CONFIGURE_FILE(setup.py.in "${PYTHON_BUILD_DIR}/setup.py")
+CONFIGURE_FILE(easy.pth "${PYTHON_BUILD_DIR}/easy.pth")
+CONFIGURE_FILE(ice.pth "${PYTHON_BUILD_DIR}/ice.pth")
 # Select Generator by OS
 IF(WIN32)
     SET( SCRIPT_EXT bat )
-  SET(CPACK_GENERATOR "NSIS")
-ELSE()
+    SET(CPACK_GENERATOR "NSIS")
+    set( CPACK_PACKAGE_INSTALL_DIRECTORY "C:/CVAC" )
+ELSE(WIN32)
     SET( SCRIPT_EXT sh )
   SET(CPACK_GENERATOR "TGZ")
 ENDIF(WIN32)
+
+INSTALL(DIRECTORY ${PYTHON_BUILD_DIR}
+       DESTINATION .
+       COMPONENT Runtime 
+      )
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/corpus
        DESTINATION data
        COMPONENT data
       )
       
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/detectors
-       DESTINATION data
+SET (DDATA ${CMAKE_SOURCE_DIR}/data/detectors )
+INSTALL(FILES ${DDATA}/bowCorporateLogoModel.zip ${DDATA}/bowUSKOCA.zip ${DDATA}/OpencvFaces.zip
+       DESTINATION data/detectors
        COMPONENT data
       )
       
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/trainImg
-       DESTINATION data
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/trainImg/ca
+       DESTINATION data/trainImg
        COMPONENT data
       )
+
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/trainImg/kr
+       DESTINATION data/trainImg
+       COMPONENT data
+      )
+
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/trainImg/us
+       DESTINATION data/trainImg
+       COMPONENT data
+      )
+      
       
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/testImg
        DESTINATION data
@@ -76,11 +120,6 @@ INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/corporate_logos
        COMPONENT data
       )
       
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/lib/python
-       DESTINATION lib
-       COMPONENT Runtime
-      )
-
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/version.h
        DESTINATION include
        COMPONENT Runtime
@@ -191,5 +230,7 @@ INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
        COMPONENT ThirdParty
       ) 
 ENDIF(WIN32)
+
+INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 include(CPack)
