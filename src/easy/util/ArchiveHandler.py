@@ -4,7 +4,6 @@ from __future__ import print_function
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
 import os,sys
-import paths
 sys.path.append('''.''')
 
 import random
