@@ -40,6 +40,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 //#include <Ice/Ice.h>
 //#include <IceBox/IceBox.h>
 //#include <Services.h>
@@ -242,6 +243,16 @@ namespace cvac
         ServiceManagerIceService*       mIceService;
         SandboxManager*                 mSandbox;
     };
+
+    // this could be an unordered_set instead
+    typedef set<string> StringSet;
+
+    /** Start up all services that are listed in the config file.
+     *  Don't start already-running services.  Return a list of all
+     *  running services, irrespective of whether they were started
+     *  in this call to startServices or not.
+     */
+    StringSet startServices();
 }
 
 

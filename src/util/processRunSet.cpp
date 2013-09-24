@@ -122,7 +122,7 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
                     label->sub.path.filename = std::string(walker->d_name);
                     label->sub.path.directory.relativePath = std::string(filename);
 
-                    ResultSetV2 res = (*_detectFunc)(_detect, tempName);
+                    ResultSet res = (*_detectFunc)(_detect, tempName);
                     // put the "original" label into the result set
                     for (unsigned int idx=0; idx<res.results.size(); idx++)
                     {
@@ -243,7 +243,7 @@ void cvac::processRunSet(DetectorPtr detector,
                 
 
                 // 'result' is a vector of result objects
-                ResultSetV2 result = (*detectFunc)(detector, symlinkFullPath.c_str());
+                ResultSet result = (*detectFunc)(detector, symlinkFullPath.c_str());
 
                 // put the "original" label into the result set
                 for (unsigned int idx=0; idx<result.results.size(); idx++)

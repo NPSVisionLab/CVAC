@@ -63,7 +63,7 @@ namespace cvac
    * Here it is assumed that the detector pointer really points to a
    * DetectorI (a detector instance).
    */
-   typedef ResultSetV2 (*DoDetectFunc) ( DetectorPtr detector, const char *filename);
+   typedef ResultSet (*DoDetectFunc) ( DetectorPtr detector, const char *filename);
 
    /**
    * Process a RunSet calling the passed in DoDetectFunc for each file in
@@ -78,7 +78,7 @@ namespace cvac
                       ServiceManager *servMan);
 
    void sendResultsToClient( const DetectorCallbackHandlerPrx &client, 
-                             const ResultSetV2& results );
+                             const ResultSet& results );
 
    // Check for any chars within the string that could upset the detector
    bool containsIllegalChars(FilePath filePath);

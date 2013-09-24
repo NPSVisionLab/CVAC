@@ -358,3 +358,14 @@ std::string cvac::SandboxManager::createClientDir(const std::string &clientName)
     std::string empty;
     return empty;
 }
+
+
+/** Start the services as per config file; this won't re-start
+ * the services if they are already running.  It returns the names
+ * of running services.
+ */
+StringSet startServices()
+{
+  StringSet running;
+  return running;
+}
