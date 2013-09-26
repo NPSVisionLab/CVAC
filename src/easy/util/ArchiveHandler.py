@@ -151,6 +151,8 @@ class DetectorDataArchive(object):
                 continue;                           
             line = line.rstrip('\r\n')                            
             temp = line.split('=')
+            #debug
+            print("name %s value %s" % (temp[0], temp[1]))
             if len(temp)>1:
                 self.mProperty[temp[0]] = temp[1]                        
         f.close()
