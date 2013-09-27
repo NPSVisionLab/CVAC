@@ -31,7 +31,7 @@ REM Python services that are listed in python.config
 if "%PYTHONEXE%" neq "" (if exist "%INSTALLDIR%/python.config" goto startpython)
 goto next2
 :startpython
-    for /F "eol=# tokens=*" %%A in (%INSTALLDIR%/python.config) do start "CVAC Service (Python)" "cmd /K ""%PYTHONEXE%" %%A"
+    for /F "usebackq eol=# tokens=*" %%A in ("%INSTALLDIR%/python.config") do start "CVAC Service (Python)" "cmd /K ""%PYTHONEXE%" %%A"
 :next2
 echo CVAC services launched
 exit /b 0

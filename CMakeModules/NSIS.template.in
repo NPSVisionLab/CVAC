@@ -547,17 +547,24 @@ FunctionEnd
 
 !include nsDialogs.nsh
 !include LogicLib.nsh
+!include winmessages.nsh
+
 
 !define MUI_FINISHPAGE_NOAUTOCLOSE
-
+!define env_hklm 'HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"'
+!define env_hkcu 'HKCU "Environment"'
 
 Var LabelPython
 Var Dialog
 Var PythonPathText
-var LabelJava
+Var LabelJava
 Var JavaPathText
 Var JavaPathValue
 Var PythonPathValue
+Var DataPathText
+Var LabelData
+Var DataPathValue
+
 
 
 Function customDialog
@@ -581,6 +588,13 @@ Function customDialog
   ${NSD_CreateBrowseButton} -18u 48u 18u 12u "..."
   Pop $0
   ${NSD_OnClick} $0 BrowseJava
+  ${NSD_CreateLabel} 0 70u 100% 12u "Enter path to data directory"
+  Pop $LabelData
+  ${NSD_CreateText} 0 83u -20u 12u "data"
+  Pop $DataPathText
+  ${NSD_CreateBrowseButton} -18u 83u 18u 12u "..."
+  Pop $0
+  ${NSD_OnClick} $0 BrowseData
  
   nsDialogs::Show
 
@@ -606,9 +620,20 @@ Function BrowseJava
   ${EndIf}
 FunctionEnd
 
+Function BrowseData
+  Pop $0
+  ${NSD_GetText} $DataPathText $0
+  nsDialogs::SelectFolderDialog open $0 "Data directory path"
+  Pop $0
+  ${If} $0 != ''
+    ${NSD_SetText} $DataPathText $0
+  ${EndIf}
+FunctionEnd
+
 Function customDialogLeave
   ${NSD_GetText} $PythonPathText $PythonPathValue
   ${NSD_GetText} $JavaPathText $JavaPathValue
+  ${NSD_GetText} $DataPathText $DataPathValue
   #Check if PythonPathValue is a valid file
   ${ifnot} ${FileExists} "$PythonPathValue"
     MessageBox MB_OK "Python path incorrect"
@@ -620,14 +645,23 @@ Function customDialogLeave
     Abort
   ${endif}
 
+  #Set a local EnvirnomentVariable
   System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("PYTHON_HOME", $PythonPathValue).r0'
   StrCmp $0 0 error
   System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("JAVA_HOME", $JavaPathValue).r0'
+  StrCmp $0 0 error
+  System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("CVAC_DATADIR", $DataPathValue).r0'
   StrCmp $0 0 error
   Goto done
 error:
   MessageBox MB_OK "Can't set envirnoment variable"
 done:
+
+  #For CVAC_DATADIR set a global envirnoment variable via the registry
+  WriteRegExpandStr ${env_hklm} "CVAC_DATADIR" "$DataPathValue"
+  #notify windows of change
+  SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
+
 FunctionEnd
 
 !macro _ReplaceInFile SOURCE_FILE SEARCH_TEXT REPLACEMENT
@@ -961,8 +995,14 @@ Section "-Core installation"
 !insertmacro _ReplaceInFile $INSTDIR\bin\stopServices.bat __PYTHON_PATH__ "$PythonPathValue"
   !insertmacro _ReplaceInFile $INSTDIR\bin\stopServices.bat __JAVA_PATH__ "$JavaPathValue"
   !insertmacro _ReplaceInFile $INSTDIR\bin\stopServices.bat __INSTALL_PATH__ "$INSTDIR"
+  !insertmacro _ReplaceInFile $INSTDIR\config.service "CVAC.DataDir = data" "CVAC.DataDir = $DataPathValue"
 
-
+  #if the data path value is not equal to data then copy the data to this
+  #new datapath
+  StrCmp $DataPathValue "data" cvacNext +2
+      SetOutPath $DataPathValue
+      CopyFiles "$INSTDIR/data" "$DataPathValue" 
+cvacNext:
   SetOutPath "$INSTDIR"
   # CVAC Changes End
 
