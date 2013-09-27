@@ -72,7 +72,6 @@ CONFIGURE_FILE(ice.pth "${PYTHON_BUILD_DIR}/ice.pth")
 IF(WIN32)
     SET( SCRIPT_EXT bat )
     SET(CPACK_GENERATOR "NSIS")
-    set( CPACK_PACKAGE_INSTALL_DIRECTORY "C:/CVAC" )
 ELSE(WIN32)
     SET( SCRIPT_EXT sh )
   SET(CPACK_GENERATOR "TGZ")
@@ -89,7 +88,7 @@ INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/corpus
       )
       
 SET (DDATA ${CMAKE_SOURCE_DIR}/data/detectors )
-INSTALL(FILES ${DDATA}/bowCorporateLogoModel.zip ${DDATA}/bowUSKOCA.zip ${DDATA}/OpencvFaces.zip
+INSTALL(FILES ${DDATA}/bowCorporateLogoModel.zip ${DDATA}/bowUSKOCA.zip ${DDATA}/OpencvFaces.zip ${DDATA}/haarcascade_frontalface_alt.xml
        DESTINATION data/detectors
        COMPONENT data
       )
