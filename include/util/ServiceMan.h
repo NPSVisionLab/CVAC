@@ -245,12 +245,13 @@ namespace cvac
     };
 
     // this could be an unordered_set instead
-    typedef set<string> StringSet;
+    typedef std::set<std::string> StringSet;
 
-    /** Start up all services that are listed in the config file.
-     *  Don't start already-running services.  Return a list of all
-     *  running services, irrespective of whether they were started
-     *  in this call to startServices or not.
+    /** Start the services as per config file; this won't re-start
+     * the services if they are already running.  Still, avoid calling
+     * this multiple times because it will access the file system
+     * several times.
+     * It returns the names of running services.
      */
     StringSet startServices();
 }
