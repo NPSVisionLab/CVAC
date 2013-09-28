@@ -44,30 +44,6 @@ set(CPACK_COMPONENT_DATA_DISPLAY_NAME "CVAC sample data" )
 # Everything required to run CVAC without building from source.  
 # We need to copy cvac, Ice, and easy to the build directory for packing 
 # python distribution.  
-# Set locations and variables 
-SET (SLICE_OUTPUT_PATH "${SLICE_OUTPUT_PYTHONDIR}") 
-SET (PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/python") 
-FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
-
-# First copy over cvac
-FILE (GLOB ICE_FILES ${SLICE_OUTPUT_PATH}/*_ice.py)
-FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/cvac)
-FILE (COPY ${SLICE_OUTPUT_PATH}/cvac DESTINATION ${PYTHON_BUILD_DIR}
-      PATTERN *.py)
-
-# Next copy over easy. 
-FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
-      PATTERN *.py)
-
-
-# Next copy over ice. Since we need to change directory name
-# from python to ice copy over the files
-FILE (GLOB ICE_FILES ${ICE_ROOT}/python/*)
-FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/ice)
-
-CONFIGURE_FILE(setup.py.in "${PYTHON_BUILD_DIR}/setup.py")
-CONFIGURE_FILE(easy.pth "${PYTHON_BUILD_DIR}/easy.pth")
-CONFIGURE_FILE(ice.pth "${PYTHON_BUILD_DIR}/ice.pth")
 # Select Generator by OS
 IF(WIN32)
     SET( SCRIPT_EXT bat )
@@ -77,6 +53,7 @@ ELSE(WIN32)
   SET(CPACK_GENERATOR "TGZ")
 ENDIF(WIN32)
 
+SET (PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/../python")
 INSTALL(DIRECTORY ${PYTHON_BUILD_DIR}
        DESTINATION .
        COMPONENT Runtime 
