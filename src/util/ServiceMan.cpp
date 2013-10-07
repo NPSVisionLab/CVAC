@@ -367,7 +367,7 @@ bool servicesStarted()
   return true;
 }
 
-/** "exec" startIcebox.sh/bat and wait for completion
+/** "exec" startIcebox.sh/bat and wait for completion (a few seconds)
  */
 void doStartServices()
 {
