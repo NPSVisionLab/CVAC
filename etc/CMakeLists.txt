@@ -21,6 +21,13 @@ ELSE( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
   SET( START_JAVA_SERVICES 0 )
 ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 
+WRAP_SLICE2PY( SLICE_FILES
+    ${CMAKE_SOURCE_DIR}/src/Files.ice
+    ${CMAKE_SOURCE_DIR}/src/Data.ice
+    ${CMAKE_SOURCE_DIR}/src/Services.ice
+    ${CMAKE_SOURCE_DIR}/src/Corpus.ice
+)
+
 # start Python services if we can find the interpreter:
 # CMakeLists in the root dir will set PYTHON_EXECUTABLE if found
 
