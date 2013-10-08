@@ -50,7 +50,10 @@ ENDIF( NOT BUILD_3RDPARTY_PACKAGE )
 # Set locations and variables
 SET (SLICE_OUTPUT_PATH "${SLICE_OUTPUT_PYTHONDIR}")
 SET (PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/python")
+SET (OPENCV_3RDPARTY_DIR "${CMAKE_SOURCE_DIR}/3rdparty/opencv/python/2.6" )
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/cvac")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 
 # First copy over cvac
 FILE (GLOB ICE_FILES ${SLICE_OUTPUT_PATH}/*_ice.py)
@@ -61,7 +64,9 @@ FILE (COPY ${SLICE_OUTPUT_PATH}/cvac DESTINATION ${PYTHON_BUILD_DIR}
 # Next copy over easy.
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
       PATTERN *.py)
-
+# Next copy over opencv files
+FILE (COPY ${OPENCV_3RDPARTY_DIR}/cv.py DESTINATION ${PYTHON_BUILD_DIR} )
+FILE (COPY ${OPENCV_3RDPARTY_DIR}/cv2.pyd DESTINATION ${PYTHON_BUILD_DIR} )
 
 # Next copy over ice. Since we need to change directory name
 # from python to ice copy over the files

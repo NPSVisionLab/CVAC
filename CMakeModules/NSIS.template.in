@@ -664,6 +664,18 @@ done:
 
 FunctionEnd
 
+Function installNumPy
+    Push $1
+    StrCpy $1 "3rdparty\numpy-1.7.1.win32-py2.6.exe"
+    File /nonfatal $1
+    ${if} ${FileExists} "$INSTDIR\$1" 
+        MessageBox MB_YESNO "Install Numpy (for python services)" /SD IDYES IDNO endInstall
+        ExecWait "$INSTDIR\$1"
+    ${endif}
+endInstall:
+    Pop $1
+FunctionEnd
+
 !macro _ReplaceInFile SOURCE_FILE SEARCH_TEXT REPLACEMENT
   Push "${SOURCE_FILE}"
   Push "${SEARCH_TEXT}"
@@ -982,6 +994,7 @@ Section "-Core installation"
   !insertmacro MUI_STARTMENU_WRITE_END
 
   # CVAC Changes start
+  Call installNumPy
   SetOutPath "$INSTDIR\python"
   # install the Python code
   nsExec::ExecToLog '"$PythonPathValue" setup.py install'
