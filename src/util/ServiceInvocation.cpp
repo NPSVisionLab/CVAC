@@ -50,14 +50,14 @@ using namespace cvac;
 class CallbackHandlerI : public DetectorCallbackHandler
 {
 public:
-  ResultSet results;
+  ResultSet rs;
   CallbackHandlerI()  {}
   ~CallbackHandlerI() {}
 
   void foundNewResults(const ResultSet& newResults, const ::Ice::Current& current)
   {
-    results.results.insert( results.results.end(),
-                            newResults.results.begin(), newResults.results.end() );
+    rs.results.insert( rs.results.end(),
+                       newResults.results.begin(), newResults.results.end() );
   }
 
   void estimatedTotalRuntime(::Ice::Int seconds, const ::Ice::Current& current) {}
@@ -103,7 +103,8 @@ typedef IceUtil::Handle<FinishedCallback> FinishedCallbackPtr;
 
 /** Connect to the Ice Service
  */
-DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb)
+DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb,
+                              DetectorCallbackHandlerPtr cr)
 {
   Ice::CommunicatorPtr comm = Ice::Application::communicator();
   Ice::PropertiesPtr props = comm->getProperties();
@@ -116,14 +117,14 @@ DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb
   }
   catch (const IceUtil::NullHandleException& e)
   {
-    throw Exception( "Invalid proxy: '%s'. %s\n", 
-                     detectorNameStr.c_str(), e.what());
+    localAndClientMsg( VLogger::ERROR, NULL, "Invalid proxy: '%s'. %s\n", 
+                       detectorNameStr.c_str(), e.what());
+    return NULL;
   }
 
   Ice::ObjectAdapterPtr adapter = comm->createObjectAdapter("");
   det_cb.name = IceUtil::generateUUID();
   det_cb.category = "";
-  DetectorCallbackHandlerPtr cr = new CallbackHandlerI();
   adapter->add(cr, det_cb);
   adapter->activate();
   detector->ice_getConnection()->setAdapter(adapter);    
@@ -145,17 +146,19 @@ ResultSet detect( const std::string& algorithm,
 {
   // Connect to detector
   Ice::Identity det_cb;
-  DetectorPrx detector = initIceConnection( algorithm, det_cb );
+  CallbackHandlerI* cr = new CallbackHandlerI();
+  DetectorPrx detector = initIceConnection( algorithm, det_cb, cr );
   if(NULL == detector.get())
   {
-    throw new Exception( "Could not connect to CVAC Ice Services" );
+    localAndClientMsg( VLogger::ERROR, NULL, "Could not connect to CVAC Ice Services" );
+    return ResultSet();
   }
 
   Ice::CommunicatorPtr comm = Ice::Application::communicator();
   Ice::PropertiesPtr iceprops = comm->getProperties();
   std::string dataDir = iceprops->getProperty("CVAC.DataDir");
 
- TODO: dothis "I think we don't have to use the FinishCallback at all because we don't want to"
+ TODO: "I think we don't have to use the FinishCallback at all because we don't want to"
     "invoke process asynchronously.  Not sure why the choice was made to do so in"
     "detectorClient.  Please try without first: just call "
     "detector->process(det_cb, runSet);";
@@ -183,6 +186,6 @@ ResultSet detect( const std::string& algorithm,
     }
 
   comm->shutdown();  // Shut down at the end of either branch
-  return det_cb->results;
+  return cr->rs;
 }
 
