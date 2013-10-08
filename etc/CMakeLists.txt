@@ -21,13 +21,6 @@ ELSE( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
   SET( START_JAVA_SERVICES 0 )
 ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 
-WRAP_SLICE2PY( SLICE_FILES
-    ${CMAKE_SOURCE_DIR}/src/Files.ice
-    ${CMAKE_SOURCE_DIR}/src/Data.ice
-    ${CMAKE_SOURCE_DIR}/src/Services.ice
-    ${CMAKE_SOURCE_DIR}/src/Corpus.ice
-)
-
 # start Python services if we can find the interpreter:
 # CMakeLists in the root dir will set PYTHON_EXECUTABLE if found
 
@@ -65,13 +58,25 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/cvac")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 
-# First copy over cvac
-FILE (GLOB ICE_FILES ${SLICE_OUTPUT_PATH}/*_ice.py)
-FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/cvac)
-FILE (COPY ${SLICE_OUTPUT_PATH}/cvac DESTINATION ${PYTHON_BUILD_DIR}
-      PATTERN *.py)
+# First copy over cvac.  Need to wait for buiid time since these files
+# are created by slicing at build time
+add_custom_target(copyCorpus
+    COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+    )
+add_custom_target(copyData
+    COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+    )
+add_custom_target(copyFiles
+    COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+    )
+add_custom_target(copyServices
+    COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+    )
+add_custom_target(copyCVAC
+    COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
+    )
 
-# Next copy over easy.
+# Next copy over easy. Since these files are not sliced then do it now
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
       PATTERN *.py)
 # Next copy over opencv files
@@ -79,7 +84,7 @@ FILE (COPY ${OPENCV_3RDPARTY_DIR}/cv.py DESTINATION ${PYTHON_BUILD_DIR} )
 FILE (COPY ${OPENCV_3RDPARTY_DIR}/cv2.${CV2_EXT} DESTINATION ${PYTHON_BUILD_DIR} )
 
 # Next copy over ice. Since we need to change directory name
-# from python to ice copy over the files
+# from python to ice copy over the files.  Not sliced so do it now
 FILE (GLOB ICE_FILES ${ICE_ROOT}/python/*)
 FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/ice)
 
