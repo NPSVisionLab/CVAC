@@ -37,6 +37,7 @@
  *****************************************************************************/
 #include <Ice/Ice.h>
 #include <IceUtil/UUID.h>
+#include <Ice/Communicator.h>
 #include <Services.h>
 #include <util/FileUtils.h>
 #include <vector>
@@ -55,13 +56,15 @@ public:
 
   void foundNewResults(const ResultSet& newResults, const ::Ice::Current& current)
   {
-    results.append( newResults );
+    results.results.insert( results.results.end(),
+                            newResults.results.begin(), newResults.results.end() );
   }
 
   void estimatedTotalRuntime(::Ice::Int seconds, const ::Ice::Current& current) {}
   void estimatedRuntimeLeft(::Ice::Int seconds, const ::Ice::Current& current) {}
   void completedProcessing(const ::Ice::Current& current) {}
   void message(::Ice::Int level, const ::std::string& messageString, const ::Ice::Current& current) {}
+  void cancelled(const Ice::Current&) {}
 };
 
 // =============================================================================
@@ -87,7 +90,7 @@ public:
       }
     catch (const Ice::Exception& e)
       {
-        sprintf( stderr, "Exception: %s\n", e.ice_name().c_str());
+        fprintf( stderr, "Exception: %s\n", e.ice_name().c_str());
       }
     mFinished = true;
   }
@@ -102,13 +105,14 @@ typedef IceUtil::Handle<FinishedCallback> FinishedCallbackPtr;
  */
 DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb)
 {
-  Ice::PropertiesPtr props = communicator()->getProperties();
+  Ice::CommunicatorPtr comm = Ice::Application::communicator();
+  Ice::PropertiesPtr props = comm->getProperties();
   std::string proxStr = detectorNameStr + ".Proxy";
   DetectorPrx detector = NULL;
   try
   {
     detector = DetectorPrx::checkedCast(
-        communicator()->propertyToProxy(proxStr)->ice_twoway());
+        comm->propertyToProxy(proxStr)->ice_twoway());
   }
   catch (const IceUtil::NullHandleException& e)
   {
@@ -116,21 +120,16 @@ DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb
                      detectorNameStr.c_str(), e.what());
   }
 
-  Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("");
+  Ice::ObjectAdapterPtr adapter = comm->createObjectAdapter("");
   det_cb.name = IceUtil::generateUUID();
   det_cb.category = "";
-  DetectorCallbackHandlerPtr cr = new CallbackHandlerI(appData);
+  DetectorCallbackHandlerPtr cr = new CallbackHandlerI();
   adapter->add(cr, det_cb);
   adapter->activate();
   detector->ice_getConnection()->setAdapter(adapter);    
   
   // note that we need an ObjectAdapter to permit bidirectional communication
   // if we want to get past firewalls without Glacier2
-  
-  if (!detector->get())
-  {
-    throw new Exception( "%s: invalid proxy", detectorNameStr.c_str() );
-  }
   
   return detector;  // Success
 }
@@ -142,7 +141,7 @@ DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb
 ResultSet detect( const std::string& algorithm,
                     const cvac::RunSet& runset,
                     const cvac::FilePath& model,
-                    const cvac::DetectorProperties& props )
+                    const cvac::DetectorProperties& detprops )
 {
   // Connect to detector
   Ice::Identity det_cb;
@@ -152,27 +151,22 @@ ResultSet detect( const std::string& algorithm,
     throw new Exception( "Could not connect to CVAC Ice Services" );
   }
 
-  int resultInit = initializeDetector( detector );
-  if ( false==detector->isInitialized() )
-  {
-      
-    throw new Exception( "Detector initialization failed.");
-  }
-
-  Ice::PropertiesPtr props = communicator()->getProperties();
-  std::string dataDir = props->getProperty("CVAC.DataDir");
+  Ice::CommunicatorPtr comm = Ice::Application::communicator();
+  Ice::PropertiesPtr iceprops = comm->getProperties();
+  std::string dataDir = iceprops->getProperty("CVAC.DataDir");
 
  TODO: dothis "I think we don't have to use the FinishCallback at all because we don't want to"
     "invoke process asynchronously.  Not sure why the choice was made to do so in"
     "detectorClient.  Please try without first: just call "
-    "detector->process(det_cb, runSet);"
+    "detector->process(det_cb, runSet);";
   
   try
     {	// Create our callback class so that we can be informed when process completes
       FinishedCallbackPtr finishCallback = new FinishedCallback();
       Ice::CallbackPtr finishedAsync = Ice::newCallback(finishCallback, &FinishedCallback::finished);
       
-      Ice::AsyncResultPtr asyncResult = detector->begin_process(det_cb, runSet, finishedAsync);
+      Ice::AsyncResultPtr asyncResult =
+        detector->begin_process(det_cb, runset, model, detprops, finishedAsync);
       
       // end_myFunction should be call from the "finished" callback
       //detector->end_process(asyncResult);
@@ -188,7 +182,7 @@ ResultSet detect( const std::string& algorithm,
       throw ex;
     }
 
-  communicator()->shutdown();  // Shut down at the end of either branch
+  comm->shutdown();  // Shut down at the end of either branch
   return det_cb->results;
 }
 
