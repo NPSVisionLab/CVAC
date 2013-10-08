@@ -27,7 +27,7 @@ Contributing
 More detailed instructions are on the [Wiki](https://github.com/NPSVisionLab/CVAC/wiki).  In summary:
 
 1. Fork it. (See the "Fork" button above.)
-2. Create a branch (`git checkout -b my_CVAC`)
+2. Create a branch off the devel branch (`git checkout -b my_CVAC devel`)
 3. Commit your changes (`git commit -am "Added parsing for MyAnnotations"`)
 4. Push to the branch (`git push origin my_CVAC`)
 5. Open a [Pull Request](https://github.com/NPSVisionLab/CVAC/pulls)
