@@ -60,19 +60,11 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 
 # First copy over cvac.  Need to wait for buiid time since these files
 # are created by slicing at build time
-add_custom_target(copyCorpus
+add_custom_target(copySlice ALL
     COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/cvac"
-    )
-add_custom_target(copyData
     COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/cvac"
-    )
-add_custom_target(copyFiles
     COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/cvac"
-    )
-add_custom_target(copyServices
     COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/cvac"
-    )
-add_custom_target(copyCVAC
     COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
     )
 
