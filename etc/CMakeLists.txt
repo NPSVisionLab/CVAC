@@ -39,14 +39,14 @@ CONFIGURE_FILE( stopIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/stopIcebox.
 
 INCLUDE (UserCMakeLists.txt OPTIONAL)
 
-IF( NOT BUILD_3RDPARTY_PACKAGE )
+IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
 INSTALL(PROGRAMS
                      ${CMAKE_SOURCE_DIR}/bin/startIcebox.${SCRIPT_EXT}
                      ${CMAKE_SOURCE_DIR}/bin/stopIcebox.${SCRIPT_EXT}
                DESTINATION bin
                COMPONENT Runtime
              )
-ENDIF( NOT BUILD_3RDPARTY_PACKAGE )
+ENDIF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
 
 
 # We need to copy cvac, Ice, and easy to the build directory for packing
@@ -58,8 +58,14 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/cvac")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 
-# First copy over cvac.  Need to wait for buiid time since these files
-# are created by slicing at build time
+# First copy over cvac.  Need to wait for build time since these files
+# are created by slicing at build time.  Since FILE commands work at
+# cmake time we add a custom target that will copy each of the slice generated
+# .py files to the python build cvac directory (which is required for 
+# setup py).  The ALL causes the copySlice target 
+# to be executed for all targets but we really only need them
+# for the install and package targets but since the copy is quick it
+# does not hurt to copy them all the time.
 add_custom_target(copySlice ALL
     COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/cvac"
     COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/cvac"
