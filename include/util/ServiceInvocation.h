@@ -36,13 +36,20 @@
  *(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****/
+/**
+ * Utilities to invoke a CVAC service.
+ */
+#include <string>
+#include <Data.h>
 
-#ifndef __VERSION_H_INCLUDED__
-#define __VERSION_H_INCLUDED__
-
-#define CVAC_VERSION 0.5.1
-#define CVAC_VERSION_MAJOR 0
-#define CVAC_VERSION_MINOR 5
-#define CVAC_VERSION_PATCH 1
-
-#endif // __VERSION_H_INCLUDED__
+namespace cvac
+{
+  /** A convenience function that creates the callback,
+   *  collects results, and makes them available in the
+   *  return argument.
+   */
+  ResultSet detect( const std::string& algorithm,
+                    const cvac::RunSet& runset,
+                    const cvac::FilePath& model,
+                    const cvac::DetectorProperties& props );
+}

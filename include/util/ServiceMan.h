@@ -40,6 +40,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 //#include <Ice/Ice.h>
 //#include <IceBox/IceBox.h>
 //#include <Services.h>
@@ -242,6 +243,17 @@ namespace cvac
         ServiceManagerIceService*       mIceService;
         SandboxManager*                 mSandbox;
     };
+
+    // this could be an unordered_set instead
+    typedef std::set<std::string> StringSet;
+
+    /** Start the services as per config file; this won't re-start
+     * the services if they are already running.  Still, avoid calling
+     * this multiple times because it will access the file system
+     * several times.
+     * It returns the names of running services.
+     */
+    StringSet startServices();
 }
 
 

@@ -358,3 +358,58 @@ std::string cvac::SandboxManager::createClientDir(const std::string &clientName)
     std::string empty;
     return empty;
 }
+
+/** test if .services_started.lock file exists
+ */
+bool servicesStarted()
+{
+  printf("TODO: servicesStarted()\n");
+  return true;
+}
+
+/** "exec" startIcebox.sh/bat and wait for completion (a few seconds)
+ */
+void doStartServices()
+{
+  printf("TODO: exec job()\n");
+}
+
+/** Parse the config.services file for any configured service.
+ *  We do this by looking for the names that come before the ".Endpoints"
+ *  text, in lines that don't start with #.
+ */
+void parseConfigServices( StringSet& configured )
+{
+  printf("parseConfigServices\n");
+  // for line in config.services:
+  //   if not line starts with #
+  //     dotpos = strfind( ".Endpoints" )
+  //     if dotpos != line.end()
+  //       serviceName = line.substring( 1, dotpos-1 )
+  //       serviceName.eraseLeadingTrailingWhitespace
+  //       configured.push_back( serviceName )
+}
+
+// see documentation in .h file
+StringSet startServices()
+{
+  // for now, we don't test individual services but only whether
+  // bin/startIcebox has been run, based on a "touched" lock file
+  if (!servicesStarted())
+  {
+    doStartServices();
+  }
+
+  // if still no lock file, report no services
+  StringSet running;
+  if (servicesStarted())
+  {
+    // otherwise, parse config.services for which services MIGHT
+    // have been successfully started because they're configured
+    // in config.services.  Note that this does not take the icebox
+    // configuration or even startup success into account at all.
+    parseConfigServices( running );
+  }
+  
+  return running;
+}
