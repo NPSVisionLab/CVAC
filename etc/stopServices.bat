@@ -1,7 +1,7 @@
 @echo off
 @setlocal
 set INSTALLDIR=__INSTALL_PATH__
-if "%INSTALLDIR" neq "" goto goto continue
+if "%INSTALLDIR" neq "" goto continue
 echo "Install Directory must be set for startServices script to work!"
 exit /b 1
 :continue
@@ -11,8 +11,8 @@ set PYTHONEXE=__PYTHON_PATH__
 set ICEDIR=%INSTALLDIR%/3rdparty/ICE
 set PATH="%PATH%;%ICEDIR%/bin"
 chdir "%INSTALLDIR%"
-"%ICEDIR%/bin/iceadmin.exe" --Ice.Config=config.admin shutdown
-"%ICEDIR%/bin/iceadmin.exe" --Ice.Config=config.java_admin shutdown
-if "%PYTHONEXE%" neq "" taskkill /FI "WINDOWTITLE eq CVAC Service (Python)" /IM python.exe
+"%ICEDIR%/bin/iceboxadmin.exe" --Ice.Config=config.admin shutdown
+"%ICEDIR%/bin/iceboxadmin.exe" --Ice.Config=config.java_admin shutdown
+c:\windows\system32\taskkill.exe /FI "WINDOWTITLE eq CVAC Service*"
 echo CVAC services stopped
 exit /b 0

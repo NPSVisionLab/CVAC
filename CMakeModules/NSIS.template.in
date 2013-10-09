@@ -969,6 +969,13 @@ Section "-Core installation"
 @CPACK_NSIS_CREATE_ICONS_EXTRA@
   CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
 
+  # CVAC Changes start
+  # Set working directory for shortcut to be the INSTDIR
+  SetOutPath "$INSTDIR"
+  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\startServices.lnk" "$INSTDIR\bin\startServices.bat"
+  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\stopServices.lnk" "$INSTDIR\bin\stopServices.bat"
+  # CVAC Changes end
+
   ;Read a value from an InstallOptions INI file
   !insertmacro MUI_INSTALLOPTIONS_READ $DO_NOT_ADD_TO_PATH "NSIS.InstallOptions.ini" "Field 2" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $ADD_TO_PATH_ALL_USERS "NSIS.InstallOptions.ini" "Field 3" "State"
@@ -1147,6 +1154,10 @@ Section "Uninstall"
   !insertmacro MUI_STARTMENU_GETFOLDER Application $MUI_TEMP
     
   Delete "$SMPROGRAMS\$MUI_TEMP\Uninstall.lnk"
+  # CVAC start modification
+  Delete "$SMPROGRAMS\$MUI_TEMP\startServices.lnk"
+  Delete "$SMPROGRAMS\$MUI_TEMP\stopServices.lnk"
+  # CVAC end modification
 @CPACK_NSIS_DELETE_ICONS@
 @CPACK_NSIS_DELETE_ICONS_EXTRA@
   
