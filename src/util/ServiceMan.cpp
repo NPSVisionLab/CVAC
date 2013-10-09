@@ -62,15 +62,14 @@ public:
                   const ::Ice::CommunicatorPtr& communicator,
                   const ::Ice::StringSeq&)
     {
-        localAndClientMsg(VLogger::INFO, NULL, "starting service: %s\n", name.c_str());
-	    mAdapter = communicator->createObjectAdapter(name);
-	    mManager->clearStop();
-        mManager->setIceName(name);
-	    mAdapter->add(mService, communicator->stringToIdentity(name));
-	    mAdapter->activate();
-        mManager->createSandbox();
-	    localAndClientMsg(VLogger::INFO, NULL, "service started: %s\n", 
-                    name.c_str());
+      localAndClientMsg(VLogger::INFO, NULL, "starting service: %s\n", name.c_str());
+      mAdapter = communicator->createObjectAdapter(name);
+      mManager->clearStop();
+      mManager->setIceName(name);
+      mAdapter->add(mService, communicator->stringToIdentity(name));
+      mAdapter->activate();
+      mManager->createSandbox();
+      localAndClientMsg(VLogger::INFO, NULL, "service started: %s\n", name.c_str());
     }
     /**
      * The stop function called by IceBox to stop this service.
