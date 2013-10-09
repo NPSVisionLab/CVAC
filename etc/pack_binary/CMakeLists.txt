@@ -48,6 +48,9 @@ set(CPACK_COMPONENT_DATA_DISPLAY_NAME "CVAC sample data" )
 IF(WIN32)
     SET( SCRIPT_EXT bat )
     SET(CPACK_GENERATOR "NSIS")
+    # Specify the default location to install CVAC.  It will install it
+    # in this and a version directory underneath this.
+    SET(CPACK_NSIS_INSTALL_ROOT "c:\\\\CVAC")
 ELSE(WIN32)
     SET( SCRIPT_EXT sh )
   SET(CPACK_GENERATOR "TGZ")
