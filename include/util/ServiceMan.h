@@ -159,9 +159,9 @@ namespace cvac
          * Set The Service that is to be served by this service.
          * NOTE: A ServiceManager can manage either a detector or
          * detectorTrainer but not both!
-         * Parms: The Algorithm instance to be served by this service and its name.
+         * Parms: The Algorithm instance to be served by this service.
          */
-        void setService(cvac::CVAlgorithmService *service, std::string serviceName);
+        void setService(cvac::CVAlgorithmService *service);
 
        
 
