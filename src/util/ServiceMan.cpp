@@ -62,15 +62,17 @@ public:
                   const ::Ice::CommunicatorPtr& communicator,
                   const ::Ice::StringSeq&)
     {
-        localAndClientMsg(VLogger::INFO, NULL, "%s: starting\n", mManager->getServiceName().c_str());
-	    mAdapter = communicator->createObjectAdapter(name);
-	    mManager->clearStop();
+        localAndClientMsg(VLogger::INFO, NULL, "%s: starting\n",
+                          mManager->getServiceName().c_str());
+        mAdapter = communicator->createObjectAdapter(name);
+        mManager->clearStop();
         mManager->setIceName(name);
-	    mAdapter->add(mService, communicator->stringToIdentity(mManager->getServiceName()));
-	    mAdapter->activate();
+        mAdapter->add(mService,
+                      communicator->stringToIdentity(mManager->getServiceName()));
+        mAdapter->activate();
         mManager->createSandbox();
-	    localAndClientMsg(VLogger::INFO, NULL, "Service started: %s\n", 
-                    mManager->getServiceName().c_str());
+        localAndClientMsg(VLogger::INFO, NULL, "Service started: %s\n", 
+                          mManager->getServiceName().c_str());
     }
     /**
      * The stop function called by IceBox to stop this service.
@@ -78,11 +80,11 @@ public:
     virtual void stop()
     {
         localAndClientMsg(VLogger::INFO, NULL, "Stopping Service: %s\n", 
-                     mManager->getServiceName().c_str());
+                          mManager->getServiceName().c_str());
         mAdapter->deactivate();
         mManager->waitForStopService();
         localAndClientMsg(VLogger::INFO, NULL, "Service stopped: %s\n",
-                     mManager->getServiceName().c_str());
+                          mManager->getServiceName().c_str());
     }
     
     ::Ice::ObjectAdapterPtr  getAdapter() { return mAdapter; }
@@ -129,16 +131,21 @@ void cvac::ServiceManager::setService(cvac::CVAlgorithmService *serv,
 ///////////////////////////////////////////////////////////////////////////////
 std::string cvac::ServiceManager::getDataDir()
 {
-	Ice::PropertiesPtr props = (mIceService->getAdapter()->getCommunicator()->getProperties());
+	Ice::PropertiesPtr props =
+            mIceService->getAdapter()->getCommunicator()->getProperties();
 	vLogger.setLocalVerbosityLevel(props->getProperty("CVAC.ServicesVerbosity"));
 
-	// Load the CVAC property: 'CVAC.DataDir'.  Used for the xml filename path, and to provide a prefix to Runset paths
+	// Load the CVAC property: 'CVAC.DataDir'.  Used for the xml filename path,
+        // and to provide a prefix to Runset paths
 	std::string dataDir = props->getProperty("CVAC.DataDir");
 	if(dataDir.empty()) 
 	{
-		localAndClientMsg(VLogger::WARN, NULL, "Unable to locate CVAC Data directory, specified: 'CVAC.DataDir = path/to/dataDir' in </CVAC_Services/config.service>\n");
+            localAndClientMsg(VLogger::WARN, NULL,
+                              "Unable to locate CVAC Data directory, specified: "
+                              "'CVAC.DataDir = path/to/dataDir' in config.service\n");
 	}
-	localAndClientMsg(VLogger::DEBUG, NULL, "CVAC Data directory configured as: %s \n", dataDir.c_str());
+	localAndClientMsg(VLogger::DEBUG, NULL,
+                          "CVAC Data directory configured as: %s \n", dataDir.c_str());
     return dataDir;
 }
 ///////////////////////////////////////////////////////////////////////////////
