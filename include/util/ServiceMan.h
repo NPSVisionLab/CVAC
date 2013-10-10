@@ -41,9 +41,6 @@
 #include <string>
 #include <vector>
 #include <set>
-//#include <Ice/Ice.h>
-//#include <IceBox/IceBox.h>
-//#include <Services.h>
 
 
 #define TRAIN_PREFIX "train_"
@@ -55,10 +52,13 @@
  * has canceled the operation.  If they have then the processing should stop
  * and stopCompleted should be called.  The service names should be the
  * service names defined in config.services. 
+ *
+ * This is the public interface to the ServiceManager, which hides the Ice aspects.
+ * Ice aspects are introduced in the subclass which implements this interface,
+ * specified in ServiceManI.h.
  */
 namespace cvac
 {
-    class ServiceManagerIceService; 
     class CVAlgorithmService;
     /**
      * ClientSandbox - keep track of the client resources handed out.
@@ -143,27 +143,17 @@ namespace cvac
 
     /**
      * Class to manage the Ice Service functions
+     *
+     * It has to be created via its subclass ServiceManagerI.
+     *
+     * NOTE: A ServiceManager can manage either a detector or
+     * detectorTrainer but not both!
      */
-    //class ServiceManager : public ::IceBox::Service
+    
     class ServiceManager
     {
     public:
         typedef enum StopStateType {None, Running, Stopping, Stopped} StopState;
-        /**
-         * Constructor for creating a cvac Detector service.
-         * Parms: The Detector instance to be served by this service.
-         */
-        ServiceManager();
-
-        /**
-         * Set The Service that is to be served by this service.
-         * NOTE: A ServiceManager can manage either a detector or
-         * detectorTrainer but not both!
-         * Parms: The Algorithm instance to be served by this service.
-         */
-        void setService(cvac::CVAlgorithmService *service);
-
-       
 
         /** 
          * Returns true if a stop has been requested for this service.
@@ -206,41 +196,30 @@ namespace cvac
          *  for the service to acknowlege the stop.
          */
         void waitForStopService();
+
+	/** Look for a property entry in config.service that corresponds to
+	 *  ServiceName.TrainedModel = filename
+	 *  Return filename if found, empty string otherwise.
+	 */
+	virtual std::string getModelFileFromConfig() = 0;
     
         /**
          * Get the service name of this service
          */
         std::string getServiceName();
 
-        /**
-         * Get the icebox name of this service
-         */
-        std::string getIceName();
-
-        /**
-         * Get the icebox name of this service
-         */
-        void setIceName(std::string name);
-
         /*
          * Get the config.service defined data directory
          */
-        std::string getDataDir();
-
-        /*
-         * Return the ice service
-         */
-        void* getIceService() { return mIceService; }
+        virtual std::string getDataDir() = 0;
 
         SandboxManager  *getSandbox() { return mSandbox; }
   
         void createSandbox();
 
-    private:
+    protected:
         std::string                     mServiceName;
-        std::string                     mIceName;
         int                             mStopState;
-        ServiceManagerIceService*       mIceService;
         SandboxManager*                 mSandbox;
     };
 
