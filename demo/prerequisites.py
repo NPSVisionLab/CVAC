@@ -22,10 +22,20 @@ for key in sorted( os.environ ):
     val = os.environ.get( key )
     repfile.write('  ' + key + ' = ' + val + '\n')
 
+def check_degenerate( module, normal ):
+    modlen = len(dir(module))
+    if modlen<normal:
+        print("  ... but the module definition is incomplete!")
+        print("  Only {0} functions are known, yet it should be over {1}."
+              .format( modlen, normal-1 ) )
+        print("  Probably the directory '{0}' is found, but not the actual {1}.py file."
+              .format( module.__name__, module.__name__ ) )
+
 print("Trying to import Ice... ")
 try:
     import Ice
     print("  succeeded.")
+    check_degenerate( Ice, 287 )
 except ImportError as ex:
     print("  failed:")
     print("  Please add /your/CVAC_dir/3rdparty/ICE/python to PYTHONPATH.")
@@ -35,6 +45,7 @@ print("Trying to import cvac... ")
 try:
     import cvac
     print("  succeeded.")
+    check_degenerate( cvac, 157 )
 except ImportError as ex:
     print("  failed:")
     print("  Please add /your/CVAC_dir/lib/python to PYTHONPATH.")
@@ -55,6 +66,7 @@ print("Trying to import easy... ")
 try:
     import easy
     print("  succeeded.")
+    check_degenerate( easy, 73 )
 except ImportError as ex:
     print("  failed:")
     print("  Please add the directory in which easy.py is located to your PYTHONPATH.")
