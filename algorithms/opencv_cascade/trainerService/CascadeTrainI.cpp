@@ -57,57 +57,53 @@
 
 using namespace std;
 using namespace cvac;
-
+using namespace Ice;
 
 ///////////////////////////////////////////////////////////////////////////////
 // This is called by IceBox to get the service to communicate with.
 extern "C"
 {
-  //
-  // ServiceManager handles all the icebox interactions so we construct
-  // it and set a pointer to our detector.
-  //
-  ICE_DECLSPEC_EXPORT IceBox::Service* create(Ice::CommunicatorPtr communicator)
+  /**
+   * Create the detector service via a ServiceManager.  The 
+   * ServiceManager handles all the icebox interactions.  Pass the constructed
+   * detector instance to the ServiceManager.  The ServiceManager obtains the
+   * service name from the config.icebox file as follows. Given this
+   * entry:
+   * IceBox.Service.BOW_Detector=bowICEServer:create --Ice.Config=config.service
+   * ... the name of the service is BOW_Detector.
+   */
+  ICE_DECLSPEC_EXPORT IceBox::Service* create(CommunicatorPtr communicator)
   {
-    ServiceManager *sMan = new ServiceManager();
-    CascadeTrainI *cascade = new CascadeTrainI(sMan);
-    sMan->setService(cascade, cascade->getName());
-    return (::IceBox::Service *) sMan->getIceService();
-
+    CascadeTrainI *cascade = new CascadeTrainI();
+    ServiceManagerI *sMan = new ServiceManagerI( cascade, cascade );
+    cascade->setServiceManager( sMan );
+    return sMan;
   }
 }
 
-CascadeTrainI::CascadeTrainI(ServiceManager *serv)
+CascadeTrainI::CascadeTrainI()
   : fInitialized(false)
+  , mServiceMan(NULL)
 {
-  mServiceMan = serv;	
+  initialize();
 }
 
 CascadeTrainI::~CascadeTrainI()
 {
-  mAdapter->deactivate();  
+  mAdapter->deactivate();
+  delete mTrainProps;
 }
 
-void CascadeTrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& current)
+void CascadeTrainI::setServiceManager(ServiceManagerI *serv)
 {
-  // Obtain CVAC verbosity
-  Ice::PropertiesPtr props = current.adapter->getCommunicator()->getProperties();
-  string verbStr = props->getProperty("CVAC.ServicesVerbosity");
-  if (!verbStr.empty())
-  {
-    vLogger.setLocalVerbosityLevel( verbStr );
-  }
+  mServiceMan = serv;
+}
+
+void CascadeTrainI::initialize()
+{
   // Create TrainerPropertiesI class to allow the user to modify training 
   // parameters
-  Ice::ObjectAdapterPtr mAdapter = current.adapter->getCommunicator()->createObjectAdapter("");
-  Ice::Identity ident;
-  ident.name = IceUtil::generateUUID();
-  ident.category = "";
   mTrainProps = new TrainerPropertiesI();
-  TrainerPropertiesPtr trainPropPtr = mTrainProps;
-  mAdapter->add(trainPropPtr, ident);
-  mAdapter->activate();
-  //current.con->addAdapter(mAdapter);    
 
   // Fill in the trainProps with default values;
   mTrainProps->numStages = 20;
@@ -125,31 +121,18 @@ void CascadeTrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& curren
   fInitialized = true;
 }
 
-bool CascadeTrainI::isInitialized(const ::Ice::Current& current)
+std::string CascadeTrainI::getName(const Current& current)
 {
-  return fInitialized;
+  return mServiceMan->getServiceName();
 }
-
-void CascadeTrainI::destroy(const ::Ice::Current& current)
-{
-  fInitialized = false;
-}
-std::string CascadeTrainI::getName(const ::Ice::Current& current)
-{
-  return "OpenCVCascadeTrainer";
-}
-std::string CascadeTrainI::getDescription(const ::Ice::Current& current)
+std::string CascadeTrainI::getDescription(const Current& current)
 {
   return "OpenCVCascadeTrainer: OpenCV Cascade trainer";
 }
 
-void CascadeTrainI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current)
+TrainerProperties CascadeTrainI::getTrainerProperties(const Current &current)
 {
-}
-
-::TrainerPropertiesPrx CascadeTrainI::getTrainerProperties(const ::Ice::Current &current)
-{
-  return (IceProxy::cvac::TrainerProperties *)mTrainProps;
+  return *mTrainProps;
 }
 
 /**
@@ -390,16 +373,24 @@ bool CascadeTrainI::createClassifier( const string& tempDir,
   return res;
 }
 
-void CascadeTrainI::process(const Ice::Identity &client,
-                            const ::RunSet& runset,
-                            const ::Ice::Current& current)
+void CascadeTrainI::process(const Identity &client, const RunSet& runset,
+                            const TrainerProperties& trainProps,
+                            const Current& current)
 {	
+  // Obtain CVAC verbosity - TODO: this should happen earlier
+  PropertiesPtr svcprops = current.adapter->getCommunicator()->getProperties();
+  string verbStr = svcprops->getProperty("CVAC.ServicesVerbosity");
+  if (!verbStr.empty())
+  {
+    vLogger.setLocalVerbosityLevel( verbStr );
+  }
+
   TrainerCallbackHandlerPrx callback =
-    TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());		
+    TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
+
   // Get the remote client name to use to save cascade file 
   std::string connectName = cvac::getClientConnectionName(current);
-  Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
-  const std::string CVAC_DataDir = props->getProperty("CVAC.DataDir");
+  const std::string CVAC_DataDir = svcprops->getProperty("CVAC.DataDir");
 
   if(runset.purposedLists.size() == 0)
   {
@@ -417,7 +408,7 @@ void CascadeTrainI::process(const Ice::Identity &client,
   // Iterate over runset, inserting each POSITIVE Labelable into
   // the input file to "createsamples".  Add each NEGATIVE into
   // the bgFile.  Put both created files into a tempdir.
-  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getIceName(),
+  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
                                                              connectName);
   std::string tempDir = mServiceMan->getSandbox()->createTrainingDir(clientName);
   RunSetWrapper rsw( tempRunSet );
@@ -473,9 +464,8 @@ void CascadeTrainI::process(const Ice::Identity &client,
       dda.addFile(XMLID, tempDir + "/cascade.xml");
       dda.createArchive(tempDir);
       mServiceMan->getSandbox()->deleteTrainingDir(clientName);
-      DetectorData detectorData;
-      detectorData.file.filename = getFileName(archiveFilename);
-      detectorData.type = ::cvac::FILE;
+      FilePath detectorData;
+      detectorData.filename = getFileName(archiveFilename);
       std::string relDir;
       int idx = clientDir.find(CVAC_DataDir.c_str(), 0, CVAC_DataDir.length());
       if (idx == 0)
@@ -485,7 +475,7 @@ void CascadeTrainI::process(const Ice::Identity &client,
       {
           relDir = clientDir;
       }
-      detectorData.file.directory.relativePath = relDir; 
+      detectorData.directory.relativePath = relDir; 
       callback->createdDetector(detectorData);
 
       localAndClientMsg(VLogger::INFO, callback, "Cascade training done.\n");
@@ -499,17 +489,17 @@ void CascadeTrainI::process(const Ice::Identity &client,
 
 //----------------------------------------------------------------------------
 void TrainerPropertiesI::setWindowSize(const cvac::Size &wsize,
-                               const Ice::Current&)
+                               const Current&)
 {
   width = wsize.width;
   height = wsize.height;
 }
-bool TrainerPropertiesI::canSetWindowSize(const ::Ice::Current&)
+bool TrainerPropertiesI::canSetWindowSize(const Current&)
 {
   return true;
 }
 
-cvac::Size TrainerPropertiesI::getWindowSize(const ::Ice::Current& )
+cvac::Size TrainerPropertiesI::getWindowSize(const Current& )
 {
   cvac::Size size;
   size.width = width;
@@ -517,20 +507,20 @@ cvac::Size TrainerPropertiesI::getWindowSize(const ::Ice::Current& )
   return size;
 }
 
-void TrainerPropertiesI::setSensitivity(Ice::Double falseAlarmRate, Ice::Double recall,
-                               const ::Ice::Current&)
+void TrainerPropertiesI::setSensitivity(Double falseAlarmRate, Double recall,
+                               const Current&)
 {
   maxFalseAlarm = falseAlarmRate;
   minHitRate = recall;
 }
 
-bool TrainerPropertiesI::canSetSensitivity(const ::Ice::Current& )
+bool TrainerPropertiesI::canSetSensitivity(const Current& )
 {
   return true;
 }
 
-void TrainerPropertiesI::getSensitivity(Ice::Double &falseAlarmRate, Ice::Double &recall,
-                               const ::Ice::Current& )
+void TrainerPropertiesI::getSensitivity(Double &falseAlarmRate, Double &recall,
+                                        const Current& )
 {
   falseAlarmRate = maxFalseAlarm;
   recall = minHitRate;
@@ -642,4 +632,10 @@ int nomain( int argc, char* argv[] )
                       stageParams,
                       baseFormatSave );
     return 0;
+}
+
+bool CascadeTrainI::cancel(const Identity &client, const Current& current)
+{
+  localAndClientMsg(VLogger::WARN, NULL, "cancel not implemented.");
+  return false;
 }

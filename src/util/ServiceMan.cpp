@@ -36,6 +36,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 #include <util/ServiceMan.h>
+#include <util/ServiceManI.h>
 #include <util/Timing.h>
 #include <util/FileUtils.h>
 #include <Services.h>
@@ -47,111 +48,99 @@
 #endif 
 
 using namespace cvac;
-
-
-class cvac::ServiceManagerIceService : public ::IceBox::Service
-{
-public:
-    ServiceManagerIceService(cvac::ServiceManager *man, cvac::CVAlgorithmService* serv)
-    {
-        mManager = man;
-        mAdapter = NULL;
-        mService = serv;
-
-    }
-    /**
-     * The start function called by IceBox to start this service.
-     */
-    virtual void start(const ::std::string& name,
-                  const ::Ice::CommunicatorPtr& communicator,
-                  const ::Ice::StringSeq&)
-    {
-        localAndClientMsg(VLogger::INFO, NULL, "%s: starting\n", mManager->getServiceName().c_str());
-	    mAdapter = communicator->createObjectAdapter(name);
-	    mManager->clearStop();
-        mManager->setIceName(name);
-	    mAdapter->add(mService, communicator->stringToIdentity(mManager->getServiceName()));
-	    mAdapter->activate();
-        mManager->createSandbox();
-	    localAndClientMsg(VLogger::INFO, NULL, "Service started: %s\n", 
-                    mManager->getServiceName().c_str());
-    }
-    /**
-     * The stop function called by IceBox to stop this service.
-     */
-    virtual void stop()
-    {
-        localAndClientMsg(VLogger::INFO, NULL, "Stopping Service: %s\n", 
-                     mManager->getServiceName().c_str());
-        mAdapter->deactivate();
-        mManager->waitForStopService();
-        localAndClientMsg(VLogger::INFO, NULL, "Service stopped: %s\n",
-                     mManager->getServiceName().c_str());
-    }
-    
-    ::Ice::ObjectAdapterPtr  getAdapter() { return mAdapter; }
-
-
-
-private:
-    ::Ice::ObjectAdapterPtr         mAdapter;
-    cvac::CVAlgorithmService*       mService;
-    cvac::ServiceManager*           mManager;
-};
+using namespace Ice;
 
 ///////////////////////////////////////////////////////////////////////////////
-cvac::ServiceManager::ServiceManager()
+ServiceManagerI::ServiceManagerI( CVAlgorithmService *service,
+                                  StartStop *ss )
 {
- 
-    mIceService = NULL;
+    mService = service;
+    mSS = ss;
+    mAdapter = NULL;
     mStopState = None;
     mSandbox = NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::setService(cvac::CVAlgorithmService *serv,
-                      std::string serviceName)
+/**
+ * The start function called by IceBox to start this service.
+ */
+void ServiceManagerI::start(const ::std::string& name,
+                           const CommunicatorPtr& communicator,
+                           const StringSeq&)
 {
-    mServiceName = serviceName;
-    mIceService = new ServiceManagerIceService(this, serv);
+  mServiceName = name;
+  localAndClientMsg(VLogger::INFO, NULL, "starting service: %s\n", mServiceName.c_str());
+  mAdapter = communicator->createObjectAdapter(mServiceName);
+  clearStop();
+  assert( mService );
+  mAdapter->add(mService, communicator->stringToIdentity(mServiceName));
+  mAdapter->activate();
+  createSandbox();
+  if (NULL!=mSS) mSS->starting();
+  localAndClientMsg(VLogger::INFO, NULL, "service started: %s\n", mServiceName.c_str());
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//void cvac::ServiceManager::start(const ::std::string& name,const 
-//                  ::Ice::CommunicatorPtr& communicator,const 
-//                  ::Ice::StringSeq&)
-//{
-    
-//}
-
-///////////////////////////////////////////////////////////////////////////////
-//void cvac::ServiceManager::stop()
-//{
-  
-//}
-
-///////////////////////////////////////////////////////////////////////////////
-std::string cvac::ServiceManager::getDataDir()
+/**
+ * The stop function called by IceBox to stop this service.
+ */
+void ServiceManagerI::stop()
 {
-	Ice::PropertiesPtr props = (mIceService->getAdapter()->getCommunicator()->getProperties());
+  localAndClientMsg(VLogger::INFO, NULL, "Stopping Service: %s\n", 
+                    mServiceName.c_str());
+  if (NULL!=mSS) mSS->stopping();
+  mAdapter->deactivate();
+  waitForStopService();
+  localAndClientMsg(VLogger::INFO, NULL, "Service stopped: %s\n",
+                    mServiceName.c_str());
+}
+
+// look for ServiceNamex.TrainedModel
+// Note that the x is significant
+string ServiceManagerI::getModelFileFromConfig()
+{
+    CommunicatorPtr comm = mAdapter->getCommunicator();
+    if ( comm )
+    {
+        PropertiesPtr props = comm->getProperties();
+        if (props==true)
+        {
+            string propname = mServiceName + "x.TrainedModel";
+            string propval = props->getProperty( propname );
+            return propval;
+        }
+    }
+    return "";
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+std::string ServiceManagerI::getDataDir()
+{
+	PropertiesPtr props =
+            mAdapter->getCommunicator()->getProperties();
 	vLogger.setLocalVerbosityLevel(props->getProperty("CVAC.ServicesVerbosity"));
 
-	// Load the CVAC property: 'CVAC.DataDir'.  Used for the xml filename path, and to provide a prefix to Runset paths
+	// Load the CVAC property: 'CVAC.DataDir'.  Used for the xml filename path,
+        // and to provide a prefix to Runset paths
 	std::string dataDir = props->getProperty("CVAC.DataDir");
 	if(dataDir.empty()) 
 	{
-		localAndClientMsg(VLogger::WARN, NULL, "Unable to locate CVAC Data directory, specified: 'CVAC.DataDir = path/to/dataDir' in </CVAC_Services/config.service>\n");
+            localAndClientMsg(VLogger::WARN, NULL,
+                              "Unable to locate CVAC Data directory, specified: "
+                              "'CVAC.DataDir = path/to/dataDir' in config.service\n");
 	}
-	localAndClientMsg(VLogger::DEBUG, NULL, "CVAC Data directory configured as: %s \n", dataDir.c_str());
+	localAndClientMsg(VLogger::DEBUG, NULL,
+                          "CVAC Data directory configured as: %s \n", dataDir.c_str());
     return dataDir;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::createSandbox()
+void ServiceManager::createSandbox()
 {
     mSandbox = new SandboxManager(getDataDir());
 }
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::stopService()
+void ServiceManager::stopService()
 {
     if (mStopState == Running)
         mStopState = Stopping;
@@ -160,17 +149,17 @@ void cvac::ServiceManager::stopService()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::waitForStopService()
+void ServiceManager::waitForStopService()
 {
     stopService();
     while (isStopCompleted() == false)
     {
-        cvac::sleep(100);
+        sleep(100);
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-bool cvac::ServiceManager::stopRequested()
+bool ServiceManager::stopRequested()
 {
     if (mStopState == Stopping)
         return true;
@@ -179,25 +168,25 @@ bool cvac::ServiceManager::stopRequested()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::clearStop()
+void ServiceManager::clearStop()
 {
     mStopState = None;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::stopCompleted()
+void ServiceManager::stopCompleted()
 {
     mStopState = Stopped;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::setStoppable()
+void ServiceManager::setStoppable()
 {
     mStopState = Running;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-bool cvac::ServiceManager::isStopCompleted()
+bool ServiceManager::isStopCompleted()
 {
     if (mStopState != Stopping)
         return true;
@@ -206,36 +195,23 @@ bool cvac::ServiceManager::isStopCompleted()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::ServiceManager::getServiceName()
+std::string ServiceManager::getServiceName()
 {
     return mServiceName;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::ServiceManager::getIceName()
-{
-    return mIceName;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void cvac::ServiceManager::setIceName(std::string name)
-{
-    mIceName = name;
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
 // SandboxManager classes
 ///////////////////////////////////////////////////////////////////////////////
 
-cvac::ClientSandbox::ClientSandbox(const std::string &clientName, 
+ClientSandbox::ClientSandbox(const std::string &clientName, 
                                   const std::string &CVAC_DataDir )
 {
     _clientName = clientName;
     _cvacDataDir = CVAC_DataDir;
 }
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::ClientSandbox::createTrainingDir()
+std::string ClientSandbox::createTrainingDir()
 {
     if (!_trainDir.empty())
     {// Get rid of old training directory 
@@ -256,7 +232,7 @@ std::string cvac::ClientSandbox::createTrainingDir()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::ClientSandbox::getClientDir()
+std::string ClientSandbox::getClientDir()
 {
     if (_clientDir.empty())
     {
@@ -270,7 +246,7 @@ std::string cvac::ClientSandbox::getClientDir()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::ClientSandbox::deleteTrainingDir()
+void ClientSandbox::deleteTrainingDir()
 {
     if (!_trainDir.empty())
     {
@@ -280,13 +256,13 @@ void cvac::ClientSandbox::deleteTrainingDir()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-cvac::SandboxManager::SandboxManager(const std::string & CVAC_DataDir)
+SandboxManager::SandboxManager(const std::string & CVAC_DataDir)
 {
     mCVAC_DataDir = CVAC_DataDir;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::SandboxManager::createClientName(const std::string &serviceName,
+std::string SandboxManager::createClientName(const std::string &serviceName,
                                              const std::string &connectionName)
 {
     std::string clientName = serviceName + "_" + connectionName;
@@ -306,7 +282,7 @@ std::string cvac::SandboxManager::createClientName(const std::string &serviceNam
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::SandboxManager::createTrainingDir(const std::string &clientName)
+std::string SandboxManager::createTrainingDir(const std::string &clientName)
 {
     std::vector<ClientSandbox>::iterator it;
     for (it = mSandboxes.begin(); it < mSandboxes.end(); ++it)
@@ -321,7 +297,7 @@ std::string cvac::SandboxManager::createTrainingDir(const std::string &clientNam
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void cvac::SandboxManager::deleteTrainingDir(const std::string &clientName)
+void SandboxManager::deleteTrainingDir(const std::string &clientName)
 {
     std::vector<ClientSandbox>::iterator it;
     for (it = mSandboxes.begin(); it < mSandboxes.end(); ++it)
@@ -334,7 +310,7 @@ void cvac::SandboxManager::deleteTrainingDir(const std::string &clientName)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::SandboxManager::getTrainingDir(const std::string &clientName)
+std::string SandboxManager::getTrainingDir(const std::string &clientName)
 {
     std::vector<ClientSandbox>::iterator it;
     for (it = mSandboxes.begin(); it < mSandboxes.end(); ++it)
@@ -349,7 +325,7 @@ std::string cvac::SandboxManager::getTrainingDir(const std::string &clientName)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::SandboxManager::createClientDir(const std::string &clientName)
+std::string SandboxManager::createClientDir(const std::string &clientName)
 {
     std::vector<ClientSandbox>::iterator it;
     for (it = mSandboxes.begin(); it < mSandboxes.end(); ++it)

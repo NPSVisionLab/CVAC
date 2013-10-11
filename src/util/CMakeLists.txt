@@ -28,6 +28,7 @@ SET(HEADER_FILES
     ${CVAC_INCLUDE_DIR}/util/Timing.h
     ${CVAC_INCLUDE_DIR}/util/VLogger.h
     ${CVAC_INCLUDE_DIR}/util/ServiceMan.h
+    ${CVAC_INCLUDE_DIR}/util/ServiceManI.h
     ${CVAC_INCLUDE_DIR}/util/ServiceInvocation.h
 	${CVAC_INCLUDE_DIR}/util/RunSetIterator.h
 	${CVAC_INCLUDE_DIR}/util/RunSetWrapper.h
