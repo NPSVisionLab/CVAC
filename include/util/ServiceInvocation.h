@@ -46,10 +46,13 @@ namespace cvac
 {
   /** A convenience function that creates the callback,
    *  collects results, and makes them available in the
-   *  return argument.
+   *  return argument.  If you don't want to configure the detector
+   *  beyond the default then pass NULL in props.
    */
   ResultSet detect( const std::string& algorithm,
                     const cvac::RunSet& runset,
                     const cvac::FilePath& model,
-                    const cvac::DetectorProperties& props );
+                    const cvac::DetectorProperties* props );
+
+
 }

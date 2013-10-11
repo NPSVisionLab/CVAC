@@ -60,22 +60,26 @@ public:
 
 
 public:
-    virtual void initialize(::Ice::Int verbosity,const ::cvac::DetectorData& data,const ::Ice::Current& current);
-    virtual void process(const Ice::Identity &client,const ::cvac::RunSet& runset,const ::Ice::Current& current);
-    virtual bool isInitialized(const ::Ice::Current& current);
-    virtual void destroy(const ::Ice::Current& current);
+
+    virtual void process(const Ice::Identity &client,const ::cvac::RunSet& runset,
+                         const ::cvac::FilePath &detectorData, const::cvac::DetectorProperties &props,
+                         const ::Ice::Current& current);
     virtual std::string getName(const ::Ice::Current& current);
     virtual std::string getDescription(const ::Ice::Current& current);
-    void setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current);
 
-    virtual cvac::DetectorData createCopyOfDetectorData(const ::Ice::Current& current);
-    virtual cvac::DetectorPropertiesPrx getDetectorProperties(const ::Ice::Current& current);
+    virtual void initialize(int verbosity, const ::cvac::FilePath &file, const::Ice::Current &current);
+    virtual bool isInitialized();
+    virtual void destroy(const ::Ice::Current& current);
+    virtual bool cancel(const Ice::Identity &client, const ::Ice::Current& current);
+ 
+    //virtual cvac::DetectorData createCopyOfDetectorData(const ::Ice::Current& current);
+    virtual cvac::DetectorProperties getDetectorProperties(const ::Ice::Current& current);
 
 private:
     cvac::ServiceManager *mServiceMan;
     bowCV* pBowCV;
     bool   fInitialized;    
-    static cvac::ResultSetV2 processSingleImg(cvac::DetectorPtr detector,const char* fullfilename);
+    static cvac::ResultSet processSingleImg(cvac::DetectorPtr detector,const char* fullfilename);
 };
 
 #endif //_BowICEI_H__

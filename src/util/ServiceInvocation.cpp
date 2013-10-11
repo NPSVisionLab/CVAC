@@ -35,13 +35,15 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
+
 #include <Ice/Ice.h>
 #include <IceUtil/UUID.h>
 #include <Ice/Communicator.h>
 #include <Services.h>
-#include <util/FileUtils.h>
 #include <vector>
-
+#include <util/FileUtils.h>
+#include <util/Timing.h>
+#include <util/ServiceInvocation.h>
 /** Utilities for invoking CVAC services from C/C++
  */
 
@@ -139,10 +141,10 @@ DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb
  *  collects results, and makes them available in the
  *  return argument.
  */
-ResultSet detect( const std::string& algorithm,
+ResultSet cvac::detect( const std::string& algorithm,
                     const cvac::RunSet& runset,
                     const cvac::FilePath& model,
-                    const cvac::DetectorProperties& detprops )
+                    const cvac::DetectorProperties* detprops )
 {
   // Connect to detector
   Ice::Identity det_cb;
@@ -153,23 +155,29 @@ ResultSet detect( const std::string& algorithm,
     localAndClientMsg( VLogger::ERROR, NULL, "Could not connect to CVAC Ice Services" );
     return ResultSet();
   }
+  cvac::DetectorProperties dprops;
+  // If user did not supply any detector properties then provide default one.
+  if (NULL == detprops)
+  {
+      detprops = & dprops;   
+  }
 
   Ice::CommunicatorPtr comm = Ice::Application::communicator();
   Ice::PropertiesPtr iceprops = comm->getProperties();
   std::string dataDir = iceprops->getProperty("CVAC.DataDir");
-
+/*
  TODO: "I think we don't have to use the FinishCallback at all because we don't want to"
     "invoke process asynchronously.  Not sure why the choice was made to do so in"
     "detectorClient.  Please try without first: just call "
     "detector->process(det_cb, runSet);";
-  
+  */
   try
     {	// Create our callback class so that we can be informed when process completes
       FinishedCallbackPtr finishCallback = new FinishedCallback();
       Ice::CallbackPtr finishedAsync = Ice::newCallback(finishCallback, &FinishedCallback::finished);
       
       Ice::AsyncResultPtr asyncResult =
-        detector->begin_process(det_cb, runset, model, detprops, finishedAsync);
+        detector->begin_process(det_cb, runset, model, *detprops, finishedAsync);
       
       // end_myFunction should be call from the "finished" callback
       //detector->end_process(asyncResult);
@@ -177,7 +185,7 @@ ResultSet detect( const std::string& algorithm,
       // Wait for the processing to complete before exiting the app
       while (!finishCallback->hasFinished())
       {
-        sleep(100);
+        cvac::sleep(100);
       }
     }
   catch (const Ice::Exception& ex)
