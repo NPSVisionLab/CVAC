@@ -59,7 +59,6 @@
  */
 namespace cvac
 {
-    class CVAlgorithmService;
     /**
      * ClientSandbox - keep track of the client resources handed out.
      */

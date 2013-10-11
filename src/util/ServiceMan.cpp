@@ -47,9 +47,11 @@ using namespace cvac;
 using namespace Ice;
 
 ///////////////////////////////////////////////////////////////////////////////
-ServiceManagerI::ServiceManagerI( cvac::CVAlgorithmService *service )
+ServiceManagerI::ServiceManagerI( CVAlgorithmService *service,
+                                  StartStop *ss )
 {
     mService = service;
+    mSS = ss;
     mAdapter = NULL;
     mStopState = None;
     mSandbox = NULL;
@@ -71,6 +73,7 @@ void ServiceManagerI::start(const ::std::string& name,
   mAdapter->add(mService, communicator->stringToIdentity(mServiceName));
   mAdapter->activate();
   createSandbox();
+  mSS->starting();
   localAndClientMsg(VLogger::INFO, NULL, "service started: %s\n", mServiceName.c_str());
 }
 
@@ -81,6 +84,7 @@ void ServiceManagerI::stop()
 {
   localAndClientMsg(VLogger::INFO, NULL, "Stopping Service: %s\n", 
                     mServiceName.c_str());
+  mSS->stopping();
   mAdapter->deactivate();
   waitForStopService();
   localAndClientMsg(VLogger::INFO, NULL, "Service stopped: %s\n",
@@ -96,11 +100,8 @@ string ServiceManagerI::getModelFileFromConfig()
         PropertiesPtr props = comm->getProperties();
         if (props==true)
         {
-            string propname = mServiceName + ".TrainedModel";
-            printf("aaaa\n");
+            string propname = mServiceName + "x.TrainedModel";
             string propval = props->getProperty( propname );
-            printf("bbbb\n");
-            printf("found %s=%s\n", propname.c_str(), propval.c_str());
             return propval;
         }
     }

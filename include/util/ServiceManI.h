@@ -35,12 +35,26 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
+#ifndef __SERVICE_MAN_I_H__INCLUDED__
+#define __SERVICE_MAN_I_H__INCLUDED__
+
 #include <Services.h>
 #include <IceBox/IceBox.h>
 #include <util/ServiceMan.h>
 
 namespace cvac
 {
+  /** Add starting and stopping functions to the algorithm interface;
+   *  They are called by the ServiceManager upon IceBox::Service
+   *  start and stop.
+   */
+  class StartStop
+  {
+  public:
+    virtual void starting() {}
+    virtual void stopping() {}
+  };
+  
   class ServiceManagerI : public ::IceBox::Service, public cvac::ServiceManager
   {
   public:
@@ -52,7 +66,7 @@ namespace cvac
      * detectorTrainer but not both!
      * Parms: The Algorithm instance to be served by this manager.
      */
-    ServiceManagerI( cvac::CVAlgorithmService* serv );
+    ServiceManagerI( cvac::CVAlgorithmService* serv, StartStop* ss=NULL );
 
     /**
      * The start function called by IceBox to start this service.
@@ -80,6 +94,8 @@ namespace cvac
   private:
     Ice::ObjectAdapterPtr          mAdapter;
     cvac::CVAlgorithmService*      mService;
+    cvac::StartStop*               mSS;
   };
 };
 
+#endif // __SERVICE_MAN_I_H__INCLUDED__
