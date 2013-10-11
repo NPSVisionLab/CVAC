@@ -81,7 +81,10 @@ namespace cvac
     virtual void stop();
     
     /** Look for a property entry in config.service that corresponds to
-     *  ServiceName.TrainedModel = filename
+     *  ServiceNamex.TrainedModel = filename
+     *  Note that the "x" is significant: the name of the service is
+     *  ServiceName but we need ServiceNamex so that ICE doesn't complain
+     *  about unknown properties.
      *  Return filename if found, empty string otherwise.
      */
     virtual std::string getModelFileFromConfig();
