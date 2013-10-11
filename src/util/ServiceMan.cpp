@@ -73,7 +73,7 @@ void ServiceManagerI::start(const ::std::string& name,
   mAdapter->add(mService, communicator->stringToIdentity(mServiceName));
   mAdapter->activate();
   createSandbox();
-  mSS->starting();
+  if (NULL!=mSS) mSS->starting();
   localAndClientMsg(VLogger::INFO, NULL, "service started: %s\n", mServiceName.c_str());
 }
 
@@ -84,7 +84,7 @@ void ServiceManagerI::stop()
 {
   localAndClientMsg(VLogger::INFO, NULL, "Stopping Service: %s\n", 
                     mServiceName.c_str());
-  mSS->stopping();
+  if (NULL!=mSS) mSS->stopping();
   mAdapter->deactivate();
   waitForStopService();
   localAndClientMsg(VLogger::INFO, NULL, "Service stopped: %s\n",
