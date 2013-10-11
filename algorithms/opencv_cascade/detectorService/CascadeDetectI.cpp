@@ -147,7 +147,7 @@ bool CascadeDetectI::readModelFile( string model )
       if (model.empty())
         {
           localAndClientMsg( VLogger::WARN, NULL,
-                             "unable to load classifier from archive file %s\n", zipfilename.c_str()); \
+                             "unable to load classifier from archive file %s\n", zipfilename.c_str());
           return false;
         }
     }

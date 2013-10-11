@@ -91,7 +91,8 @@ void ServiceManagerI::stop()
                     mServiceName.c_str());
 }
 
-// look for servicename.TrainedModel
+// look for ServiceNamex.TrainedModel
+// Note that the x is significant
 string ServiceManagerI::getModelFileFromConfig()
 {
     CommunicatorPtr comm = mAdapter->getCommunicator();
