@@ -1,8 +1,0 @@
-import sys
-import os
-
-thisPath = os.path.dirname(os.path.abspath(__file__))
-srcPath = os.path.abspath(thisPath+"/../../3rdparty/ICE/python")
-sys.path.append(srcPath)
-srcPath = os.path.abspath(thisPath+"/../../3rdparty/opencv/python/2.6")
-sys.path.append(srcPath)

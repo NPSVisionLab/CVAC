@@ -75,7 +75,8 @@ namespace cvac
                       DoDetectFunc detectFunc, 
                       const RunSet &run, 
                       const std::string &pathPrefix,
-                      ServiceManager *servMan);
+                      ServiceManager *servMan
+                      );
 
    void sendResultsToClient( const DetectorCallbackHandlerPrx &client, 
                              const ResultSet& results );

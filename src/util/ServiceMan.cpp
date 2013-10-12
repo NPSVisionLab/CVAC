@@ -43,6 +43,10 @@
 #include <Ice/Ice.h>
 #include <IceBox/IceBox.h>
 
+#ifdef WIN32
+#include <windows.h>
+#endif 
+
 using namespace cvac;
 using namespace Ice;
 
@@ -342,6 +346,54 @@ bool servicesStarted()
   printf("TODO: servicesStarted()\n");
   return true;
 }
+
+#ifdef WIN32
+
+bool runProgram(const string &runString)
+{
+    STARTUPINFO startinfo;
+    PROCESS_INFORMATION procinfo;
+    DWORD cflags = 0;
+    const char *cmdptr = runString.c_str();
+
+    memset(&startinfo, 0, sizeof(STARTUPINFO));
+    startinfo.cb = sizeof(STARTUPINFO);
+    startinfo.dwFlags = 0;
+    startinfo.dwFlags = STARTF_USESHOWWINDOW;
+    startinfo.wShowWindow = SW_HIDE;
+    
+    if (CreateProcess(NULL, (LPSTR)cmdptr, NULL, NULL, FALSE, cflags,
+                      NULL, NULL, &startinfo, &procinfo))
+        return true;
+    else
+    {
+        return false;
+    }
+}
+#else
+
+bool runProgram(const String &runString)
+{
+   argv[0] = "/bin/sh";
+   argv[1] = "-c";
+   argv[2] = run_string;
+   argv[3] = 0;
+   fork_ret = fork();
+   if (fork_ret == -1)
+       return false;
+   else if (fork_ret == 0)
+   { // we are in the child process
+       // Close all the non standard file descriptors
+       if (exec("/bin/sh",(char * const *)argv) == -1)
+
+       { // could not start the new program
+          return false
+       }
+   }
+   return true;
+}
+#endif
+
 
 /** "exec" startIcebox.sh/bat and wait for completion (a few seconds)
  */

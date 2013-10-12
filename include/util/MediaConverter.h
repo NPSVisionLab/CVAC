@@ -36,23 +36,59 @@
  *(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****/
-/**
- * Utilities to invoke a CVAC service.
- */
-#include <string>
-#include <Data.h>
+
+#include <iomanip>
+#include <vector>
+//#include <opencv2/opencv.hpp>
+#include <util/processRunSet.h>
+//#pragma comment(lib,"opencv_core245.lib")
+//#pragma comment(lib,"opencv_highgui245.lib")
+//#pragma comment(lib,"opencv_imgproc245.lib")
 
 namespace cvac
-{
-  /** A convenience function that creates the callback,
-   *  collects results, and makes them available in the
-   *  return argument.  If you don't want to configure the detector
-   *  beyond the default then pass NULL in props.
-   */
-  ResultSet detect( const std::string& algorithm,
-                    const cvac::RunSet& runset,
-                    const cvac::FilePath& model,
-                    const cvac::DetectorProperties* props );
+{  
+  class MediaConverter
+  {
+  public:
+    MediaConverter(ServiceManager *_sman = NULL);
+    ~MediaConverter(){};	
+  public:
+    ServiceManager* mServiceMan;
+  public:
+    virtual bool convert(const string& _srcAbsPath,
+                         const string& _desAbsDir,
+                         const string& _desFilename,
+                         vector<string>& _resFilename) = 0;
+  };
 
 
+  class MediaConverter_openCV_i2i : public MediaConverter
+  {
+  public:
+    MediaConverter_openCV_i2i(ServiceManager *_sman = NULL);
+    ~MediaConverter_openCV_i2i(){};
+  public:
+    bool convert(const string& _srcAbsPath,
+                 const string& _desAbsDir,
+                 const string& _desFilename,
+                 vector<string>& _resFilename);
+  };
+
+  class MediaConverter_openCV_v2i : public MediaConverter
+  {
+  public:
+    MediaConverter_openCV_v2i(ServiceManager *_sman = NULL,
+                              int _perFrame = -1);
+    ~MediaConverter_openCV_v2i();
+
+  private:
+    //cv::VideoCapture mVideoFile;	
+    int PerFrame;
+
+  public:
+    bool convert(const string& _srcAbsPath,
+                 const string& _desAbsDir,
+                 const string& _desFilename,
+                 vector<string>& _resFilename);
+  };
 }

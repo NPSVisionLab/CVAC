@@ -36,23 +36,68 @@
  *(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****/
-/**
- * Utilities to invoke a CVAC service.
- */
-#include <string>
+
 #include <Data.h>
+#include <Services.h>
+
+#ifdef WIN32
+#include <util/wdirent.h>
+#else
+#include <dirent.h>
+#endif
+
+#include <util/processRunSet.h>
+#include <iostream>
 
 namespace cvac
 {
-  /** A convenience function that creates the callback,
-   *  collects results, and makes them available in the
-   *  return argument.  If you don't want to configure the detector
-   *  beyond the default then pass NULL in props.
-   */
-  ResultSet detect( const std::string& algorithm,
-                    const cvac::RunSet& runset,
-                    const cvac::FilePath& model,
-                    const cvac::DetectorProperties* props );
+  using namespace std;
 
+  typedef string rsMediaType;
+  
+  string getLowercase(const string& _str);
 
+  class RunSetWrapper
+  {		
+  public:
+    RunSetWrapper(const RunSet* _runset,string _mediaRootPath,
+                  ServiceManager *_sman);
+    ~RunSetWrapper();		
+
+  private:
+    bool   mFlagIntialize;
+    string mMediaRootPath;
+    const RunSet* mRunset;
+    ServiceManager* mServiceMan;
+    vector<LabelablePtr> mList;		//candidate list of LabelablePtr		      
+    vector<rsMediaType> mListType;
+  
+  private:	//Basic Utility	 
+    rsMediaType getType(const string _aPath);
+    rsMediaType getType(const LabelablePtr _pla);
+    string convertToAbsDirectory(const string& _directory);
+    string convertToAbsDirectory(const string& _directory,
+                                    const string& _prefix);      
+    bool isAbsDirectory(const string& _directory);
+
+  private:    //In Future: do with more sophisticated structures  
+    bool isInRunset(const string& _rDir,const string& _fname,
+                           const vector<rsMediaType>& _types,
+                           rsMediaType& _resType);    
+  private:	//main functions
+    void addToList(const LabelablePtr _pla,const rsMediaType _type);
+    bool makeBasicList();	
+    bool makeBasicList_parse(const string& _absDir,bool _recursive,
+                             const string& _relDir,
+                             const vector<rsMediaType>& _types);	
+  public:     
+    vector<LabelablePtr>& getList();
+    vector<rsMediaType>& getListType();
+    bool isInitialized(){ return mFlagIntialize; };
+    string getRootDir(){  return mMediaRootPath;  };
+
+  public:     //test functions
+    void      showList();        
+  };
 }
+

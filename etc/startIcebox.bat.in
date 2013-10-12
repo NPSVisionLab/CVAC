@@ -16,7 +16,7 @@ REM Python services that are listed in python.config
 if "${PYTHON_EXECUTABLE}" neq "" (if exist "${CMAKE_SOURCE_DIR}/python.config" goto startpython)
 goto next2
 :startpython
-    for /F "eol=# tokens=*" %%A in (${CMAKE_SOURCE_DIR}/python.config) do start "CVAC Service (Python)" "cmd /K ""${PYTHON_EXECUTABLE}" %%A"
+    for /F "usebackq eol=# tokens=*" %%A in ("${CMAKE_SOURCE_DIR}/python.config") do start "CVAC Service (Python)" "cmd /K ""${PYTHON_EXECUTABLE}" %%A"
 :next2
 echo CVAC services launched
 exit /b 0

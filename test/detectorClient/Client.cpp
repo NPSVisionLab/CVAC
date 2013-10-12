@@ -38,10 +38,12 @@
 #include <Ice/Ice.h>
 #include <IceUtil/UUID.h>
 #include <Services.h>
+#include <Data.h>
 #include <util/Timing.h>
 #include <util/FileUtils.h>
 #include <util/ConfusionMatrix.h>
 #include <vector>
+#include <util/ServiceInvocation.h>
 using namespace cvac;
 
 class ClientAppData {
@@ -73,7 +75,7 @@ public:
 	~CallbackHandlerI(){};
 
 	ClientAppData* appDataRef;
-
+/*
 	void foundNewResults(const ::ResultSetV2& resultSet, const ::Ice::Current& current)
 	{
 		int stopSize = resultSet.results.size();
@@ -141,6 +143,7 @@ public:
 
 		}
 	};
+*/
 
 	void estimatedTotalRuntime(::Ice::Int seconds, const ::Ice::Current& current)
 	{
@@ -321,6 +324,7 @@ ClientApp::ClientApp(ClientAppData *refAppData) :
 	appData = refAppData;
 }
 
+/*
  /// usage:
     ///IceBoxTestClientApp.exe <detector> <directory>
     /// <detector>: The name of the detector (found in the config.client file)
@@ -399,8 +403,10 @@ DetectorPrx ClientApp::initIceConnection(std::string detectorNameStr)
 
     return 0;
 #endif
-*/
+
 }
+*/
+
 
 int ClientApp::run(int argc, char* argv[])
 {
@@ -420,7 +426,57 @@ int ClientApp::run(int argc, char* argv[])
 	"<exe filename> <detector xml or zipFile from config> <name of the detector> [path to directory of images to process] [flag: 'verifyresults']\n");
 	return EXIT_FAILURE;
   }
+  ResultSet result;
+  RunSet runSet;
+  Ice::PropertiesPtr props = communicator()->getProperties();
+  std::string dataDir = props->getProperty("CVAC.DataDir");
+		
+  PurposedDirectoryPtr dir = new PurposedDirectory();
 
+  localAndClientMsg(VLogger::DEBUG, NULL, "IceBoxTestClient-mainLoop setting RunSet dir: %s\n", testFileFolder.c_str());
+	  dir->directory.relativePath = std::string(testFileFolder.c_str());
+  runSet.purposedLists.push_back(dir);
+
+  std::string _detectorName = argv[1];
+  if(appData->videoInputType) {
+		 dir->fileSuffixes.push_back("mpg");
+         localAndClientMsg(VLogger::DEBUG_2, NULL, "Using (.mpg) extension.\n");
+  }
+  else {
+		 dir->fileSuffixes.push_back("jpg");
+  }
+
+  dir->recursive = true;
+  // get the model file
+  std::string filenameStr = m_detectorName + ".DetectorFilename";
+  
+  std::string filename = props->getProperty(filenameStr);
+		
+  if (filename.length() == 0)
+  {
+		localAndClientMsg(VLogger::WARN, NULL,
+					  "No .DetectorFilename pair found for %s.\n", 
+					  m_detectorName.c_str());
+		return EXIT_FAILURE;
+  }
+  FilePath file;
+  if ((filename.length() > 1 && filename[1] == ':' )||
+			filename[0] == '/' ||
+			filename[0] == '\\')
+  {  // absolute path
+			int idx = filename.find_last_of('/');
+			file.directory.relativePath = filename.substr(0, idx);
+			file.filename = filename.substr(idx+1, filename.length() - idx);
+  }
+  else
+  { //Add the current directory
+			file.directory.relativePath = "detectors";
+			file.filename = filename;
+  }
+	
+  result = detect(m_detectorName, runSet, file, NULL);
+  return EXIT_SUCCESS;
+  /*
   // Connect to detector
   DetectorPrx detector = initIceConnection(m_detectorName);
   if(NULL == detector.get()) {
@@ -507,8 +563,11 @@ int ClientApp::run(int argc, char* argv[])
 
   communicator()->shutdown();  // Shut down at the end of either branch
   return EXIT_SUCCESS;
+  */
+  
 }
 
+/*
 int ClientApp::verification(std::string testFilePath, DetectorPrx detector)
 {
 	appData->isVerification = true;
@@ -592,6 +651,8 @@ int ClientApp::verification(std::string testFilePath, DetectorPrx detector)
 
   return EXIT_SUCCESS;
 }
+*/
+
 int ClientApp::SBDResultsOK()
 {
 	try
@@ -660,6 +721,7 @@ void ClientApp::parseOption(char* optionArgument, std::string &refConfigStr)
 		refConfigStr = optionStr;  // Override config file with option
 	}
 }
+/*
 int ClientApp::initializeDetector(DetectorPrx detector)
 {
 	DetectorData detectorData;
@@ -717,4 +779,7 @@ int ClientApp::initializeDetector(DetectorPrx detector)
 	}
 
   return EXIT_SUCCESS;
+
 }
+*/
+
