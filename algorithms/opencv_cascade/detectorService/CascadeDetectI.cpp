@@ -206,7 +206,7 @@ bool CascadeDetectI::initialize( const DetectorProperties& detprops,
 
 std::string CascadeDetectI::getName(const ::Ice::Current& current)
 {
-  mServiceMan->getServiceName();
+  return mServiceMan->getServiceName();
 }
 
 std::string CascadeDetectI::getDescription(const ::Ice::Current& current)

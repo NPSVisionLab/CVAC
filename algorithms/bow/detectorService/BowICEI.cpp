@@ -45,6 +45,7 @@
 #include <util/processRunSet.h>
 #include <util/FileUtils.h>
 #include <util/DetectorDataArchive.h>
+#include <util/ServiceManI.h>
 using namespace cvac;
 
 
@@ -58,20 +59,20 @@ extern "C"
 	//
 	ICE_DECLSPEC_EXPORT IceBox::Service* create(Ice::CommunicatorPtr communicator)
 	{
-        ServiceManager *sMan = new ServiceManager();
-        BowICEI *bow = new BowICEI(sMan);
-        sMan->setService(bow, "bowTest");
-        return (::IceBox::Service*) sMan->getIceService();
+        BowICEI *bow = new BowICEI();
+        ServiceManagerI *sMan = new ServiceManagerI( bow, bow );
+        bow->setServiceManager( sMan );
+        return sMan;
 	}
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BowICEI::BowICEI(ServiceManager *sman)
+BowICEI::BowICEI()
 : pBowCV(NULL),fInitialized(false)
 {
-    mServiceMan = sman;
+    mServiceMan = NULL;
 }
 
 BowICEI::~BowICEI()
@@ -80,6 +81,10 @@ BowICEI::~BowICEI()
 	pBowCV = NULL;
 }
 
+void BowICEI::setServiceManager(cvac::ServiceManagerI *sman)
+{
+    mServiceMan = sman;
+}
                           // Client verbosity
 void BowICEI::initialize(int verbosity, const ::cvac::FilePath &file, const::Ice::Current &current)
 {
@@ -105,7 +110,7 @@ void BowICEI::initialize(int verbosity, const ::cvac::FilePath &file, const::Ice
   std::string _extFile = file.filename.substr( file.filename.rfind(".")+1,
                                                     file.filename.length());
   std::string connectName = getClientConnectionName(current);
-  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getIceName(),
+  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
                                                              connectName);                               
   std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
 
