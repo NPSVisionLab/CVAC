@@ -10,7 +10,10 @@ IF( NOT PYTHON_EXECUTABLE )
   MESSAGE( FATAL_ERROR "Python executable not found: cannot run Python UnitTests" )
 ENDIF( NOT PYTHON_EXECUTABLE )
 
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/easy/paths.py.in ${CMAKE_CURRENT_SOURCE_DIR}/paths.py)
+set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
+set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
+set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build/timestamp")
+
 
 add_custom_target(PythonUnitTests ALL DEPENDS ${SLICE_FILES})
 IF (WIN32)
@@ -42,6 +45,11 @@ SET_TESTS_PROPERTIES( PythonFileServerTest
 ADD_TEST( MiniTutorialTest
   ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/MiniTutorialTest.py )
 SET_TESTS_PROPERTIES( MiniTutorialTest
+  PROPERTIES ENVIRONMENT "PYTHONPATH=${MY_PYTHONPATH};PATH=${MY_PATH}")
+  
+ADD_TEST( RunsetIteratorTest
+  ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/RunsetIteratorTest.py )
+SET_TESTS_PROPERTIES( RunsetIteratorTest
   PROPERTIES ENVIRONMENT "PYTHONPATH=${MY_PYTHONPATH};PATH=${MY_PATH}")
 
 INCLUDE (UserCMakeLists.txt OPTIONAL)

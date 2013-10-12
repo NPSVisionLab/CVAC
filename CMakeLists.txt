@@ -21,6 +21,8 @@ OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use '
 OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
+OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" ON)
+
 
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
 
@@ -309,6 +311,12 @@ ELSE( BUILD_FILESERVER )
 SET( CF_FILE_S "#")
 ENDIF( BUILD_FILESERVER )
 
+IF( BUILD_WITH_RSI )
+SET(CF_RSI "" )
+ELSE( BUILD_WITH_RSI )
+SET( CF_RSI "#" )
+ENDIF( BUILD_WITH_RSI )
+
 CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
 CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
 IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
@@ -320,16 +328,24 @@ IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
     FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
 ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
 
+# if cmake install prefix not set the set it to default else add 
+# cvac to the end
+IF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/installed" CACHE PATH "default install path" FORCE )
+ELSE( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cvac" )
+ENDIF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
+
 IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
     # This requires CMake 2.8 for Java support
     ADD_SUBDIRECTORY( src )
 ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 
-ADD_SUBDIRECTORY( etc )
 ADD_SUBDIRECTORY(src/util)
 ADD_SUBDIRECTORY(src/easy)
 ADD_SUBDIRECTORY(algorithms)
 ADD_SUBDIRECTORY(demo)
+ADD_SUBDIRECTORY( etc )
 
 IF( BUILD_WITH_TESTS)
   ENABLE_TESTING()
