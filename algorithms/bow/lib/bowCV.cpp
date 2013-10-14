@@ -485,20 +485,23 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
 
     if(!flagName)
     {
-        cout << "Need to initialize detector, extractor, and matcher with the function detect_initialize()." << endl;	fflush(stdout);
+        cout << "Need to initialize detector, extractor, and matcher with the function detect_initialize()." << endl;
+        fflush(stdout);
         return false;
     }
 
     if(!flagTrain)
     {
-        cout << "Error - No training flag found.  Before testing, training is necessary .. " << endl;	fflush(stdout);
+        cout << "Error - No training flag found.  Before testing, training is necessary .. " << endl;
+        fflush(stdout);
         return false;
     }
 
     _img = imread(_fullfilename);
     if(_img.empty())
     {
-        cout << "Error - no file found matching RunSet entry: " << _fullfilename <<endl;	fflush(stdout);
+        cout << "Error - could not read image file: " << _fullfilename <<endl;
+        fflush(stdout);
         return false;
     }
     else
