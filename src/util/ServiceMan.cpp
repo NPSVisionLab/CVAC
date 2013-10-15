@@ -372,25 +372,24 @@ bool runProgram(const string &runString)
 }
 #else
 
-bool runProgram(const String &runString)
+bool runProgram(const string &runString)
 {
-   argv[0] = "/bin/sh";
-   argv[1] = "-c";
-   argv[2] = run_string;
-   argv[3] = 0;
-   fork_ret = fork();
-   if (fork_ret == -1)
-       return false;
-   else if (fork_ret == 0)
-   { // we are in the child process
-       // Close all the non standard file descriptors
-       if (exec("/bin/sh",(char * const *)argv) == -1)
-
-       { // could not start the new program
-          return false
-       }
-   }
-   return true;
+  pid_t fork_ret = fork();
+  if (fork_ret == -1)
+  {
+    return false;
+  }
+  else if (fork_ret == 0)
+  { // we are in the child process
+    // Close all the non standard file descriptors
+    int res = execl("/bin/sh", "-c", runString.c_str(), (char *)0 );
+    if (res == -1)
+    {	
+      // could not start the new program
+      return false;
+    }
+  }
+  return true;
 }
 #endif
 
@@ -419,7 +418,7 @@ void parseConfigServices( StringSet& configured )
 }
 
 // see documentation in .h file
-StringSet startServices()
+StringSet cvac::startServices()
 {
   // for now, we don't test individual services but only whether
   // bin/startIcebox has been run, based on a "touched" lock file

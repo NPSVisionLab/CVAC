@@ -263,6 +263,7 @@ const std::string cvac::DetectorDataArchive::getFile(const std::string &identifi
     int i;
     for (i = 0; i < size; i++)
     {
+      // printf("%s: %s\n", mFileIds[i].c_str(), mFileNames[i].c_str());
         if (mFileIds[i].compare(identifier) == 0)
         {
             return mFileNames[i];

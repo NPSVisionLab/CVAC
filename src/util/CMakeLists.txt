@@ -15,8 +15,8 @@ SET(SOURCE_FILES
     VLogger.cpp
     ServiceMan.cpp
     ServiceInvocation.cpp
-	RunSetIterator.cpp
-	RunSetWrapper.cpp
+    RunSetIterator.cpp
+    RunSetWrapper.cpp
 )
 
 SET(HEADER_FILES
