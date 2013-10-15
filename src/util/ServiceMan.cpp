@@ -418,7 +418,7 @@ void parseConfigServices( StringSet& configured )
 }
 
 // see documentation in .h file
-StringSet startServices()
+StringSet cvac::startServices()
 {
   // for now, we don't test individual services but only whether
   // bin/startIcebox has been run, based on a "touched" lock file
