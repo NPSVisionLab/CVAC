@@ -65,30 +65,21 @@ public:
 	{
 		std::cout << messageString;
 	};
+    virtual void cancelled(const ::Ice::Current& current)
+    {
+        localAndClientMsg(VLogger::INFO, NULL, "Training cancelled.\n");
+    }
 
   ///////////////////////////////////////////////////////////////////////////////
   // Output function for complete Detector
 
-	void createdDetector(const ::DetectorData& ddata, const ::Ice::Current& = ::Ice::Current() )
+	virtual void createdDetector(const cvac::FilePath &file, const ::Ice::Current& = ::Ice::Current() )
 	{
 		localAndClientMsg(VLogger::INFO, NULL, "Trainer is finished with creating a detector/data/model, type is ");
-		switch (ddata.type)
-		{
-			case ::cvac::BYTES:
-			  localAndClientMsg(VLogger::INFO, NULL, "bytes\n");
-			  break;
-			case ::cvac::FILE:
-			  localAndClientMsg(VLogger::INFO, NULL, "file: %s/%s\n", 
-														   ddata.file.directory.relativePath.c_str(), 
-														   ddata.file.filename.c_str());
-			  break;
-			case ::cvac::PROVIDER:
-			  localAndClientMsg(VLogger::INFO, NULL, "provider\n");
-			  break;
-			default:    // In case exception is dropped by ice
-			  localAndClientMsg(VLogger::WARN, NULL, "Unknown DetectorData type.\n");
-			  throw new std::runtime_error("Unknown DetectorData type");
-		}
+		
+	    localAndClientMsg(VLogger::INFO, NULL, "file: %s/%s\n", 
+														   file.directory.relativePath.c_str(), 
+														   file.filename.c_str());
 	}
 
 
@@ -349,11 +340,10 @@ int TrainerClientApp::run(int argc, char* argv[])
 	//////////////////////////////////////////////////////////////////////////	
 
 	try
-	{
-        trainer->initialize(0);	//0:verbosity        
+	{     
 		//localAndClientMsg(VLogger::DEBUG_3, NULL, "Test_Trainer invoking Ice call: 'process(receiver, runSet)'\n");        
-        
-		trainer->process(_ident, runSet);        
+        cvac::TrainerProperties tprops;
+		trainer->process(_ident, runSet, tprops);        
         //localAndClientMsg(VLogger::DEBUG_3, NULL, "Test_Trainer completed Ice call: 'process(receiver, runSet)'\n");	
 	}
 	catch (const Ice::Exception& ex)
