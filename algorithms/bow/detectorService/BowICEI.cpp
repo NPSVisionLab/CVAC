@@ -85,6 +85,17 @@ void BowICEI::setServiceManager(cvac::ServiceManagerI *sman)
 {
     mServiceMan = sman;
 }
+
+void BowICEI::starting()
+{
+    // Do anything needed on service starting
+}
+
+void BowICEI::stopping()
+{
+    // stop the training service
+    mServiceMan->stopService();
+}
                           // Client verbosity
 void BowICEI::initialize(int verbosity, const ::cvac::FilePath &file, const::Ice::Current &current)
 {
@@ -173,7 +184,12 @@ std::string BowICEI::getDescription(const ::Ice::Current& current)
 
 bool BowICEI::cancel(const Ice::Identity &client, const ::Ice::Current& current)
 {
-    return false;  // Cannot cancel -not implemented
+    stopping();
+    mServiceMan->waitForStopService();
+    if (mServiceMan->isStopCompleted())
+        return true;
+    else 
+        return false;
 }
 
 //DetectorData BowICEI::createCopyOfDetectorData(const ::Ice::Current& current)
@@ -184,6 +200,7 @@ bool BowICEI::cancel(const Ice::Identity &client, const ::Ice::Current& current)
 
 DetectorProperties BowICEI::getDetectorProperties(const ::Ice::Current& current)
 {	
+    //TODO get the real detector properties but for now return an empty one.
     DetectorProperties props;
 	return props;
 }
