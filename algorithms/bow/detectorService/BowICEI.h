@@ -63,18 +63,20 @@ public:
 public:
 
     virtual void process(const Ice::Identity &client,const ::cvac::RunSet& runset,
-                         const ::cvac::FilePath &detectorData, const::cvac::DetectorProperties &props,
+                         const ::cvac::FilePath &detectorData, const ::cvac::DetectorProperties &props,
                          const ::Ice::Current& current);
     virtual std::string getName(const ::Ice::Current& current);
     virtual std::string getDescription(const ::Ice::Current& current);
 
-    virtual void initialize(int verbosity, const ::cvac::FilePath &file, const::Ice::Current &current);
-    virtual bool isInitialized();
+    void initialize(int verbosity, const ::cvac::FilePath &file, const::Ice::Current &current);
+    bool isInitialized();
     virtual void destroy(const ::Ice::Current& current);
     virtual bool cancel(const Ice::Identity &client, const ::Ice::Current& current);
     void setServiceManager(cvac::ServiceManagerI *sman);
     //virtual cvac::DetectorData createCopyOfDetectorData(const ::Ice::Current& current);
     virtual cvac::DetectorProperties getDetectorProperties(const ::Ice::Current& current);
+    virtual void starting();
+    virtual void stopping();
 
 private:
     cvac::ServiceManager *mServiceMan;

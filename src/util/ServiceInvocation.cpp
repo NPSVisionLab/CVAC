@@ -141,14 +141,15 @@ DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb
  *  collects results, and makes them available in the
  *  return argument.
  */
-ResultSet cvac::detect( const std::string& algorithm,
+ResultSet cvac::detect(
+                    const std::string& algorithm,
                     const cvac::RunSet& runset,
                     const cvac::FilePath& model,
                     const cvac::DetectorProperties* detprops )
 {
   // Connect to detector
   Ice::Identity det_cb;
-  CallbackHandlerI* cr = new CallbackHandlerI();
+  CallbackHandlerI *cr = new CallbackHandlerI();
   DetectorPrx detector = initIceConnection( algorithm, det_cb, cr );
   if(NULL == detector.get())
   {

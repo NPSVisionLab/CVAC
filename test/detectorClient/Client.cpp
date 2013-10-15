@@ -75,8 +75,13 @@ public:
 	~CallbackHandlerI(){};
 
 	ClientAppData* appDataRef;
-/*
-	void foundNewResults(const ::ResultSetV2& resultSet, const ::Ice::Current& current)
+    
+    virtual void cancelled(const ::Ice::Current &current)
+    {
+        localAndClientMsg(VLogger::INFO, NULL, "Detection cancelled");
+    }
+
+	void foundNewResults(const ::ResultSet& resultSet, const ::Ice::Current& current)
 	{
 		int stopSize = resultSet.results.size();
 		// Loop through each Result in the set
@@ -143,7 +148,7 @@ public:
 
 		}
 	};
-*/
+
 
 	void estimatedTotalRuntime(::Ice::Int seconds, const ::Ice::Current& current)
 	{
@@ -212,6 +217,7 @@ public:
 	std::string m_detectorName;
 	Ice::Identity ident;
 	ClientAppData *appData;
+    FilePath detectorData;
 
   ClientApp(ClientAppData *refAppData);
   virtual int run(int, char*[]);
@@ -324,7 +330,7 @@ ClientApp::ClientApp(ClientAppData *refAppData) :
 	appData = refAppData;
 }
 
-/*
+
  /// usage:
     ///IceBoxTestClientApp.exe <detector> <directory>
     /// <detector>: The name of the detector (found in the config.client file)
@@ -367,7 +373,7 @@ DetectorPrx ClientApp::initIceConnection(std::string detectorNameStr)
     }
     else
 		return detector;  // Success
-/*
+
 #if 0
     Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("");
     Ice::Identity ident;
@@ -405,7 +411,7 @@ DetectorPrx ClientApp::initIceConnection(std::string detectorNameStr)
 #endif
 
 }
-*/
+
 
 
 int ClientApp::run(int argc, char* argv[])
@@ -474,9 +480,8 @@ int ClientApp::run(int argc, char* argv[])
 			file.filename = filename;
   }
 	
-  result = detect(m_detectorName, runSet, file, NULL);
-  return EXIT_SUCCESS;
-  /*
+ 
+  
   // Connect to detector
   DetectorPrx detector = initIceConnection(m_detectorName);
   if(NULL == detector.get()) {
@@ -485,7 +490,7 @@ int ClientApp::run(int argc, char* argv[])
   }
 
   int resultInit = initializeDetector(detector);
-  if((EXIT_SUCCESS != resultInit) || (false == detector->isInitialized())) {
+  if((EXIT_SUCCESS != resultInit)) {
       
     localAndClientMsg(VLogger::ERROR, NULL, "Detector->isInitialized() failed.  Aborting IceTestClient.\n");
     return(EXIT_FAILURE);
@@ -538,8 +543,8 @@ int ClientApp::run(int argc, char* argv[])
 	  {	// Create our callback class so that we can be informed when process completes
 		  FinishedCallbackPtr finishCallback = new FinishedCallback();
 		  Ice::CallbackPtr finishedAsync = Ice::newCallback(finishCallback, &FinishedCallback::finished);
-			
-		  Ice::AsyncResultPtr asyncResult = detector->begin_process(ident, runSet, finishedAsync);
+	      cvac::DetectorProperties dprops;
+		  Ice::AsyncResultPtr asyncResult = detector->begin_process(ident, runSet, detectorData, dprops, finishedAsync);
 		  localAndClientMsg(VLogger::DEBUG, NULL, "IceBox test client: initiated processing\n");
 			
 		  // end_myFunction should be call from the "finished" callback
@@ -563,11 +568,11 @@ int ClientApp::run(int argc, char* argv[])
 
   communicator()->shutdown();  // Shut down at the end of either branch
   return EXIT_SUCCESS;
-  */
+  
   
 }
 
-/*
+
 int ClientApp::verification(std::string testFilePath, DetectorPrx detector)
 {
 	appData->isVerification = true;
@@ -604,7 +609,8 @@ int ClientApp::verification(std::string testFilePath, DetectorPrx detector)
 	{    // Create our callback class so that we can be informed when process completes
 		FinishedCallbackPtr finishCallback = new FinishedCallback();
 		Ice::CallbackPtr finishedAsync = Ice::newCallback(finishCallback, &FinishedCallback::finished);
-		Ice::AsyncResultPtr asyncResult = detector->begin_process(ident, runSet, finishedAsync);
+        cvac::DetectorProperties dprops;
+		Ice::AsyncResultPtr asyncResult = detector->begin_process(ident, runSet, detectorData, dprops, finishedAsync);
 		
 		// end_myFunction should be call from the "finished" callback
 		//detector->end_process(asyncResult);
@@ -651,7 +657,7 @@ int ClientApp::verification(std::string testFilePath, DetectorPrx detector)
 
   return EXIT_SUCCESS;
 }
-*/
+
 
 int ClientApp::SBDResultsOK()
 {
@@ -721,18 +727,17 @@ void ClientApp::parseOption(char* optionArgument, std::string &refConfigStr)
 		refConfigStr = optionStr;  // Override config file with option
 	}
 }
-/*
+
 int ClientApp::initializeDetector(DetectorPrx detector)
 {
-	DetectorData detectorData;
+
 	localAndClientMsg(VLogger::DEBUG, NULL, "Client using Detector-name: %s\n", detector->ice_getIdentity().name.c_str());
-	detectorData.type = ::cvac::FILE;
 	
 	// If a detector dat file was passed then use that instead of getting it from the config file
 	if (m_detectorData.length() > 0)
 	{
-		detectorData.file.directory.relativePath = getFileDirectory(m_detectorData);
-		detectorData.file.filename = getFileName(m_detectorData);
+		detectorData.directory.relativePath = getFileDirectory(m_detectorData);
+		detectorData.filename = getFileName(m_detectorData);
 	}
 	else
 	{ // Determine which data files to pass as detector data based on .DetectorFilename in 'config.client'
@@ -753,33 +758,19 @@ int ClientApp::initializeDetector(DetectorPrx detector)
 			filename[0] == '\\')
 		{  // absolute path
 			int idx = filename.find_last_of('/');
-			detectorData.file.directory.relativePath = filename.substr(0, idx);
-			detectorData.file.filename = filename.substr(idx+1, filename.length() - idx);
+			detectorData.directory.relativePath = filename.substr(0, idx);
+			detectorData.filename = filename.substr(idx+1, filename.length() - idx);
 		}
 		else
 		{ //Add the current directory
-			detectorData.file.directory.relativePath = "detectors";
-			detectorData.file.filename = filename;
+			detectorData.directory.relativePath = "detectors";
+			detectorData.filename = filename;
 		}
 	}
-	try
-	{
-		localAndClientMsg(VLogger::INFO, NULL, "Initializing detector: %s/%s\n", 
-				  detectorData.file.directory.relativePath.c_str(),
-				  detectorData.file.filename.c_str());
-		detector->initialize(5, detectorData);
-		localAndClientMsg(VLogger::DEBUG, NULL, "IceBox test client: initialized the detector\n");
-	}
-	catch (const Ice::Exception& ex)
-	{
-		localAndClientMsg(VLogger::WARN, NULL, "Ice- name():  %s\n", ex.ice_name().c_str());
-		localAndClientMsg(VLogger::WARN, NULL, "Ice- stackTrace(): \n%s\n", ex.ice_stackTrace().c_str());
-		localAndClientMsg(VLogger::WARN, NULL, "%s\n", ex.what());
-		return EXIT_FAILURE;
-	}
+	
 
   return EXIT_SUCCESS;
 
 }
-*/
+
 

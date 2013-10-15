@@ -46,26 +46,32 @@
 #include <IceBox/IceBox.h>
 #include <IceUtil/UUID.h>
 #include <util/processRunSet.h>
-#include <util/ServiceMan.h>
+#include <util/ServiceManI.h>
 
 #define logfile_BowTrainResult    "logTrain_Table.txt"	//This file includes the list of result files
 
-class BowICETrainI : public cvac::DetectorTrainer
+class BowICETrainI : public cvac::DetectorTrainer, public cvac::StartStop
 {
 public:
-    BowICETrainI(cvac::ServiceManager *serv);
+    BowICETrainI();
     ~BowICETrainI();
 	
 
 public:
-    virtual void initialize(::Ice::Int, const ::Ice::Current& = ::Ice::Current() );
-    virtual void process(const Ice::Identity &client, const ::cvac::RunSet&, const ::Ice::Current& = ::Ice::Current() );
-    virtual bool isInitialized(const ::Ice::Current& = ::Ice::Current() );
+    
+    virtual void process(const Ice::Identity &client, const ::cvac::RunSet&, 
+                         const ::cvac::TrainerProperties &props,
+                         const ::Ice::Current& = ::Ice::Current() );
+    void initialize(int verbosity, const ::Ice::Current& = ::Ice::Current() );
+    bool isInitialized(const ::Ice::Current& = ::Ice::Current() );
 	virtual void destroy(const ::Ice::Current& = ::Ice::Current() );
+    virtual bool cancel(const Ice::Identity &client,const ::Ice::Current& = ::Ice::Current() );
 	virtual ::std::string getName(const ::Ice::Current& = ::Ice::Current() );
 	virtual ::std::string getDescription(const ::Ice::Current& = ::Ice::Current() );
-	virtual void setVerbosity(::Ice::Int, const ::Ice::Current& = ::Ice::Current() );
-   virtual ::cvac::TrainerPropertiesPrx getTrainerProperties(
+	virtual void starting();
+    virtual void stopping();
+    void setServiceManager(cvac::ServiceManagerI *sman);
+    virtual ::cvac::TrainerProperties getTrainerProperties(
                                     const ::Ice::Current& = ::Ice::Current());
 
 private:
