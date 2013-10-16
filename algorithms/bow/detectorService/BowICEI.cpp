@@ -93,9 +93,9 @@ void BowICEI::starting()
 
 void BowICEI::stopping()
 {
-    // stop the training service
-    mServiceMan->stopService();
 }
+
+
                           // Client verbosity
 void BowICEI::initialize(int verbosity, const ::cvac::FilePath &file, const::Ice::Current &current)
 {
