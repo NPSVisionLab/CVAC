@@ -184,6 +184,7 @@ std::string BowICEI::getDescription(const ::Ice::Current& current)
 
 bool BowICEI::cancel(const Ice::Identity &client, const ::Ice::Current& current)
 {
+    stopping();
     mServiceMan->waitForStopService();
     if (mServiceMan->isStopCompleted())
         return true;
