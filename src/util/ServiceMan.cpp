@@ -89,6 +89,7 @@ void ServiceManagerI::stop()
   localAndClientMsg(VLogger::INFO, NULL, "Stopping Service: %s\n", 
                     mServiceName.c_str());
   mAdapter->deactivate();
+  if (NULL!=mSS) mSS->stopping();
   waitForStopService();
   localAndClientMsg(VLogger::INFO, NULL, "Service stopped: %s\n",
                     mServiceName.c_str());
