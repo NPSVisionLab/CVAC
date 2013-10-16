@@ -45,7 +45,7 @@
 #include <Ice/ObjectAdapter.h>
 #include <util/processRunSet.h>
 #include <util/FileUtils.h>
-#include <util/ServiceMan.h>
+#include <util/ServiceManI.h>
 #include <util/DetectorDataArchive.h>
 using namespace cvac;
 
@@ -59,18 +59,19 @@ extern "C"
 	//
 	ICE_DECLSPEC_EXPORT IceBox::Service* create(Ice::CommunicatorPtr communicator)
 	{
-        ServiceManager *sMan = new ServiceManager();
-        BowICETrainI *bow = new BowICETrainI(sMan);
-        sMan->setService(bow, bow->getName());
-        return (::IceBox::Service *) sMan->getIceService();
+        
+        BowICETrainI *bow = new BowICETrainI();
+        ServiceManagerI *sMan = new ServiceManagerI(bow, bow);
+        bow->setServiceManager(sMan);
+        return sMan;
 
 	}
 }
 
-BowICETrainI::BowICETrainI(ServiceManager *serv)
+BowICETrainI::BowICETrainI()
 : pBowCV(NULL),fInitialized(false)
 {
-    mServiceMan = serv;	
+    mServiceMan = NULL;	
 	pBowCV = new bowCV();
 }
 
@@ -80,7 +81,23 @@ BowICETrainI::~BowICETrainI()
 	pBowCV = NULL;
 }
 
-void BowICETrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& current)
+void BowICETrainI:: setServiceManager(cvac::ServiceManagerI *sman)
+{
+    mServiceMan = sman;
+}
+
+void BowICETrainI::starting()
+{
+    // Do anything needed on service starting
+}
+
+void BowICETrainI::stopping()
+{
+    // stop the training service
+    mServiceMan->stopService();
+}
+
+void BowICETrainI::initialize(int verbosity,const ::Ice::Current& current)
 {
 	string	_nameFeature("SIFT");	//SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS
 	string	_nameDescriptor("SIFT");	//SURF, SIFT, OpponentSIFT, OpponentSURF
@@ -99,10 +116,6 @@ void BowICETrainI::initialize(::Ice::Int verbosity,const ::Ice::Current& current
           pBowCV->train_initialize(_nameFeature,_nameDescriptor,_nameMatcher,_countWords);
 }
 
-bool BowICETrainI::isInitialized(const ::Ice::Current& current)
-{
-	return fInitialized;
-}
 
 void BowICETrainI::destroy(const ::Ice::Current& current)
 {
@@ -121,13 +134,21 @@ std::string BowICETrainI::getDescription(const ::Ice::Current& current)
 	return "BOW - Bag of Words trainer";
 }
 
-void BowICETrainI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current)
+bool BowICETrainI::cancel(const Ice::Identity &client, const ::Ice::Current& current)
 {
-
+    stopping(); 
+    mServiceMan->waitForStopService();
+    if (mServiceMan->isStopCompleted())
+        return true;
+    else 
+        return false;
+ 
 }
-::TrainerPropertiesPrx BowICETrainI::getTrainerProperties(const ::Ice::Current &current)
+cvac::TrainerProperties BowICETrainI::getTrainerProperties(const ::Ice::Current &current)
 {
-    return NULL;
+    //TODO get the real trainer properties but for now return an empty one.
+    TrainerProperties tprops;
+    return tprops;
 }
 
 //ResultSetV2
@@ -165,7 +186,9 @@ void BowICETrainI::processSingleImg(string _filepath,string _filename,int _class
 
 
 
-void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,const ::Ice::Current& current)
+void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,
+                           const ::cvac::TrainerProperties &tprops,
+                           const ::Ice::Current& current)
 {	
   localAndClientMsg(VLogger::DEBUG, NULL, "starting BOW training process\n");
   TrainerCallbackHandlerPrx _callback =
@@ -187,6 +210,11 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
   localAndClientMsg(VLogger::DEBUG, _callback, "got %d purposed lists\n",
                     runset.purposedLists.size());
 
+  initialize(tprops.verbosity, current);
+  if (!fInitialized || NULL==pBowCV || !pBowCV->isInitialized())
+  {
+    localAndClientMsg(VLogger::ERROR, _callback, "Trainer not initialized, aborting.\n");
+  }
   for (size_t listidx = 0; listidx < runset.purposedLists.size(); listidx++)
   {
     _classID = runset.purposedLists[listidx]->pur.classID;
@@ -229,7 +257,7 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
   }
 
   std::string connectName = cvac::getClientConnectionName(current);
-  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getIceName(),
+  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
                                                              connectName);
   std::string tTempDir = mServiceMan->getSandbox()->createTrainingDir(clientName); 
 
@@ -257,9 +285,8 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
   dda.addFile(SVMID, tTempDir + "/" + pBowCV->filenameSVM);
   dda.createArchive(tTempDir);
   mServiceMan->getSandbox()->deleteTrainingDir(clientName);
-  DetectorData detectorData;
-  detectorData.file.filename = getFileName(archiveFilename);
-  detectorData.type = ::cvac::FILE;
+  FilePath file;
+  file.filename = getFileName(archiveFilename);
   std::string relDir;
   int idx = clientDir.find(CVAC_DataDir.c_str(), 0, CVAC_DataDir.length());
   if (idx == 0)
@@ -269,7 +296,7 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
   {
       relDir = clientDir;
   }
-  detectorData.file.directory.relativePath = relDir; 
+  file.directory.relativePath = relDir; 
 
   // Method 2
   // 	std::vector<std::string> strSeq;
@@ -281,7 +308,7 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,co
   // 	out->finished(seq);
   // 	detectorData.data = seq;	
 
-  _callback->createdDetector(detectorData);
+  _callback->createdDetector(file);
 
   localAndClientMsg(VLogger::INFO, _callback, "Training procedure completed.\n");
 }
