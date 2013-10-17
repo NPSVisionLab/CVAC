@@ -38,7 +38,7 @@ easy.printResults( results )
 # test the same image with a different detector type and model;
 print("------- Deformable Parts Model results for Starbucks logo: -------")
 try:
-    detector = easy.getDetector( "dpmDetect:default -p 10114" )
+    detector = easy.getDetector( "DPM_Detector:default -p 10116" )
     modelfile = "detectors/dpmStarbucksLogo.zip"
     imgfile = "corporate_logos/shell/shell2.png"
     results = easy.detect( detector, modelfile, imgfile )

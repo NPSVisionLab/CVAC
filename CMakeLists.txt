@@ -319,17 +319,6 @@ ELSE( BUILD_WITH_RSI )
 SET( CF_RSI "#" )
 ENDIF( BUILD_WITH_RSI )
 
-CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
-CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.service" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
-
 # if cmake install prefix not set the set it to default else add 
 # cvac to the end
 IF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
@@ -349,6 +338,19 @@ ADD_SUBDIRECTORY(src/clients)
 ADD_SUBDIRECTORY(algorithms)
 ADD_SUBDIRECTORY(demo)
 ADD_SUBDIRECTORY( etc )
+
+# the configuration of config.{icebox,service} must come after including the
+# etc directory, because that's where the user.config.{..} get configured.
+CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
+CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
+IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
+    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.service" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
+IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
+    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
 
 IF( BUILD_WITH_TESTS)
   ENABLE_TESTING()
