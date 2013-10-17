@@ -48,8 +48,8 @@ runset.purposedLists.append(directory_images)
  
 host = "-h localhost"
 detector = easy.getDetector( "RSItrTest_Detector:default -p 10109 " + host )
-detectorData = cvac.DetectorData()  #empty detectorData only for testing
-results = easy.detect( detector, detectorData, runset )
+modelfile = ''  #empty detectorData only for testing
+results = easy.detect( detector, modelfile, runset )
 #results = easy.detect( detector, trainedModel, runset )
 #easy.printResults( results, foundMap=classmap )
 easy.printResults( results)
