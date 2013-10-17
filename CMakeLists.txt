@@ -276,7 +276,9 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv
   )
-  MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  IF( OpenCV_DIR )
+    MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  ENDIF()
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 ## Setup the config.service and config.icebox files based upon detectors

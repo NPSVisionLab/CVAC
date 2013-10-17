@@ -148,18 +148,41 @@ void BowICETrainI::processSingleImg(string _filepath,string _filename,int _class
         }
 	else
 	{
-		if(!_ploc->ice_isA("::cvac::BBox"))
-		{
-                  localAndClientMsg(VLogger::WARN, _callback, 
-                                    "Not adding %s because not of cvac::BBox type.\n",
-                                    _strFilename.c_str(), _strClassID.c_str());
-                  return;
-		}		
-                BBoxPtr pbox = BBoxPtr::dynamicCast(_ploc);		
-                pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()),
-                                              pbox->x,pbox->y,pbox->width,pbox->height);
+          if(_ploc->ice_isA("::cvac::Silhouette"))
+          {
+            localAndClientMsg(VLogger::DEBUG, _callback, 
+                              "Converting Silhouette in %s into BBox.\n",
+                              _strFilename.c_str() );
+            SilhouettePtr psil = SilhouettePtr::dynamicCast(_ploc);
+            int xmax=-1, xmin=INT_MAX, ymax=-1, ymin=INT_MAX;
+            for ( vector<Point2DPtr>::iterator ptit = psil->points.begin();
+                  ptit!=psil->points.end(); ptit++)
+            {
+              Point2DPtr pt = *ptit;
+              if (pt->x > xmax) xmax = pt->x;
+              if (pt->x < xmin) xmin = pt->x;
+              if (pt->y > ymax) ymax = pt->y;
+              if (pt->y < ymin) ymin = pt->y;
+            }
+            pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()),
+                                          xmin, ymin, xmax-xmin, ymax-ymin);
+          }
+          else if(_ploc->ice_isA("::cvac::BBox"))
+          {
+            BBoxPtr pbox = BBoxPtr::dynamicCast(_ploc);         
+            pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()),
+                                          pbox->x,pbox->y,pbox->width,pbox->height);
+          }
+          else
+          {
+            localAndClientMsg(VLogger::WARN, _callback,
+                "Not adding %s because %s (not BBox or Silhouette) type.\n",
+                _strFilename.c_str(), _strClassID.c_str());
+            return;
+          }
         }
-        localAndClientMsg(VLogger::DEBUG, _callback, "Adding %s into training class %s.\n",
+        localAndClientMsg(VLogger::DEBUG, _callback, 
+                          "Adding %s into training class %s.\n",
                           _strFilename.c_str(), _strClassID.c_str());
 }
 
