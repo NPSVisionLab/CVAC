@@ -150,7 +150,9 @@ module cvac {
   /** An object detection service
    */
   interface Detector extends CVAlgorithmService {
-    /** 
+    /**
+     * @param client  The DetectorCallbackHandler that is to receive
+     *   runtime updates and results.
      * @param run  The images, videos to detect objects in.
      * @param detectorData Optional parameter to supply this Detector
      *   with DetectorData to use. Some
@@ -178,7 +180,10 @@ module cvac {
   /** A trainer service that produces an object detection service
    */
   interface DetectorTrainer extends CVAlgorithmService {
-    /** This call will block until after completedProcessing was called on
+    /**
+     * @param client  The TrainerCallbackHandler that is to receive
+     *   runtime updates and the created trained model, if any.
+     *   This call will block until after completedProcessing was called on
      *  the CallbackHandler (which needs to be of type TrainerCallbackHandler)
      * @param run  The images, videos, and their metadata from which to train a detector.
      * @param props Optionally configure the detector.

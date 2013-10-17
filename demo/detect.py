@@ -7,7 +7,7 @@ matz 6/17/2013
 import easy
 
 # obtain a reference to a Bag of Words (BOW) detector
-detector = easy.getDetector( "bowTest:default -p 10104" )
+detector = easy.getDetector( "BOW_Detector:default -p 10104" )
 
 # a model for distinguishing Canadian, Korean, and US flags,
 # trained previously with a BOW-specific trainer and stored in a file
