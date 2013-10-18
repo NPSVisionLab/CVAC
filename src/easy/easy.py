@@ -687,10 +687,11 @@ def train( trainer, runset, callbackRecv=None ):
     trainer.ice_getConnection().setAdapter(adapter)
 
     # connect to trainer, initialize with a verbosity value, and train
-    trainer.initialize( 3 )
+    tp = cvac.TrainerProperties()
+    tp.verbosity = 3
     if type(runset) is dict:
         runset = runset['runset']
-    trainer.process( cbID, runset )
+    trainer.process( cbID, runset, tp )
 
     # check results
     if not callbackRecv.detectorData:
