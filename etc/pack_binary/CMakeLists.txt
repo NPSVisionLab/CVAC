@@ -210,6 +210,27 @@ INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
       ) 
 ENDIF(WIN32)
 
+
+
+# First copy over cvac.  Need to wait for build time since these files
+# are created by slicing at build time.  Since FILE commands work at
+# cmake time we add a custom target that will copy each of the slice generated
+# .py files to the python build cvac directory (which is required for 
+# setup py).  The ALL causes the copySlice target 
+# to be executed for all targets but we really only need them
+# for the package target so we limit this to building
+# the binary package and the install copies them with the install script
+IF (BUILD_BINARY_PACKAGE)
+    SET (SLICE_OUTPUT_PATH "${SLICE_OUTPUT_PYTHONDIR}")
+    add_custom_target(copyslice ALL
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
+    )
+ENDIF (BUILD_BINARY_PACKAGE)
+
 INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 include(CPack)

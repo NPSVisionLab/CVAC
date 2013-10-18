@@ -134,6 +134,8 @@ std::string ServiceManagerI::getDataDir()
                           "CVAC Data directory configured as: %s \n", dataDir.c_str());
     return dataDir;
 }
+
+const char* ServiceManager::SERVICELOCKFILE = ".services_started.lock";
 ///////////////////////////////////////////////////////////////////////////////
 void ServiceManager::createSandbox()
 {
@@ -203,6 +205,8 @@ std::string ServiceManager::getServiceName()
 ///////////////////////////////////////////////////////////////////////////////
 // SandboxManager classes
 ///////////////////////////////////////////////////////////////////////////////
+
+const char *ClientSandbox::SANDBOX = "sboxes";
 
 ClientSandbox::ClientSandbox(const std::string &clientName, 
                                   const std::string &CVAC_DataDir )
@@ -343,7 +347,7 @@ std::string SandboxManager::createClientDir(const std::string &clientName)
  */
 bool servicesStarted()
 {
-  if (fileExists(SERVICELOCKFILE))
+  if (fileExists(ServiceManager::SERVICELOCKFILE))
       return true;
   else
       return false;

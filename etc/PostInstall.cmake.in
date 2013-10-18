@@ -1,4 +1,13 @@
+message("Copying python ice files")
+execute_process(
+        COMMAND "${CMAKE_COMMAND}" -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND "${CMAKE_COMMAND}" -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND "${CMAKE_COMMAND}" -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND "${CMAKE_COMMAND}" -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND "${CMAKE_COMMAND}" -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
+)
 message("Running python install script ${PYTHON_EXECUTABLE} setup.py install")
-execute_process(COMMAND ${PYTHON_EXECUTABLE} setup.py install
-              WORKING_DIRECTORY "${PYTHON_BUILD_DIR}"
-            )
+execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} setup.py install
+        WORKING_DIRECTORY "${PYTHON_BUILD_DIR}"
+)
