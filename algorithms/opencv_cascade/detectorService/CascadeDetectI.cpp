@@ -117,7 +117,7 @@ void CascadeDetectI::starting()
   {
     localAndClientMsg(VLogger::DEBUG, NULL, "Will read trained model file as specified in service config: %s\n",
                       modelfile.c_str());
-    gotModel = readModelFile( modelfile );
+    gotModel = readModelFile( modelfile, Ice::Current() );
     if (!gotModel)
     {
       localAndClientMsg(VLogger::WARN, NULL, "Failed to read pre-configured trained model "
@@ -127,7 +127,7 @@ void CascadeDetectI::starting()
   }
 }  
 
-bool CascadeDetectI::readModelFile( string model )
+bool CascadeDetectI::readModelFile( string model, const ::Ice::Current& current)
 {
     std::string _extFile = model.substr(model.rfind(".")+1,
                                         model.length());
@@ -135,7 +135,7 @@ bool CascadeDetectI::readModelFile( string model )
     { 
       //for a zip file
       std::string zipfilename = model;
-      std::string connectName = "TODO_fixme"; //getClientConnectionName(current);
+      std::string connectName = getClientConnectionName(current);
       std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
                                                                            connectName);
       
@@ -190,7 +190,7 @@ bool CascadeDetectI::initialize( const DetectorProperties& detprops,
   {
     string modelfile = getFSPath( model, m_CVAC_DataDir );
     localAndClientMsg( VLogger::DEBUG_1, NULL, "initializing with %s\n", modelfile.c_str());
-    gotModel = readModelFile( modelfile );
+    gotModel = readModelFile( modelfile, current );
     if (!gotModel)
       {
         localAndClientMsg(VLogger::ERROR, NULL,
@@ -278,14 +278,14 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
 {
   std::vector<cv::Rect> results;
   cv::Mat src_img, gray_img, eq_img;
-  localAndClientMsg(VLogger::DEBUG, callback, "About to process 1 %s\n", fullname.c_str());
+  //localAndClientMsg(VLogger::DEBUG, callback, "About to process 1 %s\n", fullname.c_str());
   src_img = cv::imread( fullname.c_str(), CV_LOAD_IMAGE_COLOR );
   if( src_img.data == NULL )
   {
     localAndClientMsg(VLogger::WARN, callback, "cannot open %s\n", fullname.c_str());
     return results;
   }
-  localAndClientMsg(VLogger::DEBUG, callback, "About to process 2 %s\n", fullname.c_str());
+  //localAndClientMsg(VLogger::DEBUG, callback, "About to process 2 %s\n", fullname.c_str());
   cv::cvtColor(src_img, gray_img, CV_RGB2GRAY);
   cv::equalizeHist(gray_img, eq_img);
   float scale_factor = 1.2f; // TODO: make this part of detector parameters
@@ -322,6 +322,7 @@ ResultSet CascadeDetectI::convertResults( const Labelable& original, std::vector
     LabeledLocation* newLocation = new LabeledLocation();
     newLocation->lab.hasLabel = true;
     newLocation->lab.name = cascade_name;
+    newLocation->confidence = 1.0f;
     newLocation->loc = box;
     
     tResult.foundLabels.push_back( newLocation );

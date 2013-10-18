@@ -14,8 +14,8 @@ CVAC.DataDir = data
 bowIceTrain.Proxy=bowTrain:tcp -p 10103
 
 # CVPerf Detector CvFaces
-#CvFaces.Proxy = OpenCVCascadeDetector:tcp -p 10102
-#CvFaces.DetectorFilename = OpencvFaces.zip
+CvFaces.Proxy = OpenCVCascadeDetector:tcp -p 10102
+CvFaces.DetectorFilename = OpencvFaces.zip
 
 # BOW Detector flags
 BagOfWordsUSKOCA.Proxy=BOW_Detector:tcp -p 10104
@@ -35,8 +35,8 @@ TrainerCallback.Client.Endpoints=default
 ## Ice Config:
 # Warn about connection exceptions
 #
-Ice.Warn.Connections=1
-Ice.Warn.Dispatch=2
+#Ice.Warn.Connections=1
+#Ice.Warn.Dispatch=2
 
 #
 # CVAC Tracing

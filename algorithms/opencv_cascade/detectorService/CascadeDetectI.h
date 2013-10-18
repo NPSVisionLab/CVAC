@@ -76,7 +76,7 @@ private:
     std::vector<cv::Rect> detectObjects( const cvac::CallbackHandlerPrx& callback, const std::string& fullname );
     bool initialize(const ::cvac::DetectorProperties& props,
                     const ::cvac::FilePath& model, const ::Ice::Current& current);
-    bool readModelFile( std::string modelFSpath );
+    bool readModelFile( std::string modelFSpath, const ::Ice::Current& current);
     
     cvac::ServiceManager    *mServiceMan;
     cvac::DetectorCallbackHandlerPrx callback;

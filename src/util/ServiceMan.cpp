@@ -343,8 +343,10 @@ std::string SandboxManager::createClientDir(const std::string &clientName)
  */
 bool servicesStarted()
 {
-  printf("TODO: servicesStarted()\n");
-  return true;
+  if (fileExists(SERVICELOCKFILE))
+      return true;
+  else
+      return false;
 }
 
 #ifdef WIN32
@@ -398,7 +400,15 @@ bool runProgram(const string &runString)
  */
 void doStartServices()
 {
-  printf("TODO: exec job()\n");
+    // We assume we are in cvac root directory
+
+#ifdef WIN32
+    runProgram("bin\\startIcebox.bat");
+#else
+    runProgram("bin/startIcebox.sh");
+#endif
+    sleep(3000);
+    
 }
 
 /** Parse the config.services file for any configured service.
@@ -421,7 +431,7 @@ void parseConfigServices( StringSet& configured )
 StringSet cvac::startServices()
 {
   // for now, we don't test individual services but only whether
-  // bin/startIcebox has been run, based on a "touched" lock file
+  // bin/startIcebox has been run, based on a "touched" lock file.
   if (!servicesStarted())
   {
     doStartServices();
