@@ -45,6 +45,7 @@
 
 #define TRAIN_PREFIX "train_"
 #define SANDBOX "sboxes"
+#define SERVICELOCKFILE ".services_started.lock"
 
 /**
  * Functions to manage a CVAC service.  Programs that take a long time to
