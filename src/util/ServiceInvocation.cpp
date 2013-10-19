@@ -70,20 +70,25 @@ public:
 };
 
 
-static Ice::CommunicatorPtr iceComm = NULL;
+static Ice::CommunicatorPtr iceComm = 0;
 /** Connect to the Ice Service
  */
-DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb,
+DetectorPrx initIceConnection(const std::string& detectorNameStr,
+                              Ice::Identity& det_cb,
                               DetectorCallbackHandlerPtr cr)
 {
   
   int argc = 2;
   char *argv[3];
-  argv[0] = "cvacBridge";
-  argv[1] = "--Ice.Config=config.client";
+  argv[0] = strdup( detectorNameStr.c_str() );
+  argv[1] = strdup( "--Ice.Config=config.client" );
   argv[2] = NULL;
-  if (iceComm == NULL)
+  if (iceComm == 0)
+  {
     iceComm = Ice::initialize(argc, argv);
+  }
+  free( argv[0] );
+  free( argv[1] );
   
   Ice::PropertiesPtr props = iceComm->getProperties();
   std::string proxStr = detectorNameStr + ".Proxy";
