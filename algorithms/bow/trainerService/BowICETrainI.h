@@ -62,8 +62,6 @@ public:
     virtual void process(const Ice::Identity &client, const ::cvac::RunSet&, 
                          const ::cvac::TrainerProperties &props,
                          const ::Ice::Current& = ::Ice::Current() );
-    void initialize(int verbosity, const ::Ice::Current& = ::Ice::Current() );
-    bool isInitialized(const ::Ice::Current& = ::Ice::Current() );
 	virtual void destroy(const ::Ice::Current& = ::Ice::Current() );
     virtual bool cancel(const Ice::Identity &client,const ::Ice::Current& = ::Ice::Current() );
 	virtual ::std::string getName(const ::Ice::Current& = ::Ice::Current() );
@@ -75,13 +73,22 @@ public:
                                     const ::Ice::Current& = ::Ice::Current());
 
 private:
-    bowCV*	pBowCV;
-    bool	fInitialized;    	
     int		m_cvacVerbosity;
     cvac::ServiceManager *mServiceMan;
-    void processSingleImg(string _filepath, string _filename,int _classID,
+    
+    bowCV* initialize(int verbosity, const ::Ice::Current& = ::Ice::Current() );
+    void processSingleImg(std::string _filepath, std::string _filename,int _classID,
                           const ::cvac::LocationPtr& _ploc, 
+                          bowCV* pBowCV,
                           cvac::TrainerCallbackHandlerPrx& _callback);
+    void processPurposedList( ::cvac::PurposedListPtr purList,
+                              bowCV* pBowCV,
+                              ::cvac::TrainerCallbackHandlerPrx& _callback,
+                              const std::string& CVAC_DataDir );
+    ::cvac::FilePath createArchive( bowCV* pBowCV,
+                                    const std::string& clientName,
+                                    const std::string& CVAC_DataDir,
+                                    const std::string& tempDir );
 };
 
 #endif //_BowICETrainI_H__
