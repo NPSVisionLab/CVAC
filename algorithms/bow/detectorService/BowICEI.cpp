@@ -53,17 +53,17 @@ using namespace cvac;
 // This is called by IceBox to get the service to communicate with.
 extern "C"
 {
-	//
-	// ServiceManager handles all the icebox interactions so we construct
-    // it and set a pointer to our detector.
-	//
-	ICE_DECLSPEC_EXPORT IceBox::Service* create(Ice::CommunicatorPtr communicator)
-	{
-        BowICEI *bow = new BowICEI();
-        ServiceManagerI *sMan = new ServiceManagerI( bow, bow );
-        bow->setServiceManager( sMan );
-        return sMan;
-	}
+  //
+  // ServiceManager handles all the icebox interactions so we construct
+  // it and set a pointer to our detector.
+  //
+  ICE_DECLSPEC_EXPORT IceBox::Service* create(Ice::CommunicatorPtr communicator)
+  {
+    BowICEI *bow = new BowICEI();
+    ServiceManagerI *sMan = new ServiceManagerI( bow, bow );
+    bow->setServiceManager( sMan );
+    return sMan;
+  }
 }
 
 
