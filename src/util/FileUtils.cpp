@@ -359,6 +359,28 @@ bool cvac::deleteDirectory(const std::string& path)
 }
 #endif // defined(WIN32)
 
+/**     Returns a string to identify the purpose or an
+        int to identify a multiclass class ID.
+*/
+string cvac::getPurposeName( const Purpose& purpose )
+{
+  switch( purpose.ptype )
+  {
+  case cvac::UNPURPOSED:
+    return "unpurposed";
+  case cvac::POSITIVE:
+    return "positive";
+  case cvac::NEGATIVE:
+    return "negative";
+  case cvac::MULTICLASS:
+    return "" + purpose.classID;
+  case cvac::ANY:
+    return "any";
+  default:
+    return "unexpected cvac.PurposeType";
+  }
+}
+
 bool cvac::compatiblePurpose( const Purpose& actual, const Purpose& constraint ) 
 {
   if (ANY==constraint.ptype) return true;

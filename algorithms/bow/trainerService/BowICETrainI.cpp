@@ -209,6 +209,22 @@ void BowICETrainI::processSingleImg(string _filepath,string _filename,int _class
 }
 
 
+/** check for duplicate labels (with a different Purpose)
+ */
+bool hasUniqueLabels( const LabelMap& labelmap )
+{
+  set<string> lablist;
+  for (LabelMap::const_iterator it=labelmap.begin(); it!=labelmap.end(); it++)
+  {
+    string name = it->second;
+    if (lablist.find( it->second )!=lablist.end() )
+    {
+      return false;
+    }
+    lablist.insert( name );
+  }
+  return true;
+}
 
 void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,
                            const ::cvac::TrainerProperties &tprops,
@@ -241,12 +257,19 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,
     return;
   }
 
-  // ingest the data for processing, one purposed list at a time.
+  // Ingest the data for processing, one purposed list at a time.
+  // Also, determine if the classIDs match nicely to the labels;
+  // if so, add appropriate annotations into the trained model file.
+  LabelMap labelmap;
+  bool labelsMatch = true;
   for (size_t listidx = 0; listidx < runset.purposedLists.size(); listidx++)
   {
     processPurposedList( runset.purposedLists[listidx], pBowCV,
-                         _callback, CVAC_DataDir );
+                         _callback, CVAC_DataDir,
+                         labelmap, &labelsMatch );
   }
+  if (!labelsMatch) labelmap.clear();
+  if ( !hasUniqueLabels(labelmap) ) labelmap.clear();
 
   // create a sandbox for this client
   std::string connectName = cvac::getClientConnectionName(current);
@@ -277,7 +300,7 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,
 
   // create the archive of the trained model
   FilePath trainedModel =
-    createArchive( pBowCV, clientName, CVAC_DataDir, tTempDir );
+    createArchive( pBowCV, labelmap, clientName, CVAC_DataDir, tTempDir );
   _callback->createdDetector(trainedModel);
 
   delete pBowCV;
@@ -290,7 +313,9 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,
 void BowICETrainI::processPurposedList( PurposedListPtr purList,
                                         bowCV* pBowCV,
                                         TrainerCallbackHandlerPrx& _callback,
-                                        const string& CVAC_DataDir )
+                                        const string& CVAC_DataDir,
+                                        LabelMap& labelmap, bool* pLabelsMatch
+                                        )
 {
   int _classID = purList->pur.classID;
   PurposedLabelableSeq* lab = static_cast<PurposedLabelableSeq*>(purList.get());
@@ -306,12 +331,11 @@ void BowICETrainI::processPurposedList( PurposedListPtr purList,
   
   for (size_t artfct=0; artfct< lab->labeledArtifacts.size(); artfct++)
   {						
-    std::string _filepath;
-    std::string _filename;	
-    std::string fullName = getFSPath(lab->labeledArtifacts[artfct]->sub.path,
-                                     CVAC_DataDir);
-    _filename = getFileName(fullName);
-    _filepath = getFileDirectory(fullName);
+    string fullName = getFSPath(lab->labeledArtifacts[artfct]->sub.path,
+                                CVAC_DataDir);
+    string _filename = getFileName(fullName);
+    string _filepath = getFileDirectory(fullName);
+    string labelname = lab->labeledArtifacts[artfct]->lab.name;
     
     LocationPtr pLoc = NULL;
     if(lab->labeledArtifacts[artfct]->ice_isA("::cvac::LabeledLocation"))
@@ -329,13 +353,26 @@ void BowICETrainI::processPurposedList( PurposedListPtr purList,
         printf("WEIRD: *** why is ice_isA true but the cast returns null?\n");
       }
     }
-    processSingleImg(_filepath,_filename, _classID, pLoc, pBowCV, _callback);		
+    processSingleImg(_filepath,_filename, _classID, pLoc, pBowCV, _callback);
+
+    // try to insert labelname into labelmap; abort if conflict
+    Purpose pur = purList->pur;
+    string prevname = labelmap[ purList->pur ];
+    if (prevname.empty())
+    {
+      labelmap[ purList->pur ] = labelname;
+    }
+    else if ( prevname!=labelname )
+    {
+      *pLabelsMatch = false;
+    }
   }
 }
 
 /** archive the trained model and return a CVAC style path to the archive
  */
 FilePath BowICETrainI::createArchive( bowCV* pBowCV,
+                                      const LabelMap& labelmap,
                                       const string& clientName,
                                       const string& CVAC_DataDir,
                                       const string& tempDir )
@@ -348,6 +385,11 @@ FilePath BowICETrainI::createArchive( bowCV* pBowCV,
   dda.addFile(RESID, tempDir + "/" + logfile_BowTrainResult);
   dda.addFile(VOCID, tempDir + "/" + pBowCV->filenameVocabulary);
   dda.addFile(SVMID, tempDir + "/" + pBowCV->filenameSVM);
+  for (LabelMap::const_iterator it=labelmap.begin(); it!=labelmap.end(); it++)
+  {
+    string classID = "labelname_" + getPurposeName( it->first );
+    dda.setProperty( classID, it->second );
+  }
   dda.createArchive(tempDir);
   mServiceMan->getSandbox()->deleteTrainingDir(clientName);
 

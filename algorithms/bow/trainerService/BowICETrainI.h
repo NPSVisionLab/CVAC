@@ -38,6 +38,9 @@
  **************************************************************************/
 #define _BowICETrainI_H__
 
+#include <map>
+#include <string>
+
 #include <Data.h>
 #include <Services.h>
 #include <bowCV.h>
@@ -49,6 +52,8 @@
 #include <util/ServiceManI.h>
 
 #define logfile_BowTrainResult    "logTrain_Table.txt"	//This file includes the list of result files
+
+typedef std::map<cvac::Purpose, std::string> LabelMap;
 
 class BowICETrainI : public cvac::DetectorTrainer, public cvac::StartStop
 {
@@ -84,8 +89,10 @@ private:
     void processPurposedList( ::cvac::PurposedListPtr purList,
                               bowCV* pBowCV,
                               ::cvac::TrainerCallbackHandlerPrx& _callback,
-                              const std::string& CVAC_DataDir );
+                              const std::string& CVAC_DataDir,
+                              LabelMap& labelmap, bool* labelsMatch);
     ::cvac::FilePath createArchive( bowCV* pBowCV,
+                                    const LabelMap& labelmap,
                                     const std::string& clientName,
                                     const std::string& CVAC_DataDir,
                                     const std::string& tempDir );

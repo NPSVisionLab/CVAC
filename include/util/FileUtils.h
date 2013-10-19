@@ -131,6 +131,13 @@ namespace cvac
     */
    bool deleteDirectory(const std::string& path);
 
+   /**
+    * Produce a string identifier for the given Purpose.
+    * @return a string to identify the purpose or an
+    *     int to identify a multiclass class ID.
+    */
+   std::string getPurposeName( const cvac::Purpose& purpose );
+   
   /** Ensure 'actual' purpose is compatible with the constraint
     */
    bool compatiblePurpose( const cvac::Purpose& actual, const cvac::Purpose& constraint );
