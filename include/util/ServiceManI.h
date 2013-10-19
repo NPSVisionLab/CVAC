@@ -1,5 +1,4 @@
-#ifndef _CascadeDetectI_H__
-/*****************************************************************************
+/******************************************************************************
  * CVAC Software Disclaimer
  * 
  * This software was developed at the Naval Postgraduate School, Monterey, CA,
@@ -35,56 +34,71 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- ****************************************************************************/
-#define _CascadeDetectI_H__
+ *****************************************************************************/
+#ifndef __SERVICE_MAN_I_H__INCLUDED__
+#define __SERVICE_MAN_I_H__INCLUDED__
 
-#include <Data.h>
 #include <Services.h>
-
-#include <Ice/Ice.h>
 #include <IceBox/IceBox.h>
-#include <IceUtil/UUID.h>
-#include <util/processRunSet.h>
-#include <util/ServiceManI.h>
+#include <util/ServiceMan.h>
 
-#include <cv.h>
-
-class CascadeDetectI : public cvac::Detector, public cvac::StartStop
+namespace cvac
 {
-public:
-    CascadeDetectI();
-    ~CascadeDetectI();
+  /** Add starting and stopping functions to the algorithm interface;
+   *  They are called by the ServiceManager upon IceBox::Service
+   *  start and stop.
+   */
+  class StartStop
+  {
+  public:
+    virtual void starting() {}
+    virtual void stopping() {}
+  };
+  
+  class ServiceManagerI : public ::IceBox::Service, public cvac::ServiceManager
+  {
+  public:
+    /**
+     * Constructor for creating a ServiceManager instance.
+     *
+     * Set The Service that is to be served by this ServiceManager.
+     * NOTE: A ServiceManager can manage either a detector or
+     * detectorTrainer but not both!
+     * Parms: The Algorithm instance to be served by this manager.
+     */
+    ServiceManagerI( cvac::CVAlgorithmService* serv, StartStop* ss=NULL );
 
-    std::string m_CVAC_DataDir; // Store an absolute path to the detector data files
+    /**
+     * The start function called by IceBox to start this service.
+     */
+    virtual void start(const ::std::string& name,
+                       const Ice::CommunicatorPtr& communicator,
+                       const Ice::StringSeq&);
 
-
-public:
-    virtual void process(const Ice::Identity &client, const ::cvac::RunSet& runset,
-                         const ::cvac::FilePath& data, const ::cvac::DetectorProperties&,
-                         const ::Ice::Current& current);
-    virtual bool cancel(const Ice::Identity &client, const ::Ice::Current& current);
-    virtual std::string getName(const ::Ice::Current& current);
-    virtual std::string getDescription(const ::Ice::Current& current);
-    virtual ::cvac::DetectorProperties getDetectorProperties(const ::Ice::Current& current);
-    void setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current);
-    void setServiceManager(cvac::ServiceManagerI *sman);
-    virtual void starting();
-
-private:
-    cvac::ResultSet convertResults( const cvac::Labelable& original, std::vector<cv::Rect> recs );
-    std::vector<cv::Rect> detectObjects( const cvac::CallbackHandlerPrx& callback, const cvac::Labelable& lbl  );
-    std::vector<cv::Rect> detectObjects( const cvac::CallbackHandlerPrx& callback, const std::string& fullname );
-    bool initialize(const ::cvac::DetectorProperties& props,
-                    const ::cvac::FilePath& model, const ::Ice::Current& current);
-    bool readModelFile( std::string modelFSpath, const ::Ice::Current& current);
+    /**
+     * The stop function called by IceBox to stop this service.
+     */
+    virtual void stop();
     
-    cvac::ServiceManager    *mServiceMan;
-    cvac::DetectorCallbackHandlerPrx callback;
-    cv::CascadeClassifier *cascade;
-    std::string              cascade_name;
-    bool                     gotModel;
+    /** Look for a property entry in config.service that corresponds to
+     *  ServiceNamex.TrainedModel = filename
+     *  Note that the "x" is significant: the name of the service is
+     *  ServiceName but we need ServiceNamex so that ICE doesn't complain
+     *  about unknown properties.
+     *  Return filename if found, empty string otherwise.
+     */
+    virtual std::string getModelFileFromConfig();
+    
+    /*
+     * Get the config.service defined data directory
+     */
+    virtual std::string getDataDir();
 
-    friend cvac::ResultSet detectFunc( cvac::DetectorPtr detector, const char *fname );
+  private:
+    Ice::ObjectAdapterPtr          mAdapter;
+    cvac::CVAlgorithmService*      mService;
+    cvac::StartStop*               mSS;
+  };
 };
 
-#endif //_CascadeDetectI_H__
+#endif // __SERVICE_MAN_I_H__INCLUDED__

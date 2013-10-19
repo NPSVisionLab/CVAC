@@ -16,6 +16,8 @@ OPTION(BUILD_WITH_OPENCVPERFORMANCE "Build the OpenCV Cascade trainer and detect
 OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" ON) 
 OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" ON) 
 OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
+OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" ON)
+OPTION(BUILD_CPP_TRAINER_CLIENT "Build a C++ client for trainers" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
 OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" OFF)
 OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
@@ -319,17 +321,6 @@ ELSE( BUILD_WITH_RSI )
 SET( CF_RSI "#" )
 ENDIF( BUILD_WITH_RSI )
 
-CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
-CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.service" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
-
 # if cmake install prefix not set the set it to default else add 
 # cvac to the end
 IF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
@@ -344,10 +335,24 @@ IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 
 ADD_SUBDIRECTORY(src/util)
-ADD_SUBDIRECTORY(src/easy)
+ADD_SUBDIRECTORY(src/easy) 
+ADD_SUBDIRECTORY(src/clients) 
 ADD_SUBDIRECTORY(algorithms)
 ADD_SUBDIRECTORY(demo)
 ADD_SUBDIRECTORY( etc )
+
+# the configuration of config.{icebox,service} must come after including the
+# etc directory, because that's where the user.config.{..} get configured.
+CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
+CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
+IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
+    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.service" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
+IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
+    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
 
 IF( BUILD_WITH_TESTS)
   ENABLE_TESTING()

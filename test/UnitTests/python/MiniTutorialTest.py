@@ -40,6 +40,9 @@ class MiniTutorialTest(unittest.TestCase):
     # Run prerequisites.py
     #
     def test_1prerequisites(self):
+        #debug
+        import cvac
+        print ("Importing cvac from " + cvac.__file__)
         print("running prerequisites.py")
         sys.stdout.flush()
         execfile(self.demoDir + "/prerequisites.py");

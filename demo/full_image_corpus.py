@@ -52,7 +52,7 @@ easy.printRunSetInfo( rs1 )
 
 # A runset can be used for training or for testing
 print("------- Bag of Words results for corporate logos: -------")
-detector = easy.getDetector( "bowTest:default -p 10104" )
+detector = easy.getDetector( "BOW_Detector:default -p 10104" )
 modelfile = "detectors/bowUSKOCA.zip"
 results1 = easy.detect( detector, modelfile, rs1 )
 print("Note that both original and found labels are printed:")

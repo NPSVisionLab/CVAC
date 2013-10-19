@@ -47,27 +47,32 @@
 #include <util/processRunSet.h>
 #include <util/ServiceMan.h>
 #include <util/RunSetIterator.h>
+#include <util/ServiceManI.h>
 
-class RSItrICEI : public cvac::Detector
+class RSItrICEI : public cvac::Detector, public cvac::StartStop
 {
 public:
-  RSItrICEI(cvac::ServiceManager *servm);
+  RSItrICEI();
   ~RSItrICEI();
 
   std::string m_CVAC_DataDir; // Store an absolute path to the detector data files
 
-
 public:
-  virtual void initialize(::Ice::Int verbosity,const ::cvac::DetectorData& data,const ::Ice::Current& current);
-  virtual void process(const Ice::Identity &client,const ::cvac::RunSet& runset,const ::Ice::Current& current);
-  virtual bool isInitialized(const ::Ice::Current& current);
-  virtual void destroy(const ::Ice::Current& current);
   virtual std::string getName(const ::Ice::Current& current);
   virtual std::string getDescription(const ::Ice::Current& current);
-  void setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current);
+  virtual void destroy(const ::Ice::Current& current);
+  virtual bool cancel(const Ice::Identity &client, const ::Ice::Current& current);
+  virtual cvac::DetectorProperties getDetectorProperties(const ::Ice::Current& current);
+  virtual void starting();
+  virtual void stopping();
+  virtual void process(const Ice::Identity &client,const ::cvac::RunSet& runset,
+                       const ::cvac::FilePath &detectorData,
+                       const ::cvac::DetectorProperties &props,
+                       const ::Ice::Current& current);
 
-  virtual cvac::DetectorData createCopyOfDetectorData(const ::Ice::Current& current);
-  virtual cvac::DetectorPropertiesPrx getDetectorProperties(const ::Ice::Current& current);
+  void setServiceManager(cvac::ServiceManagerI *sman);
+  void initialize(int verbosity, const ::cvac::FilePath &file, const::Ice::Current &current);  
+  bool isInitialized();
 
 private:
   cvac::ServiceManager *mServiceMan;
@@ -90,7 +95,7 @@ private:
   */
   cvac::RunSetConstraint mRunsetConstraint;
 
-  cvac::ResultSetV2 processSingleFile(cvac::DetectorPtr detector,cvac::LabelablePtr _lPtrOriginal);
+  cvac::ResultSet processSingleFile(cvac::DetectorPtr detector,cvac::LabelablePtr _lPtrOriginal);
 };
 
 #endif //_RSITRICEI_H__

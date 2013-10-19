@@ -7,7 +7,7 @@ matz 6/17/2013
 import easy
 
 # obtain a reference to a Bag of Words (BOW) detector
-detector = easy.getDetector( "bowTest:default -p 10104" )
+detector = easy.getDetector( "BOW_Detector:default -p 10104" )
 
 # a model for distinguishing Canadian, Korean, and US flags,
 # trained previously with a BOW-specific trainer and stored in a file
@@ -38,7 +38,7 @@ easy.printResults( results )
 # test the same image with a different detector type and model;
 print("------- Deformable Parts Model results for Starbucks logo: -------")
 try:
-    detector = easy.getDetector( "dpmDetect:default -p 10114" )
+    detector = easy.getDetector( "DPM_Detector:default -p 10116" )
     modelfile = "detectors/dpmStarbucksLogo.zip"
     imgfile = "corporate_logos/shell/shell2.png"
     results = easy.detect( detector, modelfile, imgfile )
