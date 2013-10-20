@@ -337,7 +337,6 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     if(!train_writeVocabulary(_filepathForSavingResult + "/" + filenameVocabulary,mVocabulary))
 	    return false;
 
-    dda->addFile(BOW_VOC_FILE,filenameVocabulary);
     //////////////////////////////////////////////////////////////////////////
     // END - Clustering (Most time-consuming step)
     //////////////////////////////////////////////////////////////////////////
@@ -456,7 +455,6 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
 
     string tSVMPath = _filepathForSavingResult + "/" + filenameSVM;
     classifierSVM.save(tSVMPath.c_str());    
-    dda->addFile(BOW_SVM_FILE,filenameSVM);
     ///////////////////////////////////////////////////////////////////////////
     // END - Train Classifier (SVM)
     //////////////////////////////////////////////////////////////////////////
