@@ -143,10 +143,10 @@ bool bowCV::train_initialize(const string& _detectorName,
     return true;
 }
 
-bool bowCV::detect_initialize(const string& _filepath, const DetectorDataArchive* _dda)
+bool bowCV::detect_initialize( const DetectorDataArchive* _dda )
 {
   dda = (DetectorDataArchive*)_dda;
-  return detect_readTrainResult(_filepath);
+  return detect_readTrainResult();
 }
 
 bool bowCV::detect_setParameter(const string& _detectorName,const string& _extractorName,const string& _matcherName)
@@ -539,7 +539,7 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
 }
 
 
-bool bowCV::detect_readTrainResult( const string& arpath )
+bool bowCV::detect_readTrainResult()
 {	
   string _fullpath, _inputString;
 
@@ -559,7 +559,7 @@ bool bowCV::detect_readTrainResult( const string& arpath )
     }
 
     // Read VOC file
-    _fullpath = arpath + "/" + dda->getFile(BOW_VOC_FILE);	
+    _fullpath = dda->getFile(BOW_VOC_FILE);
     if(detect_readVocabulary(_fullpath,mVocabulary))
     {
         bowExtractor->setVocabulary(mVocabulary);
@@ -568,7 +568,7 @@ bool bowCV::detect_readTrainResult( const string& arpath )
         return false;    
 
     // Read SVM file
-    _fullpath = arpath + "/" + dda->getFile(BOW_SVM_FILE);		
+    _fullpath = dda->getFile(BOW_SVM_FILE);		
     classifierSVM.load(_fullpath.c_str());
 
     // Read OpenCV Version    
@@ -636,7 +636,7 @@ bool bowCV::detect_readVocabulary( const string& _filename, Mat& _vocabulary )
         return true;
     }
     fs.release();
-    cout << "Error - in Reading vocabulary...";	fflush(stdout);
+    cout << "error" << endl;	fflush(stdout);
     return false;
 }
 

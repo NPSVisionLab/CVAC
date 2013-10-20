@@ -416,7 +416,7 @@ bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>&
     std::ifstream is(_inPaths[k].c_str(),std::ios::binary);    
     if(!is.is_open())
     {
-      std::cout << "The target file: "
+      std::cout << "The file to be archived: "
         << _inPaths[k].c_str() 
         << " may not exist or has a problem.\n";
       return false;
@@ -428,7 +428,7 @@ bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>&
     char* tBuff = new char[tBuffSize]; 
     if(tBuff == 0 || tBuff == NULL)
     {
-      std::cout << "The target file: "
+      std::cout << "The file to be archived: "
         << _inPaths[k].c_str() 
         << " is too big to be compressed.\n";
       return false;

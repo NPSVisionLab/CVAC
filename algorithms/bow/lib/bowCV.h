@@ -95,8 +95,7 @@ public:
                   cvac::ServiceManager *,
                   float _oneclassNu = 0.1);  
 
-  bool  detect_initialize(const std::string& _filepath,
-                          const cvac::DetectorDataArchive* dda);	
+  bool  detect_initialize( const cvac::DetectorDataArchive* dda);	
   bool  detect_run(const std::string& _fullfilename, int& _bestClass,
                    int _boxX=0,int _boxY=0,int _boxWidth=0,int _boxHeight=0);
 
@@ -111,7 +110,7 @@ private:
   bool  detect_setParameter(const std::string& _detectorName,
                             const std::string& _extractorName,
                             const std::string& _matcherName);	
-  bool  detect_readTrainResult(const std::string& _filepath);	
+  bool  detect_readTrainResult();	
 
   //bool  runTrainFull(const std::string& _filepathTrain,const std::string& _filenameTrainList,const std::string& _filepathForSavingResult,const std::string& _filenameForSavingResult);	//This function is not good to the ICE project.
   //void  setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses );

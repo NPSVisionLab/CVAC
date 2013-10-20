@@ -139,7 +139,7 @@ void BowICEI::initialize(int verbosity, const ::cvac::FilePath &file, const::Ice
   dda.unarchive(zipfilename, clientDir);
 
   // add the CVAC.DataDir root path and initialize from dda  
-  fInitialized = pBowCV->detect_initialize( clientDir, &dda );
+  fInitialized = pBowCV->detect_initialize( &dda );
 
   if (!fInitialized)
   {
