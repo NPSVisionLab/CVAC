@@ -47,6 +47,8 @@
 #include <util/FileUtils.h>
 #include <util/ServiceManI.h>
 #include <util/DetectorDataArchive.h>
+
+using namespace Ice;
 using namespace cvac;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,49 +95,93 @@ void BowICETrainI::stopping()
     mServiceMan->stopService();
 }
 
-bowCV* BowICETrainI::initialize(int verbosity,const ::Ice::Current& current)
+bowCV* BowICETrainI::initialize( TrainerCallbackHandlerPrx& _callback,
+                                 const TrainerProperties &tprops,
+                                 DetectorDataArchive& dda,
+                                 const Current& current )
 {
-	bowCV* pBowCV = new bowCV();
-	string	_nameFeature("SIFT");	//SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS
-	string	_nameDescriptor("SIFT");	//SURF, SIFT, OpponentSIFT, OpponentSURF
-	string	_nameMatcher("BruteForce-L1");	//BruteForce-L1, BruteForce, FlannBased  
-	int		_countWords = 150;	
+  // Set CVAC verbosity according to ICE properties
+  PropertiesPtr iceprops =
+    (current.adapter->getCommunicator()->getProperties());
+  string verbStr = iceprops->getProperty("CVAC.ServicesVerbosity");
+  if (!verbStr.empty())
+  {
+    vLogger.setLocalVerbosityLevel( verbStr );
+  }
 
-	// Set CVAC verbosity according to ICE properties
-	Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
-	string verbStr = props->getProperty("CVAC.ServicesVerbosity");
-	if (!verbStr.empty())
-	{
-	    vLogger.setLocalVerbosityLevel( verbStr );
-	}
+  // defaults
+  //SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS
+  string	_nameFeature("SIFT");
+  //SURF, SIFT, OpponentSIFT, OpponentSURF
+  string	_nameDescriptor("SIFT");
+  //BruteForce-L1, BruteForce, FlannBased  
+  string	_nameMatcher("BruteForce-L1");
+  int		_countWords = 150;	
 
-        bool fInitialized =
-          pBowCV->train_initialize(_nameFeature,_nameDescriptor,_nameMatcher,_countWords);
-        if (fInitialized)
-        {
-          return pBowCV;
-        }
-        else
-        {
-          return NULL;
-        }
+  // read properties
+  const string& nf = tprops.props.at("FeatureType");
+  if (!nf.empty())
+  {
+    _nameFeature = nf;
+    localAndClientMsg(VLogger::DEBUG, _callback,
+                      "Set FeatureType to %s\n", nf.c_str() );
+  }
+  const string& nd = tprops.props.at("DescriptorType");
+  if (!nd.empty())
+  {
+    _nameDescriptor = nd;
+    localAndClientMsg(VLogger::DEBUG, _callback,
+                      "Set DescriptorType to %s\n", nd.c_str() );
+  }
+  const string& nm = tprops.props.at("MatcherType");
+  if (!nm.empty())
+  {
+    _nameMatcher = nm;
+    localAndClientMsg(VLogger::DEBUG, _callback,
+                      "Set MatcherType to %s\n", nm.c_str() );
+  }
+  const string& nw = tprops.props.at("NumWords");
+  if (!nw.empty())
+  {
+    errno=0;
+    long int cw = (int) strtol( nw.c_str(), (char**) NULL, 10 );
+    if (cw>0 && cw<INT_MAX && errno==0)
+    {
+      // no error, successfully parsed int from NumWords property
+      _countWords = cw;
+      localAndClientMsg(VLogger::DEBUG, _callback,
+                        "Number of words set to %d\n", cw );
+    }
+  }
+   
+  bowCV* pBowCV = new bowCV();
+  bool fInitialized =
+    pBowCV->train_initialize(_nameFeature,_nameDescriptor,_nameMatcher,_countWords, &dda);
+  if (fInitialized)
+  {
+    return pBowCV;
+  }
+  else
+  {
+    return NULL;
+  }
 }
 
 
-void BowICETrainI::destroy(const ::Ice::Current& current)
+void BowICETrainI::destroy(const Current& current)
 {
 }
-std::string BowICETrainI::getName(const ::Ice::Current& current)
+std::string BowICETrainI::getName(const Current& current)
 {
   if (mServiceMan) return mServiceMan->getServiceName();
   return "bowTrain";
 }
-std::string BowICETrainI::getDescription(const ::Ice::Current& current)
+std::string BowICETrainI::getDescription(const Current& current)
 {
 	return "BOW - Bag of Words trainer";
 }
 
-bool BowICETrainI::cancel(const Ice::Identity &client, const ::Ice::Current& current)
+bool BowICETrainI::cancel(const Identity &client, const Current& current)
 {
     stopping(); 
     mServiceMan->waitForStopService();
@@ -145,7 +191,7 @@ bool BowICETrainI::cancel(const Ice::Identity &client, const ::Ice::Current& cur
         return false;
  
 }
-cvac::TrainerProperties BowICETrainI::getTrainerProperties(const ::Ice::Current &current)
+cvac::TrainerProperties BowICETrainI::getTrainerProperties(const Current &current)
 {
     //TODO get the real trainer properties but for now return an empty one.
     TrainerProperties tprops;
@@ -226,9 +272,9 @@ bool hasUniqueLabels( const LabelMap& labelmap )
   return true;
 }
 
-void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,
-                           const ::cvac::TrainerProperties &tprops,
-                           const ::Ice::Current& current)
+void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
+                           const TrainerProperties &tprops,
+                           const Current& current)
 {	
   localAndClientMsg(VLogger::DEBUG, NULL, "starting BOW training process\n");
   TrainerCallbackHandlerPrx _callback =
@@ -237,7 +283,7 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,
   localAndClientMsg( VLogger::DEBUG_2, _callback, 
                      "starting BOW training process, got callback pointer\n");
 
-  Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
+  PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
   std::string CVAC_DataDir = props->getProperty("CVAC.DataDir");
 
   if(runset.purposedLists.size() == 0)
@@ -249,7 +295,8 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,
   localAndClientMsg(VLogger::DEBUG, _callback, "got %d purposed lists\n",
                     runset.purposedLists.size());
 
-  bowCV* pBowCV = initialize(tprops.verbosity, current);
+  DetectorDataArchive dda;
+  bowCV* pBowCV = initialize(_callback, tprops, dda, current);
   if ( NULL==pBowCV )
   {
     localAndClientMsg(VLogger::ERROR, _callback,
@@ -284,9 +331,11 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,
   mServiceMan->setStoppable();
 
   //
-  // run the actual training procedure on the previously ingested data
+  // run the actual training procedure on the previously ingested data;
+  // this sets the pBowCV to point to files that it created,
+  // and it adds some properties directly to the DDA
   //
-  bool fTrain = pBowCV->train_run(tTempDir, logfile_BowTrainResult, mServiceMan);
+  bool fTrain = pBowCV->train_run(tTempDir, mServiceMan);
   
   // Tell ServiceManager that we are done listening for stop
   mServiceMan->clearStop();  
@@ -300,7 +349,7 @@ void BowICETrainI::process(const Ice::Identity &client,const ::RunSet& runset,
 
   // create the archive of the trained model
   FilePath trainedModel =
-    createArchive( pBowCV, labelmap, clientName, CVAC_DataDir, tTempDir );
+    createArchive( dda, pBowCV, labelmap, clientName, CVAC_DataDir, tTempDir );
   _callback->createdDetector(trainedModel);
 
   delete pBowCV;
@@ -369,9 +418,18 @@ void BowICETrainI::processPurposedList( PurposedListPtr purList,
   }
 }
 
-/** archive the trained model and return a CVAC style path to the archive
+/** archive the trained model and return a CVAC style path to the archive;
+ * This file should include the following:
+ * Name of Detector
+ * Name of Extractor
+ * Name of Matcher
+ * Filename of vocabulary
+ * Filename of svm result
+ * OpenCV Version
+ * Optional: one-class ID
  */
-FilePath BowICETrainI::createArchive( bowCV* pBowCV,
+FilePath BowICETrainI::createArchive( DetectorDataArchive& dda,
+                                      bowCV* pBowCV,
                                       const LabelMap& labelmap,
                                       const string& clientName,
                                       const string& CVAC_DataDir,
@@ -379,7 +437,6 @@ FilePath BowICETrainI::createArchive( bowCV* pBowCV,
 {
   std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
   std::string archiveFilename = getDateFilename(clientDir,  "bow")+ ".zip";
-  DetectorDataArchive dda;
  
   dda.setArchiveFilename(archiveFilename);
   dda.addFile(RESID, tempDir + "/" + logfile_BowTrainResult);

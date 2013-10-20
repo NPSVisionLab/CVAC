@@ -196,7 +196,7 @@ vector<string> cvac::DetectorDataArchive::getProperties()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-string cvac::DetectorDataArchive::getProperty(const string &name)
+string cvac::DetectorDataArchive::getProperty(const string &name) const
 {
     string empty;
     int size = mPropNames.size();
@@ -256,7 +256,8 @@ const std::vector<std::string> cvac::DetectorDataArchive::getFileIds()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-const std::string cvac::DetectorDataArchive::getFile(const std::string &identifier)
+const std::string
+cvac::DetectorDataArchive::getFile(const std::string &identifier) const
 {
     std::string empty;
     int size = mFileIds.size();

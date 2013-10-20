@@ -131,26 +131,25 @@ void BowICEI::initialize(int verbosity, const ::cvac::FilePath &file, const::Ice
       "For maintaining consistency, this approach (using txt file as a detectorData) is prohibited.\n");
     return;
   }
-  else	//for a zip file	//if (cvac::FILE == data.type && size == 0)
-  { 
-   
-     std::string zipfilename = getFSPath( file, m_CVAC_DataDir );
-     
-     DetectorDataArchive dda;
-     dda.unarchive(zipfilename, clientDir);
-     // This detector only needs an XML file
-     filename = dda.getFile(RESID);
-     if (filename.empty())
-     {
-        localAndClientMsg(VLogger::ERROR, NULL,
-          "Could not find result file in zip file.\n");
-        return;
-     }
-     // Get only the filename part
-     filename = getFileName(filename);
+
+  // for a zip file
+  std::string zipfilename = getFSPath( file, m_CVAC_DataDir );
+  
+  DetectorDataArchive dda;
+  dda.unarchive(zipfilename, clientDir);
+  // This detector only needs an XML file
+  filename = dda.getFile(RESID);
+  if (filename.empty())
+  {
+    localAndClientMsg(VLogger::ERROR, NULL,
+                      "Could not find result file in zip file.\n");
+    return;
   }
+  // Get only the filename part
+  filename = getFileName(filename);
+
   // add the CVAC.DataDir root path and initialize from txt file  
-  fInitialized = pBowCV->detect_initialize( clientDir, filename );
+  fInitialized = pBowCV->detect_initialize( clientDir, &dda );
 
   if (!fInitialized)
   {
@@ -218,19 +217,31 @@ ResultSet BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilenam
         bool result = _bowCV->pBowCV->detect_run(fullfilename, _bestClass);
 
     if(true == result) {
-        localAndClientMsg(VLogger::DEBUG_1, NULL, "Detection, %s as Class: %d\n", _ffullname.c_str(), _bestClass);
+        localAndClientMsg(VLogger::DEBUG_1, NULL, "Detection, %s as Class: %d\n",
+                          _ffullname.c_str(), _bestClass);
 
         Result _tResult;
         _tResult.original = NULL;
 
         // The original field is for the original label and file name.  Results need
-        // to be returned in foundLabels.
+        // to be returned in foundLabels.  If the DetectorDataArchive contains properties
+        // of the sort labelname_0 = 'somelabel', then a detection of classID 0 will be
+        // reported as 'somelabel'
         LabelablePtr labelable = new Labelable();
-        char buff[32];
-        sprintf(buff, "%d", _bestClass);
+        ostringstream ss;
+        ss << _bestClass;
+        string lname = ss.str();
+        string val = _bowCV->pBowCV->dda->getProperty("labelname_"+lname);
+        if ( val.empty() )
+        {
+          labelable->lab.name = lname;
+        }
+        else
+        {
+          labelable->lab.name = val;
+        }
         labelable->confidence = confidence;
         labelable->lab.hasLabel = true;
-        labelable->lab.name = buff;
         _tResult.foundLabels.push_back(labelable);
         _resSet.results.push_back(_tResult);
     }
@@ -238,8 +249,8 @@ ResultSet BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilenam
 	return _resSet;
 }
 
-//void BowICEI::process(const ::DetectorCallbackHandlerPrx& callbackHandler,const ::RunSet& runset,const ::Ice::Current& current)
-void BowICEI::process(const Ice::Identity &client, const ::RunSet& runset, const ::cvac::FilePath &detectorData,  
+void BowICEI::process(const Ice::Identity &client,
+                      const ::RunSet& runset, const ::cvac::FilePath &detectorData,  
                       const::cvac::DetectorProperties &props,const ::Ice::Current& current)
 {
   DetectorCallbackHandlerPrx _callback = 

@@ -39,6 +39,7 @@
 #include <util/Timing.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <sstream>
 
 #if defined(WIN32)
    #include <direct.h> //for _mkdir()
@@ -373,7 +374,12 @@ string cvac::getPurposeName( const Purpose& purpose )
   case cvac::NEGATIVE:
     return "negative";
   case cvac::MULTICLASS:
-    return "" + purpose.classID;
+    // return std::to_string( purpose.classID );  in C++11
+    {
+      ostringstream ss;
+      ss << purpose.classID;
+      return ss.str();
+    }
   case cvac::ANY:
     return "any";
   default:
