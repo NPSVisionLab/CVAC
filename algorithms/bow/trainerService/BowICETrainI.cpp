@@ -118,29 +118,30 @@ bowCV* BowICETrainI::initialize( TrainerCallbackHandlerPrx& _callback,
   string	_nameMatcher("BruteForce-L1");
   int		_countWords = 150;	
 
-  // read properties
-  const string& nf = tprops.props.at("FeatureType");
+  // read properties; need to cast const away
+  cvac::Properties& trp = (cvac::Properties&) tprops.props;
+  const string& nf = trp[bowCV::BOW_DETECTOR_NAME];
   if (!nf.empty())
   {
     _nameFeature = nf;
     localAndClientMsg(VLogger::DEBUG, _callback,
                       "Set FeatureType to %s\n", nf.c_str() );
   }
-  const string& nd = tprops.props.at("DescriptorType");
+  const string& nd = trp[bowCV::BOW_EXTRACTOR_NAME];
   if (!nd.empty())
   {
     _nameDescriptor = nd;
     localAndClientMsg(VLogger::DEBUG, _callback,
                       "Set DescriptorType to %s\n", nd.c_str() );
   }
-  const string& nm = tprops.props.at("MatcherType");
+  const string& nm = trp[bowCV::BOW_MATCHER_NAME];
   if (!nm.empty())
   {
     _nameMatcher = nm;
     localAndClientMsg(VLogger::DEBUG, _callback,
                       "Set MatcherType to %s\n", nm.c_str() );
   }
-  const string& nw = tprops.props.at("NumWords");
+  const string& nw = trp["NumWords"];
   if (!nw.empty())
   {
     errno=0;
@@ -439,8 +440,8 @@ FilePath BowICETrainI::createArchive( DetectorDataArchive& dda,
   std::string archiveFilename = getDateFilename(clientDir,  "bow")+ ".zip";
  
   dda.setArchiveFilename(archiveFilename);
-  dda.addFile(VOCID, tempDir + "/" + pBowCV->filenameVocabulary);
-  dda.addFile(SVMID, tempDir + "/" + pBowCV->filenameSVM);
+  dda.addFile(bowCV::BOW_VOC_FILE, tempDir + "/" + pBowCV->filenameVocabulary);
+  dda.addFile(bowCV::BOW_SVM_FILE, tempDir + "/" + pBowCV->filenameSVM);
   for (LabelMap::const_iterator it=labelmap.begin(); it!=labelmap.end(); it++)
   {
     string classID = "labelname_" + getPurposeName( it->first );

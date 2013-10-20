@@ -45,7 +45,17 @@
 
 #include "bowCV.h"
 
+using namespace std;
 using namespace cvac;
+
+const string bowCV::BOW_VOC_FILE = "VOC_FILE";
+const string bowCV::BOW_SVM_FILE = "SVM_FILE";
+const string bowCV::BOW_DETECTOR_NAME = "FeatureType";
+const string bowCV::BOW_EXTRACTOR_NAME = "DescriptorType";
+const string bowCV::BOW_MATCHER_NAME = "MatcherType";
+const string bowCV::BOW_OPENCV_VERSION = "OPENCV_VERSION";
+const string bowCV::BOW_ONECLASS_ID = "ONE-CLASS_ID";
+
 
 bowCV* pLib = NULL;
 

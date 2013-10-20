@@ -137,18 +137,8 @@ void BowICEI::initialize(int verbosity, const ::cvac::FilePath &file, const::Ice
   
   DetectorDataArchive dda;
   dda.unarchive(zipfilename, clientDir);
-  // This detector only needs an XML file
-  filename = dda.getFile(RESID);
-  if (filename.empty())
-  {
-    localAndClientMsg(VLogger::ERROR, NULL,
-                      "Could not find result file in zip file.\n");
-    return;
-  }
-  // Get only the filename part
-  filename = getFileName(filename);
 
-  // add the CVAC.DataDir root path and initialize from txt file  
+  // add the CVAC.DataDir root path and initialize from dda  
   fInitialized = pBowCV->detect_initialize( clientDir, &dda );
 
   if (!fInitialized)
