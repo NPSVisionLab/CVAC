@@ -49,8 +49,6 @@
 #include <util/ServiceMan.h>
 #include <util/ServiceManI.h>
 
-#define logfile_BowTrainResult "logTrain_Table.txt"
-
 class BowICEI : public cvac::Detector, public cvac::StartStop
 {
 public:

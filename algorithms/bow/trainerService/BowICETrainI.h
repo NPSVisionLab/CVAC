@@ -51,8 +51,6 @@
 #include <util/processRunSet.h>
 #include <util/ServiceManI.h>
 
-#define logfile_BowTrainResult    "logTrain_Table.txt"	//This file includes the list of result files
-
 typedef std::map<cvac::Purpose, std::string> LabelMap;
 
 class BowICETrainI : public cvac::DetectorTrainer, public cvac::StartStop

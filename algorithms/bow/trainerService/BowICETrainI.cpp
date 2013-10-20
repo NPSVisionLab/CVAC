@@ -439,7 +439,6 @@ FilePath BowICETrainI::createArchive( DetectorDataArchive& dda,
   std::string archiveFilename = getDateFilename(clientDir,  "bow")+ ".zip";
  
   dda.setArchiveFilename(archiveFilename);
-  dda.addFile(RESID, tempDir + "/" + logfile_BowTrainResult);
   dda.addFile(VOCID, tempDir + "/" + pBowCV->filenameVocabulary);
   dda.addFile(SVMID, tempDir + "/" + pBowCV->filenameSVM);
   for (LabelMap::const_iterator it=labelmap.begin(); it!=labelmap.end(); it++)
