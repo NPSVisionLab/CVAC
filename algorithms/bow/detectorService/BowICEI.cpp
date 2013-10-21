@@ -97,7 +97,8 @@ void BowICEI::stopping()
 
 
                           // Client verbosity
-void BowICEI::initialize(int verbosity, const ::cvac::FilePath &file, const::Ice::Current &current)
+void BowICEI::initialize( DetectorDataArchive& dda,
+                          const ::cvac::FilePath &file, const::Ice::Current &current)
 {
   // Set CVAC verbosity according to ICE properties
   Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
@@ -134,8 +135,6 @@ void BowICEI::initialize(int verbosity, const ::cvac::FilePath &file, const::Ice
 
   // for a zip file
   std::string zipfilename = getFSPath( file, m_CVAC_DataDir );
-  
-  DetectorDataArchive dda;
   dda.unarchive(zipfilename, clientDir);
 
   // add the CVAC.DataDir root path and initialize from dda  
@@ -180,12 +179,6 @@ bool BowICEI::cancel(const Ice::Identity &client, const ::Ice::Current& current)
     else 
         return false;
 }
-
-//DetectorData BowICEI::createCopyOfDetectorData(const ::Ice::Current& current)
-//{	
-//	DetectorData data;
-//	return data;
-//}
 
 DetectorProperties BowICEI::getDetectorProperties(const ::Ice::Current& current)
 {	
@@ -240,12 +233,17 @@ ResultSet BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilenam
 }
 
 void BowICEI::process(const Ice::Identity &client,
-                      const ::RunSet& runset, const ::cvac::FilePath &detectorData,  
-                      const::cvac::DetectorProperties &props,const ::Ice::Current& current)
+                      const ::RunSet& runset, const ::cvac::FilePath &trainedModelFile,  
+                      const::cvac::DetectorProperties &props,
+                      const ::Ice::Current& current)
 {
   DetectorCallbackHandlerPrx _callback = 
     DetectorCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
-  initialize(props.verbosity, detectorData, current);
+
+  // this must not go out of scope before processRunSet has completed:
+  DetectorDataArchive dda;
+
+  initialize( dda, trainedModelFile, current);
   if (!fInitialized || NULL==pBowCV || !pBowCV->isInitialized())
   {
     localAndClientMsg(VLogger::ERROR, _callback, "BowICEI not initialized, aborting.\n");
