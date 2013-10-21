@@ -663,7 +663,7 @@ class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
     detectorData = None
     trainingFinished = False
     def message( self, level, messageString, current=None ):
-        print("message (level " + level + ") from trainer: "+messageString, end="")
+        print("message (level " + str(level) + ") from trainer: "+messageString, end="")
         
     def createdDetector(self, detData, current=None):
         if not detData:
