@@ -663,12 +663,12 @@ class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
     detectorData = None
     trainingFinished = False
     def message( self, level, messageString, current=None ):
-        print("message from trainer: "+messageString, end="")
+        print("message (level " + level + ") from trainer: "+messageString, end="")
         
     def createdDetector(self, detData, current=None):
         if not detData:
             raise RuntimeError("Finished training, but obtained no trained model")
-        print("Finished training, obtained a trained model (DetectorData)")
+        # print("Finished training, obtained a trained model (DetectorData)")
         self.detectorData = detData
         self.trainingFinished = True
 
@@ -689,7 +689,7 @@ def train( trainer, runset, callbackRecv=None, trainerProperties=None ):
     # connect to trainer, initialize with a verbosity value, and train
     if not trainerProperties:
         trainerProperties = cvac.TrainerProperties()
-    trainerProperties.verbosity = 3
+        trainerProperties.verbosity = 3
     if type(runset) is dict:
         runset = runset['runset']
     trainer.process( cbID, runset, trainerProperties )
