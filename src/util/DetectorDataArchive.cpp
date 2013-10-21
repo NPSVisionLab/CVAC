@@ -141,30 +141,29 @@ void cvac::DetectorDataArchive::unarchive(const string &archiveFile, const strin
     std::string line;
     while( std::getline(propfile, line))
     {
-        char name[512];
-        char value[512];
         int res;
         // See if its a property
         int idx = line.find(":");
         if (idx > 0)
         {
-            if (res = sscanf(line.c_str(), "%s : %s", name, value) > 0)
-            { 
-                // We got a name value pair to save
-                mPropNames.push_back(string(name));
-                mPropValues.push_back(string(value));
-                continue;
-            }
+            string name = line.substr(0, idx);  trim( name );
+            string value = line.substr(idx+1, string::npos);  trim( value );
+            // We got a name value pair to save
+            mPropNames.push_back( name );
+            mPropValues.push_back( value );
+            continue;
         } 
         // See if its an id
-        if (res = sscanf(line.c_str(), "%s = %s", name, value) > 0)
+        idx = line.find("=");
+        if (idx > 0)
         {
+            string name = line.substr(0, idx);  trim( name );
+            string value = line.substr(idx+1, string::npos);  trim( value );
             // We got a name value pair to save
-            mFileIds.push_back(string(name));
-            mFileNames.push_back(cdir + "/" + string(value));
+            mFileIds.push_back( name );
+            mFileNames.push_back( cdir + "/" + value );
         }
     }
-    
 }
 
 ///////////////////////////////////////////////////////////////////////////////
