@@ -58,6 +58,7 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/cvac")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 
+
 # Next copy over easy. Since these files are not sliced then do it now
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
       PATTERN *.py)
