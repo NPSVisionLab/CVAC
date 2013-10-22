@@ -20,6 +20,15 @@ set ICEBOXJAR=%ICEDIR%/lib/IceBox.jar
 set OPENCVDIR=%THRDPARTYDIR%/opencv
 set PATH=bin;%ICEDIR%/bin;%OPENCVDIR%/bin;%THRDPARTYDIR%/libarchive\bin;%PATH%
 chdir "%INSTALLDIR%"
+
+set LOCKFILE=.services_started.lock
+if exist %LOCKFILE% (
+    echo CVAC services have supposedly been started already.  Either stop them
+    echo first, or if you are sure that they are not running, remove the
+    echo lock file \'%LOCKFILE%\'.
+    exit /b 1
+)
+
 start "CVAC Services (C++)" "cmd /K ""%ICEDIR%/bin/icebox.exe" --Ice.Config=config.icebox"
 
 if "%JAVAEXE%" neq "" goto startjava
@@ -34,4 +43,6 @@ goto next2
     for /F "usebackq eol=# tokens=*" %%A in ("%INSTALLDIR%/python.config") do start "CVAC Service (Python)" "cmd /K ""%PYTHONEXE%" %%A"
 :next2
 echo CVAC services launched
+REM Lets do a window equivalent of touch
+type nul >> %LOCKFILE% & copy %LOCKFILE% +,,
 exit /b 0
