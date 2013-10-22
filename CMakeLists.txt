@@ -23,7 +23,7 @@ OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use '
 OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
-OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" ON)
+OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" OFF)
 
 
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
