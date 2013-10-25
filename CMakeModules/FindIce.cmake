@@ -78,10 +78,18 @@ IF (NOT ICE_BOX_LIBRARY_DEBUG)
     SET(ICE_BOX_LIBRARY_DEBUG ${ICE_BOX_LIBRARY})
 ENDIF()
 
-FIND_PROGRAM( ICE_BOX_EXECUTABLE
+IF( CMAKE_BUILD_TYPE EQUAL Debug)
+
+    FIND_PROGRAM( ICE_BOX_EXECUTABLE
                  NAMES icebox${CMAKE_DEBUG_POSTFIX}
                  HINTS ${ICE_ROOT}/bin
                )
+ELSE ( CMAKE_BUILD_TYPE EQUAL Debug)
+    FIND_PROGRAM( ICE_BOX_EXECUTABLE
+                 NAMES icebox
+                 HINTS ${ICE_ROOT}/bin
+               )
+ENDIF ( CMAKE_BUILD_TYPE EQUAL Debug)
 
 FIND_PROGRAM( ICE_BOX_ADMIN
                  NAMES iceboxadmin
