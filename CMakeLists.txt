@@ -133,11 +133,22 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
         MESSAGE( STATUS "successfully parsed version from git: CVAC-${CVAC_VERSION}" )
      	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
                                    ${CMAKE_SOURCE_DIR}/include/version.h)
+        # Only in the devel branch (to avoid merge conflicts):
         # Need to update the version.h.repo file so it will be up to date
         # for later distribution of the source without git (like a zip file);
         # see below.
-        CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h
-                       ${CMAKE_SOURCE_DIR}/include/version.h.repo)
+        EXECUTE_PROCESS( COMMAND git status -b --untracked-files=no
+              OUTPUT_VARIABLE CVAC_GIT_BRANCH
+              OUTPUT_STRIP_TRAILING_WHITESPACE
+              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
+        IF( CVAC_GIT_BRANCH )
+     	  IF( CVAC_GIT_BRANCH MATCHES "# On branch devel" )
+            CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h
+                           ${CMAKE_SOURCE_DIR}/include/version.h.repo)
+            MESSAGE( STATUS "wrote version file include/version.h.repo" )
+          ENDIF()
+        ENDIF()
     ENDIF( CVAC_VERSION_GIT )
 endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
