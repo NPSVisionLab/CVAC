@@ -37,34 +37,57 @@ set(CPACK_COMPONENT_DATA_DISPLAY_NAME "CVAC sample data" )
 
 # change the install prefix to CVAC-version, since CPack will install into a zip-style archive
 # set(CPACK_SET_DESTDIR true)
-# set(CPACK_INSTALL_PREFIX ${CVAC_VERSION_DIR} )
-
-# Binary distribution of CVAC: only built files, binary dependencies,
-# and some sample data
-
+# set(CPACK_INSTALL_PREFIX ${CVAC_VERSION_DIR} ) 
+# Binary distribution of CVAC: only built files, binary dependencies, 
+# python install distribution (containing ice, easy, and cvac, python client 
+# files), c++ client files (detectorClient and trainerClient).  
+# Everything required to run CVAC without building from source.  
+# We need to copy cvac, Ice, and easy to the build directory for packing 
+# python distribution.  
 # Select Generator by OS
 IF(WIN32)
     SET( SCRIPT_EXT bat )
-  SET(CPACK_GENERATOR "NSIS")
-ELSE()
+    SET(CPACK_GENERATOR "NSIS")
+    # Specify the default location to install CVAC.  It will install it
+    # in this and a version directory underneath this.
+    SET(CPACK_NSIS_INSTALL_ROOT "c:\\\\CVAC")
+ELSE(WIN32)
     SET( SCRIPT_EXT sh )
   SET(CPACK_GENERATOR "TGZ")
 ENDIF(WIN32)
+
+SET (PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/../python")
+INSTALL(DIRECTORY ${PYTHON_BUILD_DIR}
+       DESTINATION .
+       COMPONENT Runtime 
+      )
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/corpus
        DESTINATION data
        COMPONENT data
       )
       
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/detectors
-       DESTINATION data
+SET (DDATA ${CMAKE_SOURCE_DIR}/data/detectors )
+INSTALL(FILES ${DDATA}/bowCorporateLogoModel.zip ${DDATA}/bowUSKOCA.zip ${DDATA}/OpencvFaces.zip ${DDATA}/haarcascade_frontalface_alt.xml
+       DESTINATION data/detectors
        COMPONENT data
       )
       
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/trainImg
-       DESTINATION data
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/trainImg/ca
+       DESTINATION data/trainImg
        COMPONENT data
       )
+
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/trainImg/kr
+       DESTINATION data/trainImg
+       COMPONENT data
+      )
+
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/trainImg/us
+       DESTINATION data/trainImg
+       COMPONENT data
+      )
+      
       
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/testImg
        DESTINATION data
@@ -76,11 +99,6 @@ INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/corporate_logos
        COMPONENT data
       )
       
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/lib/python
-       DESTINATION lib
-       COMPONENT Runtime
-      )
-
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/version.h
        DESTINATION include
        COMPONENT Runtime
@@ -191,5 +209,28 @@ INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
        COMPONENT ThirdParty
       ) 
 ENDIF(WIN32)
+
+
+
+# First copy over cvac.  Need to wait for build time since these files
+# are created by slicing at build time.  Since FILE commands work at
+# cmake time we add a custom target that will copy each of the slice generated
+# .py files to the python build cvac directory (which is required for 
+# setup py).  The ALL causes the copySlice target 
+# to be executed for all targets but we really only need them
+# for the package target so we limit this to building
+# the binary package and the install copies them with the install script
+IF (BUILD_BINARY_PACKAGE)
+    SET (SLICE_OUTPUT_PATH "${SLICE_OUTPUT_PYTHONDIR}")
+    add_custom_target(copyslice ALL
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
+    )
+ENDIF (BUILD_BINARY_PACKAGE)
+
+INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 include(CPack)

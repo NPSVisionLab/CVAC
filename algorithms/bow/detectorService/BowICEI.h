@@ -47,35 +47,42 @@
 #include <IceUtil/UUID.h>
 #include <util/processRunSet.h>
 #include <util/ServiceMan.h>
+#include <util/ServiceManI.h>
 
-#define logfile_BowTrainResult "logTrain_Table.txt"
-
-class BowICEI : public cvac::Detector
+class BowICEI : public cvac::Detector, public cvac::StartStop
 {
 public:
-    BowICEI(cvac::ServiceManager *servm);
+    BowICEI();
     ~BowICEI();
 
     std::string m_CVAC_DataDir; // Store an absolute path to the detector data files
 
 
 public:
-    virtual void initialize(::Ice::Int verbosity,const ::cvac::DetectorData& data,const ::Ice::Current& current);
-    virtual void process(const Ice::Identity &client,const ::cvac::RunSet& runset,const ::Ice::Current& current);
-    virtual bool isInitialized(const ::Ice::Current& current);
-    virtual void destroy(const ::Ice::Current& current);
+
+    virtual void process(const Ice::Identity &client,const ::cvac::RunSet& runset,
+                         const ::cvac::FilePath &detectorData,
+                         const ::cvac::DetectorProperties &props,
+                         const ::Ice::Current& current);
     virtual std::string getName(const ::Ice::Current& current);
     virtual std::string getDescription(const ::Ice::Current& current);
-    void setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current);
-
-    virtual cvac::DetectorData createCopyOfDetectorData(const ::Ice::Current& current);
-    virtual cvac::DetectorPropertiesPrx getDetectorProperties(const ::Ice::Current& current);
+    virtual bool cancel(const Ice::Identity &client, const ::Ice::Current& current);
+    virtual cvac::DetectorProperties getDetectorProperties(const Ice::Current& current);
+    void setServiceManager(cvac::ServiceManagerI *sman);
+    virtual void starting();
+    virtual void stopping();
+    
+protected:
+    void initialize( cvac::DetectorDataArchive& dda, const ::cvac::FilePath &file,
+                     const::Ice::Current &current);
+    bool isInitialized();
+    virtual void destroy(const ::Ice::Current& current);
 
 private:
     cvac::ServiceManager *mServiceMan;
     bowCV* pBowCV;
     bool   fInitialized;    
-    static cvac::ResultSetV2 processSingleImg(cvac::DetectorPtr detector,const char* fullfilename);
+    static cvac::ResultSet processSingleImg(cvac::DetectorPtr detector,const char* fullfilename);
 };
 
 #endif //_BowICEI_H__

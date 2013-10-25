@@ -16,11 +16,15 @@ OPTION(BUILD_WITH_OPENCVPERFORMANCE "Build the OpenCV Cascade trainer and detect
 OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" ON) 
 OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" ON) 
 OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
+OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" ON)
+OPTION(BUILD_CPP_TRAINER_CLIENT "Build a C++ client for trainers" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
 OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" OFF)
 OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
+OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" ON)
+
 
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
 
@@ -96,6 +100,11 @@ ENDIF (WIN32)
 IF(CMAKE_COMPILER_IS_GNUCXX)
    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+
+# -O2 or -O3 on OSX causes ice to fail in Purpose list code
+IF (APPLE)
+   SET(CMAKE_CXX_FLAGS_RELEASE "-O1 -NDEBUG")
+ENDIF (APPLE)
 
 #
 # What version of CVAC?
@@ -269,7 +278,9 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv
   )
-  MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  IF( OpenCV_DIR )
+    MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  ENDIF()
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 ## Setup the config.service and config.icebox files based upon detectors
@@ -304,6 +315,34 @@ ELSE( BUILD_FILESERVER )
 SET( CF_FILE_S "#")
 ENDIF( BUILD_FILESERVER )
 
+IF( BUILD_WITH_RSI )
+SET(CF_RSI "" )
+ELSE( BUILD_WITH_RSI )
+SET( CF_RSI "#" )
+ENDIF( BUILD_WITH_RSI )
+
+# if cmake install prefix not set the set it to default else add 
+# cvac to the end
+IF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/installed" CACHE PATH "default install path" FORCE )
+ELSE( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cvac" )
+ENDIF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
+
+IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
+    # This requires CMake 2.8 for Java support
+    ADD_SUBDIRECTORY( src )
+ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
+
+ADD_SUBDIRECTORY(src/util)
+ADD_SUBDIRECTORY(src/easy) 
+ADD_SUBDIRECTORY(src/clients) 
+ADD_SUBDIRECTORY(algorithms)
+ADD_SUBDIRECTORY(demo)
+ADD_SUBDIRECTORY( etc )
+
+# the configuration of config.{icebox,service} must come after including the
+# etc directory, because that's where the user.config.{..} get configured.
 CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
 CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
 IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
@@ -314,17 +353,6 @@ IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
     FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
     FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
 ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
-
-IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
-    # This requires CMake 2.8 for Java support
-    ADD_SUBDIRECTORY( src )
-ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
-
-ADD_SUBDIRECTORY( etc )
-ADD_SUBDIRECTORY(src/util)
-ADD_SUBDIRECTORY(src/easy)
-ADD_SUBDIRECTORY(algorithms)
-ADD_SUBDIRECTORY(demo)
 
 IF( BUILD_WITH_TESTS)
   ENABLE_TESTING()
