@@ -40,7 +40,7 @@ print("There are {0} car-related labels.".format( len(cars) ))
 quit()  # done for now
 
 # Train a detector on license plates
-trainer = easy.getTrainer( "bowTrain:default -p 10103 ")
+trainer = easy.getTrainer( "BOW_Trainer:default -p 10103 ")
 trainset = easy.createRunSet( license_plates, "pos" )
 easy.printRunSetInfo( trainset )
 licenseplateModel = easy.train( trainer, trainset )
@@ -48,7 +48,7 @@ licenseplateModel = easy.train( trainer, trainset )
 # test the license plate detector on the known locations of cars;
 # this will only try to detect within the boundaries of cars.
 testset = easy.createRunSet( cars, "unpurposed" )
-detector = easy.getDetector( "bowTest:default -p 10104" )
+detector = easy.getDetector( "BOW_Detector:default -p 10104" )
 results = easy.detect( detector, licenseplateModel, testset )
 
 printResults( results )

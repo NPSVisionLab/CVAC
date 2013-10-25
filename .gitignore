@@ -58,3 +58,5 @@ Icon?
 ehthumbs.db
 Thumbs.db
 
+
+include/version.h.repo

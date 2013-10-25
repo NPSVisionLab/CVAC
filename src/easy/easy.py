@@ -14,7 +14,6 @@ import shutil
 # paths should setup the PYTHONPATH.  If you special requirements
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
-import paths
 sys.path.append('''.''')
 import Ice
 import Ice
@@ -46,8 +45,6 @@ def getFSPath( cvacPath ):
         cvacPath = cvacPath.sub.path
     elif isinstance(cvacPath, cvac.Substrate):
         cvacPath = cvacPath.path
-    elif isinstance(cvacPath, cvac.DetectorData):
-        cvacPath = cvacPath.file
     if isinstance( cvacPath, str ):
         path = CVAC_DataDir+"/"+cvacPath
     elif not cvacPath.directory.relativePath:
@@ -548,9 +545,7 @@ def putFile( fileserver, filepath, testExistence=True ):
     forig.close()
 
 def getFile( fileserver, filepath ):
-    if type(filepath) is cvac.DetectorData:
-        filepath = filepath.file
-    elif type(filepath) is str:
+    if type(filepath) is str:
         filepath = getCvacPath( filepath )
     else:
         assert( type(filepath) is cvac.FilePath )
@@ -672,8 +667,8 @@ class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
         
     def createdDetector(self, detData, current=None):
         if not detData:
-            raise RuntimeError("Finished training, but obtained no DetectorData")
-        print("Finished training, obtained DetectorData of type", detData.type)
+            raise RuntimeError("Finished training, but obtained no trained model")
+        print("Finished training, obtained a trained model (DetectorData)")
         self.detectorData = detData
         self.trainingFinished = True
 
@@ -692,18 +687,15 @@ def train( trainer, runset, callbackRecv=None ):
     trainer.ice_getConnection().setAdapter(adapter)
 
     # connect to trainer, initialize with a verbosity value, and train
-    trainer.initialize( 3 )
+    tp = cvac.TrainerProperties()
+    tp.verbosity = 3
     if type(runset) is dict:
         runset = runset['runset']
-    trainer.process( cbID, runset )
+    trainer.process( cbID, runset, tp )
 
     # check results
     if not callbackRecv.detectorData:
         raise RuntimeError("no DetectorData received from trainer")    
-    if callbackRecv.detectorData.type == cvac.DetectorDataType.BYTES:
-        raise RuntimeError('detectorData as BYTES has not been tested yet')
-    elif callbackRecv.detectorData.type == cvac.DetectorDataType.PROVIDER:
-        raise RuntimeError('detectorData as PROVIDER has not been tested yet')
 
     return callbackRecv.detectorData
 
@@ -730,8 +722,9 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
     '''
     Synchronously run detection with the specified detector,
     trained model, and optional callback receiver.
-    The detectorData can be either a cvac.DetectorData object or simply
-     a filename of a pre-trained model.  Naturally, the model has to be
+    The detectorData has to be a filename of a pre-trained model, or
+     empty if the detector is pre-configured with a model, or if it does
+     not require a model.  Naturally, the model has to be
      compatible with the detector.
     The runset can be either a cvac.RunSet object or anything that
     createRunSet can turn into a RunSet.
@@ -740,11 +733,12 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
     '''
 
     # create a cvac.DetectorData object out of a filename
-    if type(detectorData) is str:
-        ddpath = getCvacPath( detectorData );
-        detectorData = cvac.DetectorData( cvac.DetectorDataType.FILE, None, ddpath, None )
-    elif not type(detectorData) is cvac.DetectorData:
-        raise RuntimeError("detectorData must be either filename or cvac.DetectorData")
+    if not detectorData:
+        detectorData = getCvacPath( "" )
+    elif type(detectorData) is str:
+        detectorData = getCvacPath( detectorData )
+    elif not type(detectorData) is cvac.FilePath:
+        raise RuntimeError("detectorData must be either filename or cvac.FilePath")
 
     # if not given an actual cvac.RunSet, try to create a RunSet
     if isinstance(runset, cvac.RunSet):
@@ -774,8 +768,8 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
 
     # connect to detector, initialize with a verbosity value
     # and the trained model, and run the detection on the runset
-    detector.initialize( 3, detectorData )
-    detector.process( cbID, runset )
+    props = cvac.DetectorProperties()
+    detector.process( cbID, runset, detectorData, props )
 
     if ourRecv:
         return callbackRecv.allResults
