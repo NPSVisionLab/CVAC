@@ -663,16 +663,16 @@ class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
     detectorData = None
     trainingFinished = False
     def message( self, level, messageString, current=None ):
-        print("message from trainer: "+messageString, end="")
+        print("message (level " + str(level) + ") from trainer: "+messageString, end="")
         
     def createdDetector(self, detData, current=None):
         if not detData:
             raise RuntimeError("Finished training, but obtained no trained model")
-        print("Finished training, obtained a trained model (DetectorData)")
+        # print("Finished training, obtained a trained model (DetectorData)")
         self.detectorData = detData
         self.trainingFinished = True
 
-def train( trainer, runset, callbackRecv=None ):
+def train( trainer, runset, callbackRecv=None, trainerProperties=None ):
     '''A callback receiver can optionally be specified'''
     
     # ICE functionality to enable bidirectional connection for callback
@@ -687,11 +687,12 @@ def train( trainer, runset, callbackRecv=None ):
     trainer.ice_getConnection().setAdapter(adapter)
 
     # connect to trainer, initialize with a verbosity value, and train
-    tp = cvac.TrainerProperties()
-    tp.verbosity = 3
+    if not trainerProperties:
+        trainerProperties = cvac.TrainerProperties()
+        trainerProperties.verbosity = 3
     if type(runset) is dict:
         runset = runset['runset']
-    trainer.process( cbID, runset, tp )
+    trainer.process( cbID, runset, trainerProperties )
 
     # check results
     if not callbackRecv.detectorData:

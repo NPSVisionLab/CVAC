@@ -141,30 +141,29 @@ void cvac::DetectorDataArchive::unarchive(const string &archiveFile, const strin
     std::string line;
     while( std::getline(propfile, line))
     {
-        char name[512];
-        char value[512];
         int res;
         // See if its a property
         int idx = line.find(":");
         if (idx > 0)
         {
-            if (res = sscanf(line.c_str(), "%s : %s", name, value) > 0)
-            { 
-                // We got a name value pair to save
-                mPropNames.push_back(string(name));
-                mPropValues.push_back(string(value));
-                continue;
-            }
+            string name = line.substr(0, idx);  trim( name );
+            string value = line.substr(idx+1, string::npos);  trim( value );
+            // We got a name value pair to save
+            mPropNames.push_back( name );
+            mPropValues.push_back( value );
+            continue;
         } 
         // See if its an id
-        if (res = sscanf(line.c_str(), "%s = %s", name, value) > 0)
+        idx = line.find("=");
+        if (idx > 0)
         {
+            string name = line.substr(0, idx);  trim( name );
+            string value = line.substr(idx+1, string::npos);  trim( value );
             // We got a name value pair to save
-            mFileIds.push_back(string(name));
-            mFileNames.push_back(cdir + "/" + string(value));
+            mFileIds.push_back( name );
+            mFileNames.push_back( cdir + "/" + value );
         }
     }
-    
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -196,7 +195,7 @@ vector<string> cvac::DetectorDataArchive::getProperties()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-string cvac::DetectorDataArchive::getProperty(const string &name)
+string cvac::DetectorDataArchive::getProperty(const string &name) const
 {
     string empty;
     int size = mPropNames.size();
@@ -256,7 +255,8 @@ const std::vector<std::string> cvac::DetectorDataArchive::getFileIds()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-const std::string cvac::DetectorDataArchive::getFile(const std::string &identifier)
+const std::string
+cvac::DetectorDataArchive::getFile(const std::string &identifier) const
 {
     std::string empty;
     int size = mFileIds.size();
@@ -415,7 +415,7 @@ bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>&
     std::ifstream is(_inPaths[k].c_str(),std::ios::binary);    
     if(!is.is_open())
     {
-      std::cout << "The target file: "
+      std::cout << "The file to be archived: "
         << _inPaths[k].c_str() 
         << " may not exist or has a problem.\n";
       return false;
@@ -427,7 +427,7 @@ bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>&
     char* tBuff = new char[tBuffSize]; 
     if(tBuff == 0 || tBuff == NULL)
     {
-      std::cout << "The target file: "
+      std::cout << "The file to be archived: "
         << _inPaths[k].c_str() 
         << " is too big to be compressed.\n";
       return false;
