@@ -239,7 +239,7 @@ void CascadeDetectI::process( const Identity &client,
   
   // While we don't have the new RunSetWrapper and iterator, use the
   // processRunSet callback method
-
+#if NEW_RUNSETWRAPPER
   // loop over Labelable in runset
   // TODO: for each labelable...
   Labelable* ll = new Labelable( 0.2f, Label(), Substrate() );
@@ -253,7 +253,9 @@ void CascadeDetectI::process( const Identity &client,
     ResultSet resSet = convertResults( labelable, objects );
     sendResultsToClient( callback, resSet );
   }
-
+#else
+  processRunSet(this, callback, detectFunc, runset, m_CVAC_DataDir, mServiceMan );
+#endif
   callback = NULL;
 }
 
