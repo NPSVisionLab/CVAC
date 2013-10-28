@@ -89,11 +89,21 @@ CascadeDetectI::CascadeDetectI()
   , cascade(NULL)
   , mServiceMan(NULL)
   , gotModel(false)
+  , mRunsetWrapper(NULL)
+  , mRunsetIterator(NULL)
 {
 }
 
 CascadeDetectI::~CascadeDetectI()
 {
+  if(mRunsetIterator != NULL)
+    delete mRunsetIterator;
+  mRunsetIterator = NULL;
+
+  if(mRunsetWrapper != NULL)
+    delete mRunsetWrapper;
+  mRunsetWrapper = NULL;
+
   delete cascade;
 }
 
@@ -198,6 +208,13 @@ bool CascadeDetectI::initialize( const DetectorProperties& detprops,
                           "cannot be found or loaded: %s\n", modelfile.c_str());
         return false;
       }
+    else
+    {
+      mRunsetConstraint.clear();
+      mRunsetConstraint.addType("png");
+      mRunsetConstraint.addType("tif");
+      mRunsetConstraint.addType("jpg");
+    }
   }
 
   localAndClientMsg(VLogger::INFO, NULL, "CascadeDetector initialized.\n");
@@ -236,25 +253,57 @@ void CascadeDetectI::process( const Identity &client,
             current.con->createProxy(client)->ice_oneway());
 
   initialize( detprops, model, current );
-  
-  // While we don't have the new RunSetWrapper and iterator, use the
-  // processRunSet callback method
 
-  // loop over Labelable in runset
-  // TODO: for each labelable...
-  Labelable* ll = new Labelable( 0.2f, Label(), Substrate() );
-  const cvac::Labelable& labelable = *ll; // TODO: should come from iterator
+  //////////////////////////////////////////////////////////////////////////
+  // Start - RunsetWrapper
+  mServiceMan->setStoppable();
+  if(mRunsetWrapper!=NULL)
+    delete mRunsetWrapper;
+  mRunsetWrapper = new RunSetWrapper(&runset,m_CVAC_DataDir,mServiceMan);
+  mServiceMan->clearStop();
+  if(!mRunsetWrapper->isInitialized())
   {
-    // do the actual detection
-    CvSeq* objects;
-    objects = detectObjects( callback, labelable );
-
-    // convert to ResultSet and send to ICE client
-    ResultSet resSet = convertResults( labelable, objects );
-    sendResultsToClient( callback, resSet );
+    localAndClientMsg(VLogger::ERROR, callback,
+      "RunsetWrapper is not initialized, aborting.\n");    
+    return;
   }
+  // End - RunsetWrapper
 
-  callback = NULL;
+  //////////////////////////////////////////////////////////////////////////
+  // Start - RunsetIterator
+  mServiceMan->setStoppable();
+  if(mRunsetIterator!=NULL)
+    delete mRunsetIterator;  
+  int nSkipFrames = 150;  //the number of skip frames
+  mRunsetIterator = new RunSetIterator(mRunsetWrapper,mRunsetConstraint,
+                                       mServiceMan,nSkipFrames);
+  mServiceMan->clearStop();
+  if(!mRunsetIterator->isInitialized())
+  {
+    localAndClientMsg(VLogger::ERROR, callback,
+      "RunSetIterator is not initialized, aborting.\n");
+    return;
+  } 
+  // End - RunsetIterator
+
+
+  mServiceMan->setStoppable();
+  while(mRunsetIterator->hasNext())
+  {
+    if((mServiceMan != NULL) && (mServiceMan->stopRequested()))
+    {        
+      mServiceMan->stopCompleted();
+      break;
+    }
+
+    const cvac::Labelable& labelable = *(mRunsetIterator->getNext());
+    {     
+      std::vector<cv::Rect> objects = detectObjects( callback, labelable );
+      ResultSet resSet = convertResults( labelable, objects );
+      callback->foundNewResults(resSet);
+    }
+  }
+  mServiceMan->clearStop();
 }
 
 /** run the cascade on the image described in lbl,
