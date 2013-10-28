@@ -5,7 +5,6 @@ from __future__ import print_function
 # export PYTHONPATH="/opt/Ice-3.4.2/python:test/UnitTests/python"
 import sys, traceback
 sys.path.append('''.''')
-import paths
 import Ice
 import Ice
 import IcePy
