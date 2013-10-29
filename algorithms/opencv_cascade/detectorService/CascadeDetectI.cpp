@@ -89,21 +89,11 @@ CascadeDetectI::CascadeDetectI()
   , cascade(NULL)
   , mServiceMan(NULL)
   , gotModel(false)
-  , mRunsetWrapper(NULL)
-  , mRunsetIterator(NULL)
 {
 }
 
 CascadeDetectI::~CascadeDetectI()
 {
-  if(mRunsetIterator != NULL)
-    delete mRunsetIterator;
-  mRunsetIterator = NULL;
-
-  if(mRunsetWrapper != NULL)
-    delete mRunsetWrapper;
-  mRunsetWrapper = NULL;
-
   delete cascade;
 }
 
@@ -202,18 +192,11 @@ bool CascadeDetectI::initialize( const DetectorProperties& detprops,
     localAndClientMsg( VLogger::DEBUG_1, NULL, "initializing with %s\n", modelfile.c_str());
     gotModel = readModelFile( modelfile, current );
     if (!gotModel)
-      {
-        localAndClientMsg(VLogger::ERROR, NULL,
-                          "Failed to initialize because explicitly specified trained model "
-                          "cannot be found or loaded: %s\n", modelfile.c_str());
-        return false;
-      }
-    else
     {
-      mRunsetConstraint.clear();
-      mRunsetConstraint.addType("png");
-      mRunsetConstraint.addType("tif");
-      mRunsetConstraint.addType("jpg");
+      localAndClientMsg(VLogger::ERROR, NULL,
+                        "Failed to initialize because explicitly specified trained model "
+                        "cannot be found or loaded: %s\n", modelfile.c_str());
+      return false;
     }
   }
 
@@ -255,13 +238,19 @@ void CascadeDetectI::process( const Identity &client,
   initialize( detprops, model, current );
 
   //////////////////////////////////////////////////////////////////////////
+  // Setup - RunsetConstraints
+  cvac::RunSetConstraint mRunsetConstraint;  
+  mRunsetConstraint.addType("png");
+  mRunsetConstraint.addType("tif");
+  mRunsetConstraint.addType("jpg");
+  // End - RunsetConstraints
+
+  //////////////////////////////////////////////////////////////////////////
   // Start - RunsetWrapper
-  mServiceMan->setStoppable();
-  if(mRunsetWrapper!=NULL)
-    delete mRunsetWrapper;
-  mRunsetWrapper = new RunSetWrapper(&runset,m_CVAC_DataDir,mServiceMan);
+  mServiceMan->setStoppable();  
+  cvac::RunSetWrapper mRunsetWrapper(&runset,m_CVAC_DataDir,mServiceMan);
   mServiceMan->clearStop();
-  if(!mRunsetWrapper->isInitialized())
+  if(!mRunsetWrapper.isInitialized())
   {
     localAndClientMsg(VLogger::ERROR, callback,
       "RunsetWrapper is not initialized, aborting.\n");    
@@ -271,14 +260,12 @@ void CascadeDetectI::process( const Identity &client,
 
   //////////////////////////////////////////////////////////////////////////
   // Start - RunsetIterator
-  mServiceMan->setStoppable();
-  if(mRunsetIterator!=NULL)
-    delete mRunsetIterator;  
   int nSkipFrames = 150;  //the number of skip frames
-  mRunsetIterator = new RunSetIterator(mRunsetWrapper,mRunsetConstraint,
+  mServiceMan->setStoppable();
+  cvac::RunSetIterator mRunsetIterator(&mRunsetWrapper,mRunsetConstraint,
                                        mServiceMan,nSkipFrames);
   mServiceMan->clearStop();
-  if(!mRunsetIterator->isInitialized())
+  if(!mRunsetIterator.isInitialized())
   {
     localAndClientMsg(VLogger::ERROR, callback,
       "RunSetIterator is not initialized, aborting.\n");
@@ -288,7 +275,7 @@ void CascadeDetectI::process( const Identity &client,
 
 
   mServiceMan->setStoppable();
-  while(mRunsetIterator->hasNext())
+  while(mRunsetIterator.hasNext())
   {
     if((mServiceMan != NULL) && (mServiceMan->stopRequested()))
     {        
@@ -296,7 +283,7 @@ void CascadeDetectI::process( const Identity &client,
       break;
     }
 
-    const cvac::Labelable& labelable = *(mRunsetIterator->getNext());
+    const cvac::Labelable& labelable = *(mRunsetIterator.getNext());
     {     
       std::vector<cv::Rect> objects = detectObjects( callback, labelable );
       ResultSet resSet = convertResults( labelable, objects );

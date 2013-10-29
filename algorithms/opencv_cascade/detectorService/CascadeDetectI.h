@@ -86,10 +86,6 @@ private:
     bool                     gotModel;
 
     friend cvac::ResultSet detectFunc( cvac::DetectorPtr detector, const char *fname );
-
-    cvac::RunSetWrapper* mRunsetWrapper;
-    cvac::RunSetIterator* mRunsetIterator;
-    cvac::RunSetConstraint mRunsetConstraint;
 };
 
 #endif //_CascadeDetectI_H__
