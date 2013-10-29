@@ -414,7 +414,7 @@ static bool doFileCopy(const std::string fromFile, const std::string toFile)
 {
     char buf[BUFSIZ];
     size_t size;
-
+ 
     FILE* source = fopen(fromFile.c_str(), "rb");
     if (source == NULL)
         return false;
@@ -457,12 +457,12 @@ bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile)
           fprintf(stderr, "!!!!Admin rights required for creating a symbolic link!!!!\n");   
           fprintf(stderr, "!!!!Copying the file instead of creating a symbolic link!!!!\n");   
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-          return doFileCopy(fromFile, toFile);
+          return doFileCopy(toFile, fromFile);
 
       }	  
-      /*printf("failed to create symbolic link for %s\n", toFile.c_str());
+      printf("failed to create symbolic link for %s\n", toFile.c_str());
       printf("symbolic link name %s\n", fromFile.c_str());
-      printf("Error %d\n", err);*/
+      printf("Error %d\n", err);
   }
 #else
 
