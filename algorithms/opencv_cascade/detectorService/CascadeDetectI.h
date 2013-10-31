@@ -46,6 +46,7 @@
 #include <IceUtil/UUID.h>
 #include <util/processRunSet.h>
 #include <util/ServiceManI.h>
+#include <util/RunSetIterator.h>
 
 #include <cv.h>
 
