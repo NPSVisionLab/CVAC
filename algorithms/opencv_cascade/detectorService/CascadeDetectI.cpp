@@ -271,8 +271,7 @@ void CascadeDetectI::process( const Identity &client,
     return;
   } 
   // End - RunsetIterator
-  processRunSet(this, callback, detectFunc, runset, m_CVAC_DataDir, mServiceMan );
-
+ 
   mServiceMan->setStoppable();
   while(mRunsetIterator.hasNext())
   {
