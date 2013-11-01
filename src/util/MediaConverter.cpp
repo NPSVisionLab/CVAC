@@ -53,8 +53,10 @@ MediaConverter_openCV_i2i::MediaConverter_openCV_i2i(ServiceManager *_sman)
 bool MediaConverter_openCV_i2i::convert(const string& _srcAbsPath,
                                         const string& _desAbsDir,
                                         const string& _desFilename,
-                                        vector<string>& _resFilename)
+                                        vector<string>& _resFilename,
+                                        vector<string>& _resAuxInfo)
 {
+  _resAuxInfo.clear();
   _resFilename.clear();
   string tDesPath = _desAbsDir + "/" + _desFilename;
 
@@ -97,8 +99,10 @@ MediaConverter_openCV_v2i::~MediaConverter_openCV_v2i()
 bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
                                         const string& _desAbsDir,
                                         const string& _desFilename,
-                                        vector<string>& _resFilename)
+                                        vector<string>& _resFilename,
+                                        vector<string>& _resAuxInfo)
 {
+  _resAuxInfo.clear();
   _resFilename.clear();
    string tDesAbsPath = _desAbsDir + "/" + _desFilename;
 
@@ -157,6 +161,7 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
         if(imwrite(tDesAbsPath,tMatFrame))
         {
           _resFilename.push_back(tfileNameNew);
+          _resAuxInfo.push_back(ss.str());
         }
         else
         {
