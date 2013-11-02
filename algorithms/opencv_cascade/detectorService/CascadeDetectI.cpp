@@ -271,7 +271,7 @@ void CascadeDetectI::process( const Identity &client,
     return;
   } 
   // End - RunsetIterator
-
+ 
   mServiceMan->setStoppable();
   while(mRunsetIterator.hasNext())
   {
