@@ -280,8 +280,13 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   )
   #For Python set a variable for cv2 dynamic library
   #
+IF (WIN32)
+  FIND_FILE(OPENCV_CV2_LIB cv2.pyd
+               HINTS ${OpenCV_DIR}/python/2.6)
+ELSE (WIN32)
   FIND_LIBRARY(OPENCV_CV2_LIB cv2
-               HINTS ${OpenCV_LIB_DIR_OPT}/python2.6/site-packages/cv2)
+               HINTS ${OpenCV_LIB_DIR_OPT}/python2.6/site-packages)
+ENDIF (WIN32)
 
   IF( OpenCV_DIR )
     MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
