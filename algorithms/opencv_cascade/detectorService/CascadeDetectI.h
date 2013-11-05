@@ -50,6 +50,28 @@
 
 #include <cv.h>
 
+class DetectorPropertiesI : public cvac::DetectorProperties
+{
+ public:
+  /**
+   * Initialize fields for this detector.
+   */
+  DetectorPropertiesI();
+  /**
+   * Read the string properties and convert them to member data values.
+   */
+  bool readProps();
+  /**
+   * Convert member data values into string properties.
+   */
+  bool writeProps();
+  /**
+   * Load the struct's values into our class ignoring uninitialized values
+   */
+ void load(const DetectorProperties &p);
+
+};
+
 class CascadeDetectI : public cvac::Detector, public cvac::StartStop
 {
 public:
@@ -84,6 +106,7 @@ private:
     cv::CascadeClassifier *cascade;
     std::string              cascade_name;
     bool                     gotModel;
+    DetectorPropertiesI   *mDetectorProps;
 
     friend cvac::ResultSet detectFunc( cvac::DetectorPtr detector, const char *fname );
 };

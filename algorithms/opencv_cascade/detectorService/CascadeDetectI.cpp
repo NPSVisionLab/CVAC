@@ -168,6 +168,10 @@ bool CascadeDetectI::initialize( const DetectorProperties& detprops,
                                  const FilePath& model,
                                  const Current& current)
 {
+  // Create DetectorPropertiesI class to allow the user to modify detection
+  // parameters
+  mDetectorProps = new DetectorPropertiesI();
+
   // Get the default CVAC data directory as defined in the config file
   localAndClientMsg(VLogger::DEBUG, NULL, "Initializing CascadeDetector...\n");
   Ice::PropertiesPtr iceprops = (current.adapter->getCommunicator()->getProperties());
@@ -201,6 +205,11 @@ bool CascadeDetectI::initialize( const DetectorProperties& detprops,
   }
 
   localAndClientMsg(VLogger::INFO, NULL, "CascadeDetector initialized.\n");
+  // Set the default window size to what the cascade was trained as.
+  // User can override this by passing in properties in the process call.
+  cv::Size orig = cascade->getOriginalWindowSize(); // Default to size trained with
+  mDetectorProps->nativeWindowSize.width = orig.width;
+  mDetectorProps->nativeWindowSize.height = orig.height;
   return true;
 }
 
@@ -236,7 +245,7 @@ void CascadeDetectI::process( const Identity &client,
             current.con->createProxy(client)->ice_oneway());
 
   initialize( detprops, model, current );
-
+  mDetectorProps->load(detprops);
   //////////////////////////////////////////////////////////////////////////
   // Setup - RunsetConstraints
   cvac::RunSetConstraint mRunsetConstraint;  
@@ -319,11 +328,25 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
   //localAndClientMsg(VLogger::DEBUG, callback, "About to process 2 %s\n", fullname.c_str());
   cv::cvtColor(src_img, gray_img, CV_RGB2GRAY);
   cv::equalizeHist(gray_img, eq_img);
-  float scale_factor = 1.2f; // TODO: make this part of detector parameters
-  int min_neighbors = 3; // TODO: make this a parameter
   int flags = 0;       // TODO: make this a parameter
-  cv::Size orig = cascade->getOriginalWindowSize(); // TODO: make this a parameter, for now use same as cascade
-  cascade->detectMultiScale(eq_img, results, scale_factor, min_neighbors, flags, orig); 
+  cv::Size minwinSize;
+  cv::Size maxwinSize;
+  maxwinSize.width = 0;
+  maxwinSize.height = 0;
+  if (mDetectorProps->slideStartSize.width == 0 || mDetectorProps->slideStartSize.width == 0 || 
+      mDetectorProps->slideStopSize.width == 0 || mDetectorProps->slideStopSize.width == 0)
+  {  // no min max windows specified so use nativeWindowSize
+      minwinSize.width = mDetectorProps->nativeWindowSize.width;
+      minwinSize.height = mDetectorProps->nativeWindowSize.height;
+  }else
+  { // min max specified
+      maxwinSize.width = mDetectorProps->slideStopSize.width;
+      maxwinSize.height = mDetectorProps->slideStopSize.height;
+      minwinSize.width = mDetectorProps->slideStartSize.width;
+      minwinSize.height = mDetectorProps->slideStartSize.height;
+  }
+  cascade->detectMultiScale(eq_img, results, mDetectorProps->slideScaleFactor, 
+                  mDetectorProps->minNeighbors, flags, minwinSize, maxwinSize);
 
   return results;
 }
@@ -390,3 +413,58 @@ bool CascadeDetectI::cancel(const Identity &client, const Current& current)
   localAndClientMsg(VLogger::WARN, NULL, "cancel not implemented.");
   return false;
 }
+
+//----------------------------------------------------------------------------
+DetectorPropertiesI::DetectorPropertiesI()
+{
+    verbosity = 0;
+    isSlidingWindow = true;
+    canSetSensitivity = false;
+    canPostProcessNeighbors = true;
+    videoFPS = 0;
+    nativeWindowSize.width = 0;
+    nativeWindowSize.height = 0;
+    falseAlarmRate = 0.0;
+    recall = 0.0;
+    minNeighbors = 3;
+    slideScaleFactor = 1.2f;
+    slideStartSize.width = 0;
+    slideStartSize.height = 0;
+    slideStopSize.width = 0;
+    slideStopSize.height = 0;
+    slideStepX = 0.0f;
+    slideStepY = 0.0f;
+}
+
+void DetectorPropertiesI::load(const DetectorProperties &p) 
+{
+    verbosity = p.verbosity;
+    props = p.props;
+    videoFPS = p.videoFPS;
+    //Only load values that are not zero
+    if (p.nativeWindowSize.width > 0 && p.nativeWindowSize.height > 0)
+        nativeWindowSize = p.nativeWindowSize;
+    if (p.minNeighbors > -1)
+        minNeighbors = p.minNeighbors;
+    if (p.slideScaleFactor > 0)
+        slideScaleFactor = p.slideScaleFactor;
+    if (p.slideStartSize.width > 0 && p.slideStartSize.height > 0)
+        slideStartSize = p.slideStartSize;
+    if (p.slideStopSize.width > 0 && p.slideStopSize.height > 0)
+        slideStopSize = p.slideStopSize;
+    readProps();
+}
+
+bool DetectorPropertiesI::readProps()
+{
+    // No properties to read
+    bool res = true;
+    return res;
+}
+
+bool DetectorPropertiesI::writeProps()
+{
+    bool res = true;
+    return res;
+}
+

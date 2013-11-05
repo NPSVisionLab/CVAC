@@ -287,6 +287,8 @@ ELSE (WIN32)
   FIND_LIBRARY(OPENCV_CV2_LIB cv2
                HINTS ${OpenCV_LIB_DIR_OPT}/python2.6/site-packages)
 ENDIF (WIN32)
+# And the directory the cv2 file came from
+GET_FILENAME_COMPONENT( OPENCV_CV2_DIR ${OPENCV_CV2_LIB} PATH )
 
   IF( OpenCV_DIR )
     MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )

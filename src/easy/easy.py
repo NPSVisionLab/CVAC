@@ -711,7 +711,7 @@ def train( trainer, runset, trainerProps=None, callbackRecv=None ):
 
 def getDetectorProperties(detector):
     ''' Get the detector properties for this detector'''
-    detectProps = detector.getTrainerProperties()
+    detectProps = detector.getDetectorProperties()
     if not detectProps:
         raise RuntimeError("Getting detector properties failed")
     return detectProps
