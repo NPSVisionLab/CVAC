@@ -284,7 +284,7 @@ IF (WIN32)
   FIND_FILE(OPENCV_CV2_LIB cv2.pyd
                HINTS ${OpenCV_DIR}/python/2.6)
 ELSE (WIN32)
-  FIND_LIBRARY(OPENCV_CV2_LIB cv2
+  FIND_LIBRARY(OPENCV_CV2_LIB cv2.so
                HINTS ${OpenCV_LIB_DIR_OPT}/python2.6/site-packages)
 ENDIF (WIN32)
 # And the directory the cv2 file came from
