@@ -278,6 +278,11 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv
   )
+  #For Python set a variable for cv2 dynamic library
+  #
+  FIND_LIBRARY(OPENCV_CV2_LIB cv2
+               HINTS ${OpenCV_LIB_DIR_OPT}/python2.6/site-packages/cv2)
+
   IF( OpenCV_DIR )
     MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
   ENDIF()

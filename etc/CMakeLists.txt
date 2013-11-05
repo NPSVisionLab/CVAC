@@ -26,11 +26,9 @@ ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 
 IF (WIN32)
     SET( SCRIPT_EXT bat )
-    SET (OPENCV_3RDPARTY_DIR "${CMAKE_SOURCE_DIR}/3rdparty/opencv/python/2.6" )
     SET (CV2_EXT "pyd")
 ELSE (WIN32)
     SET( SCRIPT_EXT sh )
-    SET (OPENCV_3RDPARTY_DIR "${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python2.6/site-packages" )
     SET (CV2_EXT "so")
 ENDIF (WIN32)
 
@@ -63,8 +61,8 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
       PATTERN *.py)
 # Next copy over opencv files
-FILE (COPY ${OPENCV_3RDPARTY_DIR}/cv.py DESTINATION ${PYTHON_BUILD_DIR} )
-FILE (COPY ${OPENCV_3RDPARTY_DIR}/cv2.${CV2_EXT} DESTINATION ${PYTHON_BUILD_DIR} )
+FILE (COPY ${OPENCV_CV2_LIB} DESTINATION ${PYTHON_BUILD_DIR} )
+FILE (COPY ${OPENCV_CV2_LIB} DESTINATION ${PYTHON_BUILD_DIR} )
 
 # Next copy over ice. Since we need to change directory name
 # from python to ice copy over the files.  Not sliced so do it now
