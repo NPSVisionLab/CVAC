@@ -38,7 +38,6 @@
 #include <iostream>
 #include <vector>
 
-
 #include <Ice/Communicator.h>
 #include <Ice/Initialize.h>
 #include <Ice/ObjectAdapter.h>
@@ -253,6 +252,7 @@ void CascadeDetectI::process( const Identity &client,
   mRunsetConstraint.addType("tif");
   mRunsetConstraint.addType("jpg");
   // End - RunsetConstraints
+
   //////////////////////////////////////////////////////////////////////////
   // Start - RunsetWrapper
   mServiceMan->setStoppable();  
@@ -289,15 +289,36 @@ void CascadeDetectI::process( const Identity &client,
       mServiceMan->stopCompleted();
       break;
     }
-
-    const cvac::Labelable& labelable = *(mRunsetIterator.getNext());
-    {     
+  
+    cvac::Labelable& labelable = *(mRunsetIterator.getNext());
+    {
       std::vector<cv::Rect> objects = detectObjects( callback, labelable );
-      ResultSet resSet = convertResults( labelable, objects );
-      callback->foundNewResults(resSet);
+      addResult(mRunsetIterator.getCurrentResult(),labelable,objects);      
     }
-  }
+  }  
+  callback->foundNewResults(mRunsetIterator.getResultSet());
   mServiceMan->clearStop();
+
+  //////////////////////////////////////////////////////////////////////////
+  // Example to show results
+  cvac::ResultSet& tResSet = mRunsetIterator.getResultSet();
+  for(int kres=0;kres<tResSet.results.size();kres++)
+  {
+    localAndClientMsg( VLogger::DEBUG, NULL, "Original= %s, Found= %i labels\n", 
+      tResSet.results[kres].original->sub.path.filename.c_str(),
+      tResSet.results[kres].foundLabels.size());
+
+    for(int kfnd=0;kfnd<tResSet.results[kres].foundLabels.size();kfnd++)
+    {
+      LabeledTrackPtr _tPtr = static_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());      
+      if(_tPtr->lab.hasLabel)
+      {
+        if(_tPtr->keyframesLocations[0].frame.framecnt != -1)
+          localAndClientMsg( VLogger::DEBUG, NULL, "at Frame=%i\n",_tPtr->keyframesLocations[0].frame.framecnt);
+      }     
+    }    
+  }  
+  //////////////////////////////////////////////////////////////////////////
 }
 
 /** run the cascade on the image described in lbl,
@@ -351,6 +372,45 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
   return results;
 }
 
+/** add OpenCV Result to CVAC Result
+ */
+void CascadeDetectI::addResult(cvac::Result& _res,cvac::Labelable& _converted,
+                               std::vector<cv::Rect> _rects)
+{	
+  int detcount = _rects.size();
+  localAndClientMsg(VLogger::DEBUG, NULL, "detections: %d\n", detcount); 
+
+  if(_rects.size()>0)
+  {
+    LabeledTrackPtr newFound = new LabeledTrack();    
+    for(std::vector<cv::Rect>::iterator it = _rects.begin(); it != _rects.end(); ++it)
+    {
+      newFound->lab.hasLabel = true;
+      newFound->lab.name = cascade_name;
+      newFound->confidence = 1.0f;
+
+      cv::Rect r = *it;
+
+      BBox* box = new BBox();
+      box->x = r.x;
+      box->y = r.y;
+      box->width = r.width;
+      box->height = r.height;
+
+      FrameLocation floc;
+      floc.loc = box;        
+      
+      if(!_converted.lab.hasLabel && !_converted.lab.name.empty())
+        floc.frame.framecnt = atoi(_converted.lab.name.c_str());  //This info. is frameNumber.
+      else
+        floc.frame.framecnt = -1; 
+
+      newFound->keyframesLocations.push_back(floc);
+    }
+    _res.foundLabels.push_back( newFound );
+  }  
+}
+
 /** convert from OpenCV result to CVAC ResultSet
  */
 ResultSet CascadeDetectI::convertResults( const Labelable& original, std::vector<cv::Rect> rects)
@@ -387,6 +447,7 @@ ResultSet CascadeDetectI::convertResults( const Labelable& original, std::vector
   
   return resSet;
 }
+
 
 // callback for processRunSet
 ResultSet detectFunc(DetectorPtr detector, const char *fname)

@@ -173,8 +173,10 @@ void RunSetWrapper::addToList(const LabelablePtr _pla,const rsMediaType _type)
     return;
   }
 
-  mList.push_back(_pla);
-  mListType.push_back(_type);
+  cvac::Result  _result;
+  _result.original = _pla;
+  mResultSet.results.push_back(_result);
+  mResultSetType.push_back(_type);
 }
 
 //---------------------------------------------------------------------------
@@ -321,36 +323,34 @@ bool RunSetWrapper::makeBasicList_parse(const string& _absDir,bool _recursive,
     return true;
 }
 
-vector<LabelablePtr>& RunSetWrapper::getList()
+ResultSet& RunSetWrapper::getResultSet()
 {
-  return mList;
+  return mResultSet;
 }
 
-vector<rsMediaType>& RunSetWrapper::getListType()
+vector<rsMediaType>& RunSetWrapper::getResultSetType()
 {
-  return mListType;
+  return mResultSetType;
 }
-
 
 void RunSetWrapper::showList()
 {
   cout << "RunSetWrapper Lists ========\n";
 
-  vector<LabelablePtr>::iterator tItr = mList.begin();
-
   LabelablePtr tpla;
-  for(;tItr!=mList.end();tItr++)
+  for(int i=0;i<mResultSet.results.size();i++)
   {
-    tpla = (*tItr);
-    string tRelDir,tFname,tRelPath;
+    tpla = mResultSet.results[i].original;
     
+    string tRelDir,tFname,tRelPath;
+
     tRelDir = tpla->sub.path.directory.relativePath;
     tFname = tpla->sub.path.filename;
     if(tRelDir.compare("")==0)
       tRelPath = tFname; 
     else
       tRelPath = tRelDir + "/" + tFname; 
-    cout << "Item: " << tRelPath << '\n';	
+    cout << "Item: " << tRelPath << '\n';
   }
 }
 

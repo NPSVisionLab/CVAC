@@ -53,9 +53,9 @@ RunSetIterator::RunSetIterator(RunSetWrapper* _rsw,RunSetConstraint& _cons,
   if(_rsw != NULL)
   {
     mMediaRootDirectory = _rsw->getRootDir();
-    mSrcList = _rsw->getList();
-    mSrcListType = _rsw->getListType();
-    assert(mSrcList.size() == mSrcListType.size());
+    mResultSet = _rsw->getResultSet();
+    mResultSetType = _rsw->getResultSetType();
+    assert(mResultSet.results.size() == mResultSetType.size());
   }      
 
   mConstraintType = _cons.mimeTypes;
@@ -82,12 +82,7 @@ RunSetIterator::~RunSetIterator()
 void RunSetIterator::clear()
 {
   mList.clear();
-}
-
-void RunSetIterator::initIterator(vector<LabelablePtr>& _list)
-{
-  mList = _list;  
-  initIterator();
+  mListOrginalIdx.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -100,7 +95,7 @@ bool RunSetIterator::isInConstraintType(const rsMediaType& _type)
 }
 
 //---------------------------------------------------------------------------
-void RunSetIterator::addToList(const LabelablePtr _pla)
+void RunSetIterator::addToList(const LabelablePtr _pla,int _originalIdx)
 {
   if(_pla==NULL)
   {
@@ -109,16 +104,15 @@ void RunSetIterator::addToList(const LabelablePtr _pla)
   }
 
   mList.push_back(_pla);  
+  mListOrginalIdx.push_back(_originalIdx);
 }
 
-
 //---------------------------------------------------------------------------
-bool RunSetIterator::makeList(vector<LabelablePtr>& _srclist,
-                              vector<rsMediaType>& _srclistType)
+bool RunSetIterator::makeList(ResultSet& _resultSet,
+                              vector<rsMediaType>& _resultSetType)
 {
   clear();
 
-  rsMediaType tTypeSrc;
   string tAbsPath,tRelDir,tFname;
 
   bool tFlagMakeDirectory = true;
@@ -126,27 +120,24 @@ bool RunSetIterator::makeList(vector<LabelablePtr>& _srclist,
   std::ostringstream tConvNum2Str;
   tConvNum2Str << rand();
   mMediaTempDirectory = "converted_" + tConvNum2Str.str();
-
-  vector<LabelablePtr>::iterator tItrSrc = _srclist.begin();
-  vector<rsMediaType>::iterator tItrSrcType = _srclistType.begin();
-  for(;tItrSrc!=_srclist.end();tItrSrc++,tItrSrcType++)
+  
+  for(int k=0;k<_resultSet.results.size();k++)  
   {
     if((mServiceMan != NULL) && (mServiceMan->stopRequested()))
     {        
       mServiceMan->stopCompleted();
       return false;
     }
-
-    tTypeSrc = (*tItrSrcType);
-    if(isInConstraintType(*tItrSrcType))
-      addToList(*tItrSrc);
+    
+    if(isInConstraintType(_resultSetType[k]))
+      addToList(_resultSet.results[k].original,k);
     else 
     { 
       bool tFlagConversion = false;
       mConstraintTypeItr=mConstraintType.begin();
       for(;mConstraintTypeItr!=mConstraintType.end();mConstraintTypeItr++)
-      {        
-        mConvertibleItr = mConvertible.find(tTypeSrc + "2" + (*mConstraintTypeItr));
+      {         
+        mConvertibleItr = mConvertible.find(_resultSetType[k] + "2" + (*mConstraintTypeItr));
         if(mConvertibleItr!=mConvertible.end())
         {
           if(tFlagMakeDirectory)
@@ -154,8 +145,9 @@ bool RunSetIterator::makeList(vector<LabelablePtr>& _srclist,
             makeDirectory(mMediaRootDirectory + "/" + mMediaTempDirectory);
             tFlagMakeDirectory = false;
           }
-          if(!convertAndAddToList((*tItrSrc),(*mConstraintTypeItr),
-            mConvertibleItr->second,mMediaTempDirectory))
+
+          if(!convertAndAddToList(_resultSet.results[k].original,(*mConstraintTypeItr),
+            mConvertibleItr->second,mMediaTempDirectory,k))
             return false;
 
           tFlagConversion = true;
@@ -166,10 +158,21 @@ bool RunSetIterator::makeList(vector<LabelablePtr>& _srclist,
       if(!tFlagConversion)
       {
         localAndClientMsg(VLogger::WARN, NULL,
-          "No conversion: %s\n",(*tItrSrc)->sub.path.filename.c_str());
+          "No conversion: %s\n",(_resultSet.results[k].original)->sub.path.filename.c_str());
       }
     }
   } 
+
+  return true;
+}
+
+//---------------------------------------------------------------------------
+bool RunSetIterator::makeList(ResultSet& _resultSet)
+{
+  clear(); 
+
+  for(int k=0;k<_resultSet.results.size();k++)  
+    addToList(_resultSet.results[k].original,k);
 
   return true;
 }
@@ -178,7 +181,7 @@ bool RunSetIterator::makeList(vector<LabelablePtr>& _srclist,
 bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
                                          const rsMediaType& _targerType,
                                          MediaConverter* _pConv,
-                                         const string& _rDirTemp)
+                                         const string& _rDirTemp,int _originalIdx)
 {
   string tFileNameOld = _pla->sub.path.filename;
   string tFileNameNew = tFileNameOld + "." + _targerType;
@@ -190,10 +193,11 @@ bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
   string tAbsPathNew = tAbsDirNew + "/" + tFileNameNew;
 
   vector<string> tListFileName;
-  if(_pConv->convert(tAbsPathOld,tAbsDirNew,tFileNameNew,tListFileName))
+  vector<string> tAuxInfo;
+  if(_pConv->convert(tAbsPathOld,tAbsDirNew,tFileNameNew,tListFileName,tAuxInfo))
   {
     vector<string>::iterator tItrFilename = tListFileName.begin();
-    for(;tItrFilename!=tListFileName.end();tItrFilename++)
+    for(int _idx=0;tItrFilename!=tListFileName.end();tItrFilename++,_idx++)
     {
       if((mServiceMan != NULL) && (mServiceMan->stopRequested()))
       {        
@@ -206,7 +210,24 @@ bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
       _la->sub.isVideo = !(_la->sub.isImage);
       _la->sub.path.filename = (*tItrFilename);
       _la->sub.path.directory.relativePath = tRDirNew;
-      addToList(_la);
+
+      if(!tAuxInfo.empty())
+      {
+        _la->lab.hasLabel = false;  
+        _la->lab.name = tAuxInfo[_idx];
+      }
+      else
+        _la->lab.name = "";
+      /*
+      if(!tAuxInfo.empty())
+      {
+        FrameLocation _tFrm;
+        _tFrm.frame.time = 0;
+        _tFrm.frame.framecnt = atoi(tAuxInfo[_idx].c_str());
+        (static_cast<LabeledTrack*>(_la.get()))->keyframesLocations.push_back(_tFrm);
+      }
+      */
+      addToList(_la,_originalIdx);
     }
     return true;
   }
@@ -218,15 +239,16 @@ bool RunSetIterator::convert()
 { 
   mFlagInitialize = true;
 
-  if(mSrcList.empty() || mConstraintType.empty())
-  {
+  if(mResultSet.results.size()==0 || mConstraintType.empty())
+  {    
     localAndClientMsg(VLogger::WARN, NULL,"Empty RunSetWrapper or constraints.\n");
-    initIterator(mSrcList);  //as it is
+    if(makeList(mResultSet))
+      initIterator(); //as it is
     mFlagInitialize = false;
   }    
   else
   {
-    if(makeList(mSrcList,mSrcListType))
+    if(makeList(mResultSet,mResultSetType))
       initIterator();
     else
       mFlagInitialize = false;      
@@ -265,7 +287,10 @@ bool RunSetIterator::hasNext()
 LabelablePtr RunSetIterator::getNext()
 {
   if(hasNext())
+  {
+    mListOrginalIdxItr++;
     return (*(mListItr++));
+  }
   else
   {
     localAndClientMsg(VLogger::WARN, NULL,
@@ -273,6 +298,17 @@ LabelablePtr RunSetIterator::getNext()
     return NULL;
   }
 }
+
+Result& RunSetIterator::getCurrentResult()
+{  
+  return mResultSet.results[*(mListOrginalIdxItr-1)];
+}
+
+ResultSet& RunSetIterator::getResultSet()
+{
+  return mResultSet;
+}
+
 
 void RunSetIterator::makeConversionList()
 {  
