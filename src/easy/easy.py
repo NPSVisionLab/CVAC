@@ -694,7 +694,7 @@ def train( trainer, runset, trainerProps=None, callbackRecv=None ):
     trainer.ice_getConnection().setAdapter(adapter)
 
     # connect to trainer, initialize with a verbosity value, and train
-    if not trainerProps:
+    if trainerProps != None:
         tp = trainerProps
     else:
         tp = cvac.TrainerProperties()
@@ -785,7 +785,7 @@ def detect( detector, detectorData, runset, detectorProps=None, callbackRecv=Non
 
     # connect to detector, initialize with a verbosity value
     # and the trained model, and run the detection on the runset
-    if not detectorProps:
+    if detectorProps == None:
         props = cvac.DetectorProperties()
     else:
         props = detectorProps
