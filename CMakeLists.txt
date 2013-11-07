@@ -267,8 +267,8 @@ FIND_PACKAGE(LibArchive REQUIRED)
 IF( PYTHONINTERP_FOUND )
   # make sure it's version 2.6 or else error
   IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
-    MESSAGE( SEND_ERROR "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
-    MESSAGE( SEND_ERROR "Please specify PYTHON_EXECUTABLE manually." )
+    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
   ENDIF()
 ENDIF( PYTHONINTERP_FOUND )
 
@@ -282,10 +282,11 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   #
 IF (WIN32)
   FIND_FILE(OPENCV_CV2_LIB cv2.pyd
-               HINTS ${OpenCV_DIR}/python/2.6)
+               HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
 ELSE (WIN32)
   FIND_LIBRARY(OPENCV_CV2_LIB cv2.so
-               HINTS ${OpenCV_LIB_DIR_OPT}/python2.6/site-packages)
+               HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
+                     ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
 ENDIF (WIN32)
 # And the directory the cv2 file came from
 GET_FILENAME_COMPONENT( OPENCV_CV2_DIR ${OPENCV_CV2_LIB} PATH )
