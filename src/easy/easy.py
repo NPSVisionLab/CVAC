@@ -406,8 +406,8 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
                 # POSITIVES in keys[1]
                 poskeyid = 1
             if poskeyid != -1:
-                pospur = cvac.Purpose( cvac.PurposeType.POSITIVE, -1 )
-                negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, -1 )
+                pospur = cvac.Purpose( cvac.PurposeType.POSITIVE, 1 )
+                negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, 0 )
                 poskey = pur_categories_keys[poskeyid]
                 negkey = pur_categories_keys[1-poskeyid]
                 addPurposedLabelablesToRunSet( rnst, pospur, samples[poskey] )
