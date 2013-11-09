@@ -266,15 +266,15 @@ FIND_PACKAGE(LibArchive REQUIRED)
 # ICE 3.4.2 is pre-built against Python 2.6
 IF( PYTHONINTERP_FOUND )
   # make sure it's version 2.6 or else error
-  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
-    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
-    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
-  ENDIF()
+#  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
+#    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+#    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
+#  ENDIF()
 ENDIF( PYTHONINTERP_FOUND )
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   FIND_PACKAGE( OpenCV 2.4 REQUIRED
-                            core imgproc highgui ml features2d nonfree objdetect
+                            core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv
   )
