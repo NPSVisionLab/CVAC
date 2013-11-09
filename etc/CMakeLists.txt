@@ -21,15 +21,10 @@ ELSE( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
   SET( START_JAVA_SERVICES 0 )
 ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 
-# start Python services if we can find the interpreter:
-# CMakeLists in the root dir will set PYTHON_EXECUTABLE if found
-
 IF (WIN32)
     SET( SCRIPT_EXT bat )
-    SET (CV2_EXT "pyd")
 ELSE (WIN32)
     SET( SCRIPT_EXT sh )
-    SET (CV2_EXT "so")
 ENDIF (WIN32)
 
 CONFIGURE_FILE( startIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/startIcebox.${SCRIPT_EXT} )
@@ -61,8 +56,8 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
       PATTERN *.py)
 # Next copy over opencv files
-FILE (COPY ${OPENCV_CV2_LIB} DESTINATION ${PYTHON_BUILD_DIR} )
-FILE (COPY ${OPENCV_CV2_DIR}/cv.py DESTINATION ${PYTHON_BUILD_DIR} )
+FILE (COPY ${OPENCV_PY_LIB} DESTINATION ${PYTHON_BUILD_DIR} )
+FILE (COPY ${OPENCV_PY_PY} DESTINATION ${PYTHON_BUILD_DIR} )
 
 # Next copy over ice. Since we need to change directory name
 # from python to ice copy over the files.  Not sliced so do it now
