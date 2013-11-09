@@ -2,11 +2,10 @@
 #define _DATA_ICE
 
 module cvac {
-  // should this be UNPURPOSED instead of UNLABELED?
-  enum PurposeType {UNLABELED, POSITIVE, NEGATIVE, MULTICLASS, ANY};
+  enum PurposeType {UNPURPOSED, POSITIVE, NEGATIVE, MULTICLASS, ANY};
 
   struct Purpose {
-    PurposeType ptype = UNLABELED;
+    PurposeType ptype = UNPURPOSED;
     int classID = 0; // if MULTICLASS
   };
 
@@ -96,8 +95,9 @@ module cvac {
    * LabelProperties.  The Semantics refer to a URL that specifies the
    * meaning of the name strings.
    */
+  const bool CVACFALSE = false;
   struct Label {
-    bool hasLabel;
+    bool hasLabel = CVACFALSE;
     string name;
     LabelProperties properties;
     Semantics semantix;
@@ -176,7 +176,7 @@ module cvac {
    */
   class LabeledVideoSegment extends Labelable {
     VideoSeekTime start;    // must be specified; if this segments gets faded in (or other soft transition),
-                            // and last are expected to be all-inclusive (including the transition)
+                            // start and last are expected to be all-inclusive (including the transition)
     VideoSeekTime last;     // ==NULL iff only one frame, otherwise inclusive to last frame of this segment
     VideoSeekTime startAfterTx;  // if smooth transition, when is the transition done and when does the segment really starts?
     VideoSeekTime lastBeforeTx;  // if smooth transition, what is the last non-transition frame of the segment
@@ -211,7 +211,7 @@ module cvac {
    * be reported bit by bit.
    */
   sequence<Result> ResultList;
-  struct ResultSetV2 {
+  struct ResultSet {
     ResultList results;
   };
 

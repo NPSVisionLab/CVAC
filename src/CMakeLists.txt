@@ -29,16 +29,22 @@ ENDIF()
 #
 # Command to run slice2java to produce all .java files
 #
-SET ( SLICE_ARGS ${SLICE_FILES} -I${ICE_ROOT}/slice --output-dir ${SLICE_OUTPUT_PATH} )
-ADD_CUSTOM_COMMAND(
-    OUTPUT ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-    COMMAND ${ICE_SLICE2JAVA_EXECUTABLE}
-    ARGS ${SLICE_ARGS}
-    DEPENDS ${SLICE_FILES}
-    COMMENT "Generating .java files from .ice sources." )
-MESSAGE ( STATUS "Java source files will be created from Slice definitions using this command:" )
-MESSAGE ( STATUS "${ICE_SLICE2JAVA_EXECUTABLE} ${SLICE_ARGS}" )
+SET ( SLICE_ARGS -I${ICE_ROOT}/slice --output-dir ${SLICE_OUTPUT_PATH} )
 
+#    COMMAND "${ICE_SLICE2JAVA_EXECUTABLE}"  ARGS "${SLICE_ARGS}"
+
+ADD_CUSTOM_COMMAND(
+    OUTPUT "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java"
+    COMMAND "${ICE_SLICE2JAVA_EXECUTABLE}"  ARGS ${SLICE_FILES} ${SLICE_ARGS}
+    DEPENDS ${SLICE_FILES}
+    WORKING_DIRECTORY "${CVAC_ROOT_DIR}/src"
+    COMMENT "Generating (slicing) .java files from .ice sources")
+MESSAGE ( STATUS "Java source files will be created from Slice definitions using this command:" )
+
+MESSAGE ( STATUS "${ICE_SLICE2JAVA_EXECUTABLE} ${SLICE_FILES} ${SLICE_ARGS}" )
+
+
+             
 
 SET( CORPUS_SOURCE_FILES
     cvac/corpus/CorpusI.java
@@ -84,9 +90,9 @@ IF( ${BUILD_CORPUS_SERVER} )
   IF( NOT javatar.jar )
     MESSAGE( SEND_ERROR "Need javatar.jar to build Corpus server")
   ENDIF( NOT javatar.jar )
-  FIND_JAR( IO.jar NAMES commons-io-1.3.2 PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
+  FIND_JAR( IO.jar NAMES commons-io-2.4 PATHS ${CVAC_ROOT_DIR}/3rdparty/lib )
   IF( NOT IO.jar )
-    MESSAGE( SEND_ERROR "Need commons-io-1.3.2 to build Corpus server")
+    MESSAGE( SEND_ERROR "Need commons-io-2.4 to build Corpus server")
   ENDIF( NOT IO.jar )
 ENDIF( ${BUILD_CORPUS_SERVER} )
 
@@ -119,31 +125,34 @@ endfunction()
 # Create a jar file for the sliced Corpus files only
 # and then some for all, including the hardcoded "implementation" files;
 # The former is handy to have if the hardcoded ones are built in another IDE
-IF (MSVC10)
+IF (MSVC)
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cvac)
 add_custom_target(CvacSliced
                    COMMAND ${Java_JAVAC_EXECUTABLE} -d ${CMAKE_CURRENT_BINARY_DIR}/cvac -cp "${CMAKE_JAVA_JAR_PATH}" ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar -C ${CMAKE_CURRENT_BINARY_DIR}/cvac .
+                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
-ELSE (MSVC10)
+ELSE (MSVC)
 ADD_JAR( CvacSliced ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
         ${SLICE_OUTPUT_PATH}/cvac/*.java
         DEPENDS
             ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
 )
-ENDIF (MSVC10)
+ENDIF (MSVC)
 
 
 IF( ${BUILD_CORPUS_SERVER} )
 
-IF (MSVC10)
+IF (MSVC)
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/corpus)
-add_custom_target(Corpus
+#ALL causes all corpus.jar to be build always
+add_custom_target(Corpus ALL
                    COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/corpus -cp "${CMAKE_JAVA_JAR_PATH}" ${CORPUS_SOURCE_FILES} util/*java ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar -C ${CMAKE_CURRENT_BINARY_DIR}/corpus .
+                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
   copy_file( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
-ELSE (MSVC10)
+ELSE (MSVC)
   ADD_JAR( Corpus ${CORPUS_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
         ${SLICE_OUTPUT_PATH}/cvac/*.java
         DEPENDS
@@ -152,19 +161,21 @@ ELSE (MSVC10)
 IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
   INSTALL_JAR( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
 ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )
-ENDIF(MSVC10)
+ENDIF(MSVC)
 
 ENDIF( ${BUILD_CORPUS_SERVER} )
 
 IF( ${BUILD_FILESERVER} )
-IF (MSVC10)
+IF (MSVC)
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fileserver)
-add_custom_target(FileServer
+#ALL causes all FileServer.jar to be build always
+add_custom_target(FileServer ALL
                    COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/fileserver -cp "${CMAKE_JAVA_JAR_PATH}" ${FILESERVER_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar -C ${CMAKE_CURRENT_BINARY_DIR}/fileserver .
+                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
  copy_file( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
-ELSE (MSVC10)
+ELSE (MSVC)
  ADD_JAR( FileServer ${FILESERVER_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
         ${SLICE_OUTPUT_PATH}/cvac/*.java
         DEPENDS
@@ -173,7 +184,7 @@ ELSE (MSVC10)
 IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
   INSTALL_JAR( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
 ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )
-ENDIF (MSVC10)
+ENDIF (MSVC)
 
 
 ENDIF( ${BUILD_FILESERVER} )

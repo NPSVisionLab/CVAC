@@ -5,7 +5,6 @@ from __future__ import print_function
 # export PYTHONPATH="/opt/Ice-3.4.2/python:test/UnitTests/python"
 import sys, traceback
 sys.path.append('''.''')
-import paths
 import Ice
 import Ice
 import IcePy
@@ -96,8 +95,10 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     def test_getDataSet(self):
         print('getDataSet')
         dataRoot = cvac.DirectoryPath( "corpus" );
-        corpusConfigFile1 = cvac.FilePath( dataRoot, "Caltech101.properties" )
+        corpusConfigFile1 = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
         corpus1 = self.cs.openCorpus( corpusConfigFile1 )
+        if not corpus1:
+            raise RuntimeError("Could not open CvacCorpusTest corpus")
         try:
             labels = self.cs.getDataSet( corpus1 )
             raise RuntimeError("the CorpusServer should not be able to get the data",

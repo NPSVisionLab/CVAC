@@ -13,6 +13,10 @@ UserCMakeLists.txt
 /Doxyfile
 /build*
 /dist
+/data/Faces94
+/data/Caltech101
+config.icebox
+config.service
 
 # Compiled source #
 ###################
@@ -24,6 +28,7 @@ UserCMakeLists.txt
 *.so
 *.dylib
 *.a
+*.pyc
 
 # CMake files #
 #############
@@ -53,4 +58,5 @@ Icon?
 ehthumbs.db
 Thumbs.db
 
-include/version.h
+
+include/version.h.repo

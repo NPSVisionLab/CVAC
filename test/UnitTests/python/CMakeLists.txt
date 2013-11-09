@@ -1,6 +1,5 @@
 #
-# CMake script that runs the "python setup.py build" and install
-# methods
+# CMake script for unit tests that are written in Python
 # 
 
 cmake_minimum_required(VERSION 2.6)
@@ -17,30 +16,21 @@ ENDIF()
 
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
 set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
-#    set(DEPS        "${CMAKE_CURRENT_SOURCE_DIR}/module/__init__.py")
 set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build/timestamp")
 
-#    configure_file(${SETUP_PY_IN} ${SETUP_PY})
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/easy/paths.py.in ${CMAKE_CURRENT_SOURCE_DIR}/paths.py)
-
-#    SLICE2PY
-#  /opt/Ice-3.4.2/bin/slice2py -I/opt/Ice-3.4.2/slice ../src/Data.ice ../src/Services.ice
-
-# Not needed since src/easy does this
-#WRAP_SLICE2PY( SLICE_FILES
-#    ${CMAKE_SOURCE_DIR}/src/Files.ice
-#    ${CMAKE_SOURCE_DIR}/src/Data.ice
-#    ${CMAKE_SOURCE_DIR}/src/Services.ice
-#    ${CMAKE_SOURCE_DIR}/src/Corpus.ice
-#)
-
-#    Python build process
-#    add_custom_command(OUTPUT ${OUTPUT}
-#                       COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} build
-#                       COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}
-#                       DEPENDS ${DEPS})
 
 add_custom_target(PythonUnitTests ALL DEPENDS ${SLICE_FILES})
+IF (WIN32)
+    FILE( TO_NATIVE_PATH ${ICE_PYTHON_DIR} ICE_PYTHON_NATIVE )
+    FILE( TO_NATIVE_PATH ${SLICE_OUTPUT_PYTHONDIR} SLICE_OUTPUT_PYTHONDIR_NATIVE )
+    FILE( TO_NATIVE_PATH ${ICE_ROOT}/bin ICE_BIN_NATIVE )
+    SET (MY_PYTHONPATH "${ICE_PYTHON_NATIVE}\;${SLICE_OUTPUT_PYTHONDIR_NATIVE}" )
+    SET (MY_PATH "${ICE_BIN_NATIVE}\;${ICE_PYTHON_NATIVE}\;${PATH}" )
+
+ELSE (WIN32)
+    SET (MY_PYTHONPATH "${ICE_PYTHON_DIR}:${SLICE_OUTPUT_PYTHONDIR}" )
+    SET (MY_PATH "${PATH}" )
+ENDIF (WIN32)
 
 # Test whether a Python client can connect and talk to the Corpus service
 # Note: this currently needs the Java Corpus server started manually
@@ -49,11 +39,23 @@ add_custom_target(PythonUnitTests ALL DEPENDS ${SLICE_FILES})
 ADD_TEST( PythonCorpusTest
   ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/CorpusServerTest.py )
 SET_TESTS_PROPERTIES( PythonCorpusTest
-  PROPERTIES ENVIRONMENT "PYTHONPATH=${ICE_PYTHON_DIR}:${SLICE_OUTPUT_PYTHONDIR}" )
+  PROPERTIES ENVIRONMENT "PYTHONPATH=${MY_PYTHONPATH};PATH=${MY_PATH}")
 
 ADD_TEST( PythonFileServerTest
   ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/FileServerTest.py )
 SET_TESTS_PROPERTIES( PythonFileServerTest
-  PROPERTIES ENVIRONMENT "PYTHONPATH=${ICE_PYTHON_DIR}:${SLICE_OUTPUT_PYTHONDIR}" )
+  PROPERTIES ENVIRONMENT "PYTHONPATH=${MY_PYTHONPATH};PATH=${MY_PATH}")
 
-#    install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")
+ADD_TEST( MiniTutorialTest
+  ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/MiniTutorialTest.py )
+SET_TESTS_PROPERTIES( MiniTutorialTest
+  PROPERTIES ENVIRONMENT "PYTHONPATH=${MY_PYTHONPATH};PATH=${MY_PATH}")
+
+IF( BUILD_WITH_RSI )
+  ADD_TEST( RunsetIteratorTest
+    ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/RunsetIteratorTest.py )
+  SET_TESTS_PROPERTIES( RunsetIteratorTest
+    PROPERTIES ENVIRONMENT "PYTHONPATH=${MY_PYTHONPATH};PATH=${MY_PATH}")
+ENDIF()
+
+INCLUDE (UserCMakeLists.txt OPTIONAL)

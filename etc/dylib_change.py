@@ -42,8 +42,11 @@ def examineFile( fpath ):
     #   ('/opt/Ice-3.4/lib/', '@loader_path/../lib/')
     # for shared libraries in Ice/python, the substitution should be (old, new):
     #   ('/opt/Ice-3.4/lib/', '@loader_path/../lib/')
+    # for libarchive installed via MacPorts, the substitution should be:
+    #   ('/opt/local/lib/', '@loader_path/')
     knownWrong = [('/opt/Ice-3.4/lib/', '@rpath/3rdparty/ICE/lib/')
                   ,('/another/path/to/lib/', '@loader_path/../lib/')
+                  ,('/opt/local/lib/', '@loader_path/')
                   ]
 
     print('examining '+fpath);

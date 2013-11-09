@@ -70,12 +70,20 @@ namespace cvac
      */
    bool directoryExists(const std::string& directory);
 
+   /** Does the supplied file exists?  Must be specified as absolute path.
+     * This implementation may not be able to handle the file which is larger than 2GB. 
+     * @param abspath (directory + filename) to verify
+     * @return True if the file exists, false if not 
+     *         but is not a directory.
+     */
+   bool fileExists(const std::string& abspath);
+
    /** Extract just the path to the supplied fully-qualified file name.
-     * \code getFilePath("c:/temp/foo/myFile.txt"); //returns "c:/temp/foo" \endcode
+     * \code getFileDirectory("c:/temp/foo/myFile.txt"); //returns "c:/temp/foo" \endcode
      * @param fileName the full path and file name
      * @return The extracted path to the supplied fileName
      */
-   std::string getFilePath(const std::string& fileName);
+   std::string getFileDirectory(const std::string& fileName);
 
    /** Return the working directory that exists at the time of this function call
      * @return The current working directory
@@ -109,6 +117,13 @@ namespace cvac
      * @param fileName The full file name, with or without path
      */
    std::string getBaseFileName(const std::string& fileName);
+
+   /**  Get the file extension, excluding the path and the filename.
+     *  \code getFileExtension("/temp/myfile.tar.gz") //returns "tar.gz" \endcode
+     *  @param path (directory + filename) 
+     *  @return Just the extension
+     */
+   std::string getFileExtension(const std::string& path);
 
    /** Remove the contents of the directory and delete the directory.
     *  @return True if successfull
@@ -144,11 +159,34 @@ namespace cvac
    * @param tgtFile
    */
    bool makeSymlinkFile(const std::string linkFullPath, const std::string tgtFile);
-   /** Expand filename based on relative/absolute and config setting
-   * API command.
-   * @param fileName file name to change if its a relative path
-   * @param prefixDir string to prepend
+
+   /** Return a unique temporary file name.  If basedir is not defined 
+   * then the file name is in the current systems temporary file .
+   * @param basedir - Base directory of the temp filename.
+   * @param prefix - Prefix the file name with this.
+   * @return The temp file name including path.
    */
-   std::string expandFilename(std::string fileName, std::string prefixDir);
+
+   std::string getTempFilename( const std::string &basedir="",  
+                                const std::string &prefix = "");
+
+   /** Return a filename formated by the date and time.  If basedir is not defined 
+   * then the file name is a relative filename
+   * @param basedir - Base directory of the dated filename.
+   * @param prefix - Prefix the file name with prefix_.
+   * @return The dated file name including path.
+   */
+   std::string getDateFilename( const std::string &basedir = "", 
+                                   const std::string &prefix = "");
+
+   /** Turn a CVAC path info a file system path
+    * @param fp The filepath to change
+    * @param CVAC_DataDir The CVAC data directory 
+    * @return a string that concatinates CVAC_Dir and the relative path and
+    * filename defined in fp.
+    */
+   std::string getFSPath(const cvac::FilePath &fp, 
+                         const std::string &CVAC_DataDir = "");
+
 };
 #endif // __FILEUTILS_H_INCLUDED__

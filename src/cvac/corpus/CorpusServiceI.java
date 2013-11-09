@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import util.Data_IO_Utils;
 
 /**
  * Implementation for the CorpusService
@@ -83,9 +84,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
             initialize();
         }
         
-        String filename = dataDir + File.separator
-                + file.directory.relativePath + File.separator
-                + file.filename;
+        String filename = Data_IO_Utils.getFSPath(file,  dataDir);
         logger.log(Level.INFO, "request for openCorpus( {0} )", filename);
         try {
             CorpusI cs = cc.addCorpusFromConfig( new File(filename) );
@@ -112,6 +111,27 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
         return null;
     }
 
+    /** A corpus, once opened, is cached in the CorpusService and does not
+     *  update itself if the file system or properties file change.  To
+     *  re-open the corpus and re-load the cache, close it first.  Otherwise,
+     *  closing is optional.
+     * @param __current The Current object for the invocation.
+     **/
+    @Override
+    public void closeCorpus(Corpus corp, Ice.Current __current) 
+    {
+        logger.log(Level.INFO, "request to closeCorpus( {0} )", corp.name);
+        CorpusI cs = checkValidityAndLookup( corp );
+        if (null==cs)
+        {
+            logger.log(Level.WARNING, 
+                       "CorpusServiceI.createLocalMirror: error with corpus {0}", 
+                       corp.name);
+            return;
+        }
+        corpToImp.remove( cs.name );
+    }
+        
     /**
      * Write Corpus to a properties file. 
      * @param __current The Current object for the invocation.
@@ -153,7 +173,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
     {
         CorpusI cs = checkValidityAndLookup( corp );
         // if you're changing this function, please also change localMirrorExists
-        if (cs.isImmutableMirror)
+        if (null!=cs && cs.isImmutableMirror)
         {
             return true;
         }
@@ -170,7 +190,7 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
         CorpusI cs = checkValidityAndLookup( corp );
         // don't query if no local mirror required in the first place;
         // this protects directory-based corpora from being queried
-        if (!cs.isImmutableMirror) return false;
+        if (null==cs || !cs.isImmutableMirror) return false;
         return cs.localMirrorExists();
     }
     
@@ -191,10 +211,11 @@ public class CorpusServiceI extends _CorpusServiceDisp implements IceBox.Service
                     "CorpusServiceI.createLocalMirror: error with corpus {0}", corp.name);
             return;
         }
-        Ice.ObjectPrx base = __current.con.createProxy( cb );
+        logger.log(Level.INFO, "request to createLocalMirror( {0} )", corp.name);
+        Ice.ObjectPrx base = __current.con.createProxy( cb ).ice_oneway();
         CorpusCallbackPrx client = CorpusCallbackPrxHelper.uncheckedCast(base);
-        //client.corpusMirrorCompleted( );
-        cs.createLocalMirror( null );
+        cs.createLocalMirror( client );
+        client.corpusMirrorCompleted( corp );
     }
 
     /**

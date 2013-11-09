@@ -39,10 +39,8 @@
 #define __SERVICEMAN_H__
 
 #include <string>
-//#include <Ice/Ice.h>
-//#include <IceBox/IceBox.h>
-//#include <Services.h>
-
+#include <vector>
+#include <set>
 
 
 /**
@@ -51,34 +49,109 @@
  * has canceled the operation.  If they have then the processing should stop
  * and stopCompleted should be called.  The service names should be the
  * service names defined in config.services. 
+ *
+ * This is the public interface to the ServiceManager, which hides the Ice aspects.
+ * Ice aspects are introduced in the subclass which implements this interface,
+ * specified in ServiceManI.h.
  */
 namespace cvac
 {
-    class ServiceManagerIceService; 
-    class CVAlgorithmService;
+    /**
+     * ClientSandbox - keep track of the client resources handed out.
+     */
+    class ClientSandbox
+    {
+    public:
+        ClientSandbox(const std::string &clientName,
+                      const std::string &CVAC_DataDir);
+        /**
+         * Get the current training directory
+         */
+        std::string getTrainingDir(){ return _trainDir; }
+        /**
+         * Delete the old training directory if it exists and creat a new one
+         */
+        std::string createTrainingDir();
+        /**
+         * Delete the current training directory
+         */
+        void deleteTrainingDir();
+        /*
+         * If the client directory does not exist create it and return it
+         */
+        std::string getClientDir();
+        /**
+         * Get the client name
+         */
+        std::string getClientName() { return _clientName; }
+    private:
+        std::string _clientName;
+        std::string _cvacDataDir;
+        std::string _trainDir;
+        std::string _clientDir;
+        static const char* SANDBOX;
+
+    };
+
+    /**
+     * SandboxManager - Manage allocation of directory and file resources for Services.
+     */
+    class SandboxManager
+    {
+    public:
+        /**
+         * Look and see what directories are there from the last time we where run
+         * and add them to the sandbox list. Clean up any training directories that
+         * failed to get cleaned up because of an exception or early stop.
+         */
+        SandboxManager(const std::string &CVAC_DataDir);
+
+        /**
+         * Request a client name.  This name is based on the service
+         * name and the connection client name gotten from the service manager.
+         */
+        std::string createClientName(const std::string &serviceName,
+                                     const std::string &connectionName); 
+        /**
+         * Create a training directory in the client directory.  If the client directory
+         * does not exist then create it.
+         */
+        std::string createTrainingDir(const std::string &clientName);
+        /**
+         * Delete the training directory.
+         */
+        void deleteTrainingDir(const std::string &clientName);
+        /**
+         * Get the clients training directory
+         */
+        std::string getTrainingDir(const std::string &clientName);
+
+        /**
+         * Create a client directory if this is the first time we have seen this client
+         * else return the existing client directory.
+         */
+        std::string createClientDir(const std::string &clientName);
+        
+    private:
+        std::string mCVAC_DataDir;
+        std::vector<ClientSandbox> mSandboxes;
+        
+   
+    };
+
     /**
      * Class to manage the Ice Service functions
+     *
+     * It has to be created via its subclass ServiceManagerI.
+     *
+     * NOTE: A ServiceManager can manage either a detector or
+     * detectorTrainer but not both!
      */
-    //class ServiceManager : public ::IceBox::Service
+    
     class ServiceManager
     {
     public:
         typedef enum StopStateType {None, Running, Stopping, Stopped} StopState;
-        /**
-         * Constructor for creating a cvac Detector service.
-         * Parms: The Detector instance to be served by this service.
-         */
-        ServiceManager();
-
-        /**
-         * Set The Service that is to be served by this service.
-         * NOTE: A ServiceManager can manage either a detector or
-         * detectorTrainer but not both!
-         * Parms: The Algorithm instance to be served by this service and its name.
-         */
-        void setService(cvac::CVAlgorithmService *service, std::string serviceName);
-
-       
 
         /** 
          * Returns true if a stop has been requested for this service.
@@ -121,40 +194,46 @@ namespace cvac
          *  for the service to acknowlege the stop.
          */
         void waitForStopService();
+
+	/** Look for a property entry in config.service that corresponds to
+	 *  ServiceName.TrainedModel = filename
+	 *  Return filename if found, empty string otherwise.
+	 */
+	virtual std::string getModelFileFromConfig() = 0;
     
         /**
          * Get the service name of this service
          */
         std::string getServiceName();
 
-        /**
-         * Get the icebox name of this service
-         */
-        std::string getIceName();
-
-        /**
-         * Get the icebox name of this service
-         */
-        void setIceName(std::string name);
-
         /*
          * Get the config.service defined data directory
          */
-        std::string getDataDir();
+        virtual std::string getDataDir() = 0;
 
-        /*
-         * Return the ice service
-         */
-        void*         getIceService() { return mIceService; }
+        SandboxManager  *getSandbox() { return mSandbox; }
+  
+        void createSandbox(); 
 
-    private:
-        //::Ice::ObjectAdapterPtr         mAdapter;
-        //cvac::CVAlgorithmService*       mService;
+        static const char *SERVICELOCKFILE;
+
+    protected:
         std::string                     mServiceName;
-        std::string                     mIceName;
         int                             mStopState;
-        ServiceManagerIceService*       mIceService;
+        SandboxManager*                 mSandbox;
+        
     };
+
+    // this could be an unordered_set instead
+    typedef std::set<std::string> StringSet;
+
+    /** Start the services as per config file; this won't re-start
+     * the services if they are already running.  Still, avoid calling
+     * this multiple times because it will access the file system
+     * several times.
+     * It returns the names of running services.
+     */
+    StringSet startServices();
 }
 
 

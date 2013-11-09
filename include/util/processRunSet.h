@@ -63,7 +63,7 @@ namespace cvac
    * Here it is assumed that the detector pointer really points to a
    * DetectorI (a detector instance).
    */
-   typedef ResultSetV2 (*DoDetectFunc) ( DetectorPtr detector, const char *filename);
+   typedef ResultSet (*DoDetectFunc) ( DetectorPtr detector, const char *filename);
 
    /**
    * Process a RunSet calling the passed in DoDetectFunc for each file in
@@ -75,7 +75,11 @@ namespace cvac
                       DoDetectFunc detectFunc, 
                       const RunSet &run, 
                       const std::string &pathPrefix,
-                      ServiceManager *servMan);
+                      ServiceManager *servMan
+                      );
+
+   void sendResultsToClient( const DetectorCallbackHandlerPrx &client, 
+                             const ResultSet& results );
 
    // Check for any chars within the string that could upset the detector
    bool containsIllegalChars(FilePath filePath);
@@ -104,5 +108,11 @@ namespace cvac
     * file names.  These links are stored in the directory name returned and should be
     * deleted after the run set is finished being processed.
     */
-   std::string fixupRunSet( RunSet &runset);
+   std::string fixupRunSet( RunSet &runset, const std::string &CVAC_DataDir);
+
+   /**
+    * Return the remote address name of the client given this current.
+    */
+   std::string getClientConnectionName(const Ice::Current &cur);
+
 }

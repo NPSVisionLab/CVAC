@@ -1,3 +1,14 @@
+#
+# stopIcebox.sh script generated for CVAC version ${CVAC_VERSION}
+#
+
+LOCKFILE=${CMAKE_SOURCE_DIR}/.services_started.lock
+if [ ! -f $LOCKFILE ]
+then
+    echo CVAC services supposedly have not been started \(there is no file \'$LOCKFILE\'\).
+    echo Trying to stop them anyway...
+fi
+
 export PATH=$PATH:/opt/local/bin
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${CVAC_ROOT_DIR}/lib"
 cd ${CVAC_ROOT_DIR}
@@ -14,13 +25,18 @@ then
         if [ "`which pkill`"  != "" ];
         then
             # pkill seems to work better than killall
-            # echo pkill -xf "${PYTHON_EXECUTABLE} $LINE"
-            pkill -xf "/usr/bin/python $LINE"
+            #echo pkill -xf "${PYTHON_EXECUTABLE} $LINE"
+            pkill -xf "${PYTHON_EXECUTABLE} $LINE"
         else
             # echo killall $LINE
             killall $LINE
         fi
     done
+fi
+
+if [ -f $LOCKFILE ]
+then
+    rm -f $LOCKFILE
 fi
 
 echo CVAC services stopped

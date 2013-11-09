@@ -1,2 +1,0 @@
-SET(CTEST_CUSTOM_PRE_TEST "cmd /c call  ${CVAC_ROOT_DIR}/bin/startIcebox.bat")
-SET(CTEST_CUSTOM_POST_TEST "cmd /c start  ${CVAC_ROOT_DIR}/bin/stopIcebox.bat")

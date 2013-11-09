@@ -28,7 +28,7 @@ module cvac {
   interface CorpusCallback {
     /** The CorpusService might or might not call this function to provide
       * updates about the mirror creation progress.
-      * @param corpus Which Corpus this progress report is for.
+      * @param corp Which Corpus this progress report is for.
       * @param numtasks How many tasks there are in total, e.g. download
       *               and extract would be numtasks==2.
       * @param currtask What the number of the current task is, e.g. download==1.
@@ -67,6 +67,13 @@ module cvac {
      *  extract, or otherwise prepare the Corpus, just create a Corpus object.
      */
     Corpus openCorpus( cvac::FilePath file );
+
+    /** A corpus, once opened, is cached in the CorpusService and does not
+     *  update itself if the file system or properties file change.  To
+     *  re-open the corpus and re-load the cache, close it first.  Otherwise,
+     *  closing is optional.
+     */
+    void closeCorpus( Corpus corp );
 
     /** Write Corpus to a metadata file. 
      */

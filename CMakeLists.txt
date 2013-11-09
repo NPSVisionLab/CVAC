@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-cmake_policy( SET CMP0012 OLD )
+cmake_policy( SET CMP0012 NEW)
 
 IF(WIN32)
     # don't want the four default configuration types with MS Visual Studio
@@ -11,16 +11,20 @@ PROJECT(CVAC)
 
 INCLUDE (UserCMakeLists.txt OPTIONAL)
 
-OPTION(BUILD_WITH_BOW "Enables the projects that depend on the bow library" OFF)
-OPTION(BUILD_WITH_OPENCVPERFORMANCE "Enables the projects that depend on the OpencvPerformance library" OFF)
+OPTION(BUILD_WITH_BOW "Build a Bag of Words trainer and detector (requires OpenCV)" ON)
+OPTION(BUILD_WITH_OPENCVPERFORMANCE "Build the OpenCV Cascade trainer and detector" ON)
 OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" ON) 
 OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" ON) 
 OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
+OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" ON)
+OPTION(BUILD_CPP_TRAINER_CLIENT "Build a C++ client for trainers" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
 OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" OFF)
 OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
+OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" OFF)
+
 
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
 
@@ -64,6 +68,9 @@ ELSE()
 ENDIF()
 ENDFOREACH()
 
+SET (ICE_ENCODE "#")
+SET(HOST "")
+
 IF (WIN32)
    SET(CMAKE_DEBUG_POSTFIX  "d")
 
@@ -78,6 +85,14 @@ IF (WIN32)
    ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
    ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
    ADD_DEFINITIONS(-DNOMINMAX)
+   # The java services need local host specified to run on windows 8
+   SET(HOST "-h localhost")
+   #If windows 8 (ie ice 3.5) then uncomment the use ice 1.0 encoding (vs 1.1)
+   IF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+       SET (ICE_ENCODE "")
+   ELSE ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+       SET (ICE_ENCODE "#")
+   ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
 ENDIF (WIN32)
 
 # ADD -fPIC to g++ because it's hard for the script to figure out 
@@ -85,6 +100,11 @@ ENDIF (WIN32)
 IF(CMAKE_COMPILER_IS_GNUCXX)
    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+
+# -O2 or -O3 on OSX causes ice to fail in Purpose list code
+IF (APPLE)
+   SET(CMAKE_CXX_FLAGS_RELEASE "-O1 -NDEBUG")
+ENDIF (APPLE)
 
 #
 # What version of CVAC?
@@ -113,6 +133,11 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
         MESSAGE( STATUS "successfully parsed version from git: CVAC-${CVAC_VERSION}" )
      	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
                                    ${CMAKE_SOURCE_DIR}/include/version.h)
+        # Need to update the version.h.repo file so it will be up to date
+        # for later distribution of the source without git (like a zip file);
+        # see below.
+        CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h
+                       ${CMAKE_SOURCE_DIR}/include/version.h.repo)
     ENDIF( CVAC_VERSION_GIT )
 endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
@@ -129,6 +154,7 @@ if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
     STRING( REGEX REPLACE ".*MINOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MINOR ${versionfile_contents} )
     STRING( REGEX REPLACE ".*PATCH ([^ ]+).*" "\\1" CVAC_VERSION_PATCH ${versionfile_contents} )
     SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+    SET( CVAC_VERSION_MAJMIN ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR} )
     MESSAGE( STATUS "successfully parsed version from version.h: CVAC-${CVAC_VERSION}" )
 endif( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
 
@@ -216,6 +242,7 @@ IF( BUILD_DOCUMENTATION )
                 ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/util
                 ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/util
                 ${CMAKE_SOURCE_DIR}/src/easy
+                ${CMAKE_SOURCE_DIR}/demo
            )		
       string(REGEX REPLACE ";" " " CMAKE_DOXYGEN_INPUT_LIST "${CMAKE_DOXYGEN_INPUT_LIST}")
 
@@ -240,8 +267,8 @@ FIND_PACKAGE(LibArchive REQUIRED)
 IF( PYTHONINTERP_FOUND )
   # make sure it's version 2.6 or else error
   IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
-    MESSAGE( SEND_ERROR "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
-    MESSAGE( SEND_ERROR "Please specify PYTHON_EXECUTABLE manually." )
+    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
   ENDIF()
 ENDIF( PYTHONINTERP_FOUND )
 
@@ -251,25 +278,96 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv
   )
-  MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  #For Python set a variable for cv2 dynamic library
+  #
+IF (WIN32)
+  FIND_FILE(OPENCV_CV2_LIB cv2.pyd
+               HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+ELSE (WIN32)
+  FIND_LIBRARY(OPENCV_CV2_LIB cv2.so
+               HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
+                     ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+ENDIF (WIN32)
+# And the directory the cv2 file came from
+GET_FILENAME_COMPONENT( OPENCV_CV2_DIR ${OPENCV_CV2_LIB} PATH )
+
+  IF( OpenCV_DIR )
+    MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  ENDIF()
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+
+## Setup the config.service and config.icebox files based upon detectors
+## selected by the user.  These CF_ variables are defined in the config files
+## and they get turned into comments or not.
+
+IF( BUILD_WITH_BOW )
+SET(CF_BOW "" )
+SET( CF_BOW_T "" )
+ELSE( BUILD_WITH_BOW )
+SET( CF_BOW "#" )
+SET( CF_BOW_T "#" )
+ENDIF( BUILD_WITH_BOW )
+
+IF( BUILD_WITH_OPENCVPERFORMANCE )
+SET( CF_CAS "" )
+SET( CF_CAS_T "" )
+ELSE( BUILD_WITH_OPENCVPERFORMANCE )
+SET( CF_CAS "#" )
+SET( CF_CAS_T "#" )
+ENDIF( BUILD_WITH_OPENCVPERFORMANCE )
+
+IF( BUILD_CORPUS_SERVER )
+SET( CF_CORPUS_S "")
+ELSE( BUILD_CORPUS_SERVER )
+SET( CF_CORPUS_S "#")
+ENDIF( BUILD_CORPUS_SERVER )
+
+IF( BUILD_FILESERVER )
+SET( CF_FILE_S "")
+ELSE( BUILD_FILESERVER )
+SET( CF_FILE_S "#")
+ENDIF( BUILD_FILESERVER )
+
+IF( BUILD_WITH_RSI )
+SET(CF_RSI "" )
+ELSE( BUILD_WITH_RSI )
+SET( CF_RSI "#" )
+ENDIF( BUILD_WITH_RSI )
+
+# if cmake install prefix not set the set it to default else add 
+# cvac to the end
+IF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/installed" CACHE PATH "default install path" FORCE )
+ELSE( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cvac" )
+ENDIF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
 
 IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
     # This requires CMake 2.8 for Java support
     ADD_SUBDIRECTORY( src )
 ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
-ADD_SUBDIRECTORY( etc )
+
 ADD_SUBDIRECTORY(src/util)
-ADD_SUBDIRECTORY(src/easy)
-IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
-  ADD_SUBDIRECTORY(algorithms)
-ENDIF(BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
+ADD_SUBDIRECTORY(src/easy) 
+ADD_SUBDIRECTORY(src/clients) 
+ADD_SUBDIRECTORY(algorithms)
+ADD_SUBDIRECTORY(demo)
+ADD_SUBDIRECTORY( etc )
+
+# the configuration of config.{icebox,service} must come after including the
+# etc directory, because that's where the user.config.{..} get configured.
+CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
+CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
+IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
+    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.service" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
+IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
+    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
+
 IF( BUILD_WITH_TESTS)
-  #Turn on CTest input files
-  # Next include for outputing ctest results to the dash board
-  #INCLUDE(CTest) add this to send stuff to dash board
-  # Next include for setting up pre and post ctests execution
-  #CONFIGURE_FILE(CTestCustom.cmake.in ${CMAKE_BINARY_DIR}/CTestCustom.cmake)
   ENABLE_TESTING()
   SET( BUILD_UNIT_TESTS ON )
   ADD_SUBDIRECTORY(test)
@@ -288,3 +386,4 @@ ENDIF( BUILD_3RDPARTY_PACKAGE )
 IF ( BUILD_BINARY_PACKAGE )
     ADD_SUBDIRECTORY( etc/pack_binary )
 ENDIF ( BUILD_BINARY_PACKAGE )
+

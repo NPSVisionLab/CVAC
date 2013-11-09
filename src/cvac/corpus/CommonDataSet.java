@@ -2,22 +2,33 @@ package cvac.corpus;
 
 import com.ice.tar.TarEntry;
 import com.ice.tar.TarInputStream;
-import cvac.CorpusCallback;
+import cvac.CorpusCallbackPrx;
 import cvac.Labelable;
+import org.apache.commons.io.FileUtils;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
+import org.apache.commons.io.IOUtils;
 import util.Data_IO_Utils;
 import util.Data_IO_Utils.FS_ObjectType;
 import util.DownloadUtils;
@@ -31,19 +42,19 @@ import util.DownloadUtils;
  */
 public class CommonDataSet extends CorpusI {
     private Properties properties;
+    boolean labelsLoaded;
 
     public enum DataSetLocType {LOCAL, URL, STREAMING, REMOTE, LABELME}
-    public enum CompressionType {GZIP, BZ2, Z, UNCOMPRESSED}
+    public enum CompressionType {GZIP, BZ2, Z, UNCOMPRESSED, ZIP}
     public enum ArchiveType {A, AR, CPIO, SHAR, LBR, ISO, TAR, UNARCHIVED}
     
     private File m_metaDataFolder, // '.meta' sub-folder of local corpus folder
                  m_metaStatusFile;   // File: 'status.txt'
     
-    //private CommonDataSet m_parent; //?
-
     public CommonDataSet(String name, String description, String homepageURL, boolean isImmutableMirror)
     {
         super(name, description, homepageURL, isImmutableMirror);
+        labelsLoaded = false;
                 
         // note that at first these dirs/files don't exist yet
         m_metaDataFolder = new File( m_dataSetFolder + File.separator + ".meta" );
@@ -79,15 +90,77 @@ public class CommonDataSet extends CorpusI {
 //       
 //    }
     
+    CompressionType getCompressionType( String type )
+    {
+        if (type.equals("gzip") || type.equals("unarchived"))
+            return CompressionType.GZIP;
+        else if (type.equals("zip"))
+            return CompressionType.ZIP;
+        else 
+            throw new RuntimeException("compression type " + type + " not recognized");
+    }
+    
+    ArchiveType getArchiveType( String type )
+    {
+        if (type.equals("none"))
+            return ArchiveType.UNARCHIVED;
+        else if (type.equals("tar"))
+            return ArchiveType.TAR;
+        else 
+            throw new RuntimeException("compression type " + type + " not recognized");
+    }
+
+    void moveAllFiles( File fromDir, File toDir )
+    {
+        File files[] = fromDir.listFiles();
+        if (null!=files)
+        {
+            for ( File file : files )
+            {
+                if ( file.getName().equals(".") 
+                     || file.getName().equals("..")
+                     || file.getName().equals(".meta"))
+                {
+                    continue;
+                }
+                if ( file.isDirectory() )
+                {
+                    try {
+                        String moveDir = toDir.getAbsolutePath() + File.separator + file.getName();
+                        FileUtils.moveDirectory( file, new File(moveDir) );
+                    }
+                    catch (IOException ioe)
+                    {
+                        String err = "couldn't move directory " + file.getPath() + " to " +
+                                      toDir.getName() + " error: " + ioe.getMessage();
+                        logger.log( Level.WARNING, err);
+ 
+                    }
+                }
+                else
+                {
+                    try {
+                        FileUtils.moveFileToDirectory( file, toDir, false );
+                    }
+                    catch (IOException ioe)
+                    {
+                        logger.log( Level.WARNING, "couldn't move file {0}\n",
+                                    file.getPath() );
+                    }
+                }
+            }
+        }
+    }
     
     @Override
-    void createLocalMirror( CorpusCallback cb )
+    void createLocalMirror( CorpusCallbackPrx cb )
     {
         // does a local mirror exist already?
         if ( localMirrorExists() )
         {
             logger.log( Level.INFO, "Local mirror for Corpus {0} exists already.", this.name );
             loadImages();
+            labelsLoaded = true;
             return;
         }
         
@@ -97,14 +170,40 @@ public class CommonDataSet extends CorpusI {
         String fname = ml.getName();
         File localArchiveFile = new File( m_metaDataFolder + File.separator + fname );
         String decompressed = "decompressed.tar";
+        CompressionType compressionType = 
+            getCompressionType( properties.getProperty("main_compressType") );
+        ArchiveType archiveType = 
+            getArchiveType( properties.getProperty("main_archiveType") );
         expandDataset_toLocal( main_location, localArchiveFile, decompressed, 
-                m_dataSetFolder, CommonDataSet.CompressionType.GZIP );
+                               m_dataSetFolder, compressionType, archiveType, false );
+
+        // if specified, move the data from this subdir to the main dataset dir
+        String moveSubdir = properties.getProperty("main_subdir");
+        if (null!=moveSubdir && !moveSubdir.isEmpty())
+        {
+            String fromDir = m_dataSetFolder + File.separator + moveSubdir;
+            File fDir = new File(fromDir);
+            moveAllFiles( fDir, new File(m_dataSetFolder) );
+            logger.log( Level.INFO, "Moved files from subdir {0} to main dataset dir.",
+                        fromDir );
+            // now remove the old directory since its empty
+            try {
+                FileUtils.deleteDirectory(fDir);
+            }
+            catch (IOException ioe)
+            {
+                String err = "couldn't delete directory " + fDir.getPath();
+                logger.log( Level.WARNING, err);
+
+            } 
+        }
 
         // if no errors, write a little metadata file
         writeStatusFile();
         
         // read in the Label data
         loadImages();
+        labelsLoaded = true;
     }
 
     /** Has a local mirror already been created?  This will return true only
@@ -115,9 +214,11 @@ public class CommonDataSet extends CorpusI {
     public boolean localMirrorExists()
     {
         // where shall this mirror live?
-        // for now, it's a fixed location based on the corpus name
+        // for now, it's a fixed location based on the corpus name.
+        // Note that tentfile is NOT the .meta data folder, a temp folder
+        // for downloading and uncompressing archives.
         File tentfile = new File( m_dataSetFolder );
-        if (tentfile.exists())
+        if (tentfile.isDirectory())
         {
             // check if the metadata is present and complete, if so, this mirror exists already
             if (m_metaStatusFile.exists() )
@@ -126,9 +227,10 @@ public class CommonDataSet extends CorpusI {
             }
             
             // if not: something else is in this folder, and we can't handle that right now
-            throw new RuntimeException("data dir exists already but no metadata file ("
-                    +m_metaStatusFile.getAbsolutePath()
-                    +"); aborting because no plan B available");
+            logger.log( Level.SEVERE, "data dir exists already but no metadata file; "
+                        + "continuing, but failure is likely imminent");
+            logger.log( Level.SEVERE, "metadata file: "
+                        + m_metaStatusFile.getAbsolutePath());
         }
         return false;
     }
@@ -136,55 +238,84 @@ public class CommonDataSet extends CorpusI {
     
       // Orchestrate entire unpacking sequence
     protected void expandDataset_toLocal( String webURL, File web_SavedFile, String decompressedOutputName,
-                                          String expandBelow_Path, CompressionType uncompressType) {
-        // Grab file to local disk
-        try {
-            DownloadUtils.URL_readToFile(webURL, web_SavedFile);
+                                          String expandBelow_Path, CompressionType uncompressType,
+                                          ArchiveType archiveType, boolean forceDownload)
+    {
+        // Grab file to local disk, if not local already
+        if ( web_SavedFile.exists() && !forceDownload )
+        {
+            logger.log( Level.FINE, "Local file exists, not downloading again\n" );
         }
-        catch(IOException e) {
-            String msg = "Exception in URL_readToFile: " + e.toString();
-            logger.warning(msg);
+        else if ( !web_SavedFile.exists() || forceDownload )
+        {
+            logger.log( Level.FINE, "Downloading corpus from {0}\n", webURL );
+            try {
+                DownloadUtils.URL_readToFile(webURL, web_SavedFile);
+            }
+            catch(IOException e) {
+                String msg = "Exception in URL_readToFile: " + e.toString();
+                logger.warning(msg);
+            }
         }
 
-        File tarOutput;
-        if(CompressionType.GZIP == uncompressType) {  // Unzipping GZip Produces (.tar) in /expansion/ folder
-            tarOutput = new File( m_metaDataFolder.getAbsolutePath() +
+        File archiveFile = null;
+        if(CompressionType.GZIP == uncompressType)
+        {
+            archiveFile = new File( m_metaDataFolder.getAbsolutePath() +
                                   File.separatorChar + decompressedOutputName ); 
 
             try {
-                uncompressDataset(web_SavedFile, tarOutput, expandBelow_Path, uncompressType);
-
-                String msg = "Uncompressed Dataset with 'GZIP', saved: " + tarOutput.getName();
-                logger.log(Level.INFO, msg);
+                uncompressDataset(web_SavedFile, archiveFile, 
+                                  expandBelow_Path, uncompressType);
+                logger.log(Level.INFO, "Uncompressed dataset into {0}", 
+                           archiveFile.getName());
             }
             catch(IOException e)
             {
-                throw new RuntimeException("Error uncompressing DataSet with 'GZIP' protocol.  \n" + e.toString());
+                throw new RuntimeException("Error uncompressing DataSet with GZIP\n"
+                                           + e.toString());
+            }
+        }
+        else if(CompressionType.ZIP == uncompressType) 
+        {
+            try {
+                uncompressDataset(web_SavedFile, null,
+                                  expandBelow_Path, uncompressType);
+                logger.log(Level.INFO, "Uncompressed dataset into {0}\n", 
+                           expandBelow_Path);
+            }
+            catch(IOException e)
+            {
+                throw new RuntimeException("Error uncompressing DataSet with ZIP\n"
+                                           + e.toString());
             }
         }
         else {
-            tarOutput = new File(web_SavedFile.getPath());  // Web URL provided uncompressed (.tar)
+            archiveFile = new File(web_SavedFile.getPath());  // Web URL provided uncompressed (.tar)
         }
-        File targetDatasetFolder = new File(expandBelow_Path);
-
-        // TODO: why was there a new dataset created here?
-        //DataSet dataSetInstance = new DataSet();
-        //dataSetInstance.unpackArchiveBelow(tarOutput, targetDatasetFolder, ArchiveType.TAR);
-        unpackArchiveBelow(tarOutput, targetDatasetFolder, ArchiveType.TAR);
+        if (ArchiveType.UNARCHIVED != archiveType)
+        {
+            // TODO: why was there a new dataset created here?
+            //DataSet dataSetInstance = new DataSet();
+            //dataSetInstance.unpackArchiveBelow(archiveFile, expandBelow_Path, ArchiveType.TAR);
+            unpackArchiveBelow(archiveFile, expandBelow_Path, archiveType);
+        }
     }
     
     // Read source-File, uncompress and save into destination-File in the 'source' directory
-    protected void uncompressDataset(File compressedFileSrc, File destFile, String destFileDir, CompressionType in_type) throws IOException {
+    protected void uncompressDataset(File compressedFileSrc, File destFile, String destFileDir, 
+                                     CompressionType in_type) throws IOException {
 
-          // Create new file if target !exists, or Uncompress over an existing target
-        if ((null == destFile) || (!destFile.exists())) {
-            Data_IO_Utils.createDir_orFile(destFile, FS_ObjectType.FILE);
-        }
-        
           // Todo, operate on generic src and dest Stream Objects after switch code
         switch(in_type) {
             
             case GZIP:  // GNU Gunzip
+            {
+                // Create new file if target !exists, or Uncompress over an existing target
+                if ((null == destFile) || (!destFile.exists())) {
+                    Data_IO_Utils.createDir_orFile(destFile, FS_ObjectType.FILE);
+                }
+        
                 final int GUNZIP_BUFFER = 2048;
                 byte buff[];
                 int amtRead;
@@ -214,16 +345,69 @@ public class CommonDataSet extends CorpusI {
                     logger.warning(msg);
                 }
                 break;
+            }
+
+            case ZIP:
+            {
+                ZipFile zipFile = new ZipFile(compressedFileSrc);
+                InputStream in = null;
+                BufferedOutputStream out = null;
+                Enumeration<? extends ZipEntry> entries = 
+                    (Enumeration<? extends ZipEntry>)zipFile.entries();
+                String outFilename = "";
+                byte[] buffer = new byte[10240];
+                for (ZipEntry entry : Collections.list(entries))
+                {
+
+                    outFilename = destFileDir + File.separator + entry.getName();
+                    if (entry.isDirectory())
+                    {
+                        logger.info("Creating directory: " + outFilename);
+                        boolean success = (new File(outFilename)).mkdirs();
+                        if (!success)
+                        {
+                            logger.warning("Could not create directory, anticipate further unzip problems: "
+                                           + outFilename);
+                        }
+                        continue;
+                    }
+                    try {
+                        in = zipFile.getInputStream(entry);
+                        FileOutputStream fos =
+                            new FileOutputStream(outFilename);
+                        out = new BufferedOutputStream(fos, buffer.length);
+                        IOUtils.copy(in, out);
+                    
+                    } catch (ZipException ex){
+                        String msg = ("Zip Exception: error: " + ex.toString() + " file: " +
+                                       compressedFileSrc);
+                        logger.warning(msg);
+                    } catch (IOException ex){
+                        String msg = ("IO Exception: error: " + ex.toString() + " file: " +
+                                       compressedFileSrc);
+                        logger.warning(msg);
+                    } catch (Exception ex){
+                        String msg = ("Exception: error: " + ex.toString() + " file: " +
+                                       compressedFileSrc);
+                        logger.warning(msg);
+                    } finally {
+                        IOUtils.closeQuietly(in);
+                        IOUtils.closeQuietly(out);
+                    }
+                }
+                
+                break;
+            }
 
             default:
-                logger.warning("De-compression type not yet supported.  Usable types include: 'GZIP' (Gnu-Gunzip).  ");
+                logger.severe("De-compression type not yet supported.  Usable types include: ZIP, GZIP.");
                 removeMetaFlg();
         }
     }
 
     // Creates a new folder using the Dataset's name String to create folder containing all dataset content
-    protected void unpackArchiveBelow(File archiveFile, File dsTargetFolder, ArchiveType archiveType) {
-        
+    protected void unpackArchiveBelow(File archiveFile, String expandBelow_Path, ArchiveType archiveType) {
+        File dsTargetFolder = new File(expandBelow_Path);        
         Data_IO_Utils.dieRuntime_IfNull(dsTargetFolder, 
                                         "'contentFolder' File-object is not allowed to be null in 'unpackArchiveBelow(..)'");
         switch(archiveType) {
@@ -232,7 +416,11 @@ public class CommonDataSet extends CorpusI {
 
                 TarInputStream tis = null;
                 try {                                                                               // Input (.tar)
-                    tis = new TarInputStream(new BufferedInputStream(new FileInputStream(archiveFile.getAbsoluteFile())));
+                    File af = archiveFile.getAbsoluteFile();
+                    BufferedInputStream bis = new BufferedInputStream(new FileInputStream( af ) );
+                    logger.warning( "This fails on OSX' JavaVM for unknown reasons: new TarInputStream(..." + af + "..)" );
+                    tis = new TarInputStream( bis );
+                    logger.warning( "This statement isn't reached on OSX." );
                 }
                 catch(IOException fileIOEx)
                 {
@@ -413,6 +601,12 @@ public class CommonDataSet extends CorpusI {
     @Override
     Labelable[] getLabels()
     {
+        if ( !labelsLoaded )
+        {
+            // read in the Label data
+            loadImages();
+            labelsLoaded = true;
+        }
         // There's probably a much more elegant way to do this...
         LabelableListI[] llistA = m_images.values().toArray( new LabelableListI[0] );
         int totalSize = 0;
@@ -429,6 +623,8 @@ public class CommonDataSet extends CorpusI {
                 labels[icnt++] = label;
             }
         }
+        logger.log( Level.INFO, "Created list of {0} labels from corpus {1}.",
+                    new Object[]{totalSize, name} );
         return labels;
     }
 }

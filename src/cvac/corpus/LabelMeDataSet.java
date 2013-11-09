@@ -5,7 +5,7 @@ import com.mathworks.toolbox.javabuilder.MWArray;
 import com.mathworks.toolbox.javabuilder.MWException;
 import com.mathworks.toolbox.javabuilder.MWNumericArray;
 import com.mathworks.toolbox.javabuilder.MWStructArray;
-import cvac.CorpusCallback;
+import cvac.CorpusCallbackPrx;
 import cvac.DetectorPrx;
 import cvac.DetectorPrxHelper;
 import cvac.DirectoryPath;
@@ -54,6 +54,7 @@ public class LabelMeDataSet extends CorpusI
     ArrayList<String> lmFolderList;
     ArrayList<Labelable> ils;
     private boolean loaded = false;
+    private CorpusCallbackPrx callback = null;
 
     public LabelMeDataSet(String name, String description, String homepageURL, boolean isImmutableMirror)
     {
@@ -118,7 +119,7 @@ public class LabelMeDataSet extends CorpusI
         }
         catch (MWException ex) {
             logger.log( Level.WARNING, "error connecting to LabelMe");
-            logger.log( Level.FINE, "exception is: ", ex);
+            logger.log( Level.WARNING, "exception is: ", ex);
         }
         finally {
             MWArray.disposeArray(folderList);
@@ -154,7 +155,19 @@ public class LabelMeDataSet extends CorpusI
         }
         
         // figure out what labels we have, how many of each, and create sample lists
+        int currtask = 0;
+        int numtasks = 2;
+        float percentCompleted = (float)currtask/(float)numtasks;
+        currtask++;
+        callback.corpusMirrorProgress( this, numtasks, currtask, "obtaining labels", 
+                                       "downloading annotations from specified folder(s)", percentCompleted );
         initSampleLists();
+
+        numtasks = dbSpecific.numberOfElements()+2;
+        percentCompleted = 100*(float)currtask/(float)numtasks;
+        currtask ++;
+        callback.corpusMirrorProgress( this, numtasks, currtask, "preparing for download", 
+                                       "preparing local storage", percentCompleted );
         
         try {
             // create local directory where to cache the images
@@ -180,17 +193,26 @@ public class LabelMeDataSet extends CorpusI
                 filename = result2.toString();
                 
 
-                // download the images from LabelMe
+                // download the images from LabelMe to a folder named after
+                // the corpus (m_dataSetFolder), plus a subfolder for the LabelMe folder
                 String remoteURL = HOMEIMAGES + "/Images/" + folder + "/" + filename;
                 logger.log( Level.FINE, "downloading image from {0}", remoteURL );
                 String localFilename = m_dataSetFolder + "/" + folder + "/" + filename;
-                File localFile = new File( localFilename );
-                //debug
-                System.out.println("file " + localFile);
+                // relative local folder, without the CVAC.DataDir
+                String relLocalFolder = this.name + File.separator + folder;
+                logger.log(Level.FINER, "Local file: {0} (relative folder {1})",
+                           new Object[]{ localFilename, relLocalFolder });
+
+                percentCompleted = 100*(float)currtask/(float)numtasks;
+                currtask ++;
+                callback.corpusMirrorProgress( this, numtasks, currtask, "downloading image "+labelmeObjnum, 
+                                               "Source: "+remoteURL, percentCompleted );
+
                 try {
                     // make sure the folder exists, then write the image
                     Data_IO_Utils.createDir_orFile( new File( m_dataSetFolder + "/" + folder ), 
                         Data_IO_Utils.FS_ObjectType.DIRECTORY);
+                    File localFile = new File( localFilename );
                     DownloadUtils.URL_readToFile( remoteURL, localFile );
                 }
                 catch(IOException e) 
@@ -200,7 +222,7 @@ public class LabelMeDataSet extends CorpusI
                     logger.log(Level.INFO, "", e);
                     continue;
                 }
-                DirectoryPath dirpath = new DirectoryPath( m_dataSetFolder + "/" + folder );
+                DirectoryPath dirpath = new DirectoryPath( relLocalFolder );
                 FilePath path = new FilePath( dirpath, filename );
                 int width = -1; int height = -1;
                 Substrate im = new Substrate( true, false, path, width, height );
@@ -354,8 +376,6 @@ public class LabelMeDataSet extends CorpusI
             
             polygonLoc = new LabeledLocation();
             polygonLoc.lab = new cvac.Label(true, objname, new HashMap<String,String>(0), new Semantics(""));
-            polygonLoc.lab.hasLabel = true;                    // hasLabel
-            polygonLoc.lab.name = "annotation";                // name
             polygonLoc.loc = locSilhouette;                    // location
         }
         catch (MWException ex) {
@@ -513,8 +533,9 @@ public class LabelMeDataSet extends CorpusI
 //    }
 
     @Override
-    void createLocalMirror(CorpusCallback cb)
+    void createLocalMirror(CorpusCallbackPrx cb)
     {
+        this.callback = cb;
         // download everything for now, annotations and images
         loadImageAssets();
         loaded = true;

@@ -58,6 +58,8 @@ typedef pair<std::string, std::string> Str_Pair;
 
 bool pdebug = true;// (VLogger::DEBUG_2 <= cvac::vLogger.getBaseLevel());
 
+extern char *CVAC_DataDir;
+
 SUITE(UnitTests_cvac)
 {
   // Declared inside this Test suite  
@@ -276,31 +278,28 @@ SUITE(UnitTests_cvac)
     printf("cvacLibArchiveExpand\n");
     // Test: with subfolder
     // Expand files from source archive
-    std::string subDir = "tmpSubDir";
-    std::string detectZip = "bowUSKOCA.zip";
-    std::string archiveFileName1("../data/detectors/" + detectZip);
+    // try and find CVAC_DataDir
+    std::string dir;
+    if (CVAC_DataDir != NULL)
+        dir = CVAC_DataDir;
+    else
+        dir = "../data";
+    cout << "Using Data directory: " << dir << endl;
+    dir += "/detectors/bowUSKOCA.zip";
+    std::string archiveFileName1(dir);
+    std::string subDir = archiveFileName1 + "_tmpSubDir";
 
-    std::vector<std::string> fileNameStrings = expandSeq_fromFile(archiveFileName1, subDir);
-
+    expandSeq_fromFile(archiveFileName1, subDir);
     // Check for expanded files
-    ifstream testForXml;
-    // TODO: the dot before subDir gets added by expandSeq_fromFile - design that better;
-    // usageOrder.txt is one sample file that should exist in the unzipped folder
-    std::string checkFilePath = "." + subDir + "/usageOrder.txt";
-    testForXml.open(checkFilePath.c_str(), ifstream::in);
-
-    // File exists after extraction
-    CHECK( testForXml.is_open() );
-    if (pdebug)
-      printf("Success opening expanded file (from subfolder).\n");
-    testForXml.close();
+    
 
     // rm -f current not implemented - delete the files manually
-    CHECK( deleteFile( "."+subDir+"/usageOrder.txt") );
-    CHECK( deleteFile( "."+subDir+"/logTrain_svm.xml.gz") );
-    CHECK( deleteFile( "."+subDir+"/logTrain_Table.txt") );
-    CHECK( deleteFile( "."+subDir+"/logTrain_Vocabulary.xml.gz") );
-    CHECK( deleteDirectory( "." + subDir) );
+    CHECK( deleteFile( subDir+"/logTrain_svm.xml.gz") );
+    CHECK( deleteFile( subDir+"/logTrain_Table.txt") );
+    CHECK( deleteFile( subDir+"/logTrain_Vocabulary.xml.gz") );
+    CHECK( deleteFile( subDir+"/trainer.properties") );
+    CHECK( directoryExists(subDir) ); // we expect this temp dir to NOT delete itself
+    CHECK( deleteDirectory( subDir) );
   }
 
  

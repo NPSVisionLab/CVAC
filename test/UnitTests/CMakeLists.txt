@@ -1,3 +1,4 @@
+ENABLE_TESTING()
 SET(APP_NAME UnitTests) 
 
 IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
@@ -55,9 +56,8 @@ IF( APPLE )
     )
 ENDIF()
 
-ADD_TEST(NAME UnitTests
-         COMMAND UnitTests${DEBUG_POSTFIX}
-         WORKING_DIRECTORY ${OUTPUT_BINDIR}
+ADD_TEST(UnitTests
+         ${OUTPUT_BINDIR}/${APP_NAME} ${CVAC_ROOT_DIR}/data
          )
 # OSX needs DYLD_LIBRARY_PATH set in order to find the libopencv_*.dylib files
 SET_TESTS_PROPERTIES( UnitTests

@@ -38,6 +38,8 @@
 #include <util/FileUtils.h>
 #include <util/Timing.h>
 #include <sys/stat.h>
+#include <time.h>
+#include <cstdio>
 
 #if defined(WIN32)
    #include <direct.h> //for _mkdir()
@@ -67,12 +69,13 @@ static VLogger vLogger();  // Compile-time default base-level
 void cvac::localAndClientMsg(VLogger::Levels rqLevel, const CallbackHandlerPrx& callbackHandler, const char* fmt, ...) {
 
   va_list args;
-  va_start(args, fmt);
   
   // Echo locally according to config.service property 'CVAC.ServicesVerbosity' in CVAC root
   if(vLogger.getBaseLevel() >= rqLevel)
   {
+    va_start(args, fmt);
     vLogger.printv(rqLevel, fmt, args);
+    va_end(args);
   }
 
   // Echo remotely based on client verbosity.
@@ -84,11 +87,18 @@ void cvac::localAndClientMsg(VLogger::Levels rqLevel, const CallbackHandlerPrx& 
   {
     // Echo through callbackHandler if available, assemble string for client message from arglist
     if(0 != callbackHandler) {
-     
-      char buffer[1024];
-      memset(&buffer[0], 0, sizeof(buffer));
-      vsprintf(buffer, fmt, args);
-
+      const unsigned int BUFLEN=1024;
+      if (strlen(fmt)>BUFLEN/2)
+      {
+        vLogger.printv( VLogger::DEBUG_2, 
+                        "Really long debug message - might get truncated: %s\n", fmt );
+      }
+      char buffer[BUFLEN+1];
+      // shouldn't need this:      memset(&buffer[0], 0, sizeof(buffer));
+      va_start(args, fmt);
+      vsnprintf(buffer, BUFLEN, fmt, args);
+      va_end(args);
+      buffer[BUFLEN]=0;
       callbackHandler->message(rqLevel, buffer);  // Send to client
     }
     va_end(args);
@@ -120,8 +130,20 @@ bool cvac::directoryExists(const std::string& directory)
    return false;
 }
 
+
+//Refer: http://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
 ///////////////////////////////////////////////////////////////////////////////
-std::string cvac::getFilePath(const std::string& fileName)
+bool cvac::fileExists(const std::string& _abspath)
+{
+    struct stat tBuff;
+    if(stat(_abspath.c_str(),&tBuff)==0)
+      return true;
+    else
+      return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::getFileDirectory(const std::string& fileName)
 {
    std::string::size_type slash1 = fileName.find_last_of('/');
    std::string::size_type slash2 = fileName.find_last_of('\\');
@@ -155,6 +177,13 @@ bool cvac::makeDirectories(const std::string& dirPath)
     if (dirPath.empty())
         return false;
     int lastIdx = 0;
+    if ((dirPath.length() > 1 && 
+          dirPath[1] == ':' )||
+          dirPath[0] == '/' ||
+          dirPath[0] == '\\')
+    {  // absolute path
+        result = "/";
+    }
 #ifdef WIN32
     int idx = dirPath.find(':', 1);
     if (idx != -1)
@@ -178,7 +207,7 @@ bool cvac::makeDirectories(const std::string& dirPath)
     std::string substr;
     if (idx > 0)
     {
-        std::string substr = dirPath.substr(0, idx - lastIdx);
+        std::string substr = dirPath.substr(lastIdx, idx - lastIdx);
         vLogger.printv(VLogger::DEBUG_2,
                        "makeDirectories: first path substr: %s\n", substr.c_str());
         if (!makeDirectory(substr))
@@ -267,10 +296,24 @@ std::string cvac::getBaseFileName(const std::string& fileName)
 {
    const std::string onlyFileName = getFileName(fileName);
 
-   std::string::size_type dot = onlyFileName.find_first_of('.');
+   std::string::size_type dot = onlyFileName.find_last_of('.');
    if (dot==std::string::npos) return onlyFileName;
    return std::string(onlyFileName.begin(),onlyFileName.begin()+dot);
 }
+
+
+///////////////////////////////////////////////////////////////////////////////
+std::string cvac::getFileExtension(const std::string& _path)
+{
+    std::string::size_type dot = _path.find_first_of(".");	//rfind
+    std::string _str = std::string(_path.begin() + dot + 1,_path.end());
+
+    std::string tRes = _str;
+    std::transform( _str.begin(), _str.end(), tRes.begin(), ::tolower );  //for uppercase: toupper
+    
+    return tRes;
+}
+
 
 // TODO: please add documentation.
 // TODO: I am a bit afraid of this - a recursive delete is dangerous.  has anybody checked if this follows symbolic links???
@@ -307,7 +350,7 @@ bool cvac::deleteDirectory(const std::string& path)
 
     // finally, let's clean up
     closedir (pdir); // close the directory
-    if (!_rmdir(path.c_str())) return false; // delete the directory
+    if (_rmdir(path.c_str()) != 0) return false; // delete the directory
     return true;
 }
 #else // not windows
@@ -367,6 +410,29 @@ void cvac::addFileToRunSet( RunSet& runSet, const std::string& relativePath,
   addFileToRunSet( runSet, relativePath, filename, purpose );
 }
 
+static bool doFileCopy(const std::string fromFile, const std::string toFile)
+{
+    char buf[BUFSIZ];
+    size_t size;
+ 
+    FILE* source = fopen(fromFile.c_str(), "rb");
+    if (source == NULL)
+        return false;
+    FILE* dest = fopen(toFile.c_str(), "wb");
+    if (dest == NULL)
+    {
+        fclose(source);
+        return false;
+    }
+    while (size = fread(buf, 1, BUFSIZ, source)) {
+        fwrite(buf, 1, size, dest);
+    }
+
+    fclose(source);
+    fclose(dest);
+    return true;
+}
+
 bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile) {
 
 #if defined(WIN32)
@@ -389,8 +455,11 @@ bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile)
       {
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
           fprintf(stderr, "!!!!Admin rights required for creating a symbolic link!!!!\n");   
+          fprintf(stderr, "!!!!Copying the file instead of creating a symbolic link!!!!\n");   
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-      }
+          return doFileCopy(toFile, fromFile);
+
+      }	  
       printf("failed to create symbolic link for %s\n", toFile.c_str());
       printf("symbolic link name %s\n", fromFile.c_str());
       printf("Error %d\n", err);
@@ -412,19 +481,6 @@ bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile)
   return(false);  // Notify clients that call was known to have failed  
 }
 
-std::string cvac::expandFilename(std::string filename, std::string prefixDir)
-{
-    std::string result; 
-    if ((filename.length() > 1 && filename[1] == ':' )||
-        filename[0] == '/' ||
-        filename[0] == '\\')
-    {  // absolute path
-        result = filename;
-    } else { // prepend our prefix
-        result = (prefixDir + "/" + filename);
-    }
-    return result;
-}
 
 void cvac::sleep(int numberOfMilliseconds)
    {
@@ -433,7 +489,99 @@ void cvac::sleep(int numberOfMilliseconds)
       #else
          ::Sleep(numberOfMilliseconds);
       #endif
-  }
+   }
+
+std::string cvac::getTempFilename( const std::string &basedir, 
+                                   const std::string &prefix)
+{
+    const char *baseName = NULL;
+    const char *prefixName = NULL;
+    if (!basedir.empty()) 
+        baseName = basedir.c_str();
+    if (!prefix.empty())
+        prefixName = prefix.c_str();
+    char *tempName;
+#ifdef WIN32
+    // Windows will not use baseName if TMPDIR variable is defined so we use tmpNam instead of
+    // _tempname so we can control the base directory if one is passed in.
+    char current[1024];
+    if (baseName == NULL)
+    { // No base directory so let the TMPDIR variable pick the  name.
+        tempName = _tempnam(baseName, prefixName);
+    } else
+    { // tmpname only works in the current dir so change to where we want temp file
+        _getcwd(current, 1024);
+        if (_chdir(baseName) != -1)
+        { // directory exists
+            tempName = tmpnam(NULL); 
+            // change directory back to original one 
+            _chdir(current);
+            strcpy(current, baseName);
+            // Keep file seperators as forward slashes
+            strcat(current, "/");
+            if (prefixName != NULL)
+                strcat(current, prefixName);
+            strcat(current, &tempName[1]);
+            // tmpname puts a '.' at end of filename of windows this fails if its going to be a directory so get rid of it.
+            int len = strlen(current);
+            if (current[len-1] == '.')
+                current[len-1] = 0;
+            tempName = current;
+        }else
+        { // the basename directory does not exist so let windows give use the tempfile name
+            tempName = _tempnam(baseName, prefixName);
+        }
+    }
+#else
+    tempName = tempnam(baseName, prefixName);
+#endif /* WIN32 */
+    std::string tempString = tempName;
+    return tempString;
+}
+
+std::string cvac::getDateFilename( const std::string &basedir, 
+                                   const std::string &prefix)
+{
+    
+    char tempName[128];
+    time_t curtime;
+    struct tm *timeinfo;
+    time(&curtime);
+    timeinfo = localtime(&curtime);
+    //Format is MMDDYY_HHMM
+    strftime(tempName, 128, "%m%d%y_%H%M", timeinfo);
+    std::string result;
+    std::string filename;
+    if (prefix.empty())
+    {
+        filename = tempName;
+    }else
+    {
+        filename = prefix + "_" + tempName;
+    }
+    if (basedir.empty())
+    {
+        result = filename;
+    }else
+    {
+        result = basedir + "/" + filename;
+    }
+    return result;
+}
+
+/** Turn a CVAC path into a file system path
+ */
+std::string cvac::getFSPath( const cvac::FilePath& fp, const std::string& CVAC_DataDir )
+{
+  //TODO check for relative path for CVAC_DataDir and make absolute
+  std::string path;
+  if (fp.directory.relativePath.empty())
+    path = CVAC_DataDir+"/"+fp.filename;
+  else
+    path = CVAC_DataDir+"/"+fp.directory.relativePath+"/"+fp.filename;
+  return path;
+}
+
 /*
 BaseException(const std::string& newMsg) { //const std::string &newMsg
 
