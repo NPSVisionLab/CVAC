@@ -274,22 +274,27 @@ ENDIF( PYTHONINTERP_FOUND )
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   FIND_PACKAGE( OpenCV 2.4 REQUIRED
-                            core imgproc highgui ml features2d nonfree objdetect calib3d
+                            core imgproc highgui ml features2d nonfree objdetect
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv
   )
   #For Python set a variable for cv2 dynamic library
   #
-IF (WIN32)
-  FIND_FILE(OPENCV_CV2_LIB cv2.pyd
+  IF (WIN32)
+    FIND_FILE(OPENCV_PY_LIB cv2.pyd
                HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
-ELSE (WIN32)
-  FIND_LIBRARY(OPENCV_CV2_LIB cv2.so
+  ELSE (WIN32)
+    FIND_LIBRARY(OPENCV_PY_LIB cv2.so
                HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
                      ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
-ENDIF (WIN32)
-# And the directory the cv2 file came from
-GET_FILENAME_COMPONENT( OPENCV_CV2_DIR ${OPENCV_CV2_LIB} PATH )
+
+  ENDIF (WIN32)
+  # And the directory the cv2 file came from
+  GET_FILENAME_COMPONENT( OPENCV_PY_DIR ${OPENCV_PY_LIB} PATH )
+  FIND_FILE( OPENCV_PY_PY cv.py HINTS ${OPENCV_PY_DIR} )
+  IF( NOT OPENCV_PY_LIB OR NOT OPENCV_PY_PY )
+    MESSAGE( SEND_ERROR "Need cv2.pyd or cv2.so and cv.py from OpenCV" )
+  ENDIF()
 
   IF( OpenCV_DIR )
     MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
