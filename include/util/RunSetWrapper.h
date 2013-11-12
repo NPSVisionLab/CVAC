@@ -69,8 +69,8 @@ namespace cvac
     string mMediaRootPath;
     const RunSet* mRunset;
     ServiceManager* mServiceMan;
-    vector<LabelablePtr> mList;		//candidate list of LabelablePtr		      
-    vector<rsMediaType> mListType;
+    ResultSet mResultSet;		//candidate list of LabelablePtr		      
+    vector<rsMediaType> mResultSetType;
   
   private:	//Basic Utility	 
     rsMediaType getType(const string _aPath);
@@ -91,8 +91,8 @@ namespace cvac
                              const string& _relDir,
                              const vector<rsMediaType>& _types);	
   public:     
-    vector<LabelablePtr>& getList();
-    vector<rsMediaType>& getListType();
+    ResultSet& getResultSet();
+    vector<rsMediaType>& getResultSetType();
     bool isInitialized(){ return mFlagIntialize; };
     string getRootDir(){  return mMediaRootPath;  };
 

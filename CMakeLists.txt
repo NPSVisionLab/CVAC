@@ -266,10 +266,10 @@ FIND_PACKAGE(LibArchive REQUIRED)
 # ICE 3.4.2 is pre-built against Python 2.6
 IF( PYTHONINTERP_FOUND )
   # make sure it's version 2.6 or else error
-  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
-    MESSAGE( SEND_ERROR "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
-    MESSAGE( SEND_ERROR "Please specify PYTHON_EXECUTABLE manually." )
-  ENDIF()
+#  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
+#    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+#    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
+#  ENDIF()
 ENDIF( PYTHONINTERP_FOUND )
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
@@ -278,6 +278,24 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv
   )
+  #For Python set a variable for cv2 dynamic library
+  #
+  IF (WIN32)
+    FIND_FILE(OPENCV_PY_LIB cv2.pyd
+               HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+  ELSE (WIN32)
+    FIND_LIBRARY(OPENCV_PY_LIB cv2.so
+               HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
+                     ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+
+  ENDIF (WIN32)
+  # And the directory the cv2 file came from
+  GET_FILENAME_COMPONENT( OPENCV_PY_DIR ${OPENCV_PY_LIB} PATH )
+  FIND_FILE( OPENCV_PY_PY cv.py HINTS ${OPENCV_PY_DIR} )
+  IF( NOT OPENCV_PY_LIB OR NOT OPENCV_PY_PY )
+    MESSAGE( SEND_ERROR "Need cv2.pyd or cv2.so and cv.py from OpenCV" )
+  ENDIF()
+
   IF( OpenCV_DIR )
     MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
   ENDIF()

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # command arguments must be:
 # $1: super-dir to bin/startIcebox.sh
 # $2: dir where tests are located
