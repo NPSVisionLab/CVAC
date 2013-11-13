@@ -701,7 +701,7 @@ def train( trainer, runset, trainerProps=None, callbackRecv=None ):
         tp.verbosity = 3
     if type(runset) is dict:
         runset = runset['runset']
-    trainer.process( cbID, runset, trainerProperties )
+    trainer.process( cbID, runset, tp )
 
     # check results
     if not callbackRecv.detectorData:
