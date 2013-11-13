@@ -10,6 +10,10 @@ IF( NOT PYTHON_EXECUTABLE )
   MESSAGE( FATAL_ERROR "Python executable not found: cannot run Python UnitTests" )
 ENDIF( NOT PYTHON_EXECUTABLE )
 
+IF( NOT ICE_PYTHON_DIR )
+  MESSAGE( FATAL_ERROR "ICE Python bindings not found: cannot run Python UnitTests" )
+ENDIF()
+
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
 set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build/timestamp")

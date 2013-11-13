@@ -21,17 +21,10 @@ ELSE( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
   SET( START_JAVA_SERVICES 0 )
 ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 
-# start Python services if we can find the interpreter:
-# CMakeLists in the root dir will set PYTHON_EXECUTABLE if found
-
 IF (WIN32)
     SET( SCRIPT_EXT bat )
-    SET (OPENCV_3RDPARTY_DIR "${CMAKE_SOURCE_DIR}/3rdparty/opencv/python/2.6" )
-    SET (CV2_EXT "pyd")
 ELSE (WIN32)
     SET( SCRIPT_EXT sh )
-    SET (OPENCV_3RDPARTY_DIR "${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python2.6/site-packages" )
-    SET (CV2_EXT "so")
 ENDIF (WIN32)
 
 CONFIGURE_FILE( startIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/startIcebox.${SCRIPT_EXT} )
@@ -58,12 +51,13 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/cvac")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 
+
 # Next copy over easy. Since these files are not sliced then do it now
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
       PATTERN *.py)
 # Next copy over opencv files
-FILE (COPY ${OPENCV_3RDPARTY_DIR}/cv.py DESTINATION ${PYTHON_BUILD_DIR} )
-FILE (COPY ${OPENCV_3RDPARTY_DIR}/cv2.${CV2_EXT} DESTINATION ${PYTHON_BUILD_DIR} )
+FILE (COPY ${OPENCV_PY_LIB} DESTINATION ${PYTHON_BUILD_DIR} )
+FILE (COPY ${OPENCV_PY_PY} DESTINATION ${PYTHON_BUILD_DIR} )
 
 # Next copy over ice. Since we need to change directory name
 # from python to ice copy over the files.  Not sliced so do it now

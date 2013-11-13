@@ -407,9 +407,9 @@ void doStartServices()
     // We assume we are in cvac root directory
 
 #ifdef WIN32
-    runProgram("bin\\startIcebox.bat");
+    runProgram("bin\\startServices.bat");
 #else
-    runProgram("bin/startIcebox.sh");
+    runProgram("bin/startServices.sh");
 #endif
     sleep(3000);
     

@@ -67,21 +67,23 @@ public:
 class TrainerPropertiesI : public cvac::TrainerProperties
 {
  public:
-   /**
-    * Client access fuctions
-    */
-   virtual void setWindowSize(const cvac::Size &wsize,
-                               const Ice::Current& = ::Ice::Current() );
-   virtual bool canSetWindowSize(
-                               const ::Ice::Current& = ::Ice::Current() );
-   virtual cvac::Size getWindowSize(
-                               const ::Ice::Current& = ::Ice::Current() );
-   virtual void setSensitivity(Ice::Double falseAlarmRate, Ice::Double recall,
-                               const ::Ice::Current& = ::Ice::Current() );
-   virtual bool canSetSensitivity(
-                               const ::Ice::Current& = ::Ice::Current() );
-   virtual void getSensitivity(Ice::Double &falseAlarmRate, Ice::Double &recall,
-                               const ::Ice::Current& = ::Ice::Current() );
+  /**
+   * Initialize fields for this detector.
+   */
+  TrainerPropertiesI();
+  /**
+   * Read the string properties and convert them to member data values.
+   */
+  bool readProps();
+  /**
+   * Convert member data values into string properties.
+   */
+  bool writeProps();
+  /**
+   * Load the struct's values into our class ignoring uninitialized values
+   */
+ void load(const TrainerProperties &p);
+
  public:
   int numStages;
   int featureType; // CvFeatureParams::HAAR, LBP, or HOG

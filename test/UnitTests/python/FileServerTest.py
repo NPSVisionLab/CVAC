@@ -122,7 +122,7 @@ class FileServerTest(unittest.TestCase):
     #
     # on a remote FileServer, first put, then get, then delete a file
     #
-    def test_remotePutGetDelete(self):
+    def xxxxtest_remotePutGetDelete(self):
         print('putFile remote')
         configStr = "FileService:default -h vision.nps.edu -p 10110"
         baser = self.ic.stringToProxy( configStr )

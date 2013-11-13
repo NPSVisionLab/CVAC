@@ -58,7 +58,8 @@ namespace cvac
     virtual bool convert(const string& _srcAbsPath,
                          const string& _desAbsDir,
                          const string& _desFilename,
-                         vector<string>& _resFilename) = 0;
+                         vector<string>& _resFilename,
+                         vector<string>& _resAuxInfo) = 0;
   };
 
 
@@ -71,7 +72,8 @@ namespace cvac
     bool convert(const string& _srcAbsPath,
                  const string& _desAbsDir,
                  const string& _desFilename,
-                 vector<string>& _resFilename);
+                 vector<string>& _resFilename,
+                 vector<string>& _resAuxInfo);
   };
 
   class MediaConverter_openCV_v2i : public MediaConverter
@@ -89,6 +91,7 @@ namespace cvac
     bool convert(const string& _srcAbsPath,
                  const string& _desAbsDir,
                  const string& _desFilename,
-                 vector<string>& _resFilename);
+                 vector<string>& _resFilename,
+                 vector<string>& _resAuxInfo);
   };
 }
