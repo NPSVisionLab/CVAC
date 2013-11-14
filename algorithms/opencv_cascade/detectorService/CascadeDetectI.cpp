@@ -265,7 +265,7 @@ void CascadeDetectI::process( const Identity &client,
  */
 std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& callback, const cvac::Labelable& lbl )
 {
-  localAndClientMsg(VLogger::DEBUG, callback, "in detectObjects\n");
+  localAndClientMsg(VLogger::DEBUG_2, callback, "in detectObjects\n");
   CvSeq* objects = NULL;
   string fullname = getFSPath( lbl.sub.path, m_CVAC_DataDir );
   return detectObjects( callback, fullname );
@@ -276,16 +276,19 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
  */
 std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& callback, const std::string& fullname )
 {
+  // TODO: since the debug messages below print out the full file path,
+  // they should be local messages only, not send back to the callback.
   std::vector<cv::Rect> results;
   cv::Mat src_img, gray_img, eq_img;
-  //localAndClientMsg(VLogger::DEBUG, callback, "About to process 1 %s\n", fullname.c_str());
+  localAndClientMsg(VLogger::DEBUG_3, callback, "About to process: %s\n", fullname.c_str());
   src_img = cv::imread( fullname.c_str(), CV_LOAD_IMAGE_COLOR );
   if( src_img.data == NULL )
   {
     localAndClientMsg(VLogger::WARN, callback, "cannot open %s\n", fullname.c_str());
     return results;
   }
-  //localAndClientMsg(VLogger::DEBUG, callback, "About to process 2 %s\n", fullname.c_str());
+  localAndClientMsg(VLogger::DEBUG_2, callback,
+                    "Loaded file, will process: %s\n", fullname.c_str());
   cv::cvtColor(src_img, gray_img, CV_RGB2GRAY);
   cv::equalizeHist(gray_img, eq_img);
   float scale_factor = 1.2f; // TODO: make this part of detector parameters
