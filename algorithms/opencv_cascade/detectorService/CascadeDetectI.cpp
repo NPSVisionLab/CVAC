@@ -256,7 +256,6 @@ void CascadeDetectI::process( const Identity &client,
 #else
   processRunSet(this, callback, detectFunc, runset, m_CVAC_DataDir, mServiceMan );
 #endif
-
   callback = NULL;
 }
 
