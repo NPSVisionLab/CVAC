@@ -70,20 +70,23 @@ public:
 };
 
 
-static Ice::CommunicatorPtr iceComm = NULL;
+static Ice::CommunicatorPtr iceComm = 0;
+DetectorPrx initIceConnection(const std::string& detectorNameStr,
+                              Ice::Identity& det_cb,
 
 static void initIce()
 {
   int argc = 2;
   char *argv[3];
-  argv[0] = "cvacBridge";
-  argv[1] = "--Ice.Config=config.client";
+  argv[0] = strdup( detectorNameStr.c_str() );
+  argv[1] = strdup( "--Ice.Config=config.client" );
   argv[2] = NULL;
-  if (iceComm == NULL)
+  if (iceComm == 0)
+  {
     iceComm = Ice::initialize(argc, argv);
-}
-
-std::string cvac::getCVACDataDir()
+  }
+  free( argv[0] );
+  free( argv[1] );
 {
   initIce();
   Ice::PropertiesPtr props = iceComm->getProperties();
