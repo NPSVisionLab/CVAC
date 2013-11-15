@@ -71,12 +71,9 @@ public:
 
 
 static Ice::CommunicatorPtr iceComm = NULL;
-/** Connect to the Ice Service
- */
-DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb,
-                              DetectorCallbackHandlerPtr cr)
+
+static void initIce()
 {
-  
   int argc = 2;
   char *argv[3];
   argv[0] = "cvacBridge";
@@ -84,6 +81,23 @@ DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb
   argv[2] = NULL;
   if (iceComm == NULL)
     iceComm = Ice::initialize(argc, argv);
+}
+
+std::string cvac::getCVACDataDir()
+{
+  initIce();
+  Ice::PropertiesPtr props = iceComm->getProperties();
+  std::string dataDir = props->getProperty("CVAC.DataDir");
+  return dataDir;
+  
+}
+/** Connect to the Ice Service
+ */
+DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb,
+                              DetectorCallbackHandlerPtr cr)
+{
+  
+  initIce();
   
   Ice::PropertiesPtr props = iceComm->getProperties();
   std::string proxStr = detectorNameStr + ".Proxy";
@@ -137,11 +151,10 @@ ResultSet cvac::detect(
   // If user did not supply any detector properties then provide default one.
   if (NULL == detprops)
   {
-      detprops = & dprops;   
+      // need to initialize detector properties to their defaults
+      dprops = detector->getDetectorProperties();   
+      detprops = &dprops;
   }
-
-  Ice::PropertiesPtr iceprops = iceComm->getProperties();
-  std::string dataDir = iceprops->getProperty("CVAC.DataDir");
 
   try
     {	
