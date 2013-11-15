@@ -406,8 +406,8 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
                 # POSITIVES in keys[1]
                 poskeyid = 1
             if poskeyid != -1:
-                pospur = cvac.Purpose( cvac.PurposeType.POSITIVE, -1 )
-                negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, -1 )
+                pospur = cvac.Purpose( cvac.PurposeType.POSITIVE, 1 )
+                negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, 0 )
                 poskey = pur_categories_keys[poskeyid]
                 negkey = pur_categories_keys[1-poskeyid]
                 addPurposedLabelablesToRunSet( rnst, pospur, samples[poskey] )
@@ -648,6 +648,13 @@ def deleteAllFiles( fileserver, uploadedFiles ):
 
     return {'deleted':deletedFiles, 'notDeleted':notDeletedFiles}
 
+def getTrainerProperties(trainer):
+    ''' Get the trainer properties for this trainer'''
+    trainerProps = trainer.getTrainerProperties()
+    if not trainerProps:
+        raise RuntimeError("Getting trainer properties failed")
+    return trainerProps
+
 def getTrainer( configString ):
     '''Connect to a trainer service'''
     trainer_base = ic.stringToProxy( configString )
@@ -700,6 +707,13 @@ def train( trainer, runset, callbackRecv=None, trainerProperties=None ):
 
     return callbackRecv.detectorData
 
+def getDetectorProperties(detector):
+    ''' Get the detector properties for this detector'''
+    detectProps = detector.getDetectorProperties()
+    if not detectProps:
+        raise RuntimeError("Getting detector properties failed")
+    return detectProps
+
 def getDetector( configString ):
     '''Connect to a detector service'''
     detector_base = ic.stringToProxy( configString )
@@ -719,7 +733,7 @@ class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
         # collect all results
         self.allResults.extend( r2.results )
 
-def detect( detector, detectorData, runset, callbackRecv=None ):
+def detect( detector, detectorData, runset, detectorProps=None, callbackRecv=None ):
     '''
     Synchronously run detection with the specified detector,
     trained model, and optional callback receiver.
@@ -769,7 +783,10 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
 
     # connect to detector, initialize with a verbosity value
     # and the trained model, and run the detection on the runset
-    props = cvac.DetectorProperties()
+    if detectorProps == None:
+        props = cvac.DetectorProperties()
+    else:
+        props = detectorProps
     detector.process( cbID, runset, detectorData, props )
 
     if ourRecv:
