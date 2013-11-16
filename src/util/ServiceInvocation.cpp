@@ -71,15 +71,14 @@ public:
 
 
 static Ice::CommunicatorPtr iceComm = 0;
-DetectorPrx initIceConnection(const std::string& detectorNameStr,
-                              Ice::Identity& det_cb,
 
-static void initIce()
+
+static void initIce(const string detectorNameStr)
 {
   int argc = 2;
   char *argv[3];
-  argv[0] = strdup( detectorNameStr.c_str() );
-  argv[1] = strdup( "--Ice.Config=config.client" );
+  argv[0] = _strdup( detectorNameStr.c_str() );
+  argv[1] = _strdup( "--Ice.Config=config.client" );
   argv[2] = NULL;
   if (iceComm == 0)
   {
@@ -87,20 +86,25 @@ static void initIce()
   }
   free( argv[0] );
   free( argv[1] );
+}
+
+string cvac::getCVACDataDir(const string &detectorNameStr)
 {
-  initIce();
+  initIce(detectorNameStr);
   Ice::PropertiesPtr props = iceComm->getProperties();
   std::string dataDir = props->getProperty("CVAC.DataDir");
   return dataDir;
-  
 }
+
 /** Connect to the Ice Service
  */
-DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb,
+                              
+DetectorPrx initIceConnection(const std::string& detectorNameStr,
+                              Ice::Identity& det_cb,
                               DetectorCallbackHandlerPtr cr)
 {
   
-  initIce();
+  initIce(detectorNameStr);
   
   Ice::PropertiesPtr props = iceComm->getProperties();
   std::string proxStr = detectorNameStr + ".Proxy";

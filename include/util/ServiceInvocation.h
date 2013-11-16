@@ -57,5 +57,5 @@ namespace cvac
   /**
    * Get The value of the CVAC_DataDir from the config file
    */
-  std::string getCVACDataDir();
+  std::string getCVACDataDir(const std::string& algorithm);
 }
