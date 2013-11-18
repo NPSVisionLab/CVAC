@@ -228,7 +228,7 @@ void CascadeDetectI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& cu
 
 DetectorProperties CascadeDetectI::getDetectorProperties(const ::Ice::Current& current)
 {
-  return DetectorProperties();
+  return DetectorPropertiesI();
 }
 
 /** Scans the detection cascade across each image in the RunSet
