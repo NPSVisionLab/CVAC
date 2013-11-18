@@ -44,6 +44,10 @@
 #include <util/FileUtils.h>
 #include <util/Timing.h>
 #include <util/ServiceInvocation.h>
+
+#ifdef WIN32
+#define strdup _strdup
+#endif
 /** Utilities for invoking CVAC services from C/C++
  */
 
@@ -77,8 +81,8 @@ static void initIce(const string detectorNameStr)
 {
   int argc = 2;
   char *argv[3];
-  argv[0] = _strdup( detectorNameStr.c_str() );
-  argv[1] = _strdup( "--Ice.Config=config.client" );
+  argv[0] = strdup( detectorNameStr.c_str() );
+  argv[1] = strdup( "--Ice.Config=config.client" );
   argv[2] = NULL;
   if (iceComm == 0)
   {
