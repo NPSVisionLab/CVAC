@@ -109,34 +109,7 @@ ENDIF (APPLE)
 #
 # What version of CVAC?
 #
-# Try to create the include/version.h file that specifies the CVAC version,
-# as obtained from the version-control tag (major.minor) and the
-# number of commits since that tag (patch)
-if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
-    EXECUTE_PROCESS( COMMAND git describe --long --match "v[0-9]*.[0-9]*"
-              OUTPUT_VARIABLE CVAC_VERSION_GIT
-              OUTPUT_STRIP_TRAILING_WHITESPACE
-              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    )
-    IF ( CVAC_VERSION_GIT )
-        # parse this kind of string v1.2-3-gkd3kdj4:
-	# CVAC_VERSION_MAJMIN is 1.2
-    	# CVAC_VERSION_MAJOR is 1
-    	# CVAC_VERSION_MINOR is 2
-    	# CVAC_VERSION_PATCH is 3
-    	# CVAC_VERSION is 1.2.3
-     	STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
-     	STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
-     	STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
-     	STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
-     	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
-        MESSAGE( STATUS "successfully parsed version from git: CVAC-${CVAC_VERSION}" )
-     	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
-                                   ${CMAKE_SOURCE_DIR}/include/version.h)
         # Only in the devel branch (to avoid merge conflicts):
-        # Need to update the version.h.repo file so it will be up to date
-        # for later distribution of the source without git (like a zip file);
-        # see below.
         EXECUTE_PROCESS( COMMAND git status -b --untracked-files=no
               OUTPUT_VARIABLE CVAC_GIT_BRANCH
               OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -144,38 +117,64 @@ if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
         )
         IF( CVAC_GIT_BRANCH )
      	  IF( CVAC_GIT_BRANCH MATCHES "# On branch devel" )
-            CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h
-                           ${CMAKE_SOURCE_DIR}/include/version.h.repo)
             MESSAGE( STATUS "wrote version file include/version.h.repo" )
           ENDIF()
         ENDIF()
-    ENDIF( CVAC_VERSION_GIT )
-endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 
-if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
-    # .git directory doesn't exist: now make sure that
-    # files are a complete download, not a fragmented collection.
-    # In other words, there must be a include/version.h.repo file.
-    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.repo
-          ${CMAKE_SOURCE_DIR}/include/version.h)
-    FILE( STRINGS ${CMAKE_SOURCE_DIR}/include/version.h
-          versionfile_contents
-          REGEX "#define CVAC_VERSION*" )
-    STRING( REGEX REPLACE ".*MAJOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MAJOR ${versionfile_contents} )
-    STRING( REGEX REPLACE ".*MINOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MINOR ${versionfile_contents} )
-    STRING( REGEX REPLACE ".*PATCH ([^ ]+).*" "\\1" CVAC_VERSION_PATCH ${versionfile_contents} )
-    SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
-    SET( CVAC_VERSION_MAJMIN ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR} )
-    MESSAGE( STATUS "successfully parsed version from version.h: CVAC-${CVAC_VERSION}" )
-endif( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
+# Parse the include/version.h file for the current CVAC version.
+FILE( STRINGS ${CMAKE_SOURCE_DIR}/include/version.h
+  versionfile_contents
+  REGEX "#define CVAC_VERSION*" )
+STRING( REGEX REPLACE ".*MAJOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MAJOR ${versionfile_contents} )
+STRING( REGEX REPLACE ".*MINOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MINOR ${versionfile_contents} )
+STRING( REGEX REPLACE ".*PATCH ([^ ]+).*" "\\1" CVAC_VERSION_PATCH ${versionfile_contents} )
+SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+SET( CVAC_VERSION_MAJMIN ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR} )
+MESSAGE( STATUS "successfully parsed version from version.h: CVAC-${CVAC_VERSION}" )
 
 IF( "x${CVAC_VERSION}x" STREQUAL "xx"
     OR "x${CVAC_VERSION_MAJOR}x" STREQUAL "xx"
-    OR "x${CVAC_VERSION_MINOR}x" STREQUAL "xx" )
+    OR "x${CVAC_VERSION_MINOR}x" STREQUAL "xx"
+    OR "x${CVAC_VERSION_PATCH}x" STREQUAL "xx" )
     # need version string to continue for many tasks
     MESSAGE( SEND_ERROR "Could not obtain CVAC version from git or include/version.h:" )
     MESSAGE( SEND_ERROR "all:${CVAC_VERSION} major:${CVAC_VERSION_MAJOR} minor:${CVAC_VERSION_MINOR}" )
 ENDIF()
+
+# Try to re-create the include/version.h file that specifies the CVAC version,
+# as obtained from the version-control tag (major.minor) and the
+# number of completed builds in the devel branch since that tag (patch).
+# Note that the number of builds is set on the build server.
+# The build process increases the PATCH number found in the
+# version.h file by one before building, and it commits it back into
+# the repository.
+if( INCREASE_VERSION_PATCH )
+  if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+    MESSAGE( SEND_ERROR "Cannot INCREASE_VERSION_PATCH without git repository" )
+  endif()
+  EXECUTE_PROCESS( COMMAND git describe --long --match "v[0-9]*.[0-9]*"
+    OUTPUT_VARIABLE CVAC_VERSION_GIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+  IF ( NOT CVAC_VERSION_GIT )
+    MESSAGE( SEND_ERROR "Error obtaining git version; cannot INCREASE_VERSION_PATCH" )
+  ENDIF()
+  # parse this kind of string v1.2-3-gkd3kdj4:
+  # CVAC_VERSION_MAJMIN is 1.2
+  # CVAC_VERSION_MAJOR is 1
+  # CVAC_VERSION_MINOR is 2
+  # CVAC_VERSION_PATCH is obtained from the previous version file.
+  # CVAC_VERSION is 1.2.x
+  STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
+  STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
+  STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
+  MATH( EXPR CVAC_VERSION_PATCH "${CVAC_VERSION_PATCH}+1" )
+  SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+  MESSAGE( STATUS "successfully did INCREASE_VERSION_PATCH via git: CVAC-${CVAC_VERSION}" )
+  CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
+    ${CMAKE_SOURCE_DIR}/include/version.h)
+endif( INCREASE_VERSION_PATCH )
 
 
 # offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
