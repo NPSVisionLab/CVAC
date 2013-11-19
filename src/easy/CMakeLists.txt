@@ -11,20 +11,12 @@ WRAP_SLICE2PY( SLICE_FILES
 )
 
 #
-# Copy paths.py to the python lib dir expanding variables
-#
-CONFIGURE_FILE(paths.py.in "${SLICE_OUTPUT_PYTHONDIR}/paths.py")
-
-#
 # Copy easy.py to the python lib dir without expanding
 #
-CONFIGURE_FILE(easy.py "${SLICE_OUTPUT_PYTHONDIR}/easy.py" COPYONLY)
+CONFIGURE_FILE(easy.py "${SLICE_OUTPUT_PYTHONDIR}/easy/easy.py" COPYONLY)
+CONFIGURE_FILE(__init__.py "${SLICE_OUTPUT_PYTHONDIR}/easy/__init__.py" COPYONLY)
+CONFIGURE_FILE(util/ArchiveHandler.py "${SLICE_OUTPUT_PYTHONDIR}/easy/util/ArchiveHandler.py" COPYONLY)
+CONFIGURE_FILE(util/__init__.py "${SLICE_OUTPUT_PYTHONDIR}/easy/util/__init__.py" COPYONLY)
 
 add_custom_target( easy ALL DEPENDS ${SLICE_FILES} )
 
-IF( BUILD_BINARY_PACKAGE )
-  INSTALL(FILES easy.py
-    DESTINATION src/easy
-    COMPONENT Runtime
-  )
-ENDIF( BUILD_BINARY_PACKAGE )

@@ -1,17 +1,17 @@
 @echo off
 @setlocal
 REM Edit the the INSTALLDIR line below with where the distribution was installed
-set INSTALLDIR=
+set INSTALLDIR=__INSTALL_PATH__
 if "%INSTALLDIR%" neq "" goto continue
 echo "Install Directory must be set for startServices script to work!"
 exit /b 1
 :continue
 REM If running the Java services (Corpus, FileServer, etc) edit JAVAEXE
 REM and set to the path of the java executable
-set JAVAEXE=
+set JAVAEXE=__JAVA_PATH__
 REM If running any Python services set in python.config set the path to
 REM the Python 2.6 executable below
-set PYTHONEXE=
+set PYTHONEXE=__PYTHON_PATH__
 set THRDPARTYDIR=%INSTALLDIR%/3rdparty
 set THRDPARTYLIBDIR=%INSTALLDIR%/3rdparty/lib
 set JARDIR=%INSTALLDIR%/bin
@@ -20,6 +20,15 @@ set ICEBOXJAR=%ICEDIR%/lib/IceBox.jar
 set OPENCVDIR=%THRDPARTYDIR%/opencv
 set PATH=bin;%ICEDIR%/bin;%OPENCVDIR%/bin;%THRDPARTYDIR%/libarchive\bin;%PATH%
 chdir "%INSTALLDIR%"
+
+set LOCKFILE=.services_started.lock
+if exist %LOCKFILE% (
+    echo CVAC services have supposedly been started already.  Either stop them
+    echo first, or if you are sure that they are not running, remove the
+    echo lock file \'%LOCKFILE%\'.
+    exit /b 1
+)
+
 start "CVAC Services (C++)" "cmd /K ""%ICEDIR%/bin/icebox.exe" --Ice.Config=config.icebox"
 
 if "%JAVAEXE%" neq "" goto startjava
@@ -31,7 +40,9 @@ REM Python services that are listed in python.config
 if "%PYTHONEXE%" neq "" (if exist "%INSTALLDIR%/python.config" goto startpython)
 goto next2
 :startpython
-    for /F "eol=# tokens=*" %%A in (%INSTALLDIR%/python.config) do start "CVAC Service (Python)" "cmd /K ""%PYTHONEXE%" %%A"
+    for /F "usebackq eol=# tokens=*" %%A in ("%INSTALLDIR%/python.config") do start "CVAC Service (Python)" "cmd /K ""%PYTHONEXE%" %%A"
 :next2
 echo CVAC services launched
+REM Lets do a window equivalent of touch
+type nul >> %LOCKFILE% & copy %LOCKFILE% +,,
 exit /b 0

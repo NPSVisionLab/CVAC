@@ -10,11 +10,14 @@ IF( NOT PYTHON_EXECUTABLE )
   MESSAGE( FATAL_ERROR "Python executable not found: cannot run Python UnitTests" )
 ENDIF( NOT PYTHON_EXECUTABLE )
 
+IF( NOT ICE_PYTHON_DIR )
+  MESSAGE( FATAL_ERROR "ICE Python bindings not found: cannot run Python UnitTests" )
+ENDIF()
+
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
 set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build/timestamp")
 
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/easy/paths.py.in ${CMAKE_CURRENT_SOURCE_DIR}/paths.py)
 
 add_custom_target(PythonUnitTests ALL DEPENDS ${SLICE_FILES})
 IF (WIN32)
@@ -47,5 +50,12 @@ ADD_TEST( MiniTutorialTest
   ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/MiniTutorialTest.py )
 SET_TESTS_PROPERTIES( MiniTutorialTest
   PROPERTIES ENVIRONMENT "PYTHONPATH=${MY_PYTHONPATH};PATH=${MY_PATH}")
+
+IF( BUILD_WITH_RSI )
+  ADD_TEST( RunsetIteratorTest
+    ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/RunsetIteratorTest.py )
+  SET_TESTS_PROPERTIES( RunsetIteratorTest
+    PROPERTIES ENVIRONMENT "PYTHONPATH=${MY_PYTHONPATH};PATH=${MY_PATH}")
+ENDIF()
 
 INCLUDE (UserCMakeLists.txt OPTIONAL)

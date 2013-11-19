@@ -1,0 +1,19 @@
+from distutils.core import setup, Extension
+
+setup (name = '${PYTHON_PACK_NAME}',
+       version = '${CVAC_VERSION}',  # configured from CMake
+       description = 'Easy! Computer Vision, a connection to CVAC, the Computer Vision Algorithm Collection',
+       url = 'https://github.com/NPSVisionLab/CVAC',
+       author = 'NPS Vision Lab',
+       py_modules = ['cv'],
+       packages = ['cvac', 'easy', 'easy/util', 'ice', 'ice/IceBox',
+                   'ice/IceGrid', 'ice/IcePatch2', 'ice/IceStorm',
+                   'ice/x64/IceBox', 'ice/x64/IceGrid', 'ice/x64/IcePatch2', 
+                   'ice/x64/IceStorm',
+                  ],
+       data_files=[('Lib/site-packages/Ice',['Ice/IcePy.pyd']),
+                   ('Lib/site-packages',['ice.pth']),
+                   ('Lib/site-packages',['cv2.pyd']),
+                   ('Lib/site-packages',['easy.pth'])],
+
+    )

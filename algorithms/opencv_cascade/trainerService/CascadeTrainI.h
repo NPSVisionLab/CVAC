@@ -45,7 +45,7 @@
 #include <IceBox/IceBox.h>
 #include <IceUtil/UUID.h>
 #include <util/processRunSet.h>
-#include <util/ServiceMan.h>
+#include <util/ServiceManI.h>
 
 class SamplesParams
 {
@@ -67,21 +67,23 @@ public:
 class TrainerPropertiesI : public cvac::TrainerProperties
 {
  public:
-   /**
-    * Client access fuctions
-    */
-   virtual void setWindowSize(const cvac::Size &wsize,
-                               const Ice::Current& = ::Ice::Current() );
-   virtual bool canSetWindowSize(
-                               const ::Ice::Current& = ::Ice::Current() );
-   virtual cvac::Size getWindowSize(
-                               const ::Ice::Current& = ::Ice::Current() );
-   virtual void setSensitivity(Ice::Double falseAlarmRate, Ice::Double recall,
-                               const ::Ice::Current& = ::Ice::Current() );
-   virtual bool canSetSensitivity(
-                               const ::Ice::Current& = ::Ice::Current() );
-   virtual void getSensitivity(Ice::Double &falseAlarmRate, Ice::Double &recall,
-                               const ::Ice::Current& = ::Ice::Current() );
+  /**
+   * Initialize fields for this detector.
+   */
+  TrainerPropertiesI();
+  /**
+   * Read the string properties and convert them to member data values.
+   */
+  bool readProps();
+  /**
+   * Convert member data values into string properties.
+   */
+  bool writeProps();
+  /**
+   * Load the struct's values into our class ignoring uninitialized values
+   */
+ void load(const TrainerProperties &p);
+
  public:
   int numStages;
   int featureType; // CvFeatureParams::HAAR, LBP, or HOG
@@ -95,23 +97,24 @@ class TrainerPropertiesI : public cvac::TrainerProperties
   int height;
 };
 
-class CascadeTrainI : public cvac::DetectorTrainer
+class CascadeTrainI : public cvac::DetectorTrainer, public cvac::StartStop
 {
  public:
-  CascadeTrainI(cvac::ServiceManager *serv);
+  CascadeTrainI();
   ~CascadeTrainI();
-	
+
+  void setServiceManager(cvac::ServiceManagerI *serv);
+
 
  public:
-  virtual void initialize(::Ice::Int, const ::Ice::Current& = ::Ice::Current() );
   virtual void process(const Ice::Identity &client, const ::cvac::RunSet&,
+                       const ::cvac::TrainerProperties&,
                        const ::Ice::Current& = ::Ice::Current() );
-  virtual bool isInitialized(const ::Ice::Current& = ::Ice::Current() );
-  virtual void destroy(const ::Ice::Current& = ::Ice::Current() );
+  virtual bool cancel(const Ice::Identity &client, const ::Ice::Current& = ::Ice::Current() );
   virtual ::std::string getName(const ::Ice::Current& = ::Ice::Current() );
   virtual ::std::string getDescription(const ::Ice::Current& = ::Ice::Current() );
-  virtual void setVerbosity(::Ice::Int, const ::Ice::Current& = ::Ice::Current() );
-  virtual ::cvac::TrainerPropertiesPrx getTrainerProperties(const ::Ice::Current& = ::Ice::Current());
+  virtual ::cvac::TrainerProperties getTrainerProperties(const ::Ice::Current& = ::Ice::Current());
+
   void writeBgFile( const RunSetWrapper& rsw, const std::string& bgFilename, 
                     int* pNumNeg, std::string datadir );
 
@@ -124,12 +127,15 @@ class CascadeTrainI : public cvac::DetectorTrainer
                          int numPos, int numNeg, 
                          const TrainerPropertiesI *trainProps );
   void addDataPath(cvac::RunSet runset, const std::string &CVAC_DataDir);
+  
  private:
+  void initialize();
+  
   bool  fInitialized;    	
   int   m_cvacVerbosity;
-  cvac::ServiceManager *mServiceMan;
-  Ice::ObjectAdapterPtr mAdapter;
-  TrainerPropertiesI *mTrainProps;
+  cvac::ServiceManagerI *mServiceMan;
+  Ice::ObjectAdapterPtr  mAdapter;
+  TrainerPropertiesI    *mTrainProps;
 };
 
 #endif //_CascadeTrainI_H__

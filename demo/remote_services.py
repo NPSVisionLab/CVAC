@@ -41,11 +41,11 @@ easy.printResults( results )
 # Train on a remote machine, obtain the model file, and test locally.
 # Assume the files are on the remote machine, or transfer with putAllFiles.
 #
-trainer = easy.getTrainer( "bowTrain:default -p 10103 "+ host) # remote
+trainer = easy.getTrainer( "BOW_Trainer:default -p 10103 "+ host) # remote
 trainset = easy.createRunSet( "trainImg" );
 trainedModel = easy.train( trainer, trainset )
 easy.getFile( fileserver, trainedModel.file )  # downloads the model from remote
 print("{0}".format(trainedModel))
-detector = easy.getDetector( "bowTest:default -p 10104" ) # local service
+detector = easy.getDetector( "BOW_Detector:default -p 10104" ) # local service
 testset = easy.createRunSet("testImg","UNPURPOSED"  )
 results = easy.detect( detector, trainedModel, testset )

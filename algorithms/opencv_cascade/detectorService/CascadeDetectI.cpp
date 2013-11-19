@@ -38,51 +38,57 @@
 #include <iostream>
 #include <vector>
 
-
 #include <Ice/Communicator.h>
 #include <Ice/Initialize.h>
 #include <Ice/ObjectAdapter.h>
 #include <util/processRunSet.h>
 #include <util/FileUtils.h>
 #include <util/DetectorDataArchive.h>
+#include <util/ServiceManI.h>
 
 #include <highgui.h>
 
 #include "CascadeDetectI.h"
 
 using namespace cvac;
+using namespace Ice;
 
 
 ///////////////////////////////////////////////////////////////////////////////
 // This is called by IceBox to get the service to communicate with.
 extern "C"
 {
-  //
-  // ServiceManager handles all the icebox interactions so we construct
-  // it and set a pointer to our detector.
-  //
-  ICE_DECLSPEC_EXPORT IceBox::Service* create(Ice::CommunicatorPtr communicator)
+  /**
+   * Create the detector service via a ServiceManager.  The 
+   * ServiceManager handles all the icebox interactions.  Pass the constructed
+   * detector instance to the ServiceManager.  The ServiceManager obtains the
+   * service name from the config.icebox file as follows. Given this
+   * entry:
+   * IceBox.Service.BOW_Detector=bowICEServer:create --Ice.Config=config.service
+   * ... the name of the service is BOW_Detector.
+   */
+  ICE_DECLSPEC_EXPORT IceBox::Service* create(CommunicatorPtr communicator)
   {
-    ServiceManager *sMan = new ServiceManager();
-    CascadeDetectI *detector = new CascadeDetectI(sMan);
-    sMan->setService(detector, "OpenCVCascadeDetector");
-    return (::IceBox::Service*) sMan->getIceService();
+    CascadeDetectI *detector = new CascadeDetectI();
+    ServiceManagerI *sMan = new ServiceManagerI( detector, detector );
+    detector->setServiceManager( sMan );
+    return sMan;
   }
 }
 
 // callback function for processRunSet
 // TODO: remove once RunSetWrapper works, see NEW_RUNSETWRAPPER
-ResultSetV2 detectFunc(DetectorPtr detector, const char *fname);
+ResultSet detectFunc(DetectorPtr detector, const char *fname);
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CascadeDetectI::CascadeDetectI(ServiceManager *sman)
+CascadeDetectI::CascadeDetectI()
   : callback(NULL)
-  , fInitialized(false)
   , cascade(NULL)
+  , mServiceMan(NULL)
+  , gotModel(false)
 {
-  mServiceMan = sman;
 }
 
 CascadeDetectI::~CascadeDetectI()
@@ -90,80 +96,127 @@ CascadeDetectI::~CascadeDetectI()
   delete cascade;
 }
 
-// Client verbosity
-void CascadeDetectI::initialize( ::Ice::Int verbosity,
-                                 const ::DetectorData& data,
-                                 const ::Ice::Current& current)
+void CascadeDetectI::setServiceManager(ServiceManagerI *sman)
 {
+  mServiceMan = sman;
+}
+
+void CascadeDetectI::starting()
+{
+  m_CVAC_DataDir = mServiceMan->getDataDir();	
+
+  // check if the config.service file contains a trained model; if so, read it.
+  string modelfile = mServiceMan->getModelFileFromConfig();
+
+  if (modelfile.empty())
+  {
+    localAndClientMsg(VLogger::DEBUG, NULL, "No trained model file specified in service config.\n" );
+  }
+  else
+  {
+    localAndClientMsg(VLogger::DEBUG, NULL, "Will read trained model file as specified in service config: %s\n",
+                      modelfile.c_str());
+    gotModel = readModelFile( modelfile, Ice::Current() );
+    if (!gotModel)
+    {
+      localAndClientMsg(VLogger::WARN, NULL, "Failed to read pre-configured trained model "
+                        "from: %s; will continue but now require client to send trained model\n",
+                        modelfile.c_str());
+    }
+  }
+}  
+
+bool CascadeDetectI::readModelFile( string model, const ::Ice::Current& current)
+{
+    std::string _extFile = model.substr(model.rfind(".")+1,
+                                        model.length());
+    if (_extFile.compare("xml") != 0)
+    { 
+      //for a zip file
+      std::string zipfilename = model;
+      std::string connectName = getClientConnectionName(current);
+      std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
+                                                                           connectName);
+      
+      std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
+      DetectorDataArchive dda;
+      dda.unarchive(zipfilename, clientDir);
+      // This detector only needs an XML file
+      model = dda.getFile(XMLID);
+      if (model.empty())
+        {
+          localAndClientMsg( VLogger::WARN, NULL,
+                             "unable to load classifier from archive file %s\n", zipfilename.c_str());
+          return false;
+        }
+    }
+  // load cascade from XML file
+  cascade = new cv::CascadeClassifier;
+  if (cascade->load(model.c_str()) == false)
+  {
+    localAndClientMsg( VLogger::WARN, NULL,
+                       "unable to load classifier from %s\n", model.c_str());
+    return false;
+  }
+  cascade_name = model;
+  return true;
+}
+
+// Client verbosity
+bool CascadeDetectI::initialize( const DetectorProperties& detprops,
+                                 const FilePath& model,
+                                 const Current& current)
+{
+  // Create DetectorPropertiesI class to allow the user to modify detection
+  // parameters
+  mDetectorProps = new DetectorPropertiesI();
+
   // Get the default CVAC data directory as defined in the config file
   localAndClientMsg(VLogger::DEBUG, NULL, "Initializing CascadeDetector...\n");
-  m_CVAC_DataDir = mServiceMan->getDataDir();	
-  std::string _extFile = data.file.filename.substr(data.file.filename.rfind(".")+1,
-                                                   data.file.filename.length());
-  std::string dpath = "";
-  if (_extFile.compare("xml") == 0)
-  {
-    dpath = getFSPath( data.file, m_CVAC_DataDir );
-  }
-  else	//for a zip file
-  { 
-     std::string zipfilename = getFSPath( data.file, m_CVAC_DataDir );
-     std::string connectName = getClientConnectionName(current);
-     std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getIceName(),
-                                                             connectName);
-                                    
-     std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
-     DetectorDataArchive dda;
-     dda.unarchive(zipfilename, clientDir);
-     // This detector only needs an XML file
-     dpath = dda.getFile(XMLID);
-     if (dpath.empty())
-     {
-         localAndClientMsg( VLogger::WARN, NULL,
-                       "unable to load classifier from archive file %s\n", zipfilename.c_str());\
-         fInitialized = false;
-         return;
-     }
-  }
-  Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
-  string verbStr = props->getProperty("CVAC.ServicesVerbosity");
+  Ice::PropertiesPtr iceprops = (current.adapter->getCommunicator()->getProperties());
+  string verbStr = iceprops->getProperty("CVAC.ServicesVerbosity");
   if (!verbStr.empty())
   {
     vLogger.setLocalVerbosityLevel( verbStr );
   }
-  localAndClientMsg( VLogger::DEBUG_1, NULL, "initializing with %s\n", dpath.c_str());
 
-  // load cascade from XML file
-  cascade = new cv::CascadeClassifier;
-  if (cascade->load(dpath.c_str()) == false)
+  if(model.filename.empty())
   {
-    localAndClientMsg( VLogger::WARN, NULL,
-                       "unable to load classifier from %s\n", dpath.c_str());
-    fInitialized = false;
-    return;
+    if (!gotModel)
+    {
+        localAndClientMsg(VLogger::ERROR, NULL, "No trained model available, aborting.\n" );
+        return false;
+    }
+    // ok, go on with pre-configured model
   }
-  cascade_name = dpath;
+  else
+  {
+    string modelfile = getFSPath( model, m_CVAC_DataDir );
+    localAndClientMsg( VLogger::DEBUG_1, NULL, "initializing with %s\n", modelfile.c_str());
+    gotModel = readModelFile( modelfile, current );
+    if (!gotModel)
+    {
+      localAndClientMsg(VLogger::ERROR, NULL,
+                        "Failed to initialize because explicitly specified trained model "
+                        "cannot be found or loaded: %s\n", modelfile.c_str());
+      return false;
+    }
+  }
 
   localAndClientMsg(VLogger::INFO, NULL, "CascadeDetector initialized.\n");
-  fInitialized = true;
+  // Set the default window size to what the cascade was trained as.
+  // User can override this by passing in properties in the process call.
+  cv::Size orig = cascade->getOriginalWindowSize(); // Default to size trained with
+  mDetectorProps->nativeWindowSize.width = orig.width;
+  mDetectorProps->nativeWindowSize.height = orig.height;
+  return true;
 }
 
-
-
-bool CascadeDetectI::isInitialized(const ::Ice::Current& current)
-{
-  return fInitialized;
-}
- 
-void CascadeDetectI::destroy(const ::Ice::Current& current)
-{
-  delete cascade;
-  fInitialized = false;
-}
 std::string CascadeDetectI::getName(const ::Ice::Current& current)
 {
-  return "OpenCVCascadeDetector";
+  return mServiceMan->getServiceName();
 }
+
 std::string CascadeDetectI::getDescription(const ::Ice::Current& current)
 {
   return "OpenCV Cascade Detector (boost)";
@@ -173,48 +226,99 @@ void CascadeDetectI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& cu
 {
 }
 
-DetectorData CascadeDetectI::createCopyOfDetectorData(const ::Ice::Current& current)
-{	
-  DetectorData data;
-  return data;
-}
-
-DetectorPropertiesPrx CascadeDetectI::getDetectorProperties(const ::Ice::Current& current)
+DetectorProperties CascadeDetectI::getDetectorProperties(const ::Ice::Current& current)
 {
-  return NULL;
+  return DetectorPropertiesI();
 }
 
 /** Scans the detection cascade across each image in the RunSet
  * and returns the results to the client
  */
-void CascadeDetectI::process( const Ice::Identity &client,
-                              const ::RunSet& runset,
-                              const ::Ice::Current& current)
+void CascadeDetectI::process( const Identity &client,
+                              const RunSet& runset,
+                              const FilePath& model,
+                              const DetectorProperties& detprops,
+                              const Current& current)
 {
   callback = DetectorCallbackHandlerPrx::uncheckedCast(
             current.con->createProxy(client)->ice_oneway());
 
-  // While we don't have the new RunSetWrapper and iterator, use the
-  // processRunSet callback method
-#if NEW_RUNSETWRAPPER
-  // loop over Labelable in runset
-  // TODO: for each labelable...
-  Labelable* ll = new Labelable( 0.2f, Label(), Substrate() );
-  const cvac::Labelable& labelable = *ll; // TODO: should come from iterator
+  initialize( detprops, model, current );
+  mDetectorProps->load(detprops);
+  //////////////////////////////////////////////////////////////////////////
+  // Setup - RunsetConstraints
+  cvac::RunSetConstraint mRunsetConstraint;  
+  mRunsetConstraint.addType("png");
+  mRunsetConstraint.addType("tif");
+  mRunsetConstraint.addType("jpg");
+  // End - RunsetConstraints
+
+  //////////////////////////////////////////////////////////////////////////
+  // Start - RunsetWrapper
+  mServiceMan->setStoppable();  
+  cvac::RunSetWrapper mRunsetWrapper(&runset,m_CVAC_DataDir,mServiceMan);
+  mServiceMan->clearStop();
+  if(!mRunsetWrapper.isInitialized())
   {
-    // do the actual detection
-    CvSeq* objects;
-    objects = detectObjects( callback, labelable );
-
-    // convert to ResultSet and send to ICE client
-    ResultSetV2 resSet = convertResults( labelable, objects );
-    sendResultsToClient( callback, resSet );
+    localAndClientMsg(VLogger::ERROR, callback,
+      "RunsetWrapper is not initialized, aborting.\n");    
+    return;
   }
-#else
-  processRunSet(this, callback, detectFunc, runset, m_CVAC_DataDir, mServiceMan );
-#endif
+  // End - RunsetWrapper
 
-  callback = NULL;
+  //////////////////////////////////////////////////////////////////////////
+  // Start - RunsetIterator
+  int nSkipFrames = 150;  //the number of skip frames
+  mServiceMan->setStoppable();
+  cvac::RunSetIterator mRunsetIterator(&mRunsetWrapper,mRunsetConstraint,
+                                       mServiceMan,nSkipFrames);
+  mServiceMan->clearStop();
+  if(!mRunsetIterator.isInitialized())
+  {
+    localAndClientMsg(VLogger::ERROR, callback,
+      "RunSetIterator is not initialized, aborting.\n");
+    return;
+  } 
+  // End - RunsetIterator
+ 
+  mServiceMan->setStoppable();
+  while(mRunsetIterator.hasNext())
+  {
+    if((mServiceMan != NULL) && (mServiceMan->stopRequested()))
+    {        
+      mServiceMan->stopCompleted();
+      break;
+    }
+  
+    cvac::Labelable& labelable = *(mRunsetIterator.getNext());
+    {
+      std::vector<cv::Rect> objects = detectObjects( callback, labelable );
+      addResult(mRunsetIterator.getCurrentResult(),labelable,objects);      
+    }
+  }  
+  callback->foundNewResults(mRunsetIterator.getResultSet());
+  mServiceMan->clearStop();
+
+  //////////////////////////////////////////////////////////////////////////
+  // Example to show results
+  cvac::ResultSet& tResSet = mRunsetIterator.getResultSet();
+  for(int kres=0;kres<tResSet.results.size();kres++)
+  {
+    localAndClientMsg( VLogger::DEBUG, NULL, "Original= %s, Found= %i labels\n", 
+      tResSet.results[kres].original->sub.path.filename.c_str(),
+      tResSet.results[kres].foundLabels.size());
+
+    for(int kfnd=0;kfnd<tResSet.results[kres].foundLabels.size();kfnd++)
+    {
+      LabeledTrackPtr _tPtr = static_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());      
+      if(_tPtr->lab.hasLabel)
+      {
+        if(_tPtr->keyframesLocations[0].frame.framecnt != -1)
+          localAndClientMsg( VLogger::DEBUG, NULL, "at Frame=%i\n",_tPtr->keyframesLocations[0].frame.framecnt);
+      }     
+    }    
+  }  
+  //////////////////////////////////////////////////////////////////////////
 }
 
 /** run the cascade on the image described in lbl,
@@ -235,28 +339,81 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
 {
   std::vector<cv::Rect> results;
   cv::Mat src_img, gray_img, eq_img;
-  localAndClientMsg(VLogger::DEBUG, callback, "About to process 1 %s\n", fullname.c_str());
+  //localAndClientMsg(VLogger::DEBUG, callback, "About to process 1 %s\n", fullname.c_str());
   src_img = cv::imread( fullname.c_str(), CV_LOAD_IMAGE_COLOR );
   if( src_img.data == NULL )
   {
     localAndClientMsg(VLogger::WARN, callback, "cannot open %s\n", fullname.c_str());
     return results;
   }
-  localAndClientMsg(VLogger::DEBUG, callback, "About to process 2 %s\n", fullname.c_str());
+  //localAndClientMsg(VLogger::DEBUG, callback, "About to process 2 %s\n", fullname.c_str());
   cv::cvtColor(src_img, gray_img, CV_RGB2GRAY);
   cv::equalizeHist(gray_img, eq_img);
-  float scale_factor = 1.2f; // TODO: make this part of detector parameters
-  int min_neighbors = 3; // TODO: make this a parameter
   int flags = 0;       // TODO: make this a parameter
-  cv::Size orig = cascade->getOriginalWindowSize(); // TODO: make this a parameter, for now use same as cascade
-  cascade->detectMultiScale(eq_img, results, scale_factor, min_neighbors, flags, orig); 
+  cv::Size minwinSize;
+  cv::Size maxwinSize;
+  maxwinSize.width = 0;
+  maxwinSize.height = 0;
+  if (mDetectorProps->slideStartSize.width == 0 || mDetectorProps->slideStartSize.width == 0 || 
+      mDetectorProps->slideStopSize.width == 0 || mDetectorProps->slideStopSize.width == 0)
+  {  // no min max windows specified so use nativeWindowSize
+      minwinSize.width = mDetectorProps->nativeWindowSize.width;
+      minwinSize.height = mDetectorProps->nativeWindowSize.height;
+  }else
+  { // min max specified
+      maxwinSize.width = mDetectorProps->slideStopSize.width;
+      maxwinSize.height = mDetectorProps->slideStopSize.height;
+      minwinSize.width = mDetectorProps->slideStartSize.width;
+      minwinSize.height = mDetectorProps->slideStartSize.height;
+  }
+  cascade->detectMultiScale(eq_img, results, mDetectorProps->slideScaleFactor, 
+                  mDetectorProps->minNeighbors, flags, minwinSize, maxwinSize);
 
   return results;
 }
 
+/** add OpenCV Result to CVAC Result
+ */
+void CascadeDetectI::addResult(cvac::Result& _res,cvac::Labelable& _converted,
+                               std::vector<cv::Rect> _rects)
+{	
+  int detcount = _rects.size();
+  localAndClientMsg(VLogger::DEBUG, NULL, "detections: %d\n", detcount); 
+
+  if(_rects.size()>0)
+  {
+    LabeledTrackPtr newFound = new LabeledTrack();    
+    for(std::vector<cv::Rect>::iterator it = _rects.begin(); it != _rects.end(); ++it)
+    {
+      newFound->lab.hasLabel = true;
+      newFound->lab.name = cascade_name;
+      newFound->confidence = 1.0f;
+
+      cv::Rect r = *it;
+
+      BBox* box = new BBox();
+      box->x = r.x;
+      box->y = r.y;
+      box->width = r.width;
+      box->height = r.height;
+
+      FrameLocation floc;
+      floc.loc = box;        
+      
+      if(!_converted.lab.hasLabel && !_converted.lab.name.empty())
+        floc.frame.framecnt = atoi(_converted.lab.name.c_str());  //This info. is frameNumber.
+      else
+        floc.frame.framecnt = -1; 
+
+      newFound->keyframesLocations.push_back(floc);
+    }
+    _res.foundLabels.push_back( newFound );
+  }  
+}
+
 /** convert from OpenCV result to CVAC ResultSet
  */
-ResultSetV2 CascadeDetectI::convertResults( const Labelable& original, std::vector<cv::Rect> rects)
+ResultSet CascadeDetectI::convertResults( const Labelable& original, std::vector<cv::Rect> rects)
 {	
   int detcount = rects.size();
   localAndClientMsg(VLogger::DEBUG, NULL, "detections: %d\n", detcount);
@@ -279,25 +436,27 @@ ResultSetV2 CascadeDetectI::convertResults( const Labelable& original, std::vect
     LabeledLocation* newLocation = new LabeledLocation();
     newLocation->lab.hasLabel = true;
     newLocation->lab.name = cascade_name;
+    newLocation->confidence = 1.0f;
     newLocation->loc = box;
     
     tResult.foundLabels.push_back( newLocation );
   }
   
-  ResultSetV2 resSet;	
+  ResultSet resSet;	
   resSet.results.push_back( tResult );
   
   return resSet;
 }
 
+
 // callback for processRunSet
-ResultSetV2 detectFunc(DetectorPtr detector, const char *fname)
+ResultSet detectFunc(DetectorPtr detector, const char *fname)
 {
   localAndClientMsg(VLogger::DEBUG, NULL, "Filename for Detection: %s\n", fname);
   CascadeDetectI *detI = dynamic_cast<CascadeDetectI*>(detector.get());
   if (!detI)
   {
-    return ResultSetV2();
+    return ResultSet();
   }
 
   // do the actual detection
@@ -306,6 +465,67 @@ ResultSetV2 detectFunc(DetectorPtr detector, const char *fname)
 
   // convert to ResultSet and return
   LabelablePtr original = new Labelable();
-  ResultSetV2 resSet = detI->convertResults( *original, results );
+  ResultSet resSet = detI->convertResults( *original, results );
   return resSet;
 }
+
+bool CascadeDetectI::cancel(const Identity &client, const Current& current)
+{
+  localAndClientMsg(VLogger::WARN, NULL, "cancel not implemented.");
+  return false;
+}
+
+//----------------------------------------------------------------------------
+DetectorPropertiesI::DetectorPropertiesI()
+{
+    verbosity = 0;
+    isSlidingWindow = true;
+    canSetSensitivity = false;
+    canPostProcessNeighbors = true;
+    videoFPS = 0;
+    nativeWindowSize.width = 0;
+    nativeWindowSize.height = 0;
+    falseAlarmRate = 0.0;
+    recall = 0.0;
+    minNeighbors = 3;
+    slideScaleFactor = 1.2f;
+    slideStartSize.width = 0;
+    slideStartSize.height = 0;
+    slideStopSize.width = 0;
+    slideStopSize.height = 0;
+    slideStepX = 0.0f;
+    slideStepY = 0.0f;
+}
+
+void DetectorPropertiesI::load(const DetectorProperties &p) 
+{
+    verbosity = p.verbosity;
+    props = p.props;
+    videoFPS = p.videoFPS;
+    //Only load values that are not zero
+    if (p.nativeWindowSize.width > 0 && p.nativeWindowSize.height > 0)
+        nativeWindowSize = p.nativeWindowSize;
+    if (p.minNeighbors > -1)
+        minNeighbors = p.minNeighbors;
+    if (p.slideScaleFactor > 0)
+        slideScaleFactor = p.slideScaleFactor;
+    if (p.slideStartSize.width > 0 && p.slideStartSize.height > 0)
+        slideStartSize = p.slideStartSize;
+    if (p.slideStopSize.width > 0 && p.slideStopSize.height > 0)
+        slideStopSize = p.slideStopSize;
+    readProps();
+}
+
+bool DetectorPropertiesI::readProps()
+{
+    // No properties to read
+    bool res = true;
+    return res;
+}
+
+bool DetectorPropertiesI::writeProps()
+{
+    bool res = true;
+    return res;
+}
+

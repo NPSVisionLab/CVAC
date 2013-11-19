@@ -16,11 +16,15 @@ OPTION(BUILD_WITH_OPENCVPERFORMANCE "Build the OpenCV Cascade trainer and detect
 OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" ON) 
 OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" ON) 
 OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
+OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" ON)
+OPTION(BUILD_CPP_TRAINER_CLIENT "Build a C++ client for trainers" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
 OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" OFF)
 OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
+OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" OFF)
+
 
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
 
@@ -97,65 +101,80 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
+# -O2 or -O3 on OSX causes ice to fail in Purpose list code
+IF (APPLE)
+   SET(CMAKE_CXX_FLAGS_RELEASE "-O1 -NDEBUG")
+ENDIF (APPLE)
+
 #
 # What version of CVAC?
 #
-# Try to create the include/version.h file that specifies the CVAC version,
-# as obtained from the version-control tag (major.minor) and the
-# number of commits since that tag (patch)
-if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
-    EXECUTE_PROCESS( COMMAND git describe --long --match "v[0-9]*.[0-9]*"
-              OUTPUT_VARIABLE CVAC_VERSION_GIT
+        # Only in the devel branch (to avoid merge conflicts):
+        EXECUTE_PROCESS( COMMAND git status -b --untracked-files=no
+              OUTPUT_VARIABLE CVAC_GIT_BRANCH
               OUTPUT_STRIP_TRAILING_WHITESPACE
               WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    )
-    IF ( CVAC_VERSION_GIT )
-        # parse this kind of string v1.2-3-gkd3kdj4:
-	# CVAC_VERSION_MAJMIN is 1.2
-    	# CVAC_VERSION_MAJOR is 1
-    	# CVAC_VERSION_MINOR is 2
-    	# CVAC_VERSION_PATCH is 3
-    	# CVAC_VERSION is 1.2.3
-     	STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
-     	STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
-     	STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
-     	STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
-     	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
-        MESSAGE( STATUS "successfully parsed version from git: CVAC-${CVAC_VERSION}" )
-     	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
-                                   ${CMAKE_SOURCE_DIR}/include/version.h)
-        # Need to update the version.h.repo file so it will be up to date
-        # for later distribution of the source without git (like a zip file);
-        # see below.
-        CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h
-                       ${CMAKE_SOURCE_DIR}/include/version.h.repo)
-    ENDIF( CVAC_VERSION_GIT )
-endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+        )
+        IF( CVAC_GIT_BRANCH )
+     	  IF( CVAC_GIT_BRANCH MATCHES "# On branch devel" )
+            MESSAGE( STATUS "wrote version file include/version.h.repo" )
+          ENDIF()
+        ENDIF()
 
-if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
-    # .git directory doesn't exist: now make sure that
-    # files are a complete download, not a fragmented collection.
-    # In other words, there must be a include/version.h.repo file.
-    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.repo
-          ${CMAKE_SOURCE_DIR}/include/version.h)
-    FILE( STRINGS ${CMAKE_SOURCE_DIR}/include/version.h
-          versionfile_contents
-          REGEX "#define CVAC_VERSION*" )
-    STRING( REGEX REPLACE ".*MAJOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MAJOR ${versionfile_contents} )
-    STRING( REGEX REPLACE ".*MINOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MINOR ${versionfile_contents} )
-    STRING( REGEX REPLACE ".*PATCH ([^ ]+).*" "\\1" CVAC_VERSION_PATCH ${versionfile_contents} )
-    SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
-    SET( CVAC_VERSION_MAJMIN ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR} )
-    MESSAGE( STATUS "successfully parsed version from version.h: CVAC-${CVAC_VERSION}" )
-endif( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
+# Parse the include/version.h file for the current CVAC version.
+FILE( STRINGS ${CMAKE_SOURCE_DIR}/include/version.h
+  versionfile_contents
+  REGEX "#define CVAC_VERSION*" )
+STRING( REGEX REPLACE ".*MAJOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MAJOR ${versionfile_contents} )
+STRING( REGEX REPLACE ".*MINOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MINOR ${versionfile_contents} )
+STRING( REGEX REPLACE ".*PATCH ([^ ]+).*" "\\1" CVAC_VERSION_PATCH ${versionfile_contents} )
+SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+SET( CVAC_VERSION_MAJMIN ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR} )
+MESSAGE( STATUS "successfully parsed version from version.h: CVAC-${CVAC_VERSION}" )
 
 IF( "x${CVAC_VERSION}x" STREQUAL "xx"
     OR "x${CVAC_VERSION_MAJOR}x" STREQUAL "xx"
-    OR "x${CVAC_VERSION_MINOR}x" STREQUAL "xx" )
+    OR "x${CVAC_VERSION_MINOR}x" STREQUAL "xx"
+    OR "x${CVAC_VERSION_PATCH}x" STREQUAL "xx" )
     # need version string to continue for many tasks
     MESSAGE( SEND_ERROR "Could not obtain CVAC version from git or include/version.h:" )
     MESSAGE( SEND_ERROR "all:${CVAC_VERSION} major:${CVAC_VERSION_MAJOR} minor:${CVAC_VERSION_MINOR}" )
 ENDIF()
+
+# Try to re-create the include/version.h file that specifies the CVAC version,
+# as obtained from the version-control tag (major.minor) and the
+# number of completed builds in the devel branch since that tag (patch).
+# Note that the number of builds is set on the build server.
+# The build process increases the PATCH number found in the
+# version.h file by one before building, and it commits it back into
+# the repository.
+if( INCREASE_VERSION_PATCH )
+  if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+    MESSAGE( SEND_ERROR "Cannot INCREASE_VERSION_PATCH without git repository" )
+  endif()
+  EXECUTE_PROCESS( COMMAND git describe --long --match "v[0-9]*.[0-9]*"
+    OUTPUT_VARIABLE CVAC_VERSION_GIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+  IF ( NOT CVAC_VERSION_GIT )
+    MESSAGE( SEND_ERROR "Error obtaining git version; cannot INCREASE_VERSION_PATCH" )
+  ENDIF()
+  # parse this kind of string v1.2-3-gkd3kdj4:
+  # CVAC_VERSION_MAJMIN is 1.2
+  # CVAC_VERSION_MAJOR is 1
+  # CVAC_VERSION_MINOR is 2
+  # CVAC_VERSION_PATCH is obtained from the previous version file.
+  # CVAC_VERSION is 1.2.x
+  STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
+  STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
+  STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
+  MATH( EXPR CVAC_VERSION_PATCH "${CVAC_VERSION_PATCH}+1" )
+  SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+  MESSAGE( STATUS "successfully did INCREASE_VERSION_PATCH via git: CVAC-${CVAC_VERSION}" )
+  CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
+    ${CMAKE_SOURCE_DIR}/include/version.h)
+endif( INCREASE_VERSION_PATCH )
 
 
 # offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
@@ -257,10 +276,10 @@ FIND_PACKAGE(LibArchive REQUIRED)
 # ICE 3.4.2 is pre-built against Python 2.6
 IF( PYTHONINTERP_FOUND )
   # make sure it's version 2.6 or else error
-  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
-    MESSAGE( SEND_ERROR "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
-    MESSAGE( SEND_ERROR "Please specify PYTHON_EXECUTABLE manually." )
-  ENDIF()
+#  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
+#    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+#    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
+#  ENDIF()
 ENDIF( PYTHONINTERP_FOUND )
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
@@ -269,7 +288,27 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv
   )
-  MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  #For Python set a variable for cv2 dynamic library
+  #
+  IF (WIN32)
+    FIND_FILE(OPENCV_PY_LIB cv2.pyd
+               HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+  ELSE (WIN32)
+    FIND_LIBRARY(OPENCV_PY_LIB cv2.so
+               HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
+                     ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+
+  ENDIF (WIN32)
+  # And the directory the cv2 file came from
+  GET_FILENAME_COMPONENT( OPENCV_PY_DIR ${OPENCV_PY_LIB} PATH )
+  FIND_FILE( OPENCV_PY_PY cv.py HINTS ${OPENCV_PY_DIR} )
+  IF( NOT OPENCV_PY_LIB OR NOT OPENCV_PY_PY )
+    MESSAGE( SEND_ERROR "Need cv2.pyd or cv2.so and cv.py from OpenCV" )
+  ENDIF()
+
+  IF( OpenCV_DIR )
+    MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  ENDIF()
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 ## Setup the config.service and config.icebox files based upon detectors
@@ -304,6 +343,34 @@ ELSE( BUILD_FILESERVER )
 SET( CF_FILE_S "#")
 ENDIF( BUILD_FILESERVER )
 
+IF( BUILD_WITH_RSI )
+SET(CF_RSI "" )
+ELSE( BUILD_WITH_RSI )
+SET( CF_RSI "#" )
+ENDIF( BUILD_WITH_RSI )
+
+# if cmake install prefix not set the set it to default else add 
+# cvac to the end
+IF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/installed" CACHE PATH "default install path" FORCE )
+ELSE( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cvac" )
+ENDIF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
+
+IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
+    # This requires CMake 2.8 for Java support
+    ADD_SUBDIRECTORY( src )
+ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
+
+ADD_SUBDIRECTORY(src/util)
+ADD_SUBDIRECTORY(src/easy) 
+ADD_SUBDIRECTORY(src/clients) 
+ADD_SUBDIRECTORY(algorithms)
+ADD_SUBDIRECTORY(demo)
+ADD_SUBDIRECTORY( etc )
+
+# the configuration of config.{icebox,service} must come after including the
+# etc directory, because that's where the user.config.{..} get configured.
 CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
 CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
 IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
@@ -314,17 +381,6 @@ IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
     FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
     FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
 ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
-
-IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
-    # This requires CMake 2.8 for Java support
-    ADD_SUBDIRECTORY( src )
-ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
-
-ADD_SUBDIRECTORY( etc )
-ADD_SUBDIRECTORY(src/util)
-ADD_SUBDIRECTORY(src/easy)
-ADD_SUBDIRECTORY(algorithms)
-ADD_SUBDIRECTORY(demo)
 
 IF( BUILD_WITH_TESTS)
   ENABLE_TESTING()

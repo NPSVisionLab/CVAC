@@ -39,6 +39,7 @@
 #include <util/Timing.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <cstdio>
 
 #if defined(WIN32)
    #include <direct.h> //for _mkdir()
@@ -304,7 +305,7 @@ std::string cvac::getBaseFileName(const std::string& fileName)
 ///////////////////////////////////////////////////////////////////////////////
 std::string cvac::getFileExtension(const std::string& _path)
 {
-    std::string::size_type dot = _path.find_first_of(".");	//rfind
+    std::string::size_type dot = _path.find_last_of(".");	//rfind
     std::string _str = std::string(_path.begin() + dot + 1,_path.end());
 
     std::string tRes = _str;
@@ -359,6 +360,33 @@ bool cvac::deleteDirectory(const std::string& path)
 }
 #endif // defined(WIN32)
 
+/**     Returns a string to identify the purpose or an
+        int to identify a multiclass class ID.
+*/
+string cvac::getPurposeName( const Purpose& purpose )
+{
+  switch( purpose.ptype )
+  {
+  case cvac::UNPURPOSED:
+    return "unpurposed";
+  case cvac::POSITIVE:
+    return "positive";
+  case cvac::NEGATIVE:
+    return "negative";
+  case cvac::MULTICLASS:
+    // return std::to_string( purpose.classID );  in C++11
+    {
+      ostringstream ss;
+      ss << purpose.classID;
+      return ss.str();
+    }
+  case cvac::ANY:
+    return "any";
+  default:
+    return "unexpected cvac.PurposeType";
+  }
+}
+
 bool cvac::compatiblePurpose( const Purpose& actual, const Purpose& constraint ) 
 {
   if (ANY==constraint.ptype) return true;
@@ -409,6 +437,29 @@ void cvac::addFileToRunSet( RunSet& runSet, const std::string& relativePath,
   addFileToRunSet( runSet, relativePath, filename, purpose );
 }
 
+bool cvac::copyFile(const std::string fromFile, const std::string toFile)
+{
+    char buf[BUFSIZ];
+    size_t size;
+ 
+    FILE* source = fopen(fromFile.c_str(), "rb");
+    if (source == NULL)
+        return false;
+    FILE* dest = fopen(toFile.c_str(), "wb");
+    if (dest == NULL)
+    {
+        fclose(source);
+        return false;
+    }
+    while (size = fread(buf, 1, BUFSIZ, source)) {
+        fwrite(buf, 1, size, dest);
+    }
+
+    fclose(source);
+    fclose(dest);
+    return true;
+}
+
 bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile) {
 
 #if defined(WIN32)
@@ -431,7 +482,10 @@ bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile)
       {
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
           fprintf(stderr, "!!!!Admin rights required for creating a symbolic link!!!!\n");   
+          fprintf(stderr, "!!!!Copying the file instead of creating a symbolic link!!!!\n");   
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+          return copyFile(toFile, fromFile);
+
       }	  
       printf("failed to create symbolic link for %s\n", toFile.c_str());
       printf("symbolic link name %s\n", fromFile.c_str());
