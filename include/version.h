@@ -40,16 +40,9 @@
 #ifndef __VERSION_H_INCLUDED__
 #define __VERSION_H_INCLUDED__
 
-<<<<<<< HEAD:include/version.h.repo
-#define CVAC_VERSION 0.5.1
-#define CVAC_VERSION_MAJOR 0
-#define CVAC_VERSION_MINOR 5
-#define CVAC_VERSION_PATCH 1
-=======
 #define CVAC_VERSION 0.5.143
 #define CVAC_VERSION_MAJOR 0
 #define CVAC_VERSION_MINOR 5
 #define CVAC_VERSION_PATCH 143
->>>>>>> 1ca40d935b0715b75fe31a5d0760fec5da0d46b8:include/version.h
 
 #endif // __VERSION_H_INCLUDED__
