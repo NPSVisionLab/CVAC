@@ -42,13 +42,14 @@ if not os.path.isdir( reject_folder ):
     os.makedirs( reject_folder )
 nologos = ["TestKrFlag.jpg", "italia.jpg", "korean-american-flag.jpg", "TestUsFlag.jpg"]
 for nologo in nologos:
-    for classID in range(9):
-        fname = "testresults1/{0}/{1}".format( classID, nologo )
-        if os.path.isfile( fname ): 
-            newf =  reject_folder + "/" + nologo
-            if (os.path.isfile(newf)):
-                os.unlink(newf) #If file exists delete it (required for some OS's)    
-            os.rename( fname, newf)
+    for root, dirnames, filenames in os.walk("testresults1"):
+        for filename in filenames:
+            if nologo == filename:
+                fname = os.path.join(root, filename)
+                newf =  reject_folder + "/" + nologo
+                if (os.path.isfile(newf)):
+                    os.unlink(newf) #If file exists delete it (required for some OS's)    
+                os.rename( fname, newf)
 
 # Create the new training set and combine it with the trainset1.
 # (Alternatively, in the previous step, manually sort the wrong

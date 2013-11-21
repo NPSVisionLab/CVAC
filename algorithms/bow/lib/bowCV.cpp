@@ -368,9 +368,6 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         _fullFilePathImg = vFilenameTrain[k];
         _classID = vClassIDTrain[k];     
             
-        if(_classID==-1)
-	        continue;
-            
         if ((sman!=NULL) && (sman->stopRequested()))
         {
             sman->stopCompleted();
