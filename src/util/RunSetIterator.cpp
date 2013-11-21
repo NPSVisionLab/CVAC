@@ -97,7 +97,7 @@ bool RunSetIterator::isInConstraintType(const rsMediaType& _type)
 //---------------------------------------------------------------------------
 void RunSetIterator::addToList(const LabelablePtr _pla,int _originalIdx)
 {
-  if(_pla==NULL)
+  if(!_pla)
   {
     localAndClientMsg(VLogger::WARN, NULL,"Empty LabelablePtr is assigned\n");
     return;

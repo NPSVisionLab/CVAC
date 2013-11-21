@@ -39,7 +39,7 @@
 #include <util/Timing.h>
 #include <sys/stat.h>
 #include <time.h>
-#include <cstdio>
+#include <sstream>
 
 #if defined(WIN32)
    #include <direct.h> //for _mkdir()
@@ -305,7 +305,7 @@ std::string cvac::getBaseFileName(const std::string& fileName)
 ///////////////////////////////////////////////////////////////////////////////
 std::string cvac::getFileExtension(const std::string& _path)
 {
-    std::string::size_type dot = _path.find_last_of(".");	//rfind
+    std::string::size_type dot = _path.find_first_of(".");	//rfind
     std::string _str = std::string(_path.begin() + dot + 1,_path.end());
 
     std::string tRes = _str;
@@ -437,7 +437,7 @@ void cvac::addFileToRunSet( RunSet& runSet, const std::string& relativePath,
   addFileToRunSet( runSet, relativePath, filename, purpose );
 }
 
-bool cvac::copyFile(const std::string fromFile, const std::string toFile)
+static bool doFileCopy(const std::string fromFile, const std::string toFile)
 {
     char buf[BUFSIZ];
     size_t size;
@@ -484,7 +484,7 @@ bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile)
           fprintf(stderr, "!!!!Admin rights required for creating a symbolic link!!!!\n");   
           fprintf(stderr, "!!!!Copying the file instead of creating a symbolic link!!!!\n");   
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-          return copyFile(toFile, fromFile);
+          return doFileCopy(toFile, fromFile);
 
       }	  
       printf("failed to create symbolic link for %s\n", toFile.c_str());
