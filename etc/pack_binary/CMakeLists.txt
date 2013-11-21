@@ -228,7 +228,7 @@ IF (BUILD_BINARY_PACKAGE)
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/cvac"
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/cvac"
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/cvac"
-        COMMAND ${CMAKE_COMMAND} -E copy "../python/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/../../lib/python/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
     )
 ENDIF (BUILD_BINARY_PACKAGE)
 

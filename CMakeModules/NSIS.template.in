@@ -219,7 +219,7 @@ Function AddToPath
   StrLen $2 $1
   IntCmp $2 0 CheckPathLength_ShowPathWarning CheckPathLength_Done CheckPathLength_Done
     CheckPathLength_ShowPathWarning:
-    Messagebox MB_OK|MB_ICONEXCLAMATION "Warning! PATH too long installer unable to modify PATH!"
+    Messagebox MB_OK|MB_ICONEXCLAMATION "Warning! PATH too long installer unable to modify PATH!" /SD IDOK
     Goto AddToPath_done
   CheckPathLength_Done:
   Push "$1;"
@@ -495,7 +495,7 @@ Function ConditionalAddToRegisty
   StrCmp "$0" "" ConditionalAddToRegisty_EmptyString
     WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" \
     "$1" "$0"
-    ;MessageBox MB_OK "Set Registry: '$1' to '$0'"
+    ;MessageBox MB_OK "Set Registry: '$1' to '$0'" /SD IDOK
     DetailPrint "Set install registry entry: '$1' to '$0'"
   ConditionalAddToRegisty_EmptyString:
 FunctionEnd
@@ -520,7 +520,7 @@ Function DownloadFile
     Pop $1
     StrCmp $1 "success" success
     StrCmp $1 "Cancelled" cancel
-    MessageBox MB_OK "Download failed: $1"
+    MessageBox MB_OK "Download failed: $1" /SD IDOK
   cancel:
     Return
   success:
@@ -548,7 +548,6 @@ FunctionEnd
 !include nsDialogs.nsh
 !include LogicLib.nsh
 !include winmessages.nsh
-
 
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !define env_hklm 'HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"'
@@ -636,12 +635,12 @@ Function customDialogLeave
   ${NSD_GetText} $DataPathText $DataPathValue
   #Check if PythonPathValue is a valid file
   ${ifnot} ${FileExists} "$PythonPathValue"
-    MessageBox MB_OK "Python path incorrect"
+    MessageBox MB_OK "Python path incorrect" /SD IDOK
     Abort
   ${endif}
 
   ${ifnot} ${FileExists} "$JavaPathValue"
-    MessageBox MB_OK "Java path incorrect"
+    MessageBox MB_OK "Java path incorrect" /SD IDOK
     Abort
   ${endif}
 
@@ -654,7 +653,8 @@ Function customDialogLeave
   StrCmp $0 0 error
   Goto done
 error:
-  MessageBox MB_OK "Can't set envirnoment variable"
+  MessageBox MB_OK "Can't set envirnoment variable" /SD IDOK
+
 done:
 
   #For CVAC_DATADIR set a global envirnoment variable via the registry
@@ -811,6 +811,7 @@ FunctionEnd
 !macroend
 !insertmacro Func_StrRep ""
 !insertmacro Func_StrRep "un."
+
 ;--------------------------------
 ; End CVAC changes
 ;--------------------------------
@@ -1007,7 +1008,7 @@ Section "-Core installation"
   nsExec::ExecToLog '"$PythonPathValue" setup.py install'
   Pop $0
   StrCmp $0 0 +2 0
-      MessageBox MB_OK "Can't install python code"
+      MessageBox MB_OK "Can't install python code" /SD IDOK
   # Fixup paths in start and stopServices files
   !insertmacro _ReplaceInFile $INSTDIR\bin\startServices.bat __PYTHON_PATH__ "$PythonPathValue"
   !insertmacro _ReplaceInFile $INSTDIR\bin\startServices.bat __JAVA_PATH__ "$JavaPathValue"
@@ -1015,14 +1016,15 @@ Section "-Core installation"
 !insertmacro _ReplaceInFile $INSTDIR\bin\stopServices.bat __PYTHON_PATH__ "$PythonPathValue"
   !insertmacro _ReplaceInFile $INSTDIR\bin\stopServices.bat __JAVA_PATH__ "$JavaPathValue"
   !insertmacro _ReplaceInFile $INSTDIR\bin\stopServices.bat __INSTALL_PATH__ "$INSTDIR"
-  !insertmacro _ReplaceInFile $INSTDIR\config.service "CVAC.DataDir = data" "CVAC.DataDir = $DataPathValue"
 
-  #if the data path value is not equal to data then copy the data to this
-  #new datapath
-  StrCmp $DataPathValue "data" cvacNext +2
-      SetOutPath $DataPathValue
-      CopyFiles "$INSTDIR/data" "$DataPathValue" 
-cvacNext:
+  #make sure DataPathValue exists
+  CreateDirectory $DataPathValue
+  #Copy required files from install to that data path
+  SetOutPath $DataPathValue
+  CopyFiles "$INSTDIR/data" "$DataPathValue" 
+
+  #Replace DataDir entry in config file with new one
+  !insertmacro _ReplaceInFile $INSTDIR\config.service "CVAC.DataDir = data" "CVAC.DataDir = $DataPathValue"
   SetOutPath "$INSTDIR"
   # CVAC Changes End
 
@@ -1058,11 +1060,11 @@ Function un.onInit
   Pop $1
   StrCmp $1 "Admin" 0 +3
     SetShellVarContext all
-    ;MessageBox MB_OK 'User "$0" is in the Admin group'
+    ;MessageBox MB_OK 'User "$0" is in the Admin group' /SD IDOK
     Goto done
   StrCmp $1 "Power" 0 +3
     SetShellVarContext all
-    ;MessageBox MB_OK 'User "$0" is in the Power Users group'
+    ;MessageBox MB_OK 'User "$0" is in the Power Users group' /SD IDOK
     Goto done
     
   noLM:
@@ -1114,17 +1116,17 @@ FunctionEnd
 Section "Uninstall"
   ReadRegStr $START_MENU SHCTX \
    "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "StartMenu"
-  ;MessageBox MB_OK "Start menu is in: $START_MENU"
+  ;MessageBox MB_OK "Start menu is in: $START_MENU" /SD IDOK
   ReadRegStr $DO_NOT_ADD_TO_PATH SHCTX \
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "DoNotAddToPath"
   ReadRegStr $ADD_TO_PATH_ALL_USERS SHCTX \
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "AddToPathAllUsers"
   ReadRegStr $ADD_TO_PATH_CURRENT_USER SHCTX \
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "AddToPathCurrentUser"
-  ;MessageBox MB_OK "Add to path: $DO_NOT_ADD_TO_PATH all users: $ADD_TO_PATH_ALL_USERS"
+  ;MessageBox MB_OK "Add to path: $DO_NOT_ADD_TO_PATH all users: $ADD_TO_PATH_ALL_USERS" /SD IDOK
   ReadRegStr $INSTALL_DESKTOP SHCTX \
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "InstallToDesktop"
-  ;MessageBox MB_OK "Install to desktop: $INSTALL_DESKTOP "
+  ;MessageBox MB_OK "Install to desktop: $INSTALL_DESKTOP " /SD IDOK
 
 @CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS@
 
@@ -1219,7 +1221,7 @@ Function .onInit
 
   MessageBox MB_YESNOCANCEL|MB_ICONEXCLAMATION \
   "@CPACK_NSIS_PACKAGE_NAME@ is already installed. $\n$\nDo you want to uninstall the old version before installing the new one?" \
-  IDYES uninst IDNO inst
+  /SD IDYES IDYES uninst IDNO inst
   Abort
 
 ;Run the uninstaller
@@ -1229,7 +1231,7 @@ uninst:
 
   IfErrors uninst_failed inst
 uninst_failed:
-  MessageBox MB_OK|MB_ICONSTOP "Uninstall failed."
+  MessageBox MB_OK|MB_ICONSTOP "Uninstall failed." /SD IDOK
   Abort
 
 
@@ -1259,12 +1261,12 @@ inst:
   Pop $1
   StrCmp $1 "Admin" 0 +4
     SetShellVarContext all
-    ;MessageBox MB_OK 'User "$0" is in the Admin group'
+    ;MessageBox MB_OK 'User "$0" is in the Admin group' /SD IDOK
     StrCpy $SV_ALLUSERS "AllUsers"
     Goto done
   StrCmp $1 "Power" 0 +4
     SetShellVarContext all
-    ;MessageBox MB_OK 'User "$0" is in the Power Users group'
+    ;MessageBox MB_OK 'User "$0" is in the Power Users group' /SD IDOK
     StrCpy $SV_ALLUSERS "AllUsers"
     Goto done
     

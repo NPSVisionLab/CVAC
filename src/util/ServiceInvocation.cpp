@@ -44,6 +44,10 @@
 #include <util/FileUtils.h>
 #include <util/Timing.h>
 #include <util/ServiceInvocation.h>
+
+#ifdef WIN32
+#define strdup _strdup
+#endif
 /** Utilities for invoking CVAC services from C/C++
  */
 
@@ -71,13 +75,10 @@ public:
 
 
 static Ice::CommunicatorPtr iceComm = 0;
-/** Connect to the Ice Service
- */
-DetectorPrx initIceConnection(const std::string& detectorNameStr,
-                              Ice::Identity& det_cb,
-                              DetectorCallbackHandlerPtr cr)
+
+
+static void initIce(const string detectorNameStr)
 {
-  
   int argc = 2;
   char *argv[3];
   argv[0] = strdup( detectorNameStr.c_str() );
@@ -89,6 +90,25 @@ DetectorPrx initIceConnection(const std::string& detectorNameStr,
   }
   free( argv[0] );
   free( argv[1] );
+}
+
+string cvac::getCVACDataDir(const string &detectorNameStr)
+{
+  initIce(detectorNameStr);
+  Ice::PropertiesPtr props = iceComm->getProperties();
+  std::string dataDir = props->getProperty("CVAC.DataDir");
+  return dataDir;
+}
+
+/** Connect to the Ice Service
+ */
+                              
+DetectorPrx initIceConnection(const std::string& detectorNameStr,
+                              Ice::Identity& det_cb,
+                              DetectorCallbackHandlerPtr cr)
+{
+  
+  initIce(detectorNameStr);
   
   Ice::PropertiesPtr props = iceComm->getProperties();
   std::string proxStr = detectorNameStr + ".Proxy";
@@ -142,11 +162,10 @@ ResultSet cvac::detect(
   // If user did not supply any detector properties then provide default one.
   if (NULL == detprops)
   {
-      detprops = & dprops;   
+      // need to initialize detector properties to their defaults
+      dprops = detector->getDetectorProperties();   
+      detprops = &dprops;
   }
-
-  Ice::PropertiesPtr iceprops = iceComm->getProperties();
-  std::string dataDir = iceprops->getProperty("CVAC.DataDir");
 
   try
     {	

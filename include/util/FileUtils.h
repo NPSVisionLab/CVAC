@@ -226,5 +226,11 @@ namespace cvac
    std::string getFSPath(const cvac::FilePath &fp, 
                          const std::string &CVAC_DataDir = "");
 
+   /** Copy a file
+    * @param from file
+    * @param to file 
+    * @return true if file was copied
+    */
+   bool copyFile(const std::string fromFile, const std::string toFile); 
 };
 #endif // __FILEUTILS_H_INCLUDED__
