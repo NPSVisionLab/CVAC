@@ -17,6 +17,22 @@ set(CPACK_PACKAGE_VERSION_PATCH ${CVAC_VERSION_PATCH})
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CVAC_VERSION_PATCH}")
 set( CVAC_VERSION_DIR CVAC-${CVAC_VERSION} )
 
+# If devel branch, add -devel to version number
+if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+  MESSAGE( SEND_ERROR "Cannot create package without git repository" )
+endif()
+EXECUTE_PROCESS( COMMAND git rev-parse --abbrev-ref HEAD
+    OUTPUT_VARIABLE CVAC_GIT_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+IF ( NOT CVAC_GIT_BRANCH )
+  MESSAGE( SEND_ERROR "Error obtaining git branch name; cannot create package" )
+ENDIF()
+IF ( ${CVAC_GIT_BRANCH} STREQUAL "devel" )
+  set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION}-devel)
+ENDIF()
+
 # If Windows 8 then add -W8 to version
 IF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
 MESSAGE ("windows 8")
