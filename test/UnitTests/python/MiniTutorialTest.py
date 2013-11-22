@@ -83,7 +83,7 @@ class MiniTutorialTest(unittest.TestCase):
     #
     # Run bootstrapping.py
     #
-    def xxxtest_bootstrapping(self):
+    def test_bootstrapping(self):
         print("running bootstrapping.py")
         sys.stdout.flush()
         execfile(self.demoDir + "/bootstrapping.py");

@@ -94,8 +94,10 @@ rsMediaType RunSetWrapper::getType(const LabelablePtr _pla)
 {
   rsMediaType tType = "unknown";
 
-  if(_pla == NULL)
+  if(!_pla)
+  {
     return tType;
+  }
   else
   {
     string tAbsFilePath = convertToAbsDirectory(_pla->sub.path.directory.relativePath);
@@ -167,7 +169,7 @@ bool RunSetWrapper::isInRunset(const string&_rDir,const string& _fname,
 //---------------------------------------------------------------------------
 void RunSetWrapper::addToList(const LabelablePtr _pla,const rsMediaType _type)
 {
-  if(_pla==NULL)
+  if(!_pla)
   {
     localAndClientMsg(VLogger::WARN, NULL,"Empty LabelablePtr is assigned\n");
     return;
