@@ -437,7 +437,7 @@ void cvac::addFileToRunSet( RunSet& runSet, const std::string& relativePath,
   addFileToRunSet( runSet, relativePath, filename, purpose );
 }
 
-static bool doFileCopy(const std::string fromFile, const std::string toFile)
+bool cvac::copyFile(const std::string fromFile, const std::string toFile)
 {
     char buf[BUFSIZ];
     size_t size;
@@ -484,7 +484,7 @@ bool cvac::makeSymlinkFile(const std::string fromFile, const std::string toFile)
           fprintf(stderr, "!!!!Admin rights required for creating a symbolic link!!!!\n");   
           fprintf(stderr, "!!!!Copying the file instead of creating a symbolic link!!!!\n");   
           fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-          return doFileCopy(toFile, fromFile);
+          return copyFile(toFile, fromFile);
 
       }	  
       printf("failed to create symbolic link for %s\n", toFile.c_str());
