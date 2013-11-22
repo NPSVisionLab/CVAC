@@ -37,6 +37,11 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         COMPONENT IceExt
         PATTERN *.dll
        )
+#Windows also needs numpy install exe
+INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1.win32-py2.6.exe
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+       )
 ENDIF(WIN32)
 
 INSTALL(PROGRAMS ${ICE_SLICE_EXECUTABLE}
@@ -110,6 +115,12 @@ cpack_add_component (
   IceExt
   DISPLAY_NAME "ICE"
   DESCRIPTION "Internet Communication Engine"
+  GROUP ThirdPartyGrp
+)
+cpack_add_component (
+  NumpyExt
+  DISPLAY_NAME "Numpy"
+  DESCRIPTION "Python numeric processing package"
   GROUP ThirdPartyGrp
 )
 cpack_add_component (
