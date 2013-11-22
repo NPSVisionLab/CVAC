@@ -975,6 +975,12 @@ Section "-Core installation"
   SetOutPath "$INSTDIR"
   CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\startServices.lnk" "$INSTDIR\bin\startServices.bat"
   CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\stopServices.lnk" "$INSTDIR\bin\stopServices.bat"
+  # Client needs the ice dlls in its path to run demos
+  Push $INSTDIR\3rdparty\ICE\bin
+  #StrCmp "@CPACK_NSIS_MODIFY_PATH@" "ON" 0 cvacdoNotAddToPath
+  #StrCmp $DO_NOT_ADD_TO_PATH "1" cvacdoNotAddToPath 0  
+    Call AddToPath
+  cvacdoNotAddToPath:
   # CVAC Changes end
 
   ;Read a value from an InstallOptions INI file
@@ -1159,6 +1165,10 @@ Section "Uninstall"
   # CVAC start modification
   Delete "$SMPROGRAMS\$MUI_TEMP\startServices.lnk"
   Delete "$SMPROGRAMS\$MUI_TEMP\stopServices.lnk"
+  Push $INSTDIR\3rdparty\ICE\bin
+  #StrCmp $DO_NOT_ADD_TO_PATH_ "1" uncvacdoNotRemoveFromPath 0
+    Call un.RemoveFromPath
+  uncvacdoNotRemoveFromPath:
   # CVAC end modification
 @CPACK_NSIS_DELETE_ICONS@
 @CPACK_NSIS_DELETE_ICONS_EXTRA@
