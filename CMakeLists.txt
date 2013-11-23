@@ -195,7 +195,7 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
     IF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
         MESSAGE( STATUS "3rd-party archive exists already, won't download again (${3RDPARTY_FILENAME})" )
     ELSE( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
-        SET( 3RDPARTY_SERVER http://www.movesinstitute.org/~kolsch/CVAC )
+        SET( 3RDPARTY_SERVER http://www.movesinstitute.org/~kolsch/CVAC/downloads )
         SET( 3RDPARTY_URL ${3RDPARTY_SERVER}/${3RDPARTY_FILENAME} )
         MESSAGE( STATUS "Trying to download 3rd-party archive from ${3RDPARTY_URL}" )
         FILE( DOWNLOAD ${3RDPARTY_URL} ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME}
