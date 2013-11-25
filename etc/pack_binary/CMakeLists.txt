@@ -158,6 +158,10 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/lib
         PATTERN *.lib EXCLUDE
        )
 
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1.win32-py2.6.exe
+       DESTINATION 3rdparty
+       COMPONENT Runtime 
+      )
 
 ELSE (WIN32)
 
