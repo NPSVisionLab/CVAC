@@ -1008,7 +1008,10 @@ Section "-Core installation"
   !insertmacro MUI_STARTMENU_WRITE_END
 
   # CVAC Changes start
-  Call installNumPy
+  #NumPyInstall is not silent so skip if in silent mode
+  IfSilent noNumPyInstall 0
+      Call installNumPy
+noNumPyInstall:
   SetOutPath "$INSTDIR\python"
   # install the Python code
   nsExec::ExecToLog '"$PythonPathValue" setup.py install'
