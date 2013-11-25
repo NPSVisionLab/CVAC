@@ -14,6 +14,9 @@ SET(SOURCE_FILES
     DetectorDataArchive.cpp
     VLogger.cpp
     ServiceMan.cpp
+    ServiceInvocation.cpp
+	RunSetIterator.cpp
+	RunSetWrapper.cpp
 )
 
 SET(HEADER_FILES
@@ -25,6 +28,10 @@ SET(HEADER_FILES
     ${CVAC_INCLUDE_DIR}/util/Timing.h
     ${CVAC_INCLUDE_DIR}/util/VLogger.h
     ${CVAC_INCLUDE_DIR}/util/ServiceMan.h
+    ${CVAC_INCLUDE_DIR}/util/ServiceManI.h
+    ${CVAC_INCLUDE_DIR}/util/ServiceInvocation.h
+	${CVAC_INCLUDE_DIR}/util/RunSetIterator.h
+	${CVAC_INCLUDE_DIR}/util/RunSetWrapper.h
 #if (WIN32)
     ${CVAC_INCLUDE_DIR}/util/wdirent.h
 #endif (WIN32)

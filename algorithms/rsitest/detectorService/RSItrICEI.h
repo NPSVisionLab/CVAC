@@ -1,4 +1,4 @@
-#ifndef _CascadeDetectI_H__
+#ifndef _RSITRICEI_H__  
 /*****************************************************************************
  * CVAC Software Disclaimer
  * 
@@ -36,7 +36,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
-#define _CascadeDetectI_H__
+#define _RSITRICEI_H__
 
 #include <Data.h>
 #include <Services.h>
@@ -45,46 +45,52 @@
 #include <IceBox/IceBox.h>
 #include <IceUtil/UUID.h>
 #include <util/processRunSet.h>
-#include <util/ServiceManI.h>
+#include <util/ServiceMan.h>
+#include <util/RunSetIterator.h>
 
-#include <cv.h>
-
-class CascadeDetectI : public cvac::Detector, public cvac::StartStop
+class RSItrICEI : public cvac::Detector
 {
 public:
-    CascadeDetectI();
-    ~CascadeDetectI();
+  RSItrICEI(cvac::ServiceManager *servm);
+  ~RSItrICEI();
 
-    std::string m_CVAC_DataDir; // Store an absolute path to the detector data files
+  std::string m_CVAC_DataDir; // Store an absolute path to the detector data files
 
 
 public:
-    virtual void process(const Ice::Identity &client, const ::cvac::RunSet& runset,
-                         const ::cvac::FilePath& data, const ::cvac::DetectorProperties&,
-                         const ::Ice::Current& current);
-    virtual bool cancel(const Ice::Identity &client, const ::Ice::Current& current);
-    virtual std::string getName(const ::Ice::Current& current);
-    virtual std::string getDescription(const ::Ice::Current& current);
-    virtual ::cvac::DetectorProperties getDetectorProperties(const ::Ice::Current& current);
-    void setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current);
-    void setServiceManager(cvac::ServiceManagerI *sman);
-    virtual void starting();
+  virtual void initialize(::Ice::Int verbosity,const ::cvac::DetectorData& data,const ::Ice::Current& current);
+  virtual void process(const Ice::Identity &client,const ::cvac::RunSet& runset,const ::Ice::Current& current);
+  virtual bool isInitialized(const ::Ice::Current& current);
+  virtual void destroy(const ::Ice::Current& current);
+  virtual std::string getName(const ::Ice::Current& current);
+  virtual std::string getDescription(const ::Ice::Current& current);
+  void setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current);
+
+  virtual cvac::DetectorData createCopyOfDetectorData(const ::Ice::Current& current);
+  virtual cvac::DetectorPropertiesPrx getDetectorProperties(const ::Ice::Current& current);
 
 private:
-    cvac::ResultSet convertResults( const cvac::Labelable& original, std::vector<cv::Rect> recs );
-    std::vector<cv::Rect> detectObjects( const cvac::CallbackHandlerPrx& callback, const cvac::Labelable& lbl  );
-    std::vector<cv::Rect> detectObjects( const cvac::CallbackHandlerPrx& callback, const std::string& fullname );
-    bool initialize(const ::cvac::DetectorProperties& props,
-                    const ::cvac::FilePath& model, const ::Ice::Current& current);
-    bool readModelFile( std::string modelFSpath );
-    
-    cvac::ServiceManager    *mServiceMan;
-    cvac::DetectorCallbackHandlerPrx callback;
-    cv::CascadeClassifier *cascade;
-    std::string              cascade_name;
-    bool                     gotModel;
+  cvac::ServiceManager *mServiceMan;
+  bool   fInitialized;    
 
-    friend cvac::ResultSet detectFunc( cvac::DetectorPtr detector, const char *fname );
+  /**
+  * It includes information about the original runset.
+  */
+  cvac::RunSetWrapper* mRunsetWrapper;
+
+  /**
+  * It includes information about the converted data based on the original runset.
+  * This variable should be used for running processSingleImg function.
+  */
+  cvac::RunSetIterator* mRunsetIterator;
+
+  /**
+  * It includes fileTypes which can be handled in this service.
+  * In other expression, final fileTypes which will be entered into this service
+  */
+  cvac::RunSetConstraint mRunsetConstraint;
+
+  cvac::ResultSetV2 processSingleFile(cvac::DetectorPtr detector,cvac::LabelablePtr _lPtrOriginal);
 };
 
-#endif //_CascadeDetectI_H__
+#endif //_RSITRICEI_H__

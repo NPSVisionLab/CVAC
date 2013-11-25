@@ -68,6 +68,7 @@ public:
 
   ///////////////////////////////////////////////////////////////////////////////
   // Output function for complete Detector
+
 	void createdDetector(const ::DetectorData& ddata, const ::Ice::Current& = ::Ice::Current() )
 	{
 		localAndClientMsg(VLogger::INFO, NULL, "Trainer is finished with creating a detector/data/model, type is ");
@@ -89,6 +90,8 @@ public:
 			  throw new std::runtime_error("Unknown DetectorData type");
 		}
 	}
+
+
 };
 
 

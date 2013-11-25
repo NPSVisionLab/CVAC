@@ -26,18 +26,72 @@ ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 
 IF (WIN32)
     SET( SCRIPT_EXT bat )
+    SET (OPENCV_3RDPARTY_DIR "${CMAKE_SOURCE_DIR}/3rdparty/opencv/python/2.6" )
+    SET (CV2_EXT "pyd")
 ELSE (WIN32)
     SET( SCRIPT_EXT sh )
+    SET (OPENCV_3RDPARTY_DIR "${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python2.6/site-packages" )
+    SET (CV2_EXT "so")
 ENDIF (WIN32)
 
 CONFIGURE_FILE( startIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/startIcebox.${SCRIPT_EXT} )
 CONFIGURE_FILE( stopIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/stopIcebox.${SCRIPT_EXT} )
 
-IF( NOT BUILD_3RDPARTY_PACKAGE )
+INCLUDE (UserCMakeLists.txt OPTIONAL)
+
+IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
 INSTALL(PROGRAMS
                      ${CMAKE_SOURCE_DIR}/bin/startIcebox.${SCRIPT_EXT}
                      ${CMAKE_SOURCE_DIR}/bin/stopIcebox.${SCRIPT_EXT}
                DESTINATION bin
                COMPONENT Runtime
              )
-ENDIF( NOT BUILD_3RDPARTY_PACKAGE )
+ENDIF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
+
+
+# We need to copy cvac, Ice, and easy to the build directory for packing
+# python distribution.
+# Set locations and variables
+SET (SLICE_OUTPUT_PATH "${SLICE_OUTPUT_PYTHONDIR}")
+SET (PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/python")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/cvac")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
+
+# First copy over cvac.  Need to wait for build time since these files
+# are created by slicing at build time.  Since FILE commands work at
+# cmake time we add a custom target that will copy each of the slice generated
+# .py files to the python build cvac directory (which is required for 
+# setup py).  The ALL causes the copySlice target 
+# to be executed for all targets but we really only need them
+# for the install and package targets but since the copy is quick it
+# does not hurt to copy them all the time.
+add_custom_target(copySlice ALL
+    COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+    COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+    COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+    COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/cvac"
+    COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
+    )
+
+# Next copy over easy. Since these files are not sliced then do it now
+FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
+      PATTERN *.py)
+# Next copy over opencv files
+FILE (COPY ${OPENCV_3RDPARTY_DIR}/cv.py DESTINATION ${PYTHON_BUILD_DIR} )
+FILE (COPY ${OPENCV_3RDPARTY_DIR}/cv2.${CV2_EXT} DESTINATION ${PYTHON_BUILD_DIR} )
+
+# Next copy over ice. Since we need to change directory name
+# from python to ice copy over the files.  Not sliced so do it now
+FILE (GLOB ICE_FILES ${ICE_ROOT}/python/*)
+FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/ice)
+
+CONFIGURE_FILE(setup.py.in "${PYTHON_BUILD_DIR}/setup.py")
+CONFIGURE_FILE(easy.pth "${PYTHON_BUILD_DIR}/easy.pth")
+CONFIGURE_FILE(ice.pth "${PYTHON_BUILD_DIR}/ice.pth")
+CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_SOURCE_DIR}/PostInstall.cmake)
+
+INSTALL(SCRIPT "PostInstall.cmake")
+
+IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
+ENDIF ()

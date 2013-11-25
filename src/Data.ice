@@ -211,7 +211,7 @@ module cvac {
    * be reported bit by bit.
    */
   sequence<Result> ResultList;
-  struct ResultSetV2 {
+  struct ResultSet {
     ResultList results;
   };
 

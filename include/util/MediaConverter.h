@@ -37,12 +37,58 @@
  *SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****/
 
-#ifndef __VERSION_H_INCLUDED__
-#define __VERSION_H_INCLUDED__
+#include <iomanip>
+#include <vector>
+//#include <opencv2/opencv.hpp>
+#include <util/processRunSet.h>
+//#pragma comment(lib,"opencv_core245.lib")
+//#pragma comment(lib,"opencv_highgui245.lib")
+//#pragma comment(lib,"opencv_imgproc245.lib")
 
-#define CVAC_VERSION 0.5.79
-#define CVAC_VERSION_MAJOR 0
-#define CVAC_VERSION_MINOR 5
-#define CVAC_VERSION_PATCH 79
+namespace cvac
+{  
+  class MediaConverter
+  {
+  public:
+    MediaConverter(ServiceManager *_sman = NULL);
+    ~MediaConverter(){};	
+  public:
+    ServiceManager* mServiceMan;
+  public:
+    virtual bool convert(const string& _srcAbsPath,
+                         const string& _desAbsDir,
+                         const string& _desFilename,
+                         vector<string>& _resFilename) = 0;
+  };
 
-#endif // __VERSION_H_INCLUDED__
+
+  class MediaConverter_openCV_i2i : public MediaConverter
+  {
+  public:
+    MediaConverter_openCV_i2i(ServiceManager *_sman = NULL);
+    ~MediaConverter_openCV_i2i(){};
+  public:
+    bool convert(const string& _srcAbsPath,
+                 const string& _desAbsDir,
+                 const string& _desFilename,
+                 vector<string>& _resFilename);
+  };
+
+  class MediaConverter_openCV_v2i : public MediaConverter
+  {
+  public:
+    MediaConverter_openCV_v2i(ServiceManager *_sman = NULL,
+                              int _perFrame = -1);
+    ~MediaConverter_openCV_v2i();
+
+  private:
+    //cv::VideoCapture mVideoFile;	
+    int PerFrame;
+
+  public:
+    bool convert(const string& _srcAbsPath,
+                 const string& _desAbsDir,
+                 const string& _desFilename,
+                 vector<string>& _resFilename);
+  };
+}
