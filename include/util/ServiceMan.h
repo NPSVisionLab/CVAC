@@ -43,9 +43,6 @@
 #include <set>
 
 
-#define TRAIN_PREFIX "train_"
-#define SANDBOX "sboxes"
-
 /**
  * Functions to manage a CVAC service.  Programs that take a long time to
  * complete need to periodically call stopRequested to see if the user
@@ -92,6 +89,8 @@ namespace cvac
         std::string _cvacDataDir;
         std::string _trainDir;
         std::string _clientDir;
+        static const char* SANDBOX;
+
     };
 
     /**
@@ -214,12 +213,15 @@ namespace cvac
 
         SandboxManager  *getSandbox() { return mSandbox; }
   
-        void createSandbox();
+        void createSandbox(); 
+
+        static const char *SERVICELOCKFILE;
 
     protected:
         std::string                     mServiceName;
         int                             mStopState;
         SandboxManager*                 mSandbox;
+        
     };
 
     // this could be an unordered_set instead

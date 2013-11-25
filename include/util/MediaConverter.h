@@ -39,7 +39,7 @@
 
 #include <iomanip>
 #include <vector>
-//#include <opencv2/opencv.hpp>
+#include <opencv2/opencv.hpp>
 #include <util/processRunSet.h>
 //#pragma comment(lib,"opencv_core245.lib")
 //#pragma comment(lib,"opencv_highgui245.lib")
@@ -58,7 +58,8 @@ namespace cvac
     virtual bool convert(const string& _srcAbsPath,
                          const string& _desAbsDir,
                          const string& _desFilename,
-                         vector<string>& _resFilename) = 0;
+                         vector<string>& _resFilename,
+                         vector<string>& _resAuxInfo) = 0;
   };
 
 
@@ -71,7 +72,8 @@ namespace cvac
     bool convert(const string& _srcAbsPath,
                  const string& _desAbsDir,
                  const string& _desFilename,
-                 vector<string>& _resFilename);
+                 vector<string>& _resFilename,
+                 vector<string>& _resAuxInfo);
   };
 
   class MediaConverter_openCV_v2i : public MediaConverter
@@ -82,13 +84,14 @@ namespace cvac
     ~MediaConverter_openCV_v2i();
 
   private:
-    //cv::VideoCapture mVideoFile;	
+    cv::VideoCapture mVideoFile;	
     int PerFrame;
 
   public:
     bool convert(const string& _srcAbsPath,
                  const string& _desAbsDir,
                  const string& _desFilename,
-                 vector<string>& _resFilename);
+                 vector<string>& _resFilename,
+                 vector<string>& _resAuxInfo);
   };
 }

@@ -134,6 +134,8 @@ std::string ServiceManagerI::getDataDir()
                           "CVAC Data directory configured as: %s \n", dataDir.c_str());
     return dataDir;
 }
+
+const char* ServiceManager::SERVICELOCKFILE = ".services_started.lock";
 ///////////////////////////////////////////////////////////////////////////////
 void ServiceManager::createSandbox()
 {
@@ -203,6 +205,8 @@ std::string ServiceManager::getServiceName()
 ///////////////////////////////////////////////////////////////////////////////
 // SandboxManager classes
 ///////////////////////////////////////////////////////////////////////////////
+
+const char *ClientSandbox::SANDBOX = "sboxes";
 
 ClientSandbox::ClientSandbox(const std::string &clientName, 
                                   const std::string &CVAC_DataDir )
@@ -343,8 +347,10 @@ std::string SandboxManager::createClientDir(const std::string &clientName)
  */
 bool servicesStarted()
 {
-  printf("TODO: servicesStarted()\n");
-  return true;
+  if (fileExists(ServiceManager::SERVICELOCKFILE))
+      return true;
+  else
+      return false;
 }
 
 #ifdef WIN32
@@ -372,25 +378,24 @@ bool runProgram(const string &runString)
 }
 #else
 
-bool runProgram(const String &runString)
+bool runProgram(const string &runString)
 {
-   argv[0] = "/bin/sh";
-   argv[1] = "-c";
-   argv[2] = run_string;
-   argv[3] = 0;
-   fork_ret = fork();
-   if (fork_ret == -1)
-       return false;
-   else if (fork_ret == 0)
-   { // we are in the child process
-       // Close all the non standard file descriptors
-       if (exec("/bin/sh",(char * const *)argv) == -1)
-
-       { // could not start the new program
-          return false
-       }
-   }
-   return true;
+  pid_t fork_ret = fork();
+  if (fork_ret == -1)
+  {
+    return false;
+  }
+  else if (fork_ret == 0)
+  { // we are in the child process
+    // Close all the non standard file descriptors
+    int res = execl("/bin/sh", "-c", runString.c_str(), (char *)0 );
+    if (res == -1)
+    {	
+      // could not start the new program
+      return false;
+    }
+  }
+  return true;
 }
 #endif
 
@@ -399,7 +404,15 @@ bool runProgram(const String &runString)
  */
 void doStartServices()
 {
-  printf("TODO: exec job()\n");
+    // We assume we are in cvac root directory
+
+#ifdef WIN32
+    runProgram("bin\\startServices.bat");
+#else
+    runProgram("bin/startServices.sh");
+#endif
+    sleep(3000);
+    
 }
 
 /** Parse the config.services file for any configured service.
@@ -419,10 +432,10 @@ void parseConfigServices( StringSet& configured )
 }
 
 // see documentation in .h file
-StringSet startServices()
+StringSet cvac::startServices()
 {
   // for now, we don't test individual services but only whether
-  // bin/startIcebox has been run, based on a "touched" lock file
+  // bin/startIcebox has been run, based on a "touched" lock file.
   if (!servicesStarted())
   {
     doStartServices();

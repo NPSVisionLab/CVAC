@@ -37,6 +37,8 @@
  *****************************************************************************/
 #include <iostream>
 #include <vector>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <Ice/Communicator.h>
 #include <Ice/Initialize.h>
@@ -132,6 +134,7 @@ std::string CascadeTrainI::getDescription(const Current& current)
 
 TrainerProperties CascadeTrainI::getTrainerProperties(const Current &current)
 {
+  mTrainProps->writeProps();
   return *mTrainProps;
 }
 
@@ -377,6 +380,7 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
                             const TrainerProperties& trainProps,
                             const Current& current)
 {	
+  mTrainProps->load(trainProps);
   // Obtain CVAC verbosity - TODO: this should happen earlier
   PropertiesPtr svcprops = current.adapter->getCommunicator()->getProperties();
   string verbStr = svcprops->getProperty("CVAC.ServicesVerbosity");
@@ -384,7 +388,7 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   {
     vLogger.setLocalVerbosityLevel( verbStr );
   }
-
+  
   TrainerCallbackHandlerPrx callback =
     TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
 
@@ -488,44 +492,134 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
 }
 
 //----------------------------------------------------------------------------
-void TrainerPropertiesI::setWindowSize(const cvac::Size &wsize,
-                               const Current&)
+TrainerPropertiesI::TrainerPropertiesI()
 {
-  width = wsize.width;
-  height = wsize.height;
-}
-bool TrainerPropertiesI::canSetWindowSize(const Current&)
-{
-  return true;
-}
-
-cvac::Size TrainerPropertiesI::getWindowSize(const Current& )
-{
-  cvac::Size size;
-  size.width = width;
-  size.height = height;
-  return size;
+    verbosity = 0;
+    canSetWindowSize = true;
+    canSetSensitivity = true;
+    videoFPS = 0;
+    windowSize.width = 0;
+    windowSize.height = 0;
+    falseAlarmRate = 0.0;
+    recall = 0.0;
 }
 
-void TrainerPropertiesI::setSensitivity(Double falseAlarmRate, Double recall,
-                               const Current&)
+void TrainerPropertiesI::load(const TrainerProperties &p) 
 {
-  maxFalseAlarm = falseAlarmRate;
-  minHitRate = recall;
+    canSetWindowSize = true;
+    canSetSensitivity = true;
+    verbosity = p.verbosity;
+    props = p.props;
+    videoFPS = p.videoFPS;
+    //Only load values that are not zero
+    if (p.windowSize.width > 0 && p.windowSize.height > 0)
+        windowSize = p.windowSize;
+    if (p.falseAlarmRate > 0.0)
+        falseAlarmRate = p.falseAlarmRate;
+    if (p.recall > 0.0)
+        recall = p.recall;
+    readProps();
 }
 
-bool TrainerPropertiesI::canSetSensitivity(const Current& )
+bool TrainerPropertiesI::readProps()
 {
-  return true;
+    bool res = true;
+    cvac::Properties::iterator it;
+    for (it = props.begin(); it != props.end(); it++)
+    {
+        if (it->first.compare("numStages") == 0)
+        {
+            numStages = atoi(it->second.c_str());
+        }else if (it->first.compare("featureType") == 0)
+        {
+            if (it->second.compare("HAAR") == 0)
+                featureType = CvFeatureParams::HAAR;
+            else if (it->second.compare("LBP") == 0)
+                featureType = CvFeatureParams::LBP;
+            else if (it->second.compare("HOG") == 0)
+                featureType = CvFeatureParams::HOG;
+            else 
+            {
+                localAndClientMsg(VLogger::ERROR, NULL, 
+                         "featureType not supported for Cascade training.\n");
+                res = false;
+            }
+        }else if (it->first.compare("boostType") == 0)
+        {
+            if (it->second.compare("DISCRETE") == 0)
+                boost_type = CvBoost::DISCRETE;
+            else if (it->second.compare("REAL") == 0)
+                boost_type = CvBoost::REAL;
+            else if (it->second.compare("LOGIT") == 0)
+                boost_type = CvBoost::LOGIT;
+            if (it->second.compare("GENTLE") == 0)
+                boost_type = CvBoost::GENTLE;
+            else 
+            {
+                localAndClientMsg(VLogger::ERROR, NULL, 
+                         "boostType not supported for Cascade training.\n");
+                res = false;
+            }
+        }else if (it->first.compare("weightTrimRate") == 0)
+        {
+            weight_trim_rate = (float)atof(it->second.c_str());
+        }else if (it->first.compare("maxDepth") == 0)
+        {
+            max_depth = atoi(it->second.c_str());
+        }else if (it->first.compare("weakCount") == 0)
+        {
+            weak_count = atoi(it->second.c_str());
+        }
+    }
+   
+    return res;
 }
 
-void TrainerPropertiesI::getSensitivity(Double &falseAlarmRate, Double &recall,
-                                        const Current& )
+bool TrainerPropertiesI::writeProps()
 {
-  falseAlarmRate = maxFalseAlarm;
-  recall = minHitRate;
-}
+    bool res = true;
+    char buff[128];
+    sprintf(buff, "%d", numStages);
+    props.insert(std::pair<string, string>("numStages", buff));
+    if (featureType == CvFeatureParams::HAAR)
+        props.insert(std::pair<string, string>("featureType", "HAAR"));
+    else if (featureType == CvFeatureParams::LBP)
+        props.insert(std::pair<string, string>("featureType", "LBP"));
+    else if (featureType == CvFeatureParams::HOG)
+        props.insert(std::pair<string, string>("featureType", "HOG"));
+    else 
+    {
+        localAndClientMsg(VLogger::ERROR, NULL, 
+                         "featureType not supported for Cascade training.\n");
+        res = false;
+    }
+    if (boost_type == CvBoost::DISCRETE)
+        props.insert(std::pair<string, string>("boostType", "DISCRETE"));
+    else if (boost_type == CvBoost::REAL)
+        props.insert(std::pair<string, string>("boostType", "REAL"));
+    else if (boost_type == CvBoost::LOGIT)
+        props.insert(std::pair<string, string>("boostType", "LOGIT"));
+    else if (boost_type == CvBoost::GENTLE)
+        props.insert(std::pair<string, string>("boostType", "GENTLE"));
+    else 
+    {
+        localAndClientMsg(VLogger::ERROR, NULL, 
+                         "boostType not supported for Cascade training.\n");
+        res = false;
+    }
+    sprintf(buff, "%g", weight_trim_rate);
+    props.insert(std::pair<string, string>("weightTrimRate", buff));
+    sprintf(buff, "%d", max_depth);
+    props.insert(std::pair<string, string>("maxDepth", buff));
+    sprintf(buff, "%d", weak_count);
+    props.insert(std::pair<string, string>("weakCount", buff));
 
+    windowSize.width = width;
+    windowSize.height = height;
+    falseAlarmRate = maxFalseAlarm;
+    recall = minHitRate;
+    return res;
+}
 
 // TODO: this is the old main function; here only for reference.  remove 
 // once no longer needed

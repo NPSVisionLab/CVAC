@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #
 # startIcebox.sh script generated for CVAC version ${CVAC_VERSION}
 #
@@ -24,7 +26,7 @@ ${ICE_BOX_EXECUTABLE} --Ice.Config=config.icebox &
 # Java services, via Java IceBox
 if [ "${START_JAVA_SERVICES}" == "1" ]
 then
-    ${Java_JAVA_EXECUTABLE} -cp "${Ice.jar}:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar:${CMAKE_SOURCE_DIR}/3rdparty/lib/labelme.jar:${CMAKE_SOURCE_DIR}/3rdparty/lib/javabuilder.jar:${CMAKE_SOURCE_DIR}/3rdparty/lib/commons-io-2.4.jar:${CMAKE_SOURCE_DIR}/3rdparty/lib/javatar-2.5.jar" \
+    ${Java_JAVA_EXECUTABLE} -cp "${Ice.jar}:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar:${CMAKE_SOURCE_DIR}/3rdparty/lib/labelme.jar:${javabuilder.jar}:${IO.jar}:${javatar.jar}" \
         IceBox.Server --Ice.Config=config.java_icebox &
 fi
 

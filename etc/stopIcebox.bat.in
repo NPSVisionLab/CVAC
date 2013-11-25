@@ -2,8 +2,18 @@
 @setlocal
 set PATH=%PATH%;${ICE_ROOT}/bin
 chdir "${CVAC_ROOT_DIR}"
+
+set LOCKFILE=.services_started.lock
+if not exist "%LOCKFILE%" (
+    echo "CVAC services supposedly have not been started (there is no file '%LOCKFILE%')."
+    echo "Trying to stop them anyway..."
+)
+
 "${ICE_BOX_ADMIN}" --Ice.Config=config.admin shutdown
 "${ICE_BOX_ADMIN}" --Ice.Config=config.java_admin shutdown
 c:\windows\system32\taskkill.exe /FI "WINDOWTITLE eq CVAC Service*"
 echo CVAC services stopped
+if exist "%LOCKFILE%" (
+    del /q /f %LOCKFILE%
+)
 exit /b 0

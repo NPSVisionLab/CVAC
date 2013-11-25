@@ -46,8 +46,31 @@
 #include <IceUtil/UUID.h>
 #include <util/processRunSet.h>
 #include <util/ServiceManI.h>
+#include <util/RunSetIterator.h>
 
 #include <cv.h>
+
+class DetectorPropertiesI : public cvac::DetectorProperties
+{
+ public:
+  /**
+   * Initialize fields for this detector.
+   */
+  DetectorPropertiesI();
+  /**
+   * Read the string properties and convert them to member data values.
+   */
+  bool readProps();
+  /**
+   * Convert member data values into string properties.
+   */
+  bool writeProps();
+  /**
+   * Load the struct's values into our class ignoring uninitialized values
+   */
+ void load(const DetectorProperties &p);
+
+};
 
 class CascadeDetectI : public cvac::Detector, public cvac::StartStop
 {
@@ -76,13 +99,16 @@ private:
     std::vector<cv::Rect> detectObjects( const cvac::CallbackHandlerPrx& callback, const std::string& fullname );
     bool initialize(const ::cvac::DetectorProperties& props,
                     const ::cvac::FilePath& model, const ::Ice::Current& current);
-    bool readModelFile( std::string modelFSpath );
+    bool readModelFile( std::string modelFSpath, const ::Ice::Current& current);
+    void addResult(cvac::Result& _res,cvac::Labelable& _converted,
+                     std::vector<cv::Rect> _rects);
     
     cvac::ServiceManager    *mServiceMan;
     cvac::DetectorCallbackHandlerPrx callback;
     cv::CascadeClassifier *cascade;
     std::string              cascade_name;
     bool                     gotModel;
+    DetectorPropertiesI   *mDetectorProps;
 
     friend cvac::ResultSet detectFunc( cvac::DetectorPtr detector, const char *fname );
 };

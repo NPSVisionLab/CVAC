@@ -95,7 +95,7 @@ namespace cvac
         /**
          * Get a value of a trainer property value defined by name.
          */
-        std::string getProperty(const std::string &name);
+        std::string getProperty(const std::string &name) const;
 
         /**
          * Set the archive filename.  This should be the complete path
@@ -136,7 +136,7 @@ namespace cvac
          * @return - the filename in the archive that matches the identifier.
          * The  return string is empty if there is no match.
          */
-        const std::string getFile(const std::string &identifier);
+        const std::string getFile(const std::string &identifier) const;
 
 
     private:

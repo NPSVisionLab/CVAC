@@ -54,5 +54,8 @@ namespace cvac
                     const cvac::FilePath& model,
                     const cvac::DetectorProperties* props );
 
-
+  /**
+   * Get The value of the CVAC_DataDir from the config file
+   */
+  std::string getCVACDataDir(const std::string& algorithm);
 }

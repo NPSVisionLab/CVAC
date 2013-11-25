@@ -44,6 +44,10 @@
 #include <util/FileUtils.h>
 #include <util/Timing.h>
 #include <util/ServiceInvocation.h>
+
+#ifdef WIN32
+#define strdup _strdup
+#endif
 /** Utilities for invoking CVAC services from C/C++
  */
 
@@ -69,53 +73,51 @@ public:
   void cancelled(const Ice::Current&) {}
 };
 
-// =============================================================================
-/** callback for asynchronous call of Detector::process via ICE */
-class FinishedCallback : public IceUtil::Shared
+
+static Ice::CommunicatorPtr iceComm = 0;
+
+
+static void initIce(const string detectorNameStr)
 {
-public:
-  
-  FinishedCallback() : mFinished(false){}
-  
-  bool hasFinished()
+  int argc = 2;
+  char *argv[3];
+  argv[0] = strdup( detectorNameStr.c_str() );
+  argv[1] = strdup( "--Ice.Config=config.client" );
+  argv[2] = NULL;
+  if (iceComm == 0)
   {
-    return mFinished;
+    iceComm = Ice::initialize(argc, argv);
   }
+  free( argv[0] );
+  free( argv[1] );
+}
 
-  void finished(const Ice::AsyncResultPtr& result)
-  {
-    DetectorPrx detector = DetectorPrx::uncheckedCast(result->getProxy());
-    
-    try
-      {
-        detector->end_process(result);
-      }
-    catch (const Ice::Exception& e)
-      {
-        fprintf( stderr, "Exception: %s\n", e.ice_name().c_str());
-      }
-    mFinished = true;
-  }
-  
-private:
-  bool mFinished;
-};
-
-typedef IceUtil::Handle<FinishedCallback> FinishedCallbackPtr;
+string cvac::getCVACDataDir(const string &detectorNameStr)
+{
+  initIce(detectorNameStr);
+  Ice::PropertiesPtr props = iceComm->getProperties();
+  std::string dataDir = props->getProperty("CVAC.DataDir");
+  return dataDir;
+}
 
 /** Connect to the Ice Service
  */
-DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb,
+                              
+DetectorPrx initIceConnection(const std::string& detectorNameStr,
+                              Ice::Identity& det_cb,
                               DetectorCallbackHandlerPtr cr)
 {
-  Ice::CommunicatorPtr comm = Ice::Application::communicator();
-  Ice::PropertiesPtr props = comm->getProperties();
+  
+  initIce(detectorNameStr);
+  
+  Ice::PropertiesPtr props = iceComm->getProperties();
   std::string proxStr = detectorNameStr + ".Proxy";
   DetectorPrx detector = NULL;
   try
   {
+  
     detector = DetectorPrx::checkedCast(
-        comm->propertyToProxy(proxStr)->ice_twoway());
+        iceComm->propertyToProxy(proxStr)->ice_twoway());
   }
   catch (const IceUtil::NullHandleException& e)
   {
@@ -124,7 +126,7 @@ DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb
     return NULL;
   }
 
-  Ice::ObjectAdapterPtr adapter = comm->createObjectAdapter("");
+  Ice::ObjectAdapterPtr adapter = iceComm->createObjectAdapter("");
   det_cb.name = IceUtil::generateUUID();
   det_cb.category = "";
   adapter->add(cr, det_cb);
@@ -141,14 +143,15 @@ DetectorPrx initIceConnection(std::string detectorNameStr, Ice::Identity& det_cb
  *  collects results, and makes them available in the
  *  return argument.
  */
-ResultSet cvac::detect( const std::string& algorithm,
+ResultSet cvac::detect(
+                    const std::string& algorithm,
                     const cvac::RunSet& runset,
                     const cvac::FilePath& model,
                     const cvac::DetectorProperties* detprops )
 {
   // Connect to detector
   Ice::Identity det_cb;
-  CallbackHandlerI* cr = new CallbackHandlerI();
+  CallbackHandlerI *cr = new CallbackHandlerI();
   DetectorPrx detector = initIceConnection( algorithm, det_cb, cr );
   if(NULL == detector.get())
   {
@@ -159,41 +162,21 @@ ResultSet cvac::detect( const std::string& algorithm,
   // If user did not supply any detector properties then provide default one.
   if (NULL == detprops)
   {
-      detprops = & dprops;   
+      // need to initialize detector properties to their defaults
+      dprops = detector->getDetectorProperties();   
+      detprops = &dprops;
   }
 
-  Ice::CommunicatorPtr comm = Ice::Application::communicator();
-  Ice::PropertiesPtr iceprops = comm->getProperties();
-  std::string dataDir = iceprops->getProperty("CVAC.DataDir");
-/*
- TODO: "I think we don't have to use the FinishCallback at all because we don't want to"
-    "invoke process asynchronously.  Not sure why the choice was made to do so in"
-    "detectorClient.  Please try without first: just call "
-    "detector->process(det_cb, runSet);";
-  */
   try
-    {	// Create our callback class so that we can be informed when process completes
-      FinishedCallbackPtr finishCallback = new FinishedCallback();
-      Ice::CallbackPtr finishedAsync = Ice::newCallback(finishCallback, &FinishedCallback::finished);
-      
-      Ice::AsyncResultPtr asyncResult =
-        detector->begin_process(det_cb, runset, model, *detprops, finishedAsync);
-      
-      // end_myFunction should be call from the "finished" callback
-      //detector->end_process(asyncResult);
-      
-      // Wait for the processing to complete before exiting the app
-      while (!finishCallback->hasFinished())
-      {
-        cvac::sleep(100);
-      }
+    {	
+      detector->process(det_cb, runset, model, *detprops);
     }
   catch (const Ice::Exception& ex)
     {
       throw ex;
     }
 
-  comm->shutdown();  // Shut down at the end of either branch
+  iceComm->shutdown();  // Shut down at the end of either branch
   return cr->rs;
 }
 

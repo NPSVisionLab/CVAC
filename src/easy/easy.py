@@ -406,8 +406,8 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
                 # POSITIVES in keys[1]
                 poskeyid = 1
             if poskeyid != -1:
-                pospur = cvac.Purpose( cvac.PurposeType.POSITIVE, -1 )
-                negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, -1 )
+                pospur = cvac.Purpose( cvac.PurposeType.POSITIVE, 1 )
+                negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, 0 )
                 poskey = pur_categories_keys[poskeyid]
                 negkey = pur_categories_keys[1-poskeyid]
                 addPurposedLabelablesToRunSet( rnst, pospur, samples[poskey] )
@@ -552,7 +552,7 @@ def getFile( fileserver, filepath ):
     localFS = getFSPath( filepath )
     if not os.path.exists( os.path.dirname(localFS) ):
         os.makedirs( os.path.dirname(localFS) )
-    flocal = open( localFS, 'w' )
+    flocal = open( localFS, 'wb' )
     
     # "get" the file's bytes from the FileServer
     bytes = fileserver.getFile( filepath );
@@ -648,6 +648,13 @@ def deleteAllFiles( fileserver, uploadedFiles ):
 
     return {'deleted':deletedFiles, 'notDeleted':notDeletedFiles}
 
+def getTrainerProperties(trainer):
+    ''' Get the trainer properties for this trainer'''
+    trainerProps = trainer.getTrainerProperties()
+    if not trainerProps:
+        raise RuntimeError("Getting trainer properties failed")
+    return trainerProps
+
 def getTrainer( configString ):
     '''Connect to a trainer service'''
     trainer_base = ic.stringToProxy( configString )
@@ -663,16 +670,16 @@ class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
     detectorData = None
     trainingFinished = False
     def message( self, level, messageString, current=None ):
-        print("message from trainer: "+messageString, end="")
+        print("message (level " + str(level) + ") from trainer: "+messageString, end="")
         
     def createdDetector(self, detData, current=None):
         if not detData:
             raise RuntimeError("Finished training, but obtained no trained model")
-        print("Finished training, obtained a trained model (DetectorData)")
+        # print("Finished training, obtained a trained model (DetectorData)")
         self.detectorData = detData
         self.trainingFinished = True
 
-def train( trainer, runset, callbackRecv=None ):
+def train( trainer, runset, callbackRecv=None, trainerProperties=None ):
     '''A callback receiver can optionally be specified'''
     
     # ICE functionality to enable bidirectional connection for callback
@@ -687,16 +694,25 @@ def train( trainer, runset, callbackRecv=None ):
     trainer.ice_getConnection().setAdapter(adapter)
 
     # connect to trainer, initialize with a verbosity value, and train
-    trainer.initialize( 3 )
+    if not trainerProperties:
+        trainerProperties = cvac.TrainerProperties()
+        trainerProperties.verbosity = 3
     if type(runset) is dict:
         runset = runset['runset']
-    trainer.process( cbID, runset )
+    trainer.process( cbID, runset, trainerProperties )
 
     # check results
     if not callbackRecv.detectorData:
         raise RuntimeError("no DetectorData received from trainer")    
 
     return callbackRecv.detectorData
+
+def getDetectorProperties(detector):
+    ''' Get the detector properties for this detector'''
+    detectProps = detector.getDetectorProperties()
+    if not detectProps:
+        raise RuntimeError("Getting detector properties failed")
+    return detectProps
 
 def getDetector( configString ):
     '''Connect to a detector service'''
@@ -717,7 +733,7 @@ class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
         # collect all results
         self.allResults.extend( r2.results )
 
-def detect( detector, detectorData, runset, callbackRecv=None ):
+def detect( detector, detectorData, runset, detectorProps=None, callbackRecv=None ):
     '''
     Synchronously run detection with the specified detector,
     trained model, and optional callback receiver.
@@ -767,7 +783,10 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
 
     # connect to detector, initialize with a verbosity value
     # and the trained model, and run the detection on the runset
-    props = cvac.DetectorProperties()
+    if detectorProps == None:
+        props = cvac.DetectorProperties()
+    else:
+        props = detectorProps
     detector.process( cbID, runset, detectorData, props )
 
     if ourRecv:

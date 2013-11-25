@@ -13,15 +13,16 @@ import easy
 trainset1 = easy.createRunSet( "corporate_logos" )
 
 # train, round 1
-trainer = easy.getTrainer( "bowTrain:default -p 10103 ")
+trainer = easy.getTrainer( "BOW_Trainer:default -p 10103 ")
 model1 = easy.train( trainer, trainset1 )
 
 # evaluate the model on a separate test set, images and videos
 # in DataDir/testdata1
 testset1 = easy.createRunSet( "testImg", "UNPURPOSED" )
 easy.printRunSetInfo( testset1 )
-detector = easy.getDetector( "bowTest:default -p 10104" )
+detector = easy.getDetector( "BOW_Detector:default -p 10104" )
 result1 = easy.detect( detector, model1, testset1 )
+easy.printResults(result1)
 
 # sort the images from the testdata1 folder into subfolders of
 # "testresults1" corresponding to the found labels;
@@ -42,13 +43,14 @@ if not os.path.isdir( reject_folder ):
     os.makedirs( reject_folder )
 nologos = ["TestKrFlag.jpg", "italia.jpg", "korean-american-flag.jpg", "TestUsFlag.jpg"]
 for nologo in nologos:
-    for classID in range(9):
-        fname = "testresults1/{0}/{1}".format( classID, nologo )
-        if os.path.isfile( fname ): 
-            newf =  reject_folder + "/" + nologo
-            if (os.path.isfile(newf)):
-                os.unlink(newf) #If file exists delete it (required for some OS's)    
-            os.rename( fname, newf)
+    for root, dirnames, filenames in os.walk("testresults1"):
+        for filename in filenames:
+            if nologo == filename:
+                fname = os.path.join(root, filename)
+                newf =  reject_folder + "/" + nologo
+                if (os.path.isfile(newf)):
+                    os.unlink(newf) #If file exists delete it (required for some OS's)    
+                os.rename( fname, newf)
 
 # Create the new training set and combine it with the trainset1.
 # (Alternatively, in the previous step, manually sort the wrong
@@ -69,3 +71,5 @@ model2 = easy.train( trainer, trainset2 )
 
 # repeat the evaluation (this time with model2), the manual sorting etc.
 # with new testsets until the performance is satisfactory.
+result1 = easy.detect( detector, model2, testset1 )
+easy.printResults(result1)

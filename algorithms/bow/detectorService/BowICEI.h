@@ -49,8 +49,6 @@
 #include <util/ServiceMan.h>
 #include <util/ServiceManI.h>
 
-#define logfile_BowTrainResult "logTrain_Table.txt"
-
 class BowICEI : public cvac::Detector, public cvac::StartStop
 {
 public:
@@ -63,18 +61,22 @@ public:
 public:
 
     virtual void process(const Ice::Identity &client,const ::cvac::RunSet& runset,
-                         const ::cvac::FilePath &detectorData, const::cvac::DetectorProperties &props,
+                         const ::cvac::FilePath &detectorData,
+                         const ::cvac::DetectorProperties &props,
                          const ::Ice::Current& current);
     virtual std::string getName(const ::Ice::Current& current);
     virtual std::string getDescription(const ::Ice::Current& current);
-
-    virtual void initialize(int verbosity, const ::cvac::FilePath &file, const::Ice::Current &current);
-    virtual bool isInitialized();
-    virtual void destroy(const ::Ice::Current& current);
     virtual bool cancel(const Ice::Identity &client, const ::Ice::Current& current);
+    virtual cvac::DetectorProperties getDetectorProperties(const Ice::Current& current);
     void setServiceManager(cvac::ServiceManagerI *sman);
-    //virtual cvac::DetectorData createCopyOfDetectorData(const ::Ice::Current& current);
-    virtual cvac::DetectorProperties getDetectorProperties(const ::Ice::Current& current);
+    virtual void starting();
+    virtual void stopping();
+    
+protected:
+    void initialize( cvac::DetectorDataArchive& dda, const ::cvac::FilePath &file,
+                     const::Ice::Current &current);
+    bool isInitialized();
+    virtual void destroy(const ::Ice::Current& current);
 
 private:
     cvac::ServiceManager *mServiceMan;

@@ -1,10 +1,5 @@
 project(haartraining)
 
-if(WIN32)
-  link_directories(${CMAKE_CURRENT_BINARY_DIR})
-endif()
-
-link_libraries(${OPENCV_HAARTRAINING_DEPS} opencv_haartraining_engine)
 
 # -----------------------------------------------------------
 #  Library
@@ -28,6 +23,12 @@ set_target_properties(opencv_haartraining_engine PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
                       INSTALL_NAME_DIR lib
                      )
+
+if(WIN32)
+  link_directories(${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
+target_link_libraries(opencv_haartraining_engine ${OPENCV_HAARTRAINING_DEPS})
 
 # -----------------------------------------------------------
 #  haartraining
