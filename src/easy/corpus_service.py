@@ -35,54 +35,55 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
 
         self.join()
         
-    def openCorpus( cvacPath ):
+    def openCorpus( self, cvacPath, current=None):
         if not type(cvacPath) is cvac.FilePath:
             raise RuntimeError("wrong argument type")
-        pass
+        print( 'openCorpus called' )
+        return cvac.Corpus()
     
-    def closeCorpus( corp ):
+    def closeCorpus( self, corp, current=None ):
         if not type(corp) is cvac.Corpus:
             raise RuntimeError("wrong argument type")
-        pass
+        print( 'closeCorpus called' )
     
-    def saveCorpus( corp, cvacPath ):
+    def saveCorpus( self, corp, cvacPath, current=None ):
         if not type(corp) is cvac.Corpus:
             raise RuntimeError("wrong argument type")
         if not type(cvacPath) is cvac.FilePath:
             raise RuntimeError("wrong argument type")
-        pass
+        print( 'saveCorpus called' )
     
-    def getDataSetRequiresLocalMirror( corp ):
+    def getDataSetRequiresLocalMirror( self, corp, current=None ):
         if not type(corp) is cvac.Corpus:
             raise RuntimeError("wrong argument type")
-        pass
+        print( 'getDataSetRequiresLocalMirror called' )
     
-    def localMirrorExists( corp ):
+    def localMirrorExists( self, corp, current=None ):
         if not type(corp) is cvac.Corpus:
             raise RuntimeError("wrong argument type")
-        pass
+        print( 'localMirrorExists called' )
     
-    def createLocalMirror( corp, callback ):
+    def createLocalMirror( self, corp, callback, current=None ):
         if not type(corp) is cvac.Corpus:
             raise RuntimeError("wrong argument type")
-        pass
+        print( 'createLocalMirror called' )
     
-    def getDataSet( corp ):
+    def getDataSet( self, corp, current=None ):
         if not type(corp) is cvac.Corpus:
             raise RuntimeError("wrong argument type")
-        pass
+        print( 'getDataSet called' )
     
-    def addLabelable( corp, addme ):
+    def addLabelable( self, corp, addme, current=None ):
         if not type(corp) is cvac.Corpus:
             raise RuntimeError("wrong argument type")
         if not type(addme) is cvac.LabelableList:
             raise RuntimeError("wrong argument type")
-        pass
+        print( 'addLabelable called' )
     
-    def createCorpus( cvacdir ):
+    def createCorpus( self, cvacdir, current=None ):
         if not type(cvacdir) is cvac.DirectoryPath:
             raise RuntimeError("wrong argument type")
-        pass
+        print( 'createCorpus called' )
 
 
 class Server(Ice.Application):
