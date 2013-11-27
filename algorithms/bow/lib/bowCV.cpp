@@ -521,11 +521,12 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
     _bestClass = (int) predicted;
 
     if(!flagOneClass) //For Multi-class problem
-    {     
-        if (-1 == _bestClass) // no class found
-            return false;
-        else
-            return true;
+    {
+        return true;
+        //if (-1 == _bestClass) // no class found
+        //    return false;
+        //else
+        //    return true;
     }
     else  //For one-class problem
     {      

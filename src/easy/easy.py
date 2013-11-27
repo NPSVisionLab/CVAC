@@ -552,7 +552,7 @@ def getFile( fileserver, filepath ):
     localFS = getFSPath( filepath )
     if not os.path.exists( os.path.dirname(localFS) ):
         os.makedirs( os.path.dirname(localFS) )
-    flocal = open( localFS, 'w' )
+    flocal = open( localFS, 'wb' )
     
     # "get" the file's bytes from the FileServer
     bytes = fileserver.getFile( filepath );

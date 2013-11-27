@@ -22,6 +22,7 @@ testset1 = easy.createRunSet( "testImg", "UNPURPOSED" )
 easy.printRunSetInfo( testset1 )
 detector = easy.getDetector( "BOW_Detector:default -p 10104" )
 result1 = easy.detect( detector, model1, testset1 )
+easy.printResults(result1)
 
 # sort the images from the testdata1 folder into subfolders of
 # "testresults1" corresponding to the found labels;
@@ -70,3 +71,5 @@ model2 = easy.train( trainer, trainset2 )
 
 # repeat the evaluation (this time with model2), the manual sorting etc.
 # with new testsets until the performance is satisfactory.
+result1 = easy.detect( detector, model2, testset1 )
+easy.printResults(result1)
