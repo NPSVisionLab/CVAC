@@ -116,6 +116,9 @@ void CascadeDetectI::starting()
   {
     localAndClientMsg(VLogger::DEBUG, NULL, "Will read trained model file as specified in service config: %s\n",
                       modelfile.c_str());
+    if (pathAbsolute(modelfile) == false)
+        modelfile =  m_CVAC_DataDir + "/" + modelfile;
+        
     gotModel = readModelFile( modelfile, Ice::Current() );
     if (!gotModel)
     {
