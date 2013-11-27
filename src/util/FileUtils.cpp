@@ -170,6 +170,18 @@ std::string cvac::getCurrentWorkingDirectory()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+bool cvac::pathAbsolute(const std::string &dirPath)
+{
+    if ((dirPath.length() > 1 && 
+          dirPath[1] == ':' )||
+          dirPath[0] == '/' ||
+          dirPath[0] == '\\')
+    {  // absolute path
+        return true;
+    }else
+        return false;
+}
+///////////////////////////////////////////////////////////////////////////////
 
 bool cvac::makeDirectories(const std::string& dirPath)
 { 
@@ -177,10 +189,7 @@ bool cvac::makeDirectories(const std::string& dirPath)
     if (dirPath.empty())
         return false;
     int lastIdx = 0;
-    if ((dirPath.length() > 1 && 
-          dirPath[1] == ':' )||
-          dirPath[0] == '/' ||
-          dirPath[0] == '\\')
+    if (pathAbsolute(dirPath))
     {  // absolute path
         result = "/";
     }
@@ -437,7 +446,7 @@ void cvac::addFileToRunSet( RunSet& runSet, const std::string& relativePath,
   addFileToRunSet( runSet, relativePath, filename, purpose );
 }
 
-bool cvac::copyFile(const std::string fromFile, const std::string toFile)
+bool cvac::copyFile(const std::string &fromFile, const std::string &toFile)
 {
     char buf[BUFSIZ];
     size_t size;
