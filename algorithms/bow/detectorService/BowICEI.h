@@ -82,6 +82,7 @@ private:
     cvac::ServiceManager *mServiceMan;
     bowCV* pBowCV;
     bool   fInitialized;    
+    std::string configModelFileName;
     static cvac::ResultSet processSingleImg(cvac::DetectorPtr detector,const char* fullfilename);
 };
 
