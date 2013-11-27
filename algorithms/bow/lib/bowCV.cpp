@@ -103,6 +103,11 @@ bool bowCV::train_initialize(const string& _detectorName,
     flagName = false;
     dda = _dda;
 
+//debug
+printf ("detect name %s, extractor %s, matcher %s\n",
+        _detectorName.c_str(),
+        _extractorName.c_str(),
+        _matcherName.c_str());
     fDetector = FeatureDetector::create(_detectorName);
     dExtractor = DescriptorExtractor::create(_extractorName);
     if( fDetector.empty() || dExtractor.empty() )
@@ -574,7 +579,7 @@ bool bowCV::detect_readTrainResult()
         cout << "For the training, OpenCV " << _inputString
              << " was used. But, now you are using OpenCV "
              << CV_VERSION << ". It may cause an exceptional error." << endl; 
-        return false;
+        //return false;
     }
 
     CvSVMParams tParam = classifierSVM.get_params();
