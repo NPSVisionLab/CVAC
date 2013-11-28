@@ -262,7 +262,7 @@ def printRunSetInfo( runset, printLabels=False ):
         and isinstance(runset['runset'], cvac.RunSet):
         classmap = runset['classmap']
         runset = runset['runset']
-    if not runset or not isinstance(runset, cvac.RunSet):
+    if not runset or not isinstance(runset, cvac.RunSet) or not runset.purposedLists:
         print("no (proper) runset, nothing to print")
         return
     sys.stdout.softspace=False;
