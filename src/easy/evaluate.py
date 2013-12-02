@@ -11,30 +11,40 @@ import easy
 import cvac
 import math
 
-def evalResults( results, foundMap=None, origMap=None, inverseMap=False ):
-    '''Determine true and false positives and negatives.
+def getRelativePath( label ):
+    return label.sub.path.directory.relativePath + "/" + label.sub.path.filename
+
+def evalResults( results, origMap, foundMap ):
+    '''Determine true and false positives and negatives based on
+    the purpose of original and found labels.
     Returns tp, fp, tn, fn'''
     
     tp = 0; fp = 0; tn = 0; fn = 0
     for res in results:
-        names = []
+        foundPurposes = []
         for lbl in res.foundLabels:
-            foundLabel = getLabelText( lbl.lab, foundMap, guess=True )
-            names.append(foundLabel)
+            foundPurpose = foundMap[ easy.getLabelText( lbl.lab, guess=False ) ]
+            foundPurposes.append(foundPurpose)
         numfound = len(res.foundLabels)
-        origname = getLabelText( res.original.lab, origMap, guess=False )
-        if numfound==1 and origname.lower()==names[0].lower():
+        origpur = origMap[ getRelativePath(res.original) ]
+        # todo: should check the other found labels; need a strategy
+        # to deal with more than one found label
+        if numfound==1 and origpur==foundPurposes[0]:
             # "true"
-            if getPurpose( origname.lower() )==cvac.PurposeType.POSITIVE:
+            if origpur.ptype==cvac.PurposeType.POSITIVE:
                 tp += 1
             else:
                 tn += 1
         else:
+            if numfound>1:
+                print("warning: evalResults cannot deal with multiple found labels yet")
             # "false"
-            if getPurpose( origname.lower() )==cvac.PurposeType.POSITIVE:
+            if origpur.ptype==cvac.PurposeType.POSITIVE:
                 fn += 1
             else:
                 fp += 1
+
+    print("found: {0}, {1}, {2}, {3}".format(tp,fp,tn,fn))
             
     return tp, fp, tn, fn
 
@@ -43,18 +53,27 @@ def splitRunSet( runset_pos, runset_neg, fold, chunksize, evalsize, rndidx ):
     a training set and an evaluation set.  For use by crossValidate().
     '''
     num_items = ( len(runset_pos), len(runset_neg) )
-    evalidx  = ( range( fold*chunksize[0], fold*chunksize[0]+evalsize[0] ),
-                 range( fold*chunksize[1], fold*chunksize[1]+evalsize[1] ) )
-    trainidx = ( range( 0, fold*chunksize[0] ) + range( fold*chunksize[0]+evalsize[0], num_items[0] ),
-                 range( 0, fold*chunksize[1] ) + range( fold*chunksize[1]+evalsize[1], num_items[1] ) )
-    evalset_pos  = runset_pos[ rndidx[0][evalidx[0]] ]
-    evalset_neg  = runset_neg[ rndidx[1][evalidx[1]] ]
-    trainset_pos = runset_pos[ rndidx[0][trainidx[0]] ]
-    trainset_neg = runset_neg[ rndidx[1][trainidx[1]] ]
-    evalset  = cvac.RunSet()
-    evalset.purposedLists = (evalset_pos, evalset_neg)
+    evalidx_pos  = range( fold*chunksize[0], fold*chunksize[0]+evalsize[0] )
+    evalidx_neg  = range( fold*chunksize[1], fold*chunksize[1]+evalsize[1] )
+    trainidx_pos = range( 0, fold*chunksize[0] ) + range( fold*chunksize[0]+evalsize[0], num_items[0] )
+    trainidx_neg = range( 0, fold*chunksize[1] ) + range( fold*chunksize[1]+evalsize[1], num_items[1] )
+    # The following line selects those elements from runset_pos
+    # that correspond to the randomized indices for the current
+    # evaluation chunk.  Think of this, conceptually:
+    # evalset_pos  = runset_pos[ rndidx[0][evalidx_pos] ]
+    # Subsequent lines: equivalently, for runset_neg, and trainset pos/neg
+    evalset_pos  = list( runset_pos[i] for i in list( rndidx[0][j] for j in evalidx_pos) )
+    evalset_neg  = list( runset_neg[i] for i in list( rndidx[1][j] for j in evalidx_neg) )
+    trainset_pos = list( runset_pos[i] for i in list( rndidx[0][j] for j in trainidx_pos) )
+    trainset_neg = list( runset_neg[i] for i in list( rndidx[1][j] for j in trainidx_neg) )
+
+    # create a RunSet with proper purposes
     trainset = cvac.RunSet()
-    trainset.purposedLists = (trainset_pos, trainset_neg)
+    trainset.purposedLists = (cvac.PurposedLabelableSeq(easy.getPurpose("pos"), trainset_pos),
+                              cvac.PurposedLabelableSeq(easy.getPurpose("neg"), trainset_neg))
+    evalset  = cvac.RunSet()
+    evalset.purposedLists = (cvac.PurposedLabelableSeq(easy.getPurpose("pos"), evalset_pos),
+                             cvac.PurposedLabelableSeq(easy.getPurpose("neg"), evalset_neg))
     return trainset, evalset
 
 def asList( runset, purpose=None ):
@@ -80,6 +99,10 @@ def asList( runset, purpose=None ):
         else:
             raise RuntimeError("unexpected plist type "+type(plist))
     return rsList
+
+class CrossValidationResult:
+    # see below
+    pass
 
 def crossValidate( trainer, detector, runset, folds=10 ):
     '''Returns summary statistics tp, fp, tn, fn, recall, precision,
@@ -110,7 +133,7 @@ def crossValidate( trainer, detector, runset, folds=10 ):
     # if the number of labeled items in the runset divided
     # by the number of folds isn't an even
     # division, use more items for the evaluation
-    chunksize = (math.floor( num_items[0]/folds ), math.floor( num_items[1]/folds ))
+    chunksize = (int(math.floor( num_items[0]/folds )), int(math.floor( num_items[1]/folds )))
     trainsize = (chunksize[0] * (folds-1), chunksize[1] * (folds-1))
     evalsize  = (num_items[0]-trainsize[0], num_items[1]-trainsize[1])
     print( "Will perform a {0}-fold cross-validation with {1} training samples and "
@@ -125,21 +148,48 @@ def crossValidate( trainer, detector, runset, folds=10 ):
     for fold in range( folds ):
         # split the runset
         trainset, evalset = splitRunSet( runset_pos, runset_neg, fold, chunksize, evalsize, rndidx )
+        print( "-------- fold number {0} --------".format(fold) )
 
         # training
-        training( trainer, trainset )
+        print( "---- training:" )
+        easy.printRunSetInfo( trainset )
+        model = easy.train( trainer, trainset )
 
         # detection
-        res = detect( detector, evalset )
-        results[fold,:] = evalResults( res )
+        print( "---- evaluation:" )
+        easy.printRunSetInfo( evalset )
+        res = easy.detect( detector, model, evalset )
+
+        # omap maps the relative file path of every label to the assigned purpose
+        omap = {}
+        for plist in evalset.purposedLists:
+            assert( isinstance(plist, cvac.PurposedLabelableSeq) )
+            for sample in plist.labeledArtifacts:
+                omap[ getRelativePath(sample) ] = plist.pur
+        # todo: what's -1?, also: move outside this function
+        fmap = {'1':easy.getPurpose('pos'), '-1':easy.getPurpose('neg'), '0':easy.getPurpose('neg')}
+
+        results[fold,:] = evalResults( res, origMap=omap, foundMap=fmap )
 
     # calculate statistics
+    r = CrossValidationResult()
+    r.folds = folds
     sums = numpy.sum( results, 0 )  # sum over rows
-    tp = sums[0], fp = sums[1], tn = sums[2], fn = sums[3]
-    recall = tp/(tp+fn)
-    precision = tp/(tp+fp)
-        
-    return tp, fp, tn, fn, recall, precision, results
+    r.tp = sums[0]; r.fp = sums[1]; r.tn = sums[2]; r.fn = sums[3]
+    # (r.tp, r.fp, r.tn, r.fn) = numpy.sum( results, 0 )  # sum over rows
+    num_pos = r.tp+r.fn
+    if num_pos!=0:
+        r.recall = r.tp/float(num_pos)
+    else:
+        r.recall = 0
+    num_det = r.tp+r.fp
+    if num_det!=0:
+        r.precision = r.tp/float(r.tp+r.fp)
+    else:
+        r.precision = 0
+    r.results = results
+    
+    return r
 
 class Contender:
     '''Ultimately a detector, this product can be built from
@@ -207,6 +257,8 @@ def joust( contenders, runset, method='crossvalidate', folds=10 ):
     results = {}
     cnt = 0
     for c in contenders:
+        print("======== evaluating contender '{0}' ========".format( c.name ) )
+        # todo: use TrainerProps and DetectorProps
         d = c.getDetector()
         if c.hasTrainer():
             t = c.getTrainer()
@@ -214,8 +266,15 @@ def joust( contenders, runset, method='crossvalidate', folds=10 ):
         else:
             # todo: break out functionality from crossValidate
             res = easy.evaluate( d, c.detectorData, runset, trainsize )
+
+        print("results: {0}% recall with {1}% precision "
+              "({2} tp, {3} fp, {4} tn, {5} fn)"
+              .format( res.recall*100.0, res.precision*100.0,
+                       res.tp, res.fp, res.tn, res.fn ))
+        print res.results
+
         # calculate combined recall/precision score:
-        score = (res.recall + res.precision)/2
+        score = (res.recall + res.precision)/2.0
         results[cnt] = (score, c.name, res)
         cnt += 1
 
@@ -248,7 +307,7 @@ if __name__ == '__main__' :
     easy.addToRunSet( runset, "trainImg/ca/ca0003.jpg", "neg" )
     easy.addToRunSet( runset, "trainImg/ca/ca0004.jpg", "neg" )
     easy.addToRunSet( runset, "trainImg/ca/ca0005.jpg", "neg" )
-    easy.printRunSetInfo( runset )
+    easy.printRunSetInfo( runset, printLabels=True )
     
     res = joust( [c1, c2, c3], runset, folds=3 )
     print res
