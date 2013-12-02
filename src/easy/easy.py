@@ -38,7 +38,7 @@ ic = Ice.initialize(sys.argv)
 defaultCS = None
 # IF the environment variable is set, then use that else use data
 CVAC_DataDir = os.getenv("CVAC_DATADIR", "data")
-CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is debug level 2
+CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
 
 def getFSPath( cvacPath ):
     '''Turn a CVAC path into a file system path'''
