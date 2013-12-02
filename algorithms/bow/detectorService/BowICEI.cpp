@@ -153,8 +153,18 @@ void BowICEI::initialize( DetectorDataArchive& dda,
     return;
   }
 
-  // for a zip file
-  std::string zipfilename = getFSPath( model, m_CVAC_DataDir );
+  std::string zipfilename;
+  // Only support absolute paths if they are from the config file
+  if (configModelFileName.empty() == false)
+  {
+      if (pathAbsolute(configModelFileName) == false)
+	  zipfilename = m_CVAC_DataDir + "/" + configModelFileName;
+      else
+	  zipfilename = configModelFileName;
+  }else
+  {
+      zipfilename = getFSPath( model, m_CVAC_DataDir );
+  }
   dda.unarchive(zipfilename, clientDir);
 
   // add the CVAC.DataDir root path and initialize from dda  
