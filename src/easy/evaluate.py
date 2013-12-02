@@ -3,17 +3,19 @@
 # Matz, July 2013
 # last edit: November 2013
 #
-import easy
-
 import random
 random.seed()
-import numpy as np
+import numpy
+
+import easy
+import cvac
+import math
 
 def evalResults( results, foundMap=None, origMap=None, inverseMap=False ):
     '''Determine true and false positives and negatives.
     Returns tp, fp, tn, fn'''
     
-    tp = 0, fp = 0, tn = 0, fn = 0
+    tp = 0; fp = 0; tn = 0; fn = 0
     for res in results:
         names = []
         for lbl in res.foundLabels:
@@ -41,19 +43,43 @@ def splitRunSet( runset_pos, runset_neg, fold, chunksize, evalsize, rndidx ):
     a training set and an evaluation set.  For use by crossValidate().
     '''
     num_items = ( len(runset_pos), len(runset_neg) )
-    evalidx(0) = range( fold*chunksize(0), fold*chunksize(0)+evalsize(0) )
-    evalidx(1) = range( fold*chunksize(1), fold*chunksize(1)+evalsize(1) )
-    trainidx(0) = range( 0, fold*chunksize(0) ) + range( fold*chunksize(0)+evalsize(0), num_items(0) )
-    trainidx(1) = range( 0, fold*chunksize(1) ) + range( fold*chunksize(1)+evalsize(1), num_items(1) )
-    evalset_pos  = runset_pos[ rndidx(0)[evalidx(0)] ]
-    evalset_neg  = runset_neg[ rndidx(1)[evalidx(1)] ]
-    trainset_pos = runset_pos[ rndidx(0)[trainidx(0)] ]
-    trainset_neg = runset_neg[ rndidx(1)[trainidx(1)] ]
+    evalidx  = ( range( fold*chunksize[0], fold*chunksize[0]+evalsize[0] ),
+                 range( fold*chunksize[1], fold*chunksize[1]+evalsize[1] ) )
+    trainidx = ( range( 0, fold*chunksize[0] ) + range( fold*chunksize[0]+evalsize[0], num_items[0] ),
+                 range( 0, fold*chunksize[1] ) + range( fold*chunksize[1]+evalsize[1], num_items[1] ) )
+    evalset_pos  = runset_pos[ rndidx[0][evalidx[0]] ]
+    evalset_neg  = runset_neg[ rndidx[1][evalidx[1]] ]
+    trainset_pos = runset_pos[ rndidx[0][trainidx[0]] ]
+    trainset_neg = runset_neg[ rndidx[1][trainidx[1]] ]
     evalset  = cvac.RunSet()
     evalset.purposedLists = (evalset_pos, evalset_neg)
     trainset = cvac.RunSet()
     trainset.purposedLists = (trainset_pos, trainset_neg)
     return trainset, evalset
+
+def asList( runset, purpose=None ):
+    '''You can pass in an actual cvac.RunSet or a dictionary with
+    the runset and a classmap, as returned by createRunSet.'''
+    if type(runset) is dict and not runset['runset'] is None\
+        and isinstance(runset['runset'], cvac.RunSet):
+        runset = runset['runset']
+    if not runset or not isinstance(runset, cvac.RunSet) or not runset.purposedLists:
+        raise RuntimeError("no proper runset")
+    if isinstance(purpose, str):
+        purpose = easy.getPurpose( purpose )
+
+    rsList = []
+    for plist in runset.purposedLists:
+        if purpose and not plist.pur==purpose:
+            # not interested in this purpose
+            continue
+        if isinstance(plist, cvac.PurposedDirectory):
+            print("warning: runset contains directory; will treat as one for folds")
+        elif isinstance(plist, cvac.PurposedLabelableSeq):
+            rsList = rsList + plist.labeledArtifacts
+        else:
+            raise RuntimeError("unexpected plist type "+type(plist))
+    return rsList
 
 def crossValidate( trainer, detector, runset, folds=10 ):
     '''Returns summary statistics tp, fp, tn, fn, recall, precision,
@@ -84,17 +110,18 @@ def crossValidate( trainer, detector, runset, folds=10 ):
     # if the number of labeled items in the runset divided
     # by the number of folds isn't an even
     # division, use more items for the evaluation
-    chunksize = (floor( num_items(0)/folds ), floor( num_items(1)/folds ))
-    trainsize = (chunksize(0) * (folds-1), chunksize(1) * (folds-1))
-    evalsize  = (num_items(0)-trainsize(0), num_items(1)-trainsize(1))
+    chunksize = (math.floor( num_items[0]/folds ), math.floor( num_items[1]/folds ))
+    trainsize = (chunksize[0] * (folds-1), chunksize[1] * (folds-1))
+    evalsize  = (num_items[0]-trainsize[0], num_items[1]-trainsize[1])
+    print( "Will perform a {0}-fold cross-validation with {1} training samples and "
+           "{2} evaluation samples".format( folds, trainsize, evalsize ) )
 
     # randomize the order of the elements in the runset, once and for all folds
-    rndidx(0) = range( num_items(0) )
-    rndidx(1) = range( num_items(1) )
-    random.shuffle( rndidx(0) ) # shuffles items in place
-    random.shuffle( rndidx(1) ) # shuffles items in place
+    rndidx = ( range( num_items[0] ), range( num_items[1] ) )
+    random.shuffle( rndidx[0] ) # shuffles items in place
+    random.shuffle( rndidx[1] ) # shuffles items in place
 
-    results = np.empty( (folds, 4), np.dtype=int )
+    results = numpy.empty( [folds, 4], dtype=int )
     for fold in range( folds ):
         # split the runset
         trainset, evalset = splitRunSet( runset_pos, runset_neg, fold, chunksize, evalsize, rndidx )
@@ -107,7 +134,7 @@ def crossValidate( trainer, detector, runset, folds=10 ):
         results[fold,:] = evalResults( res )
 
     # calculate statistics
-    sums = np.sum( results, 0 )  # sum over rows
+    sums = numpy.sum( results, 0 )  # sum over rows
     tp = sums[0], fp = sums[1], tn = sums[2], fn = sums[3]
     recall = tp/(tp+fn)
     precision = tp/(tp+fp)
@@ -183,13 +210,14 @@ def joust( contenders, runset, method='crossvalidate', folds=10 ):
         d = c.getDetector()
         if c.hasTrainer():
             t = c.getTrainer()
-            res = easy.crossValidate( t, d, runset, folds )
+            res = crossValidate( t, d, runset, folds )
         else:
             # todo: break out functionality from crossValidate
             res = easy.evaluate( d, c.detectorData, runset, trainsize )
         # calculate combined recall/precision score:
         score = (res.recall + res.precision)/2
-        results[cnt++] = (score, c.name, res)
+        results[cnt] = (score, c.name, res)
+        cnt += 1
 
     return sort( results )
 
