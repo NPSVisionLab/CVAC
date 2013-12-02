@@ -88,7 +88,18 @@ void BowICEI::setServiceManager(cvac::ServiceManagerI *sman)
 
 void BowICEI::starting()
 {
-    // Do anything needed on service starting
+    // check if the config.service file contains a trained model
+    // if so, read it.
+    configModelFileName = mServiceMan->getModelFileFromConfig();
+    if (configModelFileName.empty())
+    {
+        localAndClientMsg(VLogger::DEBUG, NULL, "No trained model file specified in service config.\n" );
+    }
+    else
+    {
+        localAndClientMsg(VLogger::DEBUG, NULL, "Will read trained model file as specified in service config: %s\n",
+              configModelFileName.c_str()); 
+    }
 }
 
 void BowICEI::stopping()
@@ -115,12 +126,21 @@ void BowICEI::initialize( DetectorDataArchive& dda,
   {
     pBowCV = new bowCV();
   }
+  cvac::FilePath model;
+  if (configModelFileName.empty())
+  {
+      model = file;
+  }else
+  {
+      model.directory.relativePath = getFileDirectory(configModelFileName);
+      model.filename = getFileName(configModelFileName);
+  }
 	
   // Get the default CVAC data directory as defined in the config file
   std::string expandedSubfolder = "";
   std::string filename = "";
-  std::string _extFile = file.filename.substr( file.filename.rfind(".")+1,
-                                                    file.filename.length());
+  std::string _extFile = model.filename.substr( model.filename.rfind(".")+1,
+                                                    model.filename.length());
   std::string connectName = getClientConnectionName(current);
   std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
                                                              connectName);                               
@@ -133,8 +153,18 @@ void BowICEI::initialize( DetectorDataArchive& dda,
     return;
   }
 
-  // for a zip file
-  std::string zipfilename = getFSPath( file, m_CVAC_DataDir );
+  std::string zipfilename;
+  // Only support absolute paths if they are from the config file
+  if (configModelFileName.empty() == false)
+  {
+      if (pathAbsolute(configModelFileName) == false)
+	  zipfilename = m_CVAC_DataDir + "/" + configModelFileName;
+      else
+	  zipfilename = configModelFileName;
+  }else
+  {
+      zipfilename = getFSPath( model, m_CVAC_DataDir );
+  }
   dda.unarchive(zipfilename, clientDir);
 
   // add the CVAC.DataDir root path and initialize from dda  

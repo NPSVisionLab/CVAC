@@ -170,6 +170,18 @@ std::string cvac::getCurrentWorkingDirectory()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+bool cvac::pathAbsolute(const std::string &dirPath)
+{
+    if ((dirPath.length() > 1 && 
+          dirPath[1] == ':' )||
+          dirPath[0] == '/' ||
+          dirPath[0] == '\\')
+    {  // absolute path
+        return true;
+    }else
+        return false;
+}
+///////////////////////////////////////////////////////////////////////////////
 
 bool cvac::makeDirectories(const std::string& dirPath)
 { 
@@ -177,10 +189,7 @@ bool cvac::makeDirectories(const std::string& dirPath)
     if (dirPath.empty())
         return false;
     int lastIdx = 0;
-    if ((dirPath.length() > 1 && 
-          dirPath[1] == ':' )||
-          dirPath[0] == '/' ||
-          dirPath[0] == '\\')
+    if (pathAbsolute(dirPath))
     {  // absolute path
         result = "/";
     }
@@ -305,7 +314,7 @@ std::string cvac::getBaseFileName(const std::string& fileName)
 ///////////////////////////////////////////////////////////////////////////////
 std::string cvac::getFileExtension(const std::string& _path)
 {
-    std::string::size_type dot = _path.find_first_of(".");	//rfind
+    std::string::size_type dot = _path.find_last_of(".");	//rfind
     std::string _str = std::string(_path.begin() + dot + 1,_path.end());
 
     std::string tRes = _str;
@@ -437,7 +446,7 @@ void cvac::addFileToRunSet( RunSet& runSet, const std::string& relativePath,
   addFileToRunSet( runSet, relativePath, filename, purpose );
 }
 
-bool cvac::copyFile(const std::string fromFile, const std::string toFile)
+bool cvac::copyFile(const std::string &fromFile, const std::string &toFile)
 {
     char buf[BUFSIZ];
     size_t size;

@@ -231,6 +231,12 @@ namespace cvac
     * @param to file 
     * @return true if file was copied
     */
-   bool copyFile(const std::string fromFile, const std::string toFile); 
+   bool copyFile(const std::string& fromFile, const std::string& toFile);
+
+   /** Returns true if the path is absolute
+    * @param from filemake
+    * @return true if file/dir has an absolute path
+    */
+   bool pathAbsolute(const std::string& filename);
 };
 #endif // __FILEUTILS_H_INCLUDED__
