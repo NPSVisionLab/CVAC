@@ -38,6 +38,7 @@ ic = Ice.initialize(sys.argv)
 defaultCS = None
 # IF the environment variable is set, then use that else use data
 CVAC_DataDir = os.getenv("CVAC_DATADIR", "data")
+CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is debug level 2
 
 def getFSPath( cvacPath ):
     '''Turn a CVAC path into a file system path'''
@@ -663,6 +664,29 @@ def getTrainer( configString ):
         raise RuntimeError("Invalid DetectorTrainer proxy")
     return trainer
 
+def getVerbosityNumber( verbosityString ):
+    '''Convert error, info, warning etc into 1, 2, 3 etc.
+    '''
+    try:
+        # first see if it's a string digit ("0", "1", etc)
+        return int( verbosityString )
+    except ValueError:
+        pass
+    if verbosityString.lower().startswith("silent"):
+        return 0
+    if verbosityString.lower().startswith("err"):
+        return 1
+    if verbosityString.lower().startswith("warn"):
+        return 2
+    if verbosityString.lower().startswith("info"):
+        return 3
+    if verbosityString.lower().startswith("debug1") or verbosityString.lower()=="debug":
+        return 4
+    if verbosityString.lower().startswith("debug2"):
+        return 5
+    if verbosityString.lower().startswith("debug3"):
+        return 6
+
 # a default implementation for a TrainerCallbackHandler, in case
 # the easy user doesn't specify one;
 # this will get called once the training is done
@@ -670,7 +694,12 @@ class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
     detectorData = None
     trainingFinished = False
     def message( self, level, messageString, current=None ):
-        print("message (level " + str(level) + ") from trainer: "+messageString, end="")
+        global CVAC_ClientVerbosity
+        if isinstance(CVAC_ClientVerbosity, str):
+            CVAC_ClientVerbosity = getVerbosityNumber( CVAC_ClientVerbosity )
+        if level<=CVAC_ClientVerbosity:
+            print("message (level {0}) from trainer: {1}"
+                  .format( str(level), messageString), end="")
         
     def createdDetector(self, detData, current=None):
         if not detData:
