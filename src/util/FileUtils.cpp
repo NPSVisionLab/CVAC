@@ -314,7 +314,7 @@ std::string cvac::getBaseFileName(const std::string& fileName)
 ///////////////////////////////////////////////////////////////////////////////
 std::string cvac::getFileExtension(const std::string& _path)
 {
-    std::string::size_type dot = _path.find_first_of(".");	//rfind
+    std::string::size_type dot = _path.find_last_of(".");	//rfind
     std::string _str = std::string(_path.begin() + dot + 1,_path.end());
 
     std::string tRes = _str;
