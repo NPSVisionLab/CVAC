@@ -273,6 +273,50 @@ bool hasUniqueLabels( const LabelMap& labelmap )
   return true;
 }
 
+/** argument error checking: any data? consistent multiclass or pos/neg purpose?
+ */
+bool checkPurposedLists( const PurposedListSequence& purposedLists,
+                         TrainerCallbackHandlerPrx& _callback )
+{
+  if(purposedLists.size() == 0)
+  {
+    localAndClientMsg(VLogger::WARN, _callback, 
+                      "Error: no data (runset) for processing\n");
+    return false;
+  }
+  bool decided = false;
+  bool posneg;
+  for (size_t listidx = 0; listidx < purposedLists.size(); listidx++)
+  {
+    Purpose& pur = purposedLists[listidx]->pur;
+    if (pur.ptype==cvac::POSITIVE || pur.ptype==cvac::NEGATIVE || pur.classID==-1)
+    {
+      if (decided && !posneg)
+      {        
+        localAndClientMsg(VLogger::ERROR, _callback,
+                          "inconsistent multiclass vs. pos/neg purposes\n" );
+        return false;
+      }
+      decided = true;
+      posneg = true;
+    }
+    else if (pur.ptype==cvac::MULTICLASS || pur.classID>=0)
+    {
+      if (decided && posneg)
+      {
+        localAndClientMsg(VLogger::ERROR, _callback,
+                          "inconsistent multiclass vs. pos/neg purposes\n" );
+        return false;
+      }
+      decided = true;
+      posneg = false;
+    }
+  }
+  localAndClientMsg(VLogger::DEBUG, _callback, "got %d purposed lists\n",
+                    purposedLists.size());
+  return true;
+}
+
 void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
                            const TrainerProperties &tprops,
                            const Current& current)
@@ -287,14 +331,9 @@ void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
   PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
   std::string CVAC_DataDir = props->getProperty("CVAC.DataDir");
 
-  if(runset.purposedLists.size() == 0)
-  {
-    localAndClientMsg(VLogger::WARN, _callback, 
-                      "Error: no data (runset) for processing\n");
+  // argument error checking: any data? consistent multiclass or pos/neg purpose?
+  if (!checkPurposedLists( runset.purposedLists, _callback ))
     return;
-  }
-  localAndClientMsg(VLogger::DEBUG, _callback, "got %d purposed lists\n",
-                    runset.purposedLists.size());
 
   DetectorDataArchive dda;
   bowCV* pBowCV = initialize(_callback, tprops, dda, current);
@@ -316,7 +355,7 @@ void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
                          _callback, CVAC_DataDir,
                          labelmap, &labelsMatch );
   }
-  if (!labelsMatch) labelmap.clear();
+  if ( !labelsMatch ) labelmap.clear();
   if ( !hasUniqueLabels(labelmap) ) labelmap.clear();
 
   // create a sandbox for this client
@@ -359,6 +398,29 @@ void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
   localAndClientMsg(VLogger::INFO, _callback, "Training procedure completed.\n");
 }
 
+int getPurposeId( const Purpose& pur, TrainerCallbackHandlerPrx& _callback )
+{
+  int _classID = pur.classID;
+  if (_classID==-1)
+  {
+    // assume positive/negative, or just positive
+    if (pur.ptype == cvac::POSITIVE)
+    {
+      _classID = 1;
+    }
+    else if (pur.ptype == cvac::NEGATIVE)
+    {
+      _classID = 0;
+    }
+    else
+    {
+      localAndClientMsg(VLogger::WARN, _callback,
+                        "Unexpected Purpose: classID==%d, but not POS nor NEG\n",
+                        pur.classID );
+    }
+  }
+  return _classID;
+}
 
 void BowICETrainI::processPurposedList( PurposedListPtr purList,
                                         bowCV* pBowCV,
@@ -367,7 +429,7 @@ void BowICETrainI::processPurposedList( PurposedListPtr purList,
                                         LabelMap& labelmap, bool* pLabelsMatch
                                         )
 {
-  int _classID = purList->pur.classID;
+  int _classID = getPurposeId( purList->pur, _callback );
   PurposedLabelableSeq* lab = static_cast<PurposedLabelableSeq*>(purList.get());
   assert(NULL!=lab);
   
