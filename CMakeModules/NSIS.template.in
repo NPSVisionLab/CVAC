@@ -37,6 +37,10 @@
   ;Set compression
   SetCompressor @CPACK_NSIS_COMPRESSOR@
 
+  ;CVAC Changes
+  RequestExecutionLevel user
+  ;END CVAC Changes
+
 @CPACK_NSIS_DEFINES@   
 
   !include Sections.nsh
