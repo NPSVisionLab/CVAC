@@ -141,7 +141,6 @@ void cvac::DetectorDataArchive::unarchive(const string &archiveFile, const strin
     std::string line;
     while( std::getline(propfile, line))
     {
-        int res;
         // See if its a property
         int idx = line.find(":");
         if (idx > 0)
