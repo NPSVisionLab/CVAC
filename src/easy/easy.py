@@ -762,7 +762,7 @@ class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
         # collect all results
         self.allResults.extend( r2.results )
 
-def detect( detector, detectorData, runset, detectorProps=None, callbackRecv=None ):
+def detect( detector, detectorData, runset, detectorProperties=None, callbackRecv=None ):
     '''
     Synchronously run detection with the specified detector,
     trained model, and optional callback receiver.
@@ -812,11 +812,9 @@ def detect( detector, detectorData, runset, detectorProps=None, callbackRecv=Non
 
     # connect to detector, initialize with a verbosity value
     # and the trained model, and run the detection on the runset
-    if detectorProps == None:
-        props = cvac.DetectorProperties()
-    else:
-        props = detectorProps
-    detector.process( cbID, runset, detectorData, props )
+    if detectorProperties == None:
+        detectorProperties = cvac.DetectorProperties()
+    detector.process( cbID, runset, detectorData, detectorProperties )
 
     if ourRecv:
         return callbackRecv.allResults

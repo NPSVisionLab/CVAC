@@ -14,10 +14,22 @@ import math
 def getRelativePath( label ):
     return label.sub.path.directory.relativePath + "/" + label.sub.path.filename
 
-def getConfusionTable( results, origMap, foundMap ):
+def getConfusionTable( results, foundMap, origMap=None, origSet=None ):
     '''Determine true and false positives and negatives based on
     the purpose of original and found labels.
+    origMap maps the relative file path of every label to the assigned purpose.
+    The origMap can be constructed from the original RunSet if it
+    contained purposes.
     Returns tp, fp, tn, fn'''
+
+    if not origMap and not origSet:
+        raise RuntimeError("need either origMap or origSet")
+    if not origMap:
+        origMap = {}
+        for plist in origSet.purposedLists:
+            assert( isinstance(plist, cvac.PurposedLabelableSeq) )
+            for sample in plist.labeledArtifacts:
+                origMap[ getRelativePath(sample) ] = plist.pur
     
     tp = 0; fp = 0; tn = 0; fn = 0
     for res in results:
@@ -132,7 +144,7 @@ class EvaluationResult:
         return desc
 
         
-def crossValidate( trainer, detector, runset, folds=10 ):
+def crossValidate( contender, runset, folds=10 ):
     '''Returns summary statistics tp, fp, tn, fn, recall, precision,
     and a detailed matrix of results with one row for
     each fold, and one column each for true positive, false
@@ -181,35 +193,27 @@ def crossValidate( trainer, detector, runset, folds=10 ):
         # training
         print( "---- training:" )
         easy.printRunSetInfo( trainset )
-        model = easy.train( trainer, trainset )
+        trainer = contender.getTrainer()
+        model = easy.train( trainer, trainset,
+                            trainerProperties=contender.trainerProps )
 
         # detection
         print( "---- evaluation:" )
         easy.printRunSetInfo( evalset )
-        detections = easy.detect( detector, model, evalset )
-
-        # omap maps the relative file path of every label to the assigned purpose
-        omap = {}
-        for plist in evalset.purposedLists:
-            assert( isinstance(plist, cvac.PurposedLabelableSeq) )
-            for sample in plist.labeledArtifacts:
-                omap[ getRelativePath(sample) ] = plist.pur
-        # todo: what's -1?, also: move outside this function
-        fmap = {'1':easy.getPurpose('pos'), '0':easy.getPurpose('neg')}
-
+        detector = contender.getDetector()
+        detections = easy.detect( detector, model, evalset,
+                                  detectorProperties=contender.detectorProps )
         confusionTables[fold,:] = \
-            getConfusionTable( detections, origMap=omap, foundMap=fmap )
+            getConfusionTable( detections, origSet=evalset, foundMap=contender.foundMap )
 
     # calculate statistics
     sums = numpy.sum( confusionTables, 0 )  # sum over rows
     r = EvaluationResult( folds,
                           tp=sums[0], fp=sums[1], tn=sums[2], fn=sums[3],
-                          detail=confusionTables )
-    
+                          detail=confusionTables, name=contender.name )
     return r
 
-# todo: combine code with crossValidate
-def evaluate( detector, detectorData, runset ):
+def evaluate( contender, runset ):
     if type(runset) is dict and not runset['runset'] is None\
         and isinstance(runset['runset'], cvac.RunSet):
         runset = runset['runset']
@@ -217,24 +221,16 @@ def evaluate( detector, detectorData, runset ):
         raise RuntimeError("no proper runset")
     evalset = runset
 
-    # omap maps the relative file path of every label to the assigned purpose
-    omap = {}
-    for plist in evalset.purposedLists:
-        assert( isinstance(plist, cvac.PurposedLabelableSeq) )
-        for sample in plist.labeledArtifacts:
-            omap[ getRelativePath(sample) ] = plist.pur
-            # todo: what's -1?, also: move outside this function
-    fmap = {'1':easy.getPurpose('pos'), '0':easy.getPurpose('neg')}
-            
     print( "---- evaluation:" )
     easy.printRunSetInfo( evalset )
-    detections = easy.detect( detector, detectorData, evalset )
-    ct = getConfusionTable( detections, origMap=omap, foundMap=fmap )
+    detector = contender.getDetector()
+    detections = easy.detect( detector, contender.detectorData, evalset,
+                              detectorProperties=contender.detectorProps )
+    ct = getConfusionTable( detections, origSet=evalset, foundMap=contender.foundMap )
 
     # create result structure
-    r = EvaluationResult( 0,
-                          tp=ct[0], fp=ct[1], tn=ct[2], fn=ct[3], detail=ct )
-    
+    r = EvaluationResult( 0, tp=ct[0], fp=ct[1], tn=ct[2], fn=ct[3],
+                          detail=ct, name=contender.name )
     return r
 
 
@@ -255,6 +251,7 @@ class Contender:
         self.detectorString = None
         self.detectorData = None
         self.detectorProps = None
+        self.foundMap = None
 
     def hasTrainer( self ):
         if self.trainer or self.trainerString:
@@ -305,14 +302,10 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     for c in contenders:
         if verbose:
             print("======== evaluating contender '{0}' ========".format( c.name ) )
-        # todo: use TrainerProps and DetectorProps
-        d = c.getDetector()
         if c.hasTrainer():
-            t = c.getTrainer()
-            evalres = crossValidate( t, d, runset, folds )
+            evalres = crossValidate(c, runset, folds )
         else:
-            evalres = evaluate( d, c.detectorData, runset )
-        evalres.name = c.name
+            evalres = evaluate( c, runset )
         results.append( evalres )
 
         if verbose:
@@ -334,6 +327,7 @@ if __name__ == '__main__' :
     c1 = Contender("BOW")
     c1.trainerString = "BOW_Trainer:default -p 10103"
     c1.detectorString = "BOW_Detector:default -p 10104"
+    c1.foundMap = {'1':easy.getPurpose('pos'), '0':easy.getPurpose('neg')}
 
     # Histogram of Oriented Gradients
     c2 = Contender("HOG")
@@ -345,6 +339,7 @@ if __name__ == '__main__' :
     c3 = Contender("DPM")
     c3.detectorString = "DPM_Detector:default -p 10116"
     c3.detectorData = "detectors/dpmStarbucksLogo.zip"
+    c3.foundMap = {'Positive':easy.getPurpose('pos'), 'Negative':easy.getPurpose('neg')}
 
     runset = easy.createRunSet( "trainImg/kr/Kr001.jpg", "pos" )
     easy.addToRunSet( runset, "trainImg/kr/Kr002.jpg", "pos" )
