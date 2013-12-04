@@ -153,7 +153,6 @@ def crossValidate( contender, runset, folds=10 ):
     # sanity checks:
     # only positive and negative purposes,
     # count number of entries for each purpose
-    # todo: warn that directories will be treated as one entity, if any
     runset_pos = asList( runset, purpose="pos" )
     runset_neg = asList( runset, purpose="neg" )
     num_items = ( len(runset_pos), len(runset_neg) )
@@ -302,15 +301,18 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     for c in contenders:
         if verbose:
             print("======== evaluating contender '{0}' ========".format( c.name ) )
-        if c.hasTrainer():
-            evalres = crossValidate(c, runset, folds )
-        else:
-            evalres = evaluate( c, runset )
-        results.append( evalres )
+        try:
+            if c.hasTrainer():
+                evalres = crossValidate(c, runset, folds )
+            else:
+                evalres = evaluate( c, runset )
+            results.append( evalres )
 
-        if verbose:
-            print evalres
-            print evalres.detail
+            if verbose:
+                print evalres
+                print evalres.detail
+        except Exception as exc:
+            print("error encountered, evaluation aborted: " + str(exc))
 
     if verbose:
         print("======== done! ========")
@@ -341,6 +343,11 @@ if __name__ == '__main__' :
     c3.detectorData = "detectors/dpmStarbucksLogo.zip"
     c3.foundMap = {'Positive':easy.getPurpose('pos'), 'Negative':easy.getPurpose('neg')}
 
+    # OpenCVCascade
+    c4 = Contender("cascade")
+    c4.trainerString = "OpenCVCascadeTrainer:default -p 10107"
+    c4.detectorString = "OpenCVCascadeDetector:default -p 10102"
+
     runset = easy.createRunSet( "trainImg/kr/Kr001.jpg", "pos" )
     easy.addToRunSet( runset, "trainImg/kr/Kr002.jpg", "pos" )
     easy.addToRunSet( runset, "trainImg/kr/Kr003.jpg", "pos" )
@@ -349,8 +356,7 @@ if __name__ == '__main__' :
     easy.addToRunSet( runset, "trainImg/ca/ca0005.jpg", "neg" )
     easy.printRunSetInfo( runset, printLabels=True )
     
-    #    res = joust( [c1, c2, c3], runset, folds=3 )
-    perfdata = joust( [c1, c3], runset, folds=3 )
+    perfdata = joust( [c1, c2, c3, c4], runset, folds=3 )
     for res in perfdata:
         print res
     
