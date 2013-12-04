@@ -569,7 +569,36 @@ std::string cvac::getTempFilename( const std::string &basedir,
         }
     }
 #else
-    tempName = tempnam(baseName, prefixName);
+    std::string temPlate;
+
+    if (baseName != NULL)
+    {
+        temPlate = baseName;
+    }else
+    {
+        char *tempdir = getenv("TMPDIR");
+        if (tempdir != NULL)
+            temPlate = tempdir;
+        else
+#ifdef P_tmpdir
+            temPlate = P_tmpdir;
+#else
+            temPlate = ".";
+#endif
+          
+    }
+    if (prefixName != NULL)
+    {
+        temPlate += std::string("/") + std::string(prefixName);
+    }else
+    {
+        temPlate += std::string("/temp");
+    }
+    temPlate += std::string("XXXXXX");
+    // need a non-const char * so use vector
+    std::vector<char> buffer(temPlate.size()+1);
+    std::copy(temPlate.begin(), temPlate.end(), buffer.begin());
+    tempName = mktemp(&buffer[0]);
 #endif /* WIN32 */
     std::string tempString = tempName;
     return tempString;
