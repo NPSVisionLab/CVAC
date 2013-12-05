@@ -49,26 +49,25 @@ def parseLabeledObjects( root, substrate ):
 
     return labels
 
-def parseFolder( lmAnnotations, lmFolder ):
+def parseFolder( localDir, lmAnnotations, lmImages, lmFolder, CVAC_DataDir ):
     '''Parse all XML files in the specified folder and
     return all found labels.
     (this currently only works locally on the file system)
     lmAnnotations is equivalent to HOMEANNOTATIONS in the Matlab LabelMeToolbox:
     it is the path to the Annotation root folder on the file system, 
     or the LabelMe server's Annotation folder http address.
-    lmFolder is the subfolder under LabelMe Annotations.
-    Note that the image files are assumed to be in 
-    CVAC.DataDir/lmFolder.
+    lmFolder is the equivalent to HOMEIMAGESin the Matlab LabelMeToolbox.
+    Both lmAnnotations and lmFolder are assumed to be in localDir
     '''
 
     labels = []
-    fsAnnotPath = lmAnnotations + '/' + lmFolder + '/*.xml'
+    fsAnnotPath = os.path.join(CVAC_DataDir, localDir, lmAnnotations, lmFolder) + '/*.xml'
     for fsAnnotFullpath in glob.glob( fsAnnotPath ):
         # parse the XML file on the file system
         tree = et.parse( fsAnnotFullpath )
         root = tree.getroot()
         # find out image name, prepend image path
-        cvacDir = cvac.DirectoryPath( lmFolder )
+        cvacDir = cvac.DirectoryPath( os.path.join(localDir, lmImages, lmFolder ))
         imgFname = root.find('filename').text
         cvacFp = cvac.FilePath( cvacDir, imgFname )
         substrate = cvac.Substrate( True, False, cvacFp, -1, -1 )
