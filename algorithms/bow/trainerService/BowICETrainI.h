@@ -76,6 +76,8 @@ public:
  private:
   int                    m_cvacVerbosity;
   cvac::ServiceManager  *mServiceMan;
+  int                    maxClassId;
+  std::string            rejectClassStrategy;
 
  private:
   bowCV* initialize( cvac::TrainerCallbackHandlerPrx& _callback,
@@ -97,6 +99,10 @@ public:
                                   const std::string& clientName,
                                   const std::string& CVAC_DataDir,
                                   const std::string& tempDir );
+  int getPurposeId( const cvac::Purpose& pur,
+                    cvac::TrainerCallbackHandlerPrx& _callback );
+  bool checkPurposedLists( const cvac::PurposedListSequence& purposedLists,
+                           cvac::TrainerCallbackHandlerPrx& _callback );
 };
 
 #endif //_BowICETrainI_H__

@@ -154,7 +154,43 @@ bowCV* BowICETrainI::initialize( TrainerCallbackHandlerPrx& _callback,
                         "Number of words set to %d\n", cw );
     }
   }
-   
+
+  // figure out how to handle Negative purpose samples, if any
+  const string& strategy = trp[bowCV::BOW_REJECT_CLASS_STRATEGY];
+  if (!strategy.empty())
+  {
+    std::string strat = strategy;
+    std::transform( strategy.begin(), strategy.end(), strat.begin(), ::tolower );
+    string rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_MULTICLASS;
+    if (0==strat.compare(bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES))
+    {
+      rejectClassStrategy = bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES;
+      localAndClientMsg(VLogger::DEBUG, _callback,
+                        "BOW will ignore any samples with Negative purpose\n");
+    }
+    else if (0==strat.compare(bowCV::BOW_REJECT_CLASS_AS_MULTICLASS))
+    {
+      rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_MULTICLASS;
+      localAndClientMsg(VLogger::DEBUG, _callback,
+                        "BOW will treat samples with Negative purpose as a separate class\n");
+    }
+    else if (0==strat.compare(bowCV::BOW_REJECT_CLASS_AS_FIRST_STAGE))
+    {
+      rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_FIRST_STAGE;
+      localAndClientMsg(VLogger::DEBUG, _callback,
+                        "BOW will create a two-stage classifier: reject first, multiclass second\n");
+      localAndClientMsg(VLogger::ERROR, _callback,
+                        "BOW two-stage classifier is not implemented yet\n");
+      return false;
+    }
+    else
+    {
+      localAndClientMsg(VLogger::WARN, _callback,
+                        "Incorrect specifier for %s property, using default (%s).\n",
+                        bowCV::BOW_REJECT_CLASS_STRATEGY.c_str(), rejectClassStrategy.c_str() );
+    }      
+  }
+  
   bowCV* pBowCV = new bowCV();
   bool fInitialized =
     pBowCV->train_initialize(_nameFeature,_nameDescriptor,_nameMatcher,_countWords, &dda);
@@ -208,12 +244,9 @@ void BowICETrainI::processSingleImg(string _filepath,string _filename,int _class
 	std::string _strFilename = std::string(_filename);	
 	std::string _strFullname(_strFilepath + "/" + _strFilename);
 
-	std::ostringstream _ostr;	_ostr << _classID;
-	std::string _strClassID(_ostr.str());
-
 	if(_ploc.get() == NULL)
         {
-          pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()));
+          pBowCV->train_stackTrainImage(_strFullname, _classID);
         }
 	else
 	{
@@ -233,26 +266,26 @@ void BowICETrainI::processSingleImg(string _filepath,string _filename,int _class
               if (pt->y > ymax) ymax = pt->y;
               if (pt->y < ymin) ymin = pt->y;
             }
-            pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()),
+            pBowCV->train_stackTrainImage(_strFullname,_classID,
                                           xmin, ymin, xmax-xmin, ymax-ymin);
           }
           else if(_ploc->ice_isA("::cvac::BBox"))
           {
             BBoxPtr pbox = BBoxPtr::dynamicCast(_ploc);         
-            pBowCV->train_stackTrainImage(_strFullname,atoi(_strClassID.c_str()),
+            pBowCV->train_stackTrainImage(_strFullname,_classID,
                                           pbox->x,pbox->y,pbox->width,pbox->height);
           }
           else
           {
             localAndClientMsg(VLogger::WARN, _callback,
-                "Not adding %s because %s (not BBox or Silhouette) type.\n",
-                _strFilename.c_str(), _strClassID.c_str());
+                "Not adding %s because %d (not BBox or Silhouette) type.\n",
+                _strFilename.c_str(), _classID);
             return;
           }
         }
         localAndClientMsg(VLogger::DEBUG, _callback, 
-                          "Adding %s into training class %s.\n",
-                          _strFilename.c_str(), _strClassID.c_str());
+                          "Adding %s into training class %d.\n",
+                          _strFilename.c_str(), _classID);
 }
 
 
@@ -274,9 +307,12 @@ bool hasUniqueLabels( const LabelMap& labelmap )
 }
 
 /** argument error checking: any data? consistent multiclass or pos/neg purpose?
+ *  having Negative purpose samples and multiclass is fine, but
+ *  having Positive and multiclass is probably incorrect.  WARN.
  */
-bool checkPurposedLists( const PurposedListSequence& purposedLists,
-                         TrainerCallbackHandlerPrx& _callback )
+bool BowICETrainI::checkPurposedLists(
+    const PurposedListSequence& purposedLists,
+    TrainerCallbackHandlerPrx& _callback )
 {
   if(purposedLists.size() == 0)
   {
@@ -284,33 +320,42 @@ bool checkPurposedLists( const PurposedListSequence& purposedLists,
                       "Error: no data (runset) for processing\n");
     return false;
   }
-  bool decided = false;
-  bool posneg;
+
+  bool havemul = false;
+  bool havepos = false;
+  bool haveneg = false;
+  maxClassId = -1;
   for (size_t listidx = 0; listidx < purposedLists.size(); listidx++)
   {
     Purpose& pur = purposedLists[listidx]->pur;
-    if (pur.ptype==cvac::POSITIVE || pur.ptype==cvac::NEGATIVE || pur.classID==-1)
+    switch(pur.ptype)
     {
-      if (decided && !posneg)
-      {        
-        localAndClientMsg(VLogger::ERROR, _callback,
-                          "inconsistent multiclass vs. pos/neg purposes\n" );
-        return false;
-      }
-      decided = true;
-      posneg = true;
-    }
-    else if (pur.ptype==cvac::MULTICLASS || pur.classID>=0)
-    {
-      if (decided && posneg)
+    case cvac::POSITIVE:
       {
-        localAndClientMsg(VLogger::ERROR, _callback,
-                          "inconsistent multiclass vs. pos/neg purposes\n" );
-        return false;
+        havepos = true;
+        break;
       }
-      decided = true;
-      posneg = false;
+    case cvac::NEGATIVE:
+      {
+        haveneg = true;
+        break;
+      }
+    case cvac::MULTICLASS:
+      {
+        havemul = true;
+        if (pur.classID>maxClassId)
+        {
+          maxClassId = pur.classID;
+        }
+        break;
+      }
     }
+  }
+  if (havemul && havepos)
+  {
+    localAndClientMsg(VLogger::WARN, _callback,
+                      "Your runset contains both Positive and Multiclass purposes. "
+                      "This is unusual. Positives will be treated as a separate class.\n" );
   }
   localAndClientMsg(VLogger::DEBUG, _callback, "got %d purposed lists\n",
                     purposedLists.size());
@@ -398,28 +443,22 @@ void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
   localAndClientMsg(VLogger::INFO, _callback, "Training procedure completed.\n");
 }
 
-int getPurposeId( const Purpose& pur, TrainerCallbackHandlerPrx& _callback )
+int BowICETrainI::getPurposeId( const Purpose& pur,
+                                TrainerCallbackHandlerPrx& _callback )
 {
-  int _classID = pur.classID;
-  if (_classID==-1)
+  switch (pur.ptype)
   {
-    // assume positive/negative, or just positive
-    if (pur.ptype == cvac::POSITIVE)
-    {
-      _classID = 1;
-    }
-    else if (pur.ptype == cvac::NEGATIVE)
-    {
-      _classID = 0;
-    }
-    else
+  case cvac::POSITIVE:   return maxClassId+2;
+  case cvac::NEGATIVE:   return maxClassId+1;
+  case cvac::MULTICLASS: return pur.classID;
+  default:
     {
       localAndClientMsg(VLogger::WARN, _callback,
                         "Unexpected Purpose: classID==%d, but not POS nor NEG\n",
                         pur.classID );
     }
   }
-  return _classID;
+  return -1;
 }
 
 void BowICETrainI::processPurposedList( PurposedListPtr purList,
@@ -429,6 +468,12 @@ void BowICETrainI::processPurposedList( PurposedListPtr purList,
                                         LabelMap& labelmap, bool* pLabelsMatch
                                         )
 {
+  if (purList->pur.ptype==cvac::NEGATIVE
+      && 0==rejectClassStrategy.compare(bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES))
+  {
+    // ignore Negative artifacts according to reject class strategy
+    return;
+  }
   int _classID = getPurposeId( purList->pur, _callback );
   PurposedLabelableSeq* lab = static_cast<PurposedLabelableSeq*>(purList.get());
   assert(NULL!=lab);
