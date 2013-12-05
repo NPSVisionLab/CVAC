@@ -56,8 +56,10 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
       PATTERN *.py)
 # Next copy over opencv files
-FILE (COPY ${OPENCV_PY_LIB} DESTINATION ${PYTHON_BUILD_DIR} )
-FILE (COPY ${OPENCV_PY_PY} DESTINATION ${PYTHON_BUILD_DIR} )
+IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+  FILE (COPY ${OPENCV_PY_LIB} DESTINATION ${PYTHON_BUILD_DIR} )
+  FILE (COPY ${OPENCV_PY_PY} DESTINATION ${PYTHON_BUILD_DIR} )
+ENDIF()
 
 # Next copy over ice. Since we need to change directory name
 # from python to ice copy over the files.  Not sliced so do it now

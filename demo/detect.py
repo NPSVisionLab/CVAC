@@ -58,3 +58,6 @@ imgfile = "testImg/italia.jpg"
 results = easy.detect( detector, modelfile, imgfile )
 easy.printResults( results )
 
+# face corpus
+# corpus = easy.openCorpus( "corpus/Faces94.properties" )
+# results = easy.detect( detector, modelfile, corpus )
