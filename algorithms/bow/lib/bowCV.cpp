@@ -56,6 +56,10 @@ const string bowCV::BOW_MATCHER_NAME = "MatcherType";
 const string bowCV::BOW_OPENCV_VERSION = "OPENCV_VERSION";
 const string bowCV::BOW_ONECLASS_ID = "ONE-CLASS_ID";
 
+const string bowCV::BOW_REJECT_CLASS_STRATEGY       = "RejectClassStrategy";
+const string bowCV::BOW_REJECT_CLASS_AS_MULTICLASS  = "multiclass";
+const string bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES = "ignore";
+const string bowCV::BOW_REJECT_CLASS_AS_FIRST_STAGE = "stages";
 
 bowCV* pLib = NULL;
 

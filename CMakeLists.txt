@@ -174,6 +174,9 @@ if( INCREASE_VERSION_PATCH )
   MESSAGE( STATUS "successfully did INCREASE_VERSION_PATCH via git: CVAC-${CVAC_VERSION}" )
   CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
     ${CMAKE_SOURCE_DIR}/include/version.h)
+  # don't store this variable in the cache or else the version will be increased
+  # open every invocation of CMake in the same build directory
+  UNSET( INCREASE_VERSION_PATCH CACHE )
 endif( INCREASE_VERSION_PATCH )
 
 

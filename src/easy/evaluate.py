@@ -14,10 +14,22 @@ import math
 def getRelativePath( label ):
     return label.sub.path.directory.relativePath + "/" + label.sub.path.filename
 
-def evalResults( results, origMap, foundMap ):
+def getConfusionTable( results, foundMap, origMap=None, origSet=None ):
     '''Determine true and false positives and negatives based on
     the purpose of original and found labels.
+    origMap maps the relative file path of every label to the assigned purpose.
+    The origMap can be constructed from the original RunSet if it
+    contained purposes.
     Returns tp, fp, tn, fn'''
+
+    if not origMap and not origSet:
+        raise RuntimeError("need either origMap or origSet")
+    if not origMap:
+        origMap = {}
+        for plist in origSet.purposedLists:
+            assert( isinstance(plist, cvac.PurposedLabelableSeq) )
+            for sample in plist.labeledArtifacts:
+                origMap[ getRelativePath(sample) ] = plist.pur
     
     tp = 0; fp = 0; tn = 0; fn = 0
     for res in results:
@@ -100,11 +112,39 @@ def asList( runset, purpose=None ):
             raise RuntimeError("unexpected plist type "+type(plist))
     return rsList
 
-class CrossValidationResult:
-    # see below
-    pass
+class EvaluationResult:
+    def __init__( self, folds, tp, fp, tn, fn, detail=None, name=None ):
+        self.folds = folds
+        self.tp = tp
+        self.fp = fp
+        self.tn = tn
+        self.fn = fn
+        self.detail = detail
+        self.name = name
+        num_pos = self.tp+self.fn
+        if num_pos!=0:
+            self.recall = self.tp/float(num_pos)
+        else:
+            self.recall = 0
+        num_det = self.tp+self.fp
+        if num_det!=0:
+            self.precision = self.tp/float(self.tp+self.fp)
+        else:
+            self.precision = 0
+        # calculate combined recall/precision score:
+        self.score = (self.recall + self.precision)/2.0
 
-def crossValidate( trainer, detector, runset, folds=10 ):
+    def __str__(self):
+        desc = "{0:5.2f} score, {1:5.2f}% recall, {2:5.2f}% precision " \
+            "({3} tp, {4} fp, {5} tn, {6} fn)" \
+            .format( self.score*100.0, self.recall*100.0, self.precision*100.0,
+                     self.tp, self.fp, self.tn, self.fn )
+        if self.name:
+            return self.name + ": " + desc
+        return desc
+
+        
+def crossValidate( contender, runset, folds=10 ):
     '''Returns summary statistics tp, fp, tn, fn, recall, precision,
     and a detailed matrix of results with one row for
     each fold, and one column each for true positive, false
@@ -113,7 +153,6 @@ def crossValidate( trainer, detector, runset, folds=10 ):
     # sanity checks:
     # only positive and negative purposes,
     # count number of entries for each purpose
-    # todo: warn that directories will be treated as one entity, if any
     runset_pos = asList( runset, purpose="pos" )
     runset_neg = asList( runset, purpose="neg" )
     num_items = ( len(runset_pos), len(runset_neg) )
@@ -144,7 +183,7 @@ def crossValidate( trainer, detector, runset, folds=10 ):
     random.shuffle( rndidx[0] ) # shuffles items in place
     random.shuffle( rndidx[1] ) # shuffles items in place
 
-    results = numpy.empty( [folds, 4], dtype=int )
+    confusionTables = numpy.empty( [folds, 4], dtype=int )
     for fold in range( folds ):
         # split the runset
         trainset, evalset = splitRunSet( runset_pos, runset_neg, fold, chunksize, evalsize, rndidx )
@@ -153,43 +192,46 @@ def crossValidate( trainer, detector, runset, folds=10 ):
         # training
         print( "---- training:" )
         easy.printRunSetInfo( trainset )
-        model = easy.train( trainer, trainset )
+        trainer = contender.getTrainer()
+        model = easy.train( trainer, trainset,
+                            trainerProperties=contender.trainerProps )
 
         # detection
         print( "---- evaluation:" )
         easy.printRunSetInfo( evalset )
-        res = easy.detect( detector, model, evalset )
-
-        # omap maps the relative file path of every label to the assigned purpose
-        omap = {}
-        for plist in evalset.purposedLists:
-            assert( isinstance(plist, cvac.PurposedLabelableSeq) )
-            for sample in plist.labeledArtifacts:
-                omap[ getRelativePath(sample) ] = plist.pur
-        # todo: what's -1?, also: move outside this function
-        fmap = {'1':easy.getPurpose('pos'), '-1':easy.getPurpose('neg'), '0':easy.getPurpose('neg')}
-
-        results[fold,:] = evalResults( res, origMap=omap, foundMap=fmap )
+        detector = contender.getDetector()
+        detections = easy.detect( detector, model, evalset,
+                                  detectorProperties=contender.detectorProps )
+        confusionTables[fold,:] = \
+            getConfusionTable( detections, origSet=evalset, foundMap=contender.foundMap )
 
     # calculate statistics
-    r = CrossValidationResult()
-    r.folds = folds
-    sums = numpy.sum( results, 0 )  # sum over rows
-    r.tp = sums[0]; r.fp = sums[1]; r.tn = sums[2]; r.fn = sums[3]
-    # (r.tp, r.fp, r.tn, r.fn) = numpy.sum( results, 0 )  # sum over rows
-    num_pos = r.tp+r.fn
-    if num_pos!=0:
-        r.recall = r.tp/float(num_pos)
-    else:
-        r.recall = 0
-    num_det = r.tp+r.fp
-    if num_det!=0:
-        r.precision = r.tp/float(r.tp+r.fp)
-    else:
-        r.precision = 0
-    r.results = results
-    
+    sums = numpy.sum( confusionTables, 0 )  # sum over rows
+    r = EvaluationResult( folds,
+                          tp=sums[0], fp=sums[1], tn=sums[2], fn=sums[3],
+                          detail=confusionTables, name=contender.name )
     return r
+
+def evaluate( contender, runset ):
+    if type(runset) is dict and not runset['runset'] is None\
+        and isinstance(runset['runset'], cvac.RunSet):
+        runset = runset['runset']
+    if not runset or not isinstance(runset, cvac.RunSet) or not runset.purposedLists:
+        raise RuntimeError("no proper runset")
+    evalset = runset
+
+    print( "---- evaluation:" )
+    easy.printRunSetInfo( evalset )
+    detector = contender.getDetector()
+    detections = easy.detect( detector, contender.detectorData, evalset,
+                              detectorProperties=contender.detectorProps )
+    ct = getConfusionTable( detections, origSet=evalset, foundMap=contender.foundMap )
+
+    # create result structure
+    r = EvaluationResult( 0, tp=ct[0], fp=ct[1], tn=ct[2], fn=ct[3],
+                          detail=ct, name=contender.name )
+    return r
+
 
 class Contender:
     '''Ultimately a detector, this product can be built from
@@ -208,6 +250,7 @@ class Contender:
         self.detectorString = None
         self.detectorData = None
         self.detectorProps = None
+        self.foundMap = None
 
     def hasTrainer( self ):
         if self.trainer or self.trainerString:
@@ -241,7 +284,7 @@ class Contender:
             self.detector = easy.getDetector( self.detectorString )
         return self.detector
 
-def joust( contenders, runset, method='crossvalidate', folds=10 ):
+def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     '''evaluate the contenders on the runset, possibly training
     and evaluating with n-fold cross-validation or another method.
     The contenders parameter is a list of detectors (or
@@ -254,31 +297,28 @@ def joust( contenders, runset, method='crossvalidate', folds=10 ):
         if not c.isSufficientlyConfigured():
             return 'needs more configuration: ' + str(c)
 
-    results = {}
-    cnt = 0
+    results = []
     for c in contenders:
-        print("======== evaluating contender '{0}' ========".format( c.name ) )
-        # todo: use TrainerProps and DetectorProps
-        d = c.getDetector()
-        if c.hasTrainer():
-            t = c.getTrainer()
-            res = crossValidate( t, d, runset, folds )
-        else:
-            # todo: break out functionality from crossValidate
-            res = easy.evaluate( d, c.detectorData, runset, trainsize )
+        if verbose:
+            print("======== evaluating contender '{0}' ========".format( c.name ) )
+        try:
+            if c.hasTrainer():
+                evalres = crossValidate(c, runset, folds )
+            else:
+                evalres = evaluate( c, runset )
+            results.append( evalres )
 
-        print("results: {0}% recall with {1}% precision "
-              "({2} tp, {3} fp, {4} tn, {5} fn)"
-              .format( res.recall*100.0, res.precision*100.0,
-                       res.tp, res.fp, res.tn, res.fn ))
-        print res.results
+            if verbose:
+                print evalres
+                print evalres.detail
+        except Exception as exc:
+            print("error encountered, evaluation aborted: " + str(exc))
 
-        # calculate combined recall/precision score:
-        score = (res.recall + res.precision)/2.0
-        results[cnt] = (score, c.name, res)
-        cnt += 1
-
-    return sort( results )
+    if verbose:
+        print("======== done! ========")
+    # sort the results by "score"
+    sorted( results, key=lambda result: result.score ) 
+    return results
 
 # for testing only:
 if __name__ == '__main__' :
@@ -289,6 +329,7 @@ if __name__ == '__main__' :
     c1 = Contender("BOW")
     c1.trainerString = "BOW_Trainer:default -p 10103"
     c1.detectorString = "BOW_Detector:default -p 10104"
+    c1.foundMap = {'1':easy.getPurpose('pos'), '0':easy.getPurpose('neg')}
 
     # Histogram of Oriented Gradients
     c2 = Contender("HOG")
@@ -299,7 +340,13 @@ if __name__ == '__main__' :
     # currently, no trainer interface is available
     c3 = Contender("DPM")
     c3.detectorString = "DPM_Detector:default -p 10116"
-    c3.detectorData = "detectors/amodel.zip"
+    c3.detectorData = "detectors/dpmStarbucksLogo.zip"
+    c3.foundMap = {'Positive':easy.getPurpose('pos'), 'Negative':easy.getPurpose('neg')}
+
+    # OpenCVCascade
+    c4 = Contender("cascade")
+    c4.trainerString = "OpenCVCascadeTrainer:default -p 10107"
+    c4.detectorString = "OpenCVCascadeDetector:default -p 10102"
 
     runset = easy.createRunSet( "trainImg/kr/Kr001.jpg", "pos" )
     easy.addToRunSet( runset, "trainImg/kr/Kr002.jpg", "pos" )
@@ -309,6 +356,7 @@ if __name__ == '__main__' :
     easy.addToRunSet( runset, "trainImg/ca/ca0005.jpg", "neg" )
     easy.printRunSetInfo( runset, printLabels=True )
     
-    res = joust( [c1, c2, c3], runset, folds=3 )
-    print res
+    perfdata = joust( [c1, c2, c3, c4], runset, folds=3 )
+    for res in perfdata:
+        print res
     

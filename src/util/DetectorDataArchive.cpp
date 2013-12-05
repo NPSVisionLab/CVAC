@@ -141,7 +141,6 @@ void cvac::DetectorDataArchive::unarchive(const string &archiveFile, const strin
     std::string line;
     while( std::getline(propfile, line))
     {
-        int res;
         // See if its a property
         int idx = line.find(":");
         if (idx > 0)
@@ -290,7 +289,23 @@ int copy_data(struct archive *ar, struct archive *aw)
     if (r == ARCHIVE_EOF)
       return (ARCHIVE_OK);
     if (r != ARCHIVE_OK)
-      return (r);
+    {
+      //forcefully copy to destination
+      r = archive_write_data_block(aw, buff, size, offset);
+      if (r != ARCHIVE_OK)
+      {
+        //if the destination has a problem, it would return Error.        
+        localAndClientMsg(VLogger::WARN, NULL, archive_error_string(aw));
+        return (r);
+      }
+      else
+      {
+        localAndClientMsg(VLogger::WARN, NULL,
+          "It's desirable to check validity of the zip file because it may be truncated or corrupted.\n");
+        return ARCHIVE_OK;
+      }
+    }
+
     r = archive_write_data_block(aw, buff, size, offset);
     if (r != ARCHIVE_OK) {
       localAndClientMsg(VLogger::WARN, NULL, archive_error_string(aw));

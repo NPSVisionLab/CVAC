@@ -460,7 +460,7 @@ bool cvac::copyFile(const std::string &fromFile, const std::string &toFile)
         fclose(source);
         return false;
     }
-    while (size = fread(buf, 1, BUFSIZ, source)) {
+    while ((size = fread(buf, 1, BUFSIZ, source))) {
         fwrite(buf, 1, size, dest);
     }
 
