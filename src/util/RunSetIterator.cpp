@@ -120,8 +120,8 @@ bool RunSetIterator::makeList(ResultSet& _resultSet,
   std::ostringstream tConvNum2Str;
   tConvNum2Str << rand();
   mMediaTempDirectory = "converted_" + tConvNum2Str.str();
-  
-  for(int k=0;k<_resultSet.results.size();k++)  
+  unsigned int k;
+  for(k=0;k<_resultSet.results.size();k++)  
   {
     if((mServiceMan != NULL) && (mServiceMan->stopRequested()))
     {        
@@ -170,8 +170,8 @@ bool RunSetIterator::makeList(ResultSet& _resultSet,
 bool RunSetIterator::makeList(ResultSet& _resultSet)
 {
   clear(); 
-
-  for(int k=0;k<_resultSet.results.size();k++)  
+  unsigned int k;
+  for(k=0;k<_resultSet.results.size();k++)  
     addToList(_resultSet.results[k].original,k);
 
   return true;
