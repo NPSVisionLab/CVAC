@@ -340,7 +340,8 @@ void RunSetWrapper::showList()
   cout << "RunSetWrapper Lists ========\n";
 
   LabelablePtr tpla;
-  for(int i=0;i<mResultSet.results.size();i++)
+  unsigned int i;
+  for(i=0;i<mResultSet.results.size();i++)
   {
     tpla = mResultSet.results[i].original;
     
