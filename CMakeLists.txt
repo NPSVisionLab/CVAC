@@ -109,18 +109,6 @@ ENDIF (APPLE)
 #
 # What version of CVAC?
 #
-        # Only in the devel branch (to avoid merge conflicts):
-        EXECUTE_PROCESS( COMMAND git status -b --untracked-files=no
-              OUTPUT_VARIABLE CVAC_GIT_BRANCH
-              OUTPUT_STRIP_TRAILING_WHITESPACE
-              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        )
-        IF( CVAC_GIT_BRANCH )
-     	  IF( CVAC_GIT_BRANCH MATCHES "# On branch devel" )
-            MESSAGE( STATUS "wrote version file include/version.h.repo" )
-          ENDIF()
-        ENDIF()
-
 # Parse the include/version.h file for the current CVAC version.
 FILE( STRINGS ${CMAKE_SOURCE_DIR}/include/version.h
   versionfile_contents
