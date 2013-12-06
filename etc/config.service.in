@@ -65,5 +65,6 @@ OpenCVCascadeTrainer.Endpoints=tcp -p  10107
 BOW_Trainer.Endpoints=tcp -p          10103
 BOW_Detector.Endpoints=tcp -p         10104
 CorpusService.Endpoints=tcp ${HOST} -p        10011
+PythonCorpusService.Endpoints=tcp -p 10021
 FileService.Endpoints=tcp ${HOST} -p          10110
 RSItrTest_Detector.Endpoints=tcp ${HOST} -p          10109
