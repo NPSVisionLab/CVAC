@@ -255,7 +255,7 @@ def printSubstrateInfo( labelList, indent="", printLabels=False ):
             print("{0}{1} ({2} label{3})".\
                   format( indent, subpath, numlabels, ("s","")[numlabels==1] ))
 
-def printRunSetInfo( runset, printLabels=False ):
+def printRunSetInfo( runset, printLabels=False, printArtifacts=True ):
     '''You can pass in an actual cvac.RunSet or a dictionary with
     the runset and a classmap, as returned by createRunSet.'''
     classmap = None
@@ -275,10 +275,12 @@ def printRunSetInfo( runset, printLabels=False ):
             print("directory with Purpose '{0}'; not listing members"\
                   .format( purposeText ) )
         elif isinstance(plist, cvac.PurposedLabelableSeq):
-            print("sequence with Purpose '{0}' and {1} labeled artifacts:"\
-                  .format( purposeText, len(plist.labeledArtifacts) ) )
-            printSubstrateInfo( plist.labeledArtifacts, indent="  ",
-                                printLabels=printLabels )
+            print("sequence with Purpose '{0}' and {1} labeled artifacts{2}"\
+                  .format( purposeText, len(plist.labeledArtifacts),
+                           (".",":")[printArtifacts]) )
+            if printArtifacts:
+                printSubstrateInfo( plist.labeledArtifacts, indent="  ",
+                                    printLabels=printLabels )
         else:
             raise RuntimeError("unexpected plist type "+type(plist))
     if classmap:
