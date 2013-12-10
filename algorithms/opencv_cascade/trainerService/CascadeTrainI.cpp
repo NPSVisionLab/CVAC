@@ -376,6 +376,61 @@ bool CascadeTrainI::createClassifier( const string& tempDir,
   return res;
 }
 
+/** argument error checking: any data? consistent multiclass or pos/neg purpose?
+ *  having Negative purpose samples and multiclass is fine, but
+ *  having Positive and multiclass is probably incorrect.  WARN.
+ */
+bool CascadeTrainI::checkPurposedLists(
+    const PurposedListSequence& purposedLists,
+    TrainerCallbackHandlerPrx& _callback )
+{
+  if(purposedLists.size() == 0)
+  {
+    localAndClientMsg(VLogger::WARN, _callback, 
+                      "Error: no data (runset) for processing\n");
+    return false;
+  }
+
+  bool havemul = false;
+  bool havepos = false;
+  bool haveneg = false;
+
+  for (size_t listidx = 0; listidx < purposedLists.size(); listidx++)
+  {
+    Purpose& pur = purposedLists[listidx]->pur;
+    switch(pur.ptype)
+    {
+    case cvac::POSITIVE:
+      {
+        havepos = true;
+        break;
+      }
+    case cvac::NEGATIVE:
+      {
+        haveneg = true;
+        break;
+      }
+    case cvac::MULTICLASS:
+      {
+        havemul = true;
+        break;
+      }
+    }
+  }
+  
+  if (havepos == false)
+  {
+    localAndClientMsg(VLogger::DEBUG, _callback, "Your runset does not contain a pos purpose\n");  
+    return false;
+  }
+  if (haveneg == false)
+  {
+    localAndClientMsg(VLogger::DEBUG, _callback, "Your runset does not contain a neg purpose\n");       
+    return false;
+  }
+  return true;
+}
+
 void CascadeTrainI::process(const Identity &client, const RunSet& runset,
                             const TrainerProperties& trainProps,
                             const Current& current)
@@ -392,6 +447,9 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   TrainerCallbackHandlerPrx callback =
     TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
 
+  // check the validity of the runset.
+  if (!checkPurposedLists( runset.purposedLists, callback ))
+    return;
   // Get the remote client name to use to save cascade file 
   std::string connectName = cvac::getClientConnectionName(current);
   const std::string CVAC_DataDir = svcprops->getProperty("CVAC.DataDir");
