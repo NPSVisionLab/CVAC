@@ -144,7 +144,7 @@ class EvaluationResult:
         return desc
 
         
-def crossValidate( contender, runset, folds=10 ):
+def crossValidate( contender, runset, folds=10, printVerbose=False ):
     '''Returns summary statistics tp, fp, tn, fn, recall, precision,
     and a detailed matrix of results with one row for
     each fold, and one column each for true positive, false
@@ -191,14 +191,14 @@ def crossValidate( contender, runset, folds=10 ):
 
         # training
         print( "---- training:" )
-        easy.printRunSetInfo( trainset )
+        easy.printRunSetInfo( trainset, printArtifacts=printVerbose )
         trainer = contender.getTrainer()
         model = easy.train( trainer, trainset,
                             trainerProperties=contender.trainerProps )
 
         # detection
         print( "---- evaluation:" )
-        easy.printRunSetInfo( evalset )
+        easy.printRunSetInfo( evalset, printArtifacts=printVerbose )
         detector = contender.getDetector()
         detections = easy.detect( detector, model, evalset,
                                   detectorProperties=contender.detectorProps )
@@ -221,7 +221,7 @@ def evaluate( contender, runset ):
     evalset = runset
 
     print( "---- evaluation:" )
-    easy.printRunSetInfo( evalset )
+    easy.printRunSetInfo( evalset, printVerbose=False )
     detector = contender.getDetector()
     detections = easy.detect( detector, contender.detectorData, evalset,
                               detectorProperties=contender.detectorProps )
@@ -354,7 +354,7 @@ if __name__ == '__main__' :
     easy.addToRunSet( runset, "trainImg/ca/ca0003.jpg", "neg" )
     easy.addToRunSet( runset, "trainImg/ca/ca0004.jpg", "neg" )
     easy.addToRunSet( runset, "trainImg/ca/ca0005.jpg", "neg" )
-    easy.printRunSetInfo( runset, printLabels=True )
+    easy.printRunSetInfo( runset, printArtifacts=False, printLabels=True )
     
     perfdata = joust( [c1, c2, c3, c4], runset, folds=3 )
     for res in perfdata:
