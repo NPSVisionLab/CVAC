@@ -127,6 +127,8 @@ class CascadeTrainI : public cvac::DetectorTrainer, public cvac::StartStop
                          int numPos, int numNeg, 
                          const TrainerPropertiesI *trainProps );
   void addDataPath(cvac::RunSet runset, const std::string &CVAC_DataDir);
+  bool checkPurposedLists(const cvac::PurposedListSequence& purposedLists,
+                          cvac::TrainerCallbackHandlerPrx& _callback );
   
  private:
   void initialize();

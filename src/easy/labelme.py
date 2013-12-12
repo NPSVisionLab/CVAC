@@ -47,6 +47,39 @@ def parseLabeledObjects( root, substrate ):
 
         labels = labels + [label]
 
+    # If we don't have any object attributes maybe we have a imageattribute and
+    # we can get the label from there.
+    if labels == []:
+        labelName = ''
+        for aobj in root.findall('imageattribute'):
+            properties = {}
+            walkAll = aobj.getchildren()
+            pname = ''
+            pvalue = ''
+            for elt in walkAll:
+                if labelName == '' and elt.tag == 'name':
+                    labelName = elt.text
+                else:
+                    # If we have a value create a property entry with key as the name
+                    # If we only have a name and no value then ignore the name if not the 
+                    # first.
+                    if elt.tag == 'name':
+                        pname = elt.text
+                    elif elt.tag == 'value':
+                        pvalue = elt.text
+                    if pname != '' and pvalue != '':
+                        properties[pname] = pvalue
+                        pname = ''
+                        pvalue = ''
+            
+        if labelName != '':
+           # we got a name from imageattributes
+            label = cvac.LabeledLocation()
+            label.confidence = 1.0
+            label.sub = substrate             
+            label.lab = cvac.Label( True, labelName, properties, cvac.Semantics() )     
+            labels = labels + [label]   
+            
     return labels
 
 def parseFolder( localDir, lmAnnotations, lmImages, lmFolder, CVAC_DataDir ):
@@ -68,7 +101,12 @@ def parseFolder( localDir, lmAnnotations, lmImages, lmFolder, CVAC_DataDir ):
         root = tree.getroot()
         # find out image name, prepend image path
         cvacDir = cvac.DirectoryPath( os.path.join(localDir, lmImages, lmFolder ))
-        imgFname = root.find('filename').text
+        felem = root.find('filename')
+        if felem == None:
+            print('Annotation file ' + fsAnnotFullpath + ' does not have filename element')
+            continue
+        else:
+            imgFname = felem.text
         cvacFp = cvac.FilePath( cvacDir, imgFname )
         substrate = cvac.Substrate( True, False, cvacFp, -1, -1 )
         labels = labels + parseLabeledObjects( root, substrate )

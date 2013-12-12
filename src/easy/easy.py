@@ -23,6 +23,8 @@ import unittest
 import stat
 import threading
 
+import os
+
 # for drawing only:
 try:
     import Tkinter as tk
@@ -627,6 +629,32 @@ def putAllFiles( fileserver, runset ):
             existingFiles.append( sub.path )
 
     return {'uploaded':uploadedFiles, 'existing':existingFiles}
+
+def getAllFiles( fileserver, runset ):
+    '''Make sure all files in the RunSet are available on the local site;
+    if they are not then they will be downloaded via the remote fileserver
+    to the local site.
+    For reporting purposes, return what has and has not been uploaded.'''
+    assert( fileserver and runset )
+
+    # collect all "substrates"
+    substrates = collectSubstrates( runset )
+    
+    # upload if not present
+    downloadedFiles = []
+    existingFiles = []
+    for sub in substrates:
+        if not isinstance(sub, cvac.Substrate):
+            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
+        filepath = getFSPath(sub.path)
+        if not os.path.exists( filepath ):
+            getFile( fileserver, sub.path)
+            downloadedFiles.append( sub.path )
+        else:
+            existingFiles.append( sub.path )
+
+    return {'downloaded':downloadedFiles, 'existing':existingFiles}
+
 
 def deleteAllFiles( fileserver, uploadedFiles ):
     '''Delete all files that were previously uploaded to the fileserver.
