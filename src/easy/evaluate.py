@@ -6,7 +6,6 @@
 import random
 random.seed()
 import numpy
-
 import easy
 import cvac
 import math

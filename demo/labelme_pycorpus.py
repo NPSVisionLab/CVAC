@@ -12,7 +12,7 @@ import easy
 # attention to the following properties:
 # LMFolders and LMObjectNames
 cs = easy.getCorpusServer( "PythonCorpusService:default -p 10021")
-corpus = easy.openCorpus( "corpus/LabelMeExample.properties", corpusServer=cs )
+corpus = easy.openCorpus( "corpus/LabelMeCircuit.properties", corpusServer=cs )
 categories, lablist = easy.getDataSet( corpus, corpusServer=cs, 
                                        createMirror=True )
 print('Obtained {0} labeled artifact{1} from corpus "{2}":'.format(

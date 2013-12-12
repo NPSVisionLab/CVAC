@@ -305,13 +305,14 @@ void CascadeDetectI::process( const Identity &client,
   //////////////////////////////////////////////////////////////////////////
   // Example to show results
   cvac::ResultSet& tResSet = mRunsetIterator.getResultSet();
-  for(int kres=0;kres<tResSet.results.size();kres++)
+  unsigned int kres;
+  for(kres=0;kres<tResSet.results.size();kres++)
   {
     localAndClientMsg( VLogger::DEBUG, NULL, "Original= %s, Found= %i labels\n", 
       tResSet.results[kres].original->sub.path.filename.c_str(),
       tResSet.results[kres].foundLabels.size());
-
-    for(int kfnd=0;kfnd<tResSet.results[kres].foundLabels.size();kfnd++)
+    unsigned int kfnd;
+    for(kfnd=0;kfnd<tResSet.results[kres].foundLabels.size();kfnd++)
     {
       LabeledTrackPtr _tPtr = static_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());      
       if(_tPtr->lab.hasLabel)
@@ -419,6 +420,7 @@ void CascadeDetectI::addResult(cvac::Result& _res,cvac::Labelable& _converted,
 
 /** convert from OpenCV result to CVAC ResultSet
  */
+
 ResultSet CascadeDetectI::convertResults( const Labelable& original, std::vector<cv::Rect> rects)
 {	
   int detcount = rects.size();
@@ -428,7 +430,7 @@ ResultSet CascadeDetectI::convertResults( const Labelable& original, std::vector
   // The original field is for the original label and file name.  Results need
   // to be returned in foundLabels.
   tResult.original = new Labelable( original );
-
+  int cnt = 0; // Only return a max number of rectangles
   for (std::vector<cv::Rect>::iterator it = rects.begin(); it != rects.end(); ++it)
   {
     cv::Rect r = *it;
