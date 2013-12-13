@@ -46,7 +46,6 @@ RunSetIterator::RunSetIterator(RunSetWrapper* _rsw,RunSetConstraint& _cons,
                                int _nSkipFrames)
 { 
   mFlagInitialize = false;
-  mServiceMan = NULL;
   mServiceMan = _sman;
 
   mMediaTempDirectory = "";  
