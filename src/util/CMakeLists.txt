@@ -18,6 +18,7 @@ SET(SOURCE_FILES
     RunSetIterator.cpp
     RunSetWrapper.cpp
 	MediaConverter.cpp
+    OutputResults.cpp
 )
 
 SET(HEADER_FILES
@@ -34,6 +35,7 @@ SET(HEADER_FILES
 	${CVAC_INCLUDE_DIR}/util/RunSetIterator.h
 	${CVAC_INCLUDE_DIR}/util/RunSetWrapper.h
 	${CVAC_INCLUDE_DIR}/util/MediaConverter.h
+	${CVAC_INCLUDE_DIR}/util/OutputResults.h
 #if (WIN32)
     ${CVAC_INCLUDE_DIR}/util/wdirent.h
 #endif (WIN32)

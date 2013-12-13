@@ -45,6 +45,7 @@
 #include <util/FileUtils.h>
 #include <util/DetectorDataArchive.h>
 #include <util/ServiceManI.h>
+#include <util/OutputResults.h>
 
 #include <highgui.h>
 
@@ -269,6 +270,8 @@ void CascadeDetectI::process( const Identity &client,
   }
   // End - RunsetWrapper
 
+  OutputResults outputres(callback, mDetectorProps->callbackFreq);
+
   //////////////////////////////////////////////////////////////////////////
   // Start - RunsetIterator
   int nSkipFrames = 150;  //the number of skip frames
@@ -292,14 +295,16 @@ void CascadeDetectI::process( const Identity &client,
       mServiceMan->stopCompleted();
       break;
     }
-  
+    
     cvac::Labelable& labelable = *(mRunsetIterator.getNext());
-    {
-      std::vector<cv::Rect> objects = detectObjects( callback, labelable );
-      addResult(mRunsetIterator.getCurrentResult(),labelable,objects);      
-    }
+    Result &curres = mRunsetIterator.getCurrentResult();
+   
+    std::vector<cv::Rect> objects = detectObjects( callback, labelable );
+    outputres.addResult(curres,labelable,objects, cascade_name, 1.0f);      
+    
   }  
-  callback->foundNewResults(mRunsetIterator.getResultSet());
+  // We are done so send any final results
+  outputres.finishedResults(mRunsetIterator);
   mServiceMan->clearStop();
 
   //////////////////////////////////////////////////////////////////////////
@@ -379,44 +384,6 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
   return results;
 }
 
-/** add OpenCV Result to CVAC Result
- */
-void CascadeDetectI::addResult(cvac::Result& _res,cvac::Labelable& _converted,
-                               std::vector<cv::Rect> _rects)
-{	
-  int detcount = _rects.size();
-  localAndClientMsg(VLogger::DEBUG, NULL, "detections: %d\n", detcount); 
-
-  if(_rects.size()>0)
-  {
-    LabeledTrackPtr newFound = new LabeledTrack();    
-    for(std::vector<cv::Rect>::iterator it = _rects.begin(); it != _rects.end(); ++it)
-    {
-      newFound->lab.hasLabel = true;
-      newFound->lab.name = cascade_name;
-      newFound->confidence = 1.0f;
-
-      cv::Rect r = *it;
-
-      BBox* box = new BBox();
-      box->x = r.x;
-      box->y = r.y;
-      box->width = r.width;
-      box->height = r.height;
-
-      FrameLocation floc;
-      floc.loc = box;        
-      
-      if(!_converted.lab.hasLabel && !_converted.lab.name.empty())
-        floc.frame.framecnt = atoi(_converted.lab.name.c_str());  //This info. is frameNumber.
-      else
-        floc.frame.framecnt = -1; 
-
-      newFound->keyframesLocations.push_back(floc);
-    }
-    _res.foundLabels.push_back( newFound );
-  }  
-}
 
 /** convert from OpenCV result to CVAC ResultSet
  */
@@ -526,14 +493,30 @@ void DetectorPropertiesI::load(const DetectorProperties &p)
 
 bool DetectorPropertiesI::readProps()
 {
-    // No properties to read
     bool res = true;
+    cvac::Properties::iterator it;
+    for (it = props.begin(); it != props.end(); it++)
+    {
+        if (it->first.compare("callbackFrequency") == 0)
+        {
+            callbackFreq = it->second;
+            if ((it->second.compare("labelable") != 0) &&
+                (it->second.compare("immediate") != 0) &&
+                (it->second.compare("final") == 0))
+            {
+                localAndClientMsg(VLogger::ERROR, NULL, 
+                         "callbackFrequency type not supported.\n");
+                res = false;
+            }
+        }
+    }   
     return res;
 }
-
+ 
 bool DetectorPropertiesI::writeProps()
 {
     bool res = true;
+    props.insert(std::pair<string, string>("numStages", callbackFreq));
     return res;
 }
 
