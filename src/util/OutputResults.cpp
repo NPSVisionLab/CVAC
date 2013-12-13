@@ -94,15 +94,16 @@ void OutputResults::addResult(cvac::Result& _res,
     }  
     if (mCallbackFreq.compare("immediate") == 0)
     {
-        ResultSet resSet;
-        resSet.results.push_back(_res);
-        mCallback->foundNewResults(resSet);
+         localAndClientMsg(VLogger::WARN, mCallback, "callbackFrequency mode 'immediate' not supported!\n"); 
+        //ResultSet resSet;
+        //resSet.results.push_back(_res);
+        //mCallback->foundNewResults(resSet);
         // We don't want to send the results multiple times so get rid
         // of results we have aready sent.  We don't have to do this in the
         // labelable case since its a different result but in the case of video it 
         // can be the same result getting added to.
         // TODO have a result sent flag so we can keep the result but know not to send it.
-        _res.foundLabels.pop_back();
+        //_res.foundLabels.pop_back();
     }else if (mCallbackFreq.compare("labelable") == 0)
     {
         if (mLastFile.empty())
