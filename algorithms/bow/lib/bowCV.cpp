@@ -390,9 +390,19 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
       	
         fDetector->detect(_img, _keypoints);
         bowExtractor->compute(_img, _keypoints, _descriptors);
-        trainDescriptors.push_back(_descriptors);
-        trainClass.push_back(_classID);
-        _listClassAll.push_back(_classID);
+        //cout << "n_pts of " << vFilenameTrain[k]  << ": " << _keypoints.size() << "\n"; fflush(stdout);
+        if(_keypoints.size() > 1)
+        {           
+            trainDescriptors.push_back(_descriptors);
+            trainClass.push_back(_classID);
+            _listClassAll.push_back(_classID);
+        }
+        else
+        {
+            cout << "The file: " << vFilenameTrain[k] << "has no keypoints and will not be used for training!" << endl;
+            fflush(stdout);
+        }
+        
     }
     _listClassUnique = _listClassAll;
     _listClassUnique.sort();

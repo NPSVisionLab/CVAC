@@ -36,7 +36,9 @@ except:
 #
 # one-time initialization code, upon loading the module
 #
-ic = Ice.initialize(sys.argv)
+args = sys.argv
+args.append('--Ice.MessageSizeMax=100000')
+ic = Ice.initialize(args)
 defaultCS = None
 # IF the environment variable is set, then use that else use data
 CVAC_DataDir = os.getenv("CVAC_DATADIR", "data")
