@@ -234,7 +234,8 @@ ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
 # add a Makefile target "doc" to generate API documentation with Doxygen
 #
 IF( BUILD_DOCUMENTATION )
-  FIND_PACKAGE( Doxygen )
+  # if the user wants doxygen built, we need doxygen, else complain
+  FIND_PACKAGE( Doxygen REQUIRED )
   IF( DOXYGEN_FOUND )
       # this is the list of directories that doxygen will search for input files;
       # see Doxygen.in for a list of file types (basically, C, Java, and ICE files)
@@ -265,13 +266,13 @@ FIND_PACKAGE(LibArchive REQUIRED)
 
 # Make sure packages are compatible
 # ICE 3.4.2 is pre-built against Python 2.6
-IF( PYTHONINTERP_FOUND )
+IF( PYTHONINTERP_FOUND AND WIN32 )
   # make sure it's version 2.6 or else error
-#  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
-#    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
-#    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
-#  ENDIF()
-ENDIF( PYTHONINTERP_FOUND )
+  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
+    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
+  ENDIF()
+ENDIF()
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   FIND_PACKAGE( OpenCV 2.4 REQUIRED
