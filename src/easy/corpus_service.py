@@ -13,9 +13,9 @@ import StringIO
 
 class LabelableListI:
     def _init__(self, name):
-        self.m_name = name
-        self.m_subdir = None
-        self.m_llist = []
+        self.name = name
+        self.subdir = None
+        self.llist = []
         
     def addImageSample(self, relativePath, label, confidence, imageName):
         sample = cvac.Labelable()
@@ -23,7 +23,7 @@ class LabelableListI:
         sample.sub = cvac.Substrate(True, False, path, -1. -1)
         sample.confidence = confidence
         sample.lab = label
-        self.m_llist.append(sample)
+        self.llist.append(sample)
         
         
     def addAllSamplesInDir(self, directory, label, confidence, relativePath, 
@@ -50,7 +50,7 @@ class CorpusI(cvac.Corpus):
     def __init__(self, name, description, homepageURL, location, CVAC_DataDir):
         cvac.Corpus.__init__(self, name, description, homepageURL, True)
         self.CVAC_DataDir = CVAC_DataDir
-        self.m_dataSetFolder = location
+        self.dataSetFolder = location
         
     def loadImagesFromDir(self, labelName, directory, recurse):
         dirSampleList = LabelableListI(labelName)
@@ -62,28 +62,29 @@ class CorpusI(cvac.Corpus):
     def getLabels(self):
         # TODO load images from the directory and return
         return None
+    
 '''
-LabelMeCorpusI is a labelME corpus Dataset.  This reads the extra
-xml file provided with the dataset to create
+LabelMeCorpusI is a LabelMe corpus.  This reads the
+xml annotation files that are part of the dataset to create
 individual Labels for each image if available.
 '''
 class LabelMeCorpusI(CorpusI): 
     def __init__(self, name, description, homepageURL, location, CVAC_DataDir):
         CorpusI.__init__(self, name, description, homepageURL, location,
                          CVAC_DataDir)   
-        self.m_folderList = []
+        self.folderList = []
         
     def parseConfigProperties(self, configProps, propFile):
         prop = configProps.get('LMFolders')
         if prop == None:
             print('No LMFolders property in file ' + propFile)
             return False
-        self.m_folderList = prop.split(',')
+        self.folderList = [x.strip() for x in prop.split(',')]
         prop = configProps.get('LMObjectNames')
         if prop == None:
-            print('No LMFolders property in file ' + propFile)
+            print('No LMObjectNames property in file ' + propFile)
             return False
-        self.m_objectLabelName = prop
+        self.objectLabelName = prop
         prop = configProps.get('LMAnnotationURL')
         if prop == None:
             print('No LMAnnotationURL property in file ' + propFile)
@@ -97,12 +98,63 @@ class LabelMeCorpusI(CorpusI):
         return True
     
     def getLabels(self):
-        localDir = self.m_dataSetFolder
+        localDir = self.dataSetFolder
         labels = []
-        for folder in self.m_folderList:
+        for folder in self.folderList:
             labels += labelme.parseFolder(localDir, self.homeAnnotations,
                                           self.homeImages, folder, 
                                           self.CVAC_DataDir)
+        return labels
+
+'''
+VaticCorpusI is a VATIC corpus.  This reads the
+VATIC-style annotation files that are part of the dataset to create
+individual Labels for each video.
+'''
+class VaticCorpusI(CorpusI): 
+    def __init__(self, name, description, homepageURL, location, CVAC_DataDir):
+        CorpusI.__init__(self, name, description, homepageURL, location,
+                         CVAC_DataDir)   
+        self.folders = []
+        self.videoFileNames = []
+        
+    def parseConfigProperties(self, configProps, propFile):
+        prop = configProps.get('VideoFileNames')
+        if prop == None:
+            print('No VideoFileNames property in file ' + propFile)
+            return False
+        self.videoFileNames = [x.strip() for x in prop.split(',')]
+        prop = configProps.get('Folders')
+        if prop == None:
+            print('No Folders property in file ' + propFile)
+            return False
+        self.folders = [x.strip() for x in prop.split(',')]
+        prop = configProps.get('ObjectNames')
+        if prop == None:
+            print('No ObjectNames property in file ' + propFile)
+            return False
+        self.objectLabelNames = [x.strip() for x in prop.split(',')]
+        prop = configProps.get('AnnotationPostfix')
+        if prop == None:
+            print('No AnnotationPostfix property in file ' + propFile)
+            return False
+        self.annotationPostfix = prop
+        return True
+
+    def vatic_parse(self, localDir, vidfile, folder, 
+                    annotfile, CVAC_DataDir):
+        print('vatic.parse called with: {0}, {1}, {2}, {3}, {4}'
+              .format( localDir, vidfile, folder, 
+                       annotfile, CVAC_DataDir))
+        return []
+    
+    def getLabels(self):
+        localDir = self.dataSetFolder
+        labels = []
+        for vidfile, folder in zip(self.videoFileNames, self.folders):
+            annotfile = vidfile + self.annotationPostfix
+            labels += self.vatic_parse(localDir, vidfile, folder, 
+                                  annotfile, self.CVAC_DataDir)
         return labels
 
 class CorpusServiceI(cvac.CorpusService, threading.Thread):   
@@ -188,11 +240,15 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
                   'with main_location')
             return None
         dsTypeProp = configProps.get('datasetType')
-        if dsTypeProp.lower() != 'labelme':
+        if dsTypeProp.lower() == 'labelme':
+            corpus = LabelMeCorpusI(nameProp, descProp, homepage, 
+                                    locProp, self.CVAC_DataDir )
+        elif dsTypeProp.lower() == 'vatic':
+            corpus = VaticCorpusI(nameProp, descProp, homepage,
+                                  locProp, self.CVAC_DataDir )
+        else:
             print('Python corpus only currently supports labelme type dataset')
             return None
-        corpus = LabelMeCorpusI(nameProp, descProp, homepage, 
-                                locProp, self.CVAC_DataDir )
         if corpus.parseConfigProperties(configProps, propFile) == True:
             return corpus
             
