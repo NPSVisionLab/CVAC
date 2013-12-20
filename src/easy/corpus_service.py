@@ -4,12 +4,12 @@
 #
 
 import os, sys
-import threading, Ice
-import IcePy
-import cvac
+import threading, string
 import ConfigParser
-import labelme
 import StringIO
+import Ice, IcePy
+import cvac
+import labelme, vatic
 
 class LabelableListI:
     def _init__(self, name):
@@ -134,27 +134,26 @@ class VaticCorpusI(CorpusI):
             print('No ObjectNames property in file ' + propFile)
             return False
         self.objectLabelNames = [x.strip() for x in prop.split(',')]
-        prop = configProps.get('AnnotationPostfix')
+        prop = configProps.get('AnnotationFile')
         if prop == None:
-            print('No AnnotationPostfix property in file ' + propFile)
+            print('No AnnotationFile property in file ' + propFile)
             return False
-        self.annotationPostfix = prop
+        self.annotationFile = prop
         return True
 
-    def vatic_parse(self, localDir, vidfile, folder, 
-                    annotfile, CVAC_DataDir):
-        print('vatic.parse called with: {0}, {1}, {2}, {3}, {4}'
-              .format( localDir, vidfile, folder, 
-                       annotfile, CVAC_DataDir))
-        return []
-    
     def getLabels(self):
+        '''invoke the VATIC parser on every annotation file
+        that is part of this corpus'''
         localDir = self.dataSetFolder
         labels = []
-        for vidfile, folder in zip(self.videoFileNames, self.folders):
-            annotfile = vidfile + self.annotationPostfix
-            labels += self.vatic_parse(localDir, vidfile, folder, 
-                                  annotfile, self.CVAC_DataDir)
+        for vidfile, framefolder in zip(self.videoFileNames, self.folders):
+            annotfile = string.replace( self.annotationFile,
+                                        '$VideoFileName', vidfile)
+            try:
+                labels += vatic.parse(self.CVAC_DataDir, localDir,
+                                      vidfile, framefolder, annotfile)
+            except IOError as exc:
+                print exc
         return labels
 
 class CorpusServiceI(cvac.CorpusService, threading.Thread):   
