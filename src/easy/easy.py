@@ -38,11 +38,13 @@ except:
 #
 args = sys.argv
 args.append('--Ice.MessageSizeMax=100000')
+args.append('--Ice.ACM.Client=0')
 ic = Ice.initialize(args)
 defaultCS = None
 # IF the environment variable is set, then use that else use data
 CVAC_DataDir = os.getenv("CVAC_DATADIR", "data")
 CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
+
 
 def getFSPath( cvacPath ):
     '''Turn a CVAC path into a file system path'''
@@ -723,8 +725,10 @@ def getVerbosityNumber( verbosityString ):
 # the easy user doesn't specify one;
 # this will get called once the training is done
 class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
-    detectorData = None
-    trainingFinished = False
+    def __init__(self):
+        self.detectorData = None
+        self.trainingFinished = False
+        
     def message( self, level, messageString, current=None ):
         global CVAC_ClientVerbosity
         if isinstance(CVAC_ClientVerbosity, str):
@@ -788,8 +792,18 @@ def getDetector( configString ):
 # this will get called when results have been found;
 # replace the multiclass-ID label with the string label
 class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
-    allResults = []
-    detectionFinished = False
+    def __init__(self):
+        self.allResults = []
+        self.detectionFinished = False
+        
+    def message( self, level, messageString, current=None ):
+        global CVAC_ClientVerbosity
+        if isinstance(CVAC_ClientVerbosity, str):
+            CVAC_ClientVerbosity = getVerbosityNumber( CVAC_ClientVerbosity )
+        if level<=CVAC_ClientVerbosity:
+            print("message (level {0}) from detector: {1}"
+                  .format( str(level), messageString), end="")
+        
     def foundNewResults(self, r2, current=None):
         # collect all results
         self.allResults.extend( r2.results )

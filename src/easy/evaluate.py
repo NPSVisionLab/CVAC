@@ -23,6 +23,8 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None ):
 
     if not origMap and not origSet:
         raise RuntimeError("need either origMap or origSet")
+    if not foundMap:
+        raise RuntimeError("need a foundMap")
     if not origMap:
         origMap = {}
         for plist in origSet.purposedLists:
@@ -34,13 +36,17 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None ):
     for res in results:
         foundPurposes = []
         for lbl in res.foundLabels:
-            foundPurpose = foundMap[ easy.getLabelText( lbl.lab, guess=False ) ]
-            foundPurposes.append(foundPurpose)
+            labelText = easy.getLabelText( lbl.lab, guess=False )
+            if labelText in foundMap:
+                foundPurpose = foundMap[labelText]
+                foundPurposes.append(foundPurpose)
+            else:
+                print("warning: Label " + labelText + " not in foundMap can't compute evaulation.")
         numfound = len(res.foundLabels)
         origpur = origMap[ getRelativePath(res.original) ]
         # todo: should check the other found labels; need a strategy
         # to deal with more than one found label
-        if numfound==1 and origpur==foundPurposes[0]:
+        if numfound==1 and len(foundPurposes) > 0 and origpur==foundPurposes[0]:
             # "true"
             if origpur.ptype==cvac.PurposeType.POSITIVE:
                 tp += 1
@@ -183,6 +189,7 @@ def crossValidate( contender, runset, folds=10, printVerbose=False ):
     random.shuffle( rndidx[1] ) # shuffles items in place
 
     confusionTables = numpy.empty( [folds, 4], dtype=int )
+    
     for fold in range( folds ):
         # split the runset
         trainset, evalset = splitRunSet( runset_pos, runset_neg, fold, chunksize, evalsize, rndidx )
@@ -192,8 +199,9 @@ def crossValidate( contender, runset, folds=10, printVerbose=False ):
         print( "---- training:" )
         easy.printRunSetInfo( trainset, printArtifacts=printVerbose )
         trainer = contender.getTrainer()
+        
         model = easy.train( trainer, trainset,
-                            trainerProperties=contender.trainerProps )
+                            trainerProperties=contender.trainerProps)
 
         # detection
         print( "---- evaluation:" )
