@@ -1019,6 +1019,7 @@ def drawResults( results ):
 def drawLabelables( lablist, maxsize=None ):
     # first, collect all image substrates of the labels
     substrates = {}
+    num_videos = 0
     for lbl in lablist:
         if lbl.sub.isImage:
             subpath = getFSPath( lbl.sub )
@@ -1026,6 +1027,13 @@ def drawLabelables( lablist, maxsize=None ):
                 substrates[subpath].append( lbl )
             else:
                 substrates[subpath] = [lbl]
+        elif lbl.sub.isVideo:
+            num_videos += 1
+        else:
+            raise RuntimeError("Unknown substrate type")
+    if num_videos>0:
+        print("not drawing {0} video annotation{1}"
+              .format(num_videos, ("s","")[num_videos==1]))
     if not substrates:
         print("no labels and/or no substrates, nothing to draw");
         return

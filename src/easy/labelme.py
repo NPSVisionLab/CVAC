@@ -61,8 +61,8 @@ def parseLabeledObjects( root, substrate ):
                     labelName = elt.text
                 else:
                     # If we have a value create a property entry with key as the name
-                    # If we only have a name and no value then ignore the name if not the 
-                    # first.
+                    # If we only have a name and no value then
+                    # ignore the name if not the first.
                     if elt.tag == 'name':
                         pname = elt.text
                     elif elt.tag == 'value':
@@ -77,7 +77,7 @@ def parseLabeledObjects( root, substrate ):
             label = cvac.LabeledLocation()
             label.confidence = 1.0
             label.sub = substrate             
-            label.lab = cvac.Label( True, labelName, properties, cvac.Semantics() )     
+            label.lab = cvac.Label( True, labelName, properties, cvac.Semantics() )  
             labels = labels + [label]   
             
     return labels
@@ -94,7 +94,9 @@ def parseFolder( localDir, lmAnnotations, lmImages, lmFolder, CVAC_DataDir ):
     '''
 
     labels = []
-    fsAnnotPath = os.path.join(CVAC_DataDir, localDir, lmAnnotations, lmFolder) + '/*.xml'
+    fsAnnotPath = os.path.join(CVAC_DataDir, localDir, lmAnnotations, lmFolder) \
+                  + '/*.xml'
+                  
     for fsAnnotFullpath in glob.glob( fsAnnotPath ):
         # parse the XML file on the file system
         tree = et.parse( fsAnnotFullpath )
@@ -103,7 +105,8 @@ def parseFolder( localDir, lmAnnotations, lmImages, lmFolder, CVAC_DataDir ):
         cvacDir = cvac.DirectoryPath( os.path.join(localDir, lmImages, lmFolder ))
         felem = root.find('filename')
         if felem == None:
-            print('Annotation file ' + fsAnnotFullpath + ' does not have filename element')
+            print('Annotation file ' + fsAnnotFullpath + \
+                  ' does not have filename element')
             continue
         else:
             imgFname = felem.text

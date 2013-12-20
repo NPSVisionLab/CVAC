@@ -141,7 +141,7 @@ INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/etc/startServices.${SCRIPT_EXT} ${CMAKE_SOU
 IF (WIN32)
 
 INSTALL(DIRECTORY   ${ICE_ROOT}/bin
-        DESTINATION 3rdParty/ICE
+        DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
         PATTERN icestorm* EXCLUDE
@@ -151,7 +151,7 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         PATTERN *.pdb EXCLUDE
         )
 INSTALL(DIRECTORY   ${ICE_ROOT}/lib
-        DESTINATION 3rdParty/ICE
+        DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
         PATTERN *.pdb EXCLUDE
@@ -166,7 +166,7 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1.win32-py2.6.exe
 ELSE (WIN32)
 
 INSTALL(DIRECTORY   ${ICE_ROOT}/lib
-        DESTINATION 3rdParty/ICE
+        DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
         PATTERN *.pdb EXCLUDE
@@ -176,12 +176,12 @@ ENDIF (WIN32)
 
 INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox${CMAKE_EXECUTABLE_SUFFIX}
                  ${ICE_BOX_ADMIN}
-        DESTINATION 3rdParty/ICE/bin
+        DESTINATION 3rdparty/ICE/bin
         COMPONENT ThirdParty
        )
 
 INSTALL(DIRECTORY   ${ICE_ROOT}/python
-        DESTINATION 3rdParty/ICE
+        DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
         PATTERN *.pyc EXCLUDE
@@ -192,12 +192,12 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/python
 GET_FILENAME_COMPONENT( LIBARCHIVE_LIBRARY_REALPATH ${LIBARCHIVE_LIBRARY} REALPATH )
 IF (WIN32)
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/bin
-       DESTINATION 3rdParty/libarchive
+       DESTINATION 3rdparty/libarchive
        COMPONENT ThirdParty
       )
 ELSE (WIN32)
 INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
-       DESTINATION 3rdParty/libarchive/lib
+       DESTINATION 3rdparty/libarchive/lib
        COMPONENT ThirdParty
       )
 ENDIF (WIN32)
@@ -212,20 +212,20 @@ ELSE( WIN32 )
 ENDIF( WIN32 )
 MESSAGE( STATUS "OpenCV will be 3rd-party archived from this path: ${OpenCV_INSTALL_PATH}" )
 INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
-      DESTINATION 3rdParty/opencv
+      DESTINATION 3rdparty/opencv
        COMPONENT ThirdParty
       ) 
 
 IF (WIN32)
 INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/python
-      DESTINATION 3rdParty/opencv
+      DESTINATION 3rdparty/opencv
        COMPONENT ThirdParty
       ) 
 
 ELSE (WIN32)
 #If not windows need the libs for the shared libraries
 INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
-      DESTINATION 3rdParty/opencv
+      DESTINATION 3rdparty/opencv
        COMPONENT ThirdParty
       ) 
 ENDIF(WIN32)
@@ -248,7 +248,7 @@ IF (BUILD_BINARY_PACKAGE)
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/cvac"
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/cvac"
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/cvac"
-        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/../../lib/python/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
     )
 ENDIF (BUILD_BINARY_PACKAGE)
 
