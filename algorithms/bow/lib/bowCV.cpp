@@ -311,7 +311,8 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         if(_img.empty())
         {			
             cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
-            return false;
+            continue;
+            //return false;
         }
 
         if ((sman!=NULL) && (sman->stopRequested()))
