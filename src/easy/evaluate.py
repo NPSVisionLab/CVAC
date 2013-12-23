@@ -219,7 +219,7 @@ def crossValidate( contender, runset, folds=10, printVerbose=False ):
                           detail=confusionTables, name=contender.name )
     return r
 
-def evaluate( contender, runset ):
+def evaluate( contender, runset, printVerbose=False ):
     if type(runset) is dict and not runset['runset'] is None\
         and isinstance(runset['runset'], cvac.RunSet):
         runset = runset['runset']
@@ -228,7 +228,7 @@ def evaluate( contender, runset ):
     evalset = runset
 
     print( "---- evaluation:" )
-    easy.printRunSetInfo( evalset, printVerbose=False )
+    easy.printRunSetInfo( evalset, printArtifacts=printVerbose )
     detector = contender.getDetector()
     detections = easy.detect( detector, contender.detectorData, evalset,
                               detectorProperties=contender.detectorProps )
