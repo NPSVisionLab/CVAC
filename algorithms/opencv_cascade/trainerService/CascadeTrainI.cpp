@@ -443,8 +443,8 @@ bool CascadeTrainI::checkPurposedLists(
   if (tooSmall == true)
   {
     localAndClientMsg(VLogger::ERROR, _callback,
-                      "Your runset does not contain enough samples, at least %d required\n",
-                       MIN_SAMPLE_SIZE);       
+                      "Your runset must contain at least %d+%d (pos+neg) samples\n",
+                      MIN_SAMPLE_SIZE, MIN_SAMPLE_SIZE);       
     return false;
   }
   return true;
