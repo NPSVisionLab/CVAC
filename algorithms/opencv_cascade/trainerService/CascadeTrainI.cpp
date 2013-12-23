@@ -380,6 +380,8 @@ bool CascadeTrainI::createClassifier( const string& tempDir,
  *  having Negative purpose samples and multiclass is fine, but
  *  having Positive and multiclass is probably incorrect.  WARN.
  */
+const static int MIN_SAMPLE_SIZE = 8;
+
 bool CascadeTrainI::checkPurposedLists(
     const PurposedListSequence& purposedLists,
     TrainerCallbackHandlerPrx& _callback )
@@ -394,28 +396,38 @@ bool CascadeTrainI::checkPurposedLists(
   bool havemul = false;
   bool havepos = false;
   bool haveneg = false;
+  bool tooSmall = false;
 
   for (size_t listidx = 0; listidx < purposedLists.size(); listidx++)
   {
-    Purpose& pur = purposedLists[listidx]->pur;
+    Purpose &pur = purposedLists[listidx]->pur;
+    PurposedLabelableSeq * purSeq = NULL;
+    purSeq = static_cast<PurposedLabelableSeq *>(purposedLists[listidx].get());
+    LabelableList artifacts = purSeq->labeledArtifacts;
+    
     switch(pur.ptype)
     {
-    case cvac::POSITIVE:
+      case cvac::POSITIVE:
       {
         havepos = true;
         break;
       }
-    case cvac::NEGATIVE:
+      case cvac::NEGATIVE:
       {
         haveneg = true;
         break;
       }
-    case cvac::MULTICLASS:
+      case cvac::MULTICLASS:
       {
         havemul = true;
         break;
       }
     }
+    if ((artifacts.size() < MIN_SAMPLE_SIZE))
+    {
+        tooSmall = true;
+    }
+ 
   }
   
   if (havepos == false)
@@ -426,6 +438,12 @@ bool CascadeTrainI::checkPurposedLists(
   if (haveneg == false)
   {
     localAndClientMsg(VLogger::DEBUG, _callback, "Your runset does not contain a neg purpose\n");       
+    return false;
+  }
+  if (tooSmall == true)
+  {
+    localAndClientMsg(VLogger::DEBUG, _callback, "Your runset does not contain enough samples, at least %d required\n",
+                       MIN_SAMPLE_SIZE);       
     return false;
   }
   return true;

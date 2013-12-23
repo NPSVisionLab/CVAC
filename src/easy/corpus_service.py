@@ -4,18 +4,18 @@
 #
 
 import os, sys
-import threading, Ice
-import IcePy
-import cvac
+import threading, string
 import ConfigParser
-import labelme
 import StringIO
+import Ice, IcePy
+import cvac
+import labelme, vatic
 
 class LabelableListI:
     def _init__(self, name):
-        self.m_name = name
-        self.m_subdir = None
-        self.m_llist = []
+        self.name = name
+        self.subdir = None
+        self.llist = []
         
     def addImageSample(self, relativePath, label, confidence, imageName):
         sample = cvac.Labelable()
@@ -23,61 +23,68 @@ class LabelableListI:
         sample.sub = cvac.Substrate(True, False, path, -1. -1)
         sample.confidence = confidence
         sample.lab = label
-        self.m_llist.append(sample)
+        self.llist.append(sample)
         
         
-    def addAllSamplesInDir(self, directory, label, confidence, relativePath, recursive):
+    def addAllSamplesInDir(self, directory, label, confidence, relativePath, 
+                           recursive):
         if recursive == False:
             for filename in os.listdir(directory):
-                if os.path.isfile(os.path.join(directory, filename)) and (filename != ".meta"):
-                    self.addImageSample(self, directory, label, confidence, filename)
+                if os.path.isfile(os.path.join(directory, filename)) \
+                  and (filename != ".meta"):
+                    self.addImageSample(self, directory, label, confidence,
+                                        filename)
         else:
             for folder, subdirs, files in os.walk(directory):
                 for filename in files:
                     path, nameOnly = os.path.split(filename)
                     if nameOnly != ".meta":
-                        self.addImageSample(self, path, label, confidence, nameOnly)
+                        self.addImageSample(self, path, label, confidence,
+                                            nameOnly)
                                                 
 ''' 
-CorpusI is the basic class for Corpus DataSets.  This reads applies the same label to all images in the dataset
+CorpusI is the basic class for Corpus DataSets.  This applies the same
+ label to all images in the dataset
 '''
 class CorpusI(cvac.Corpus):
     def __init__(self, name, description, homepageURL, location, CVAC_DataDir):
         cvac.Corpus.__init__(self, name, description, homepageURL, True)
         self.CVAC_DataDir = CVAC_DataDir
-        self.m_dataSetFolder = location
-        
-
+        self.dataSetFolder = location
         
     def loadImagesFromDir(self, labelName, directory, recurse):
         dirSampleList = LabelableListI(labelName)
         label = cvac.Label(True, labelName, {}, cvac.Semantics(""))
-        dirSampleList.addAllSamplesInDir(directory, label, 1.0, directory, recurse)
+        dirSampleList.addAllSamplesInDir(directory, label, 1.0, directory, 
+                                         recurse)
         return dirSampleList
         
     def getLabels(self):
         # TODO load images from the directory and return
         return None
+    
 '''
-LabelMeCorpusI is a labelME corpus Dataset.  This reads the extra xml file provided with the dataset to create
+LabelMeCorpusI is a LabelMe corpus.  This reads the
+xml annotation files that are part of the dataset to create
 individual Labels for each image if available.
 '''
 class LabelMeCorpusI(CorpusI): 
-    def __init__(self, name, description, homepageURL, location, CVAC_DataDir):   
-        CorpusI.__init__(self, name, description, homepageURL, location, CVAC_DataDir)   
-        self.m_folderList = []
+    def __init__(self, name, description, homepageURL, location, CVAC_DataDir):
+        CorpusI.__init__(self, name, description, homepageURL, location,
+                         CVAC_DataDir)   
+        self.folderList = []
         
     def parseConfigProperties(self, configProps, propFile):
         prop = configProps.get('LMFolders')
         if prop == None:
             print('No LMFolders property in file ' + propFile)
             return False
-        self.m_folderList = prop.split(',')
+        self.folderList = [x.strip() for x in prop.split(',')]
         prop = configProps.get('LMObjectNames')
         if prop == None:
-            print('No LMFolders property in file ' + propFile)
+            print('No LMObjectNames property in file ' + propFile)
             return False
-        self.m_objectLabelName = prop
+        self.objectLabelName = prop
         prop = configProps.get('LMAnnotationURL')
         if prop == None:
             print('No LMAnnotationURL property in file ' + propFile)
@@ -91,10 +98,62 @@ class LabelMeCorpusI(CorpusI):
         return True
     
     def getLabels(self):
-        localDir = self.m_dataSetFolder
+        localDir = self.dataSetFolder
         labels = []
-        for folder in self.m_folderList:
-            labels += labelme.parseFolder(localDir, self.homeAnnotations, self.homeImages, folder, self.CVAC_DataDir)
+        for folder in self.folderList:
+            labels += labelme.parseFolder(localDir, self.homeAnnotations,
+                                          self.homeImages, folder, 
+                                          self.CVAC_DataDir)
+        return labels
+
+'''
+VaticCorpusI is a VATIC corpus.  This reads the
+VATIC-style annotation files that are part of the dataset to create
+individual Labels for each video.
+'''
+class VaticCorpusI(CorpusI): 
+    def __init__(self, name, description, homepageURL, location, CVAC_DataDir):
+        CorpusI.__init__(self, name, description, homepageURL, location,
+                         CVAC_DataDir)   
+        self.folders = []
+        self.videoFileNames = []
+        
+    def parseConfigProperties(self, configProps, propFile):
+        prop = configProps.get('VideoFileNames')
+        if prop == None:
+            print('No VideoFileNames property in file ' + propFile)
+            return False
+        self.videoFileNames = [x.strip() for x in prop.split(',')]
+        prop = configProps.get('Folders')
+        if prop == None:
+            print('No Folders property in file ' + propFile)
+            return False
+        self.folders = [x.strip() for x in prop.split(',')]
+        prop = configProps.get('ObjectNames')
+        if prop == None:
+            print('No ObjectNames property in file ' + propFile)
+            return False
+        self.objectLabelNames = [x.strip() for x in prop.split(',')]
+        prop = configProps.get('AnnotationFile')
+        if prop == None:
+            print('No AnnotationFile property in file ' + propFile)
+            return False
+        self.annotationFile = prop
+        return True
+
+    def getLabels(self):
+        '''invoke the VATIC parser on every annotation file
+        that is part of this corpus'''
+        localDir = self.dataSetFolder
+        labels = []
+        for vidfile, framefolder in zip(self.videoFileNames, self.folders):
+            annotfile = string.replace( self.annotationFile,
+                                        '$VideoFileName', vidfile)
+            try:
+                labels += vatic.parse(self.CVAC_DataDir, localDir,
+                                      vidfile, framefolder, annotfile)
+            except IOError as exc:
+                print exc
         return labels
 
 class CorpusServiceI(cvac.CorpusService, threading.Thread):   
@@ -106,7 +165,8 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         self._clients = []
         self._cond = threading.Condition()
         self.mListTestFile=[]    
-        self.CVAC_DataDir = self._communicator.getProperties().getProperty( "CVAC.DataDir" )
+        self.CVAC_DataDir = self._communicator.getProperties().\
+                  getProperty( "CVAC.DataDir" )
         self.ConnectionName = "localhost"
         self.ServiceName = ""
         self.corpToImp = {}
@@ -126,9 +186,12 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         self.join()
         
     def addCorpusFromConfig(self, cvacPath):
-        propFile = os.path.join(self.CVAC_DataDir, cvacPath.directory.relativePath,cvacPath.filename)
+        propFile = os.path.join(self.CVAC_DataDir, 
+                                cvacPath.directory.relativePath,
+                                cvacPath.filename)
         # since our config file does not have sections and we need one so we
-        # create a string with the required header and file contents as pass that to the parser
+        # create a string with the required header and file contents
+        # and pass that to the parser
         with open(propFile, 'r') as f:     
             fileStr = '[main]\n' + f.read()
             str_fp = StringIO.StringIO(fileStr)
@@ -152,7 +215,8 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         version = float(file_version)
         cur_version = 1.1
         if version < cur_version:
-            print('Config File is a prior version, need to update it for ' + str(cur_version))
+            print('Config File is a prior version, need to update it for '
+                  + str(cur_version))
             return None
         nameProp = configProps.get('name')
         if nameProp == None:
@@ -171,22 +235,25 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
             return None
         locProp = configProps.get('main_location')
         if locProp == None:
-            print('Python corpus currently only supports local dataset with main_location')
+            print('Python corpus currently only supports local dataset '
+                  'with main_location')
             return None
         dsTypeProp = configProps.get('datasetType')
-        if dsTypeProp.lower() != 'labelme':
+        if dsTypeProp.lower() == 'labelme':
+            corpus = LabelMeCorpusI(nameProp, descProp, homepage, 
+                                    locProp, self.CVAC_DataDir )
+        elif dsTypeProp.lower() == 'vatic':
+            corpus = VaticCorpusI(nameProp, descProp, homepage,
+                                  locProp, self.CVAC_DataDir )
+        else:
             print('Python corpus only currently supports labelme type dataset')
             return None
-        corpus = LabelMeCorpusI(nameProp, descProp, homepage, locProp, self.CVAC_DataDir )
         if corpus.parseConfigProperties(configProps, propFile) == True:
             return corpus
             
          
         
     def openCorpus( self, cvacPath, current=None):
-        import pydevd
-        pydevd.connected = True
-        pydevd.settrace(suspend=False)
         if not type(cvacPath) is cvac.FilePath:
             raise RuntimeError("wrong argument type")
         print( 'openCorpus called' )
@@ -220,17 +287,12 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         print( 'createLocalMirror called' )
     
     def getDataSet( self, corpus, current=None ):
-        import pydevd
-        pydevd.connected = True
-        pydevd.settrace(suspend=False)
         if not type(corpus) is cvac.Corpus:
             raise RuntimeError("wrong argument type")
         print( 'getDataSet called' )
         corp = self.corpToImp.get(corpus.name)
         if corp == None:
             return None
-        #return corp.getLabels()
-        # print the list
         labellist = corp.getLabels()
         return labellist
             
@@ -250,9 +312,11 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
 
 class Server(Ice.Application):
     def run(self, args):
-        adapter = self.communicator().createObjectAdapter("PythonCorpusService")
+        adapter = self.communicator().\
+                     createObjectAdapter("PythonCorpusService")
         sender = CorpusServiceI(self.communicator())
-        adapter.add(sender, self.communicator().stringToIdentity("PythonCorpusService"))
+        adapter.add(sender, self.communicator().\
+                    stringToIdentity("PythonCorpusService"))
         adapter.activate()
         
         sender.start()
