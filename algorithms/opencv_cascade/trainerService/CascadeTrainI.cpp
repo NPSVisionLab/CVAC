@@ -432,17 +432,18 @@ bool CascadeTrainI::checkPurposedLists(
   
   if (havepos == false)
   {
-    localAndClientMsg(VLogger::DEBUG, _callback, "Your runset does not contain a pos purpose\n");  
+    localAndClientMsg(VLogger::ERROR, _callback, "Your runset does not contain a pos purpose\n");  
     return false;
   }
   if (haveneg == false)
   {
-    localAndClientMsg(VLogger::DEBUG, _callback, "Your runset does not contain a neg purpose\n");       
+    localAndClientMsg(VLogger::ERROR, _callback, "Your runset does not contain a neg purpose\n");       
     return false;
   }
   if (tooSmall == true)
   {
-    localAndClientMsg(VLogger::DEBUG, _callback, "Your runset does not contain enough samples, at least %d required\n",
+    localAndClientMsg(VLogger::ERROR, _callback,
+                      "Your runset does not contain enough samples, at least %d required\n",
                        MIN_SAMPLE_SIZE);       
     return false;
   }

@@ -61,7 +61,7 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None ):
             else:
                 fp += 1
 
-    print("found: {0}, {1}, {2}, {3}".format(tp,fp,tn,fn))
+    print("tp: {0}, fp: {1}, tn: {2}, fp: {3}".format(tp,fp,tn,fn))
             
     return tp, fp, tn, fn
 
@@ -270,6 +270,10 @@ class Contender:
         return False
 
     def isSufficientlyConfigured( self ):
+        if not self.foundMap:
+            # need to correlate the labels that the detector will report
+            # to purposes such as "positive" or "negative"
+            return False
         if not self.hasDetector():
             return False
         if self.hasTrainer():
@@ -302,7 +306,7 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
         raise RuntimeError( 'method ' + method + ' unknown.' )
     for c in contenders:
         if not c.isSufficientlyConfigured():
-            return 'needs more configuration: ' + str(c)
+            raise RuntimeError('This contender needs more configuration: ' + c.name)
 
     results = []
     for c in contenders:
@@ -310,7 +314,7 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
             print("======== evaluating contender '{0}' ========".format( c.name ) )
         try:
             if c.hasTrainer():
-                evalres = crossValidate(c, runset, folds )
+                evalres = crossValidate( c, runset, folds )
             else:
                 evalres = evaluate( c, runset )
             results.append( evalres )
@@ -331,6 +335,7 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
 if __name__ == '__main__' :
     # test the comparative detector evaluation including
     # training of a model
+    easy.CVAC_ClientVerbosity = 4
 
     # Bag of Words
     c1 = Contender("BOW")
@@ -342,6 +347,7 @@ if __name__ == '__main__' :
     c2 = Contender("HOG")
     c2.trainerString = "HOG_Trainer:default -p 10117"
     c2.detectorString = "HOGTest:default -p 10118"
+    c2.foundMap = {'1':easy.getPurpose('pos')}
 
     # Deformable Parts Model;
     # currently, no trainer interface is available
@@ -354,6 +360,7 @@ if __name__ == '__main__' :
     c4 = Contender("cascade")
     c4.trainerString = "OpenCVCascadeTrainer:default -p 10107"
     c4.detectorString = "OpenCVCascadeDetector:default -p 10102"
+    c4.foundMap = {'any':easy.getPurpose('pos')}
 
     runset = easy.createRunSet( "trainImg/kr/Kr001.jpg", "pos" )
     easy.addToRunSet( runset, "trainImg/kr/Kr002.jpg", "pos" )
