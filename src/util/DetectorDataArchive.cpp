@@ -56,6 +56,23 @@ using namespace std;
 
 static const std::string PROPS = "trainer.properties";
 
+/** TODO:
+    The DetectorDataArchive implementation should be changed as follows.
+    Only one minor interface modification would result: DDA client would
+    need to make the distinction between keys that are references to files
+    and keys that are other properties.
+
+Changes:
+*    use a std::map instead of two parallel vectors of keys and values.
+*    Make the key comparison operator perform a case-insensitive string comparison.
+*    Don't distinguish between a property and file in DDA; always use "=" as separator.
+*    Instead, provide a function that returns a full file path for a given key which a
+        DDA client can call: getFSPathForProperty( const std::string& key )
+*    Do not require the space before and after the =
+*    Chop the keys and values (remove leading and trailing whitespace)
+*    Write a unit test for DDA.
+
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 cvac::DetectorDataArchive::DetectorDataArchive()
