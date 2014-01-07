@@ -37,6 +37,7 @@
  *****************************************************************************/
 #include <iostream>
 #include <vector>
+#include <string>
 
 #include <Ice/Communicator.h>
 #include <Ice/Initialize.h>
@@ -48,6 +49,7 @@
 #include <util/OutputResults.h>
 
 #include <highgui.h>
+#include <stdlib.h>
 
 #include "CascadeDetectI.h"
 
@@ -378,9 +380,16 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
       minwinSize.width = mDetectorProps->slideStartSize.width;
       minwinSize.height = mDetectorProps->slideStartSize.height;
   }
+  
   cascade->detectMultiScale(eq_img, results, mDetectorProps->slideScaleFactor, 
                   mDetectorProps->minNeighbors, flags, minwinSize, maxwinSize);
-
+  
+  if (results.size() > mDetectorProps->maxRectangles)
+  { // Only return maxRectangles
+      unsigned long len = results.size();
+      results.erase(results.begin()+mDetectorProps->maxRectangles, results.end());
+      localAndClientMsg(VLogger::WARN, callback, "reducing result rectangles from %d to %d\n", len, mDetectorProps->maxRectangles);
+  }
   return results;
 }
 
@@ -470,6 +479,7 @@ DetectorPropertiesI::DetectorPropertiesI()
     slideStopSize.height = 0;
     slideStepX = 0.0f;
     slideStepY = 0.0f;
+    maxRectangles = 5000;
 }
 
 void DetectorPropertiesI::load(const DetectorProperties &p) 
@@ -509,14 +519,29 @@ bool DetectorPropertiesI::readProps()
                 res = false;
             }
         }
+        if (it->first.compare("maxRectangles") == 0)
+        {
+            long cnt = strtol(it->second.c_str(), NULL, 10);
+            if (cnt > 0 && cnt != LONG_MAX && cnt != LONG_MIN)
+                maxRectangles = cnt;
+            else
+            {
+                localAndClientMsg(VLogger::ERROR, NULL, 
+                         "Invalid maxRectangles property.\n");
+                res = false;
+            }
+        }
     }   
     return res;
 }
  
 bool DetectorPropertiesI::writeProps()
 {
+    std::stringstream stream;
+    stream << maxRectangles;
     bool res = true;
-    props.insert(std::pair<string, string>("numStages", callbackFreq));
+    props.insert(std::pair<string, string>("callbackFrequency", callbackFreq));
+    props.insert(std::pair<string, string>("maxRectangles", stream.str()));
     return res;
 }
 
