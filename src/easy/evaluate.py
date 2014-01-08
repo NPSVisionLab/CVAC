@@ -9,6 +9,7 @@ import numpy
 import easy
 import cvac
 import math
+from operator import attrgetter, itemgetter
 
 def getRelativePath( label ):
     return label.sub.path.directory.relativePath + "/" + label.sub.path.filename
@@ -61,7 +62,7 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None ):
             else:
                 fp += 1
 
-    print("tp: {0}, fp: {1}, tn: {2}, fp: {3}".format(tp,fp,tn,fn))
+    print("tp: {0}, fp: {1}, tn: {2}, fn: {3}".format(tp,fp,tn,fn))
             
     return tp, fp, tn, fn
 
@@ -140,7 +141,7 @@ class EvaluationResult:
         self.score = (self.recall + self.precision)/2.0
 
     def __str__(self):
-        desc = "{0:5.2f} score, {1:5.2f}% recall, {2:5.2f}% precision " \
+        desc = "{0:5.2f}% score, {1:5.2f}% recall, {2:5.2f}% precision " \
             "({3} tp, {4} fp, {5} tn, {6} fn)" \
             .format( self.score*100.0, self.recall*100.0, self.precision*100.0,
                      self.tp, self.fp, self.tn, self.fn )
@@ -295,6 +296,7 @@ class Contender:
             self.detector = easy.getDetector( self.detectorString )
         return self.detector
 
+  
 def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     '''evaluate the contenders on the runset, possibly training
     and evaluating with n-fold cross-validation or another method.
@@ -328,8 +330,24 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     if verbose:
         print("======== done! ========")
     # sort the results by "score"
-    sorted( results, key=lambda result: result.score ) 
-    return results
+    sortedResults = sorted( results, key=lambda result: result.score, reverse=True ) 
+    return sortedResults
+
+def printEvaluationResults(results):
+    print('name        ||  score |  recall | precis. ||  tp  |  fp  |  tn  |  fn')
+    print('-------------------------------------------------------------------')
+    for result in results:
+        # need 6.2 instead of 5.2 to allow for 100.0%
+        desc = "{0:6.2f}% | {1:6.2f}% | {2:6.2f}% || " \
+            "{3:4d} | {4:4d} | {5:4d} | {6:4d}" \
+            .format( result.score*100.0, result.recall*100.0, result.precision*100.0,
+                     result.tp, result.fp, result.tn, result.fn )
+        if result.name:
+            if len(result.name) > 12:
+                print (result.name[0:11] + '.' + '||'+ desc)  
+            else: 
+                print (result.name.ljust(12) + "||" + desc)
+                
 
 # for testing only:
 if __name__ == '__main__' :
@@ -371,6 +389,5 @@ if __name__ == '__main__' :
     easy.printRunSetInfo( runset, printArtifacts=False, printLabels=True )
     
     perfdata = joust( [c1, c2, c3, c4], runset, folds=3 )
-    for res in perfdata:
-        print res
+    printEvaluationResults(perfdata)
     

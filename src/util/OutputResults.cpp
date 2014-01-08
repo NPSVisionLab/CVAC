@@ -91,7 +91,14 @@ void OutputResults::addResult(cvac::Result& _res,
             newFound->keyframesLocations.push_back(floc);
         }
         _res.foundLabels.push_back( newFound );
-    }  
+    } else
+    { // we got not hits but still return the label
+        LabelablePtr newFound = new Labelable();
+        newFound->lab.hasLabel = true;
+        newFound->lab.name = labName;
+        newFound->confidence = confidence;
+        _res.foundLabels.push_back( newFound );
+    }
     if (mCallbackFreq.compare("immediate") == 0)
     {
          localAndClientMsg(VLogger::WARN, mCallback, "callbackFrequency mode 'immediate' not supported!\n"); 
