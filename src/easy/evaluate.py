@@ -381,6 +381,11 @@ if __name__ == '__main__' :
     c2.trainerString = "OpenCVCascadeTrainer:default -p 10107"
     c2.detectorString = "OpenCVCascadeDetector:default -p 10102"
     c2.foundMap = {'positive':posPurpose, 'negative':negPurpose}
+    detector = easy.getDetector(c2.detectorString)
+    detectorProps = easy.getDetectorProperties(detector)
+    c2.detectorProps = detectorProps;
+    c2.detectorProps.props["maxRectangles"] = "200"
+    c2.detectorProps.minNeighbors = 0; # This prevents hang up in evaluator when training has too few samples
 
     runset = easy.createRunSet( "trainImg/kr/Kr001.jpg", "pos" )
     easy.addToRunSet( runset, "trainImg/kr/Kr002.jpg", "pos" )
