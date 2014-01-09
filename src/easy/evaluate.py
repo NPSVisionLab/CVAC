@@ -366,31 +366,26 @@ if __name__ == '__main__' :
     # test the comparative detector evaluation including
     # training of a model
     easy.CVAC_ClientVerbosity = 4
+    posPurpose = easy.getPurpose('pos')
+    negPurpose = easy.getPurpose('neg')
 
     # Bag of Words
     c1 = Contender("BOW")
     c1.trainerString = "BOW_Trainer:default -p 10103"
     c1.detectorString = "BOW_Detector:default -p 10104"
-    c1.foundMap = {'1':easy.getPurpose('pos'), '0':easy.getPurpose('neg')}
+    c1.foundMap = {'1':posPurpose, '0':negPurpose}
 
-    # Histogram of Oriented Gradients
-    c2 = Contender("HOG")
-    c2.trainerString = "HOG_Trainer:default -p 10117"
-    c2.detectorString = "HOGTest:default -p 10118"
-    c2.foundMap = {'1':easy.getPurpose('pos')}
-
-    # Deformable Parts Model;
-    # currently, no trainer interface is available
-    c3 = Contender("DPM")
-    c3.detectorString = "DPM_Detector:default -p 10116"
-    c3.detectorData = "detectors/dpmStarbucksLogo.zip"
-    c3.foundMap = {'Positive':easy.getPurpose('pos'), 'Negative':easy.getPurpose('neg')}
-
+    
     # OpenCVCascade
-    c4 = Contender("cascade")
-    c4.trainerString = "OpenCVCascadeTrainer:default -p 10107"
-    c4.detectorString = "OpenCVCascadeDetector:default -p 10102"
-    c4.foundMap = {'any':easy.getPurpose('pos')}
+    c2 = Contender("cascade")
+    c2.trainerString = "OpenCVCascadeTrainer:default -p 10107"
+    c2.detectorString = "OpenCVCascadeDetector:default -p 10102"
+    c2.foundMap = {'positive':posPurpose, 'negative':negPurpose}
+    detector = easy.getDetector(c2.detectorString)
+    detectorProps = easy.getDetectorProperties(detector)
+    c2.detectorProps = detectorProps;
+    c2.detectorProps.props["maxRectangles"] = "200"
+    c2.detectorProps.minNeighbors = 0; # This prevents hang up in evaluator when training has too few samples
 
     runset = easy.createRunSet( "trainImg/kr/Kr001.jpg", "pos" )
     easy.addToRunSet( runset, "trainImg/kr/Kr002.jpg", "pos" )
@@ -400,6 +395,6 @@ if __name__ == '__main__' :
     easy.addToRunSet( runset, "trainImg/ca/ca0005.jpg", "neg" )
     easy.printRunSetInfo( runset, printArtifacts=False, printLabels=True )
     
-    perfdata = joust( [c1, c2, c3, c4], runset, folds=3 )
+    perfdata = joust( [c1, c2], runset, folds=3 )
     printEvaluationResults(perfdata)
     
