@@ -295,6 +295,11 @@ class Contender:
             self.detector = easy.getDetector( self.detectorString )
         return self.detector
 
+    def getDetectorProps( self ):
+        if not self.detectorProps:
+            self.detectorProps = easy.getDetectorProperties( self.getDetector() )
+        return self.detectorProps
+
 def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     '''evaluate the contenders on the runset, possibly training
     and evaluating with n-fold cross-validation or another method.
