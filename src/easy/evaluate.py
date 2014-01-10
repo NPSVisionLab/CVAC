@@ -9,6 +9,7 @@ import numpy
 import easy
 import cvac
 import math
+from operator import attrgetter, itemgetter
 
 def getRelativePath( label ):
     return label.sub.path.directory.relativePath + "/" + label.sub.path.filename
@@ -19,7 +20,7 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None ):
     origMap maps the relative file path of every label to the assigned purpose.
     The origMap can be constructed from the original RunSet if it
     contained purposes.
-    Returns tp, fp, tn, fn'''
+    Returns tp, fp, tn, fn, nores'''
 
     if not origMap and not origSet:
         raise RuntimeError("need either origMap or origSet")
@@ -32,7 +33,14 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None ):
             for sample in plist.labeledArtifacts:
                 origMap[ getRelativePath(sample) ] = plist.pur
     
-    tp = 0; fp = 0; tn = 0; fn = 0
+    # compute the number of samples in the origSet that was not evaluated
+    nores = 0
+    if origSet:
+        origSize = len( asList( origSet ) )
+        nores = origSize - len(results)
+    else:
+        print("warning: Not able to determine samples not evaluated")
+    tp = 0; fp = 0; tn = 0; fn = 0; 
     for res in results:
         foundPurposes = []
         for lbl in res.foundLabels:
@@ -61,9 +69,9 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None ):
             else:
                 fp += 1
 
-    print("tp: {0}, fp: {1}, tn: {2}, fp: {3}".format(tp,fp,tn,fn))
+    print("tp: {0}, fp: {1}, tn: {2}, fn: {3}, nores: {4}".format(tp,fp,tn,fn,nores))
             
-    return tp, fp, tn, fn
+    return tp, fp, tn, fn, nores
 
 def splitRunSet( runset_pos, runset_neg, fold, chunksize, evalsize, rndidx ):
     '''Take parts of runset_pos and runset_neg and re-combine into
@@ -118,12 +126,13 @@ def asList( runset, purpose=None ):
     return rsList
 
 class EvaluationResult:
-    def __init__( self, folds, tp, fp, tn, fn, detail=None, name=None ):
+    def __init__( self, folds, tp, fp, tn, fn, nores, detail=None, name=None ):
         self.folds = folds
         self.tp = tp
         self.fp = fp
         self.tn = tn
         self.fn = fn
+        self.nores = nores
         self.detail = detail
         self.name = name
         num_pos = self.tp+self.fn
@@ -138,12 +147,16 @@ class EvaluationResult:
             self.precision = 0
         # calculate combined recall/precision score:
         self.score = (self.recall + self.precision)/2.0
+        # add in to the score no result counts
+        allSam = tp + tn + fp + fn + nores;
+        resfactor = (allSam - nores) / float(allSam)
+        self.score = self.score * resfactor;
 
     def __str__(self):
-        desc = "{0:5.2f} score, {1:5.2f}% recall, {2:5.2f}% precision " \
-            "({3} tp, {4} fp, {5} tn, {6} fn)" \
+        desc = "{0:5.2f}% score, {1:5.2f}% recall, {2:5.2f}% precision " \
+            "({3} tp, {4} fp, {5} tn, {6} fn, {7} nores)" \
             .format( self.score*100.0, self.recall*100.0, self.precision*100.0,
-                     self.tp, self.fp, self.tn, self.fn )
+                     self.tp, self.fp, self.tn, self.fn, self.nores )
         if self.name:
             return self.name + ": " + desc
         return desc
@@ -188,7 +201,7 @@ def crossValidate( contender, runset, folds=10, printVerbose=False ):
     random.shuffle( rndidx[0] ) # shuffles items in place
     random.shuffle( rndidx[1] ) # shuffles items in place
 
-    confusionTables = numpy.empty( [folds, 4], dtype=int )
+    confusionTables = numpy.empty( [folds, 5], dtype=int )
     
     for fold in range( folds ):
         # split the runset
@@ -215,7 +228,7 @@ def crossValidate( contender, runset, folds=10, printVerbose=False ):
     # calculate statistics
     sums = numpy.sum( confusionTables, 0 )  # sum over rows
     r = EvaluationResult( folds,
-                          tp=sums[0], fp=sums[1], tn=sums[2], fn=sums[3],
+                          tp=sums[0], fp=sums[1], tn=sums[2], fn=sums[3], nores=sums[4],
                           detail=confusionTables, name=contender.name )
     return r
 
@@ -235,7 +248,7 @@ def evaluate( contender, runset, printVerbose=False ):
     ct = getConfusionTable( detections, origSet=evalset, foundMap=contender.foundMap )
 
     # create result structure
-    r = EvaluationResult( 0, tp=ct[0], fp=ct[1], tn=ct[2], fn=ct[3],
+    r = EvaluationResult( 0, tp=ct[0], fp=ct[1], tn=ct[2], fn=ct[3], nores=ct[4],
                           detail=ct, name=contender.name )
     return r
 
@@ -333,21 +346,40 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     if verbose:
         print("======== done! ========")
     # sort the results by "score"
-    sorted( results, key=lambda result: result.score ) 
-    return results
+    sortedResults = sorted( results, key=lambda result: result.score, reverse=True ) 
+    return sortedResults
+
+def printEvaluationResults(results):
+    print('name        ||  score |  recall | precis. ||  tp  |  fp  |  tn  |  fn  | nores')
+    print('-------------------------------------------------------------------')
+    for result in results:
+        # need 6.2 instead of 5.2 to allow for 100.0%
+        desc = "{0:6.2f}% | {1:6.2f}% | {2:6.2f}% || " \
+            "{3:4d} | {4:4d} | {5:4d} | {6:4d} | {7:4d}" \
+            .format( result.score*100.0, result.recall*100.0, result.precision*100.0,
+                     result.tp, result.fp, result.tn, result.fn, result.nores )
+        if result.name:
+            if len(result.name) > 12:
+                print (result.name[0:11] + '.' + '||'+ desc)  
+            else: 
+                print (result.name.ljust(12) + "||" + desc)
+                
 
 # for testing only:
 if __name__ == '__main__' :
     # test the comparative detector evaluation including
     # training of a model
     easy.CVAC_ClientVerbosity = 4
+    posPurpose = easy.getPurpose('pos')
+    negPurpose = easy.getPurpose('neg')
 
     # Bag of Words
     c1 = Contender("BOW")
     c1.trainerString = "BOW_Trainer:default -p 10103"
     c1.detectorString = "BOW_Detector:default -p 10104"
-    c1.foundMap = {'1':easy.getPurpose('pos'), '0':easy.getPurpose('neg')}
+    c1.foundMap = {'1':posPurpose, '0':negPurpose}
 
+    
     # Histogram of Oriented Gradients
     c2 = Contender("HOG")
     c2.trainerString = "HOG_Trainer:default -p 10117"
@@ -362,6 +394,15 @@ if __name__ == '__main__' :
     c3.foundMap = {'Positive':easy.getPurpose('pos'), 'Negative':easy.getPurpose('neg')}
 
     # OpenCVCascade
+    c2 = Contender("cascade")
+    c2.trainerString = "OpenCVCascadeTrainer:default -p 10107"
+    c2.detectorString = "OpenCVCascadeDetector:default -p 10102"
+    c2.foundMap = {'positive':posPurpose, 'negative':negPurpose}
+    detector = easy.getDetector(c2.detectorString)
+    detectorProps = easy.getDetectorProperties(detector)
+    c2.detectorProps = detectorProps;
+    c2.detectorProps.props["maxRectangles"] = "200"
+    c2.detectorProps.minNeighbors = 0; # This prevents hang up in evaluator when training has too few samples
     c4 = Contender("cascade")
     c4.trainerString = "OpenCVCascadeTrainer:default -p 10107"
     c4.detectorString = "OpenCVCascadeDetector:default -p 10102"
@@ -375,7 +416,6 @@ if __name__ == '__main__' :
     easy.addToRunSet( runset, "trainImg/ca/ca0005.jpg", "neg" )
     easy.printRunSetInfo( runset, printArtifacts=False, printLabels=True )
     
-    perfdata = joust( [c1, c2, c3, c4], runset, folds=3 )
-    for res in perfdata:
-        print res
+    perfdata = joust( [c1, c2], runset, folds=3 )
+    printEvaluationResults(perfdata)
     

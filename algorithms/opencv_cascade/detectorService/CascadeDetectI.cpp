@@ -37,6 +37,7 @@
  *****************************************************************************/
 #include <iostream>
 #include <vector>
+#include <string>
 
 #include <Ice/Communicator.h>
 #include <Ice/Initialize.h>
@@ -48,6 +49,7 @@
 #include <util/OutputResults.h>
 
 #include <highgui.h>
+#include <stdlib.h>
 
 #include "CascadeDetectI.h"
 
@@ -300,7 +302,14 @@ void CascadeDetectI::process( const Identity &client,
     Result &curres = mRunsetIterator.getCurrentResult();
    
     std::vector<cv::Rect> objects = detectObjects( callback, labelable );
-    outputres.addResult(curres,labelable,objects, cascade_name, 1.0f);      
+    // return the label name with result
+    string resultName;
+    if (objects.size() > 0)
+        resultName = "positive";
+    else
+        resultName = "negative";
+    // returning the cascade file name as label name: outputres.addResult(curres,labelable,objects, cascadeName, 1.0f); 
+    outputres.addResult(curres,labelable,objects, resultName, 1.0f);      
     
   }  
   // We are done so send any final results
@@ -319,8 +328,10 @@ void CascadeDetectI::process( const Identity &client,
     unsigned int kfnd;
     for(kfnd=0;kfnd<tResSet.results[kres].foundLabels.size();kfnd++)
     {
-      LabeledTrackPtr _tPtr = static_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());      
-      if(_tPtr->lab.hasLabel)
+      //LabeledTrackPtr _tPtr = static_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());     
+      LabeledTrackPtr _tPtr = dynamic_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());
+      //if(_tPtr->lab.hasLabel)
+      if (_tPtr && _tPtr->lab.hasLabel)
       {
         if(_tPtr->keyframesLocations[0].frame.framecnt != -1)
           localAndClientMsg( VLogger::DEBUG, NULL, "at Frame=%i\n",_tPtr->keyframesLocations[0].frame.framecnt);
@@ -378,9 +389,16 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
       minwinSize.width = mDetectorProps->slideStartSize.width;
       minwinSize.height = mDetectorProps->slideStartSize.height;
   }
+  
   cascade->detectMultiScale(eq_img, results, mDetectorProps->slideScaleFactor, 
                   mDetectorProps->minNeighbors, flags, minwinSize, maxwinSize);
-
+  
+  if (results.size() > mDetectorProps->maxRectangles)
+  { // Only return maxRectangles
+      unsigned long len = results.size();
+      results.erase(results.begin()+mDetectorProps->maxRectangles, results.end());
+      localAndClientMsg(VLogger::WARN, callback, "reducing result rectangles from %d to %d\n", len, mDetectorProps->maxRectangles);
+  }
   return results;
 }
 
@@ -470,6 +488,7 @@ DetectorPropertiesI::DetectorPropertiesI()
     slideStopSize.height = 0;
     slideStepX = 0.0f;
     slideStepY = 0.0f;
+    maxRectangles = 5000;
 }
 
 void DetectorPropertiesI::load(const DetectorProperties &p) 
@@ -509,14 +528,29 @@ bool DetectorPropertiesI::readProps()
                 res = false;
             }
         }
+        if (it->first.compare("maxRectangles") == 0)
+        {
+            long cnt = strtol(it->second.c_str(), NULL, 10);
+            if (cnt > 0 && cnt != LONG_MAX && cnt != LONG_MIN)
+                maxRectangles = cnt;
+            else
+            {
+                localAndClientMsg(VLogger::ERROR, NULL, 
+                         "Invalid maxRectangles property.\n");
+                res = false;
+            }
+        }
     }   
     return res;
 }
  
 bool DetectorPropertiesI::writeProps()
 {
+    std::stringstream stream;
+    stream << maxRectangles;
     bool res = true;
-    props.insert(std::pair<string, string>("numStages", callbackFreq));
+    props.insert(std::pair<string, string>("callbackFrequency", callbackFreq));
+    props.insert(std::pair<string, string>("maxRectangles", stream.str()));
     return res;
 }
 

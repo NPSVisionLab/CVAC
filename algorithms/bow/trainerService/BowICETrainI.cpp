@@ -161,7 +161,7 @@ bowCV* BowICETrainI::initialize( TrainerCallbackHandlerPrx& _callback,
   {
     std::string strat = strategy;
     std::transform( strategy.begin(), strategy.end(), strat.begin(), ::tolower );
-    string rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_MULTICLASS;
+    rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_MULTICLASS;
     if (0==strat.compare(bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES))
     {
       rejectClassStrategy = bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES;

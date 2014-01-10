@@ -230,19 +230,23 @@ bool RunSetWrapper::makeBasicList()
 
             if(newSymlink)
             {             
-              cout << "symlink will be generated..\n";
+              cout << "symbolic link is going to be generated..\n";
               if(!makeSymlinkFile(symlinkFullPath, tPath))
               {
                 cout << "But, it's failed..\n";
                 symlinkFullPath = tPath;  // put the orig name back so it can fail.
               }
             }
-            //////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////            
             
-            if(fileExists(symlinkFullPath))
+            //fileExists routine is not working for a symbolic link
+            addToList(in_la,getType(symlinkFullPath));
+            /*            
+            if(fileExists(symlinkFullPath)) 
               addToList(in_la,getType(symlinkFullPath));
             else	//no file
-              continue;					
+              continue;
+            */
           }
           else
           {

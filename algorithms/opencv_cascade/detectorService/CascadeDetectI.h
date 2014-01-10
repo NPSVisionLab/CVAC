@@ -71,6 +71,7 @@ class DetectorPropertiesI : public cvac::DetectorProperties
   void load(const DetectorProperties &p);
 
    std::string callbackFreq;
+   unsigned long maxRectangles;
 
 };
 
