@@ -308,7 +308,11 @@ class Contender:
             self.detector = easy.getDetector( self.detectorString )
         return self.detector
 
-  
+    def getDetectorProps( self ):
+        if not self.detectorProps:
+            self.detectorProps = easy.getDetectorProperties( self.getDetector() )
+        return self.detectorProps
+
 def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     '''evaluate the contenders on the runset, possibly training
     and evaluating with n-fold cross-validation or another method.
@@ -376,6 +380,19 @@ if __name__ == '__main__' :
     c1.foundMap = {'1':posPurpose, '0':negPurpose}
 
     
+    # Histogram of Oriented Gradients
+    c2 = Contender("HOG")
+    c2.trainerString = "HOG_Trainer:default -p 10117"
+    c2.detectorString = "HOGTest:default -p 10118"
+    c2.foundMap = {'1':easy.getPurpose('pos')}
+
+    # Deformable Parts Model;
+    # currently, no trainer interface is available
+    c3 = Contender("DPM")
+    c3.detectorString = "DPM_Detector:default -p 10116"
+    c3.detectorData = "detectors/dpmStarbucksLogo.zip"
+    c3.foundMap = {'Positive':easy.getPurpose('pos'), 'Negative':easy.getPurpose('neg')}
+
     # OpenCVCascade
     c2 = Contender("cascade")
     c2.trainerString = "OpenCVCascadeTrainer:default -p 10107"
@@ -386,6 +403,10 @@ if __name__ == '__main__' :
     c2.detectorProps = detectorProps;
     c2.detectorProps.props["maxRectangles"] = "200"
     c2.detectorProps.minNeighbors = 0; # This prevents hang up in evaluator when training has too few samples
+    c4 = Contender("cascade")
+    c4.trainerString = "OpenCVCascadeTrainer:default -p 10107"
+    c4.detectorString = "OpenCVCascadeDetector:default -p 10102"
+    c4.foundMap = {'any':easy.getPurpose('pos')}
 
     runset = easy.createRunSet( "trainImg/kr/Kr001.jpg", "pos" )
     easy.addToRunSet( runset, "trainImg/kr/Kr002.jpg", "pos" )
