@@ -5,8 +5,9 @@ setup (name = '${PYTHON_PACK_NAME}',
        description = 'Easy! Computer Vision, a connection to CVAC, the Computer Vision Algorithm Collection',
        url = 'https://github.com/NPSVisionLab/CVAC',
        author = 'NPS Vision Lab',
-       py_modules = ['cv'],
-       packages = ['cvac', 'easy', 'easy/util', 'ice',
+       py_modules = ['cv', ${GOOGLE_MODULE}
+                    ],
+       packages = ['cvac', 'easy', 'easy/util', 'ice', ${GOOGLE_PACKAGE}
                   ],
        data_files=[('Lib/site-packages/Ice',['Ice/IcePy.pyd']),
                    ('Lib/site-packages',['ice.pth']),
