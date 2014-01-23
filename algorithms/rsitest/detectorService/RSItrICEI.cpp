@@ -103,9 +103,9 @@ void RSItrICEI::initialize(int verbosity,const ::cvac::FilePath &file,
 
   fInitialized = true;
   mRunsetConstraint.clear();
+  mRunsetConstraint.addType("jpg");
   mRunsetConstraint.addType("png");    
-  mRunsetConstraint.addType("tif");  
-  //mRunsetConstraint.addType("jpg");
+  mRunsetConstraint.addType("tif");
 }
 
 bool RSItrICEI::isInitialized()
@@ -216,7 +216,7 @@ void RSItrICEI::process(const Ice::Identity &client,const ::RunSet& runset,
   mServiceMan->setStoppable();
   int tnSkipFrames = 150;
   mRunsetIterator = new RunSetIterator(mRunsetWrapper,mRunsetConstraint,
-                                       mServiceMan,tnSkipFrames);
+                                       mServiceMan,_callback,tnSkipFrames);
   mServiceMan->clearStop();
   // End - Initialization of RunsetIterator
   //////////////////////////////////////////////////////////////////////////  

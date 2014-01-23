@@ -279,7 +279,7 @@ void CascadeDetectI::process( const Identity &client,
   int nSkipFrames = 150;  //the number of skip frames
   mServiceMan->setStoppable();
   cvac::RunSetIterator mRunsetIterator(&mRunsetWrapper,mRunsetConstraint,
-                                       mServiceMan,nSkipFrames);
+                                       mServiceMan,callback,nSkipFrames);
   mServiceMan->clearStop();
   if(!mRunsetIterator.isInitialized())
   {

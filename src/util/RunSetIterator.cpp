@@ -43,10 +43,14 @@ using namespace cvac;
 
 RunSetIterator::RunSetIterator(RunSetWrapper* _rsw,RunSetConstraint& _cons,
                                ServiceManager *_sman,
+                               const CallbackHandlerPrx& _callback,
                                int _nSkipFrames)
-{ 
+{   
   mFlagInitialize = false;
   mServiceMan = _sman;
+
+  mCallback2Client = _callback;
+  assert(mCallback2Client != 0);
 
   mMediaTempDirectory = "";  
   if(_rsw != NULL)
@@ -114,11 +118,14 @@ bool RunSetIterator::makeList(ResultSet& _resultSet,
 
   string tAbsPath,tRelDir,tFname;
 
+  //Make a directory with a random name
   bool tFlagMakeDirectory = true;
   srand((unsigned)time(NULL));
   std::ostringstream tConvNum2Str;
   tConvNum2Str << rand();
   mMediaTempDirectory = "converted_" + tConvNum2Str.str();
+
+  //Make a final set with a conversion if it's necessary
   unsigned int k;
   for(k=0;k<_resultSet.results.size();k++)  
   {
@@ -131,12 +138,14 @@ bool RunSetIterator::makeList(ResultSet& _resultSet,
     if(isInConstraintType(_resultSetType[k]))
       addToList(_resultSet.results[k].original,k);
     else 
-    { 
+    {
+      //if necessary, convert to one of constraint types
       bool tFlagConversion = false;
       mConstraintTypeItr=mConstraintType.begin();
       for(;mConstraintTypeItr!=mConstraintType.end();mConstraintTypeItr++)
       {         
-        mConvertibleItr = mConvertible.find(_resultSetType[k] + "2" + (*mConstraintTypeItr));
+        mConvertibleItr = mConvertible.find(_resultSetType[k] + "2" 
+                          + (*mConstraintTypeItr));
         if(mConvertibleItr!=mConvertible.end())
         {
           if(tFlagMakeDirectory)
@@ -144,20 +153,25 @@ bool RunSetIterator::makeList(ResultSet& _resultSet,
             makeDirectory(mMediaRootDirectory + "/" + mMediaTempDirectory);
             tFlagMakeDirectory = false;
           }
-
+          
           if(!convertAndAddToList(_resultSet.results[k].original,(*mConstraintTypeItr),
             mConvertibleItr->second,mMediaTempDirectory,k))
+          {
+            //this case may be very rare: error while converting, stopping by user interruption
             return false;
+          }
 
           tFlagConversion = true;
           break;  //Should be
         } 
       }
 
-      if(!tFlagConversion)
+      //When there is no proper converter
+      if(!tFlagConversion)  
       {
-        localAndClientMsg(VLogger::WARN, NULL,
-          "No conversion: %s\n",(_resultSet.results[k].original)->sub.path.filename.c_str());
+        localAndClientMsg(VLogger::WARN, mCallback2Client,
+          "No conversion for %s because of no proper converter\n",
+          (_resultSet.results[k].original)->sub.path.filename.c_str());
       }
     }
   } 
