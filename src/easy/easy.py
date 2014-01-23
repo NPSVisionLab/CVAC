@@ -1077,7 +1077,7 @@ def showImagesWithLabels( substrates, maxsize=None ):
                     draw.line( cpts, fill=255, width=2 )
                     del draw
                 else:
-                    print("warning: not rendering Label type {0}".format( type(lbl.loc) ))
+                    print("warning: not rendering Label type {0}".format( type(lbl.loc) ))      
         showImage( img )
 
 def getConfusionMatrix( results, origMap, foundMap ):
