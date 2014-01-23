@@ -574,7 +574,7 @@ TrainerPropertiesI::TrainerPropertiesI()
     verbosity = 0;
     canSetWindowSize = true;
     canSetSensitivity = true;
-    videoFPS = 0;
+    videoFPS = 0.0;
     windowSize.width = 0;
     windowSize.height = 0;
     falseAlarmRate = 0.0;
@@ -587,7 +587,8 @@ void TrainerPropertiesI::load(const TrainerProperties &p)
     canSetSensitivity = true;
     verbosity = p.verbosity;
     props = p.props;
-    videoFPS = p.videoFPS;
+    if (p.videoFPS > 0.0)
+        videoFPS = p.videoFPS;
     //Only load values that are not zero
     if (p.windowSize.width > 0 && p.windowSize.height > 0)
         windowSize = p.windowSize;

@@ -9,6 +9,8 @@ ENDIF(WIN32)
 
 PROJECT(CVAC)
 
+SET (PYTHON_ONLY_CLIENT true)
+
 INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 OPTION(BUILD_WITH_BOW "Build a Bag of Words trainer and detector (requires OpenCV)" ON)
@@ -24,6 +26,12 @@ OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-pa
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
 OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" OFF)
+
+IF (PYTHON_ONLY_CLIENT)
+    IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
+        SET (PYTHON_ONLY_CLIENT false)
+    ENDIF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
+ENDIF (PYTHON_ONLY_CLIENT)
 
 
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
@@ -349,6 +357,13 @@ ELSE( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
     SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cvac" )
 ENDIF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
 
+#Need to have this at top level since multiple directories need it
+#SET( SLICE_FILES
+#    ${CVAC_ROOT_DIR}/src/Files.ice
+#    ${CVAC_ROOT_DIR}/src/Data.ice
+#    ${CVAC_ROOT_DIR}/src/Services.ice
+#    ${CVAC_ROOT_DIR}/src/Corpus.ice
+#)
 IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
     # This requires CMake 2.8 for Java support
     ADD_SUBDIRECTORY( src )
