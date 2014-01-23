@@ -10,6 +10,8 @@ WRAP_SLICE2PY( SLICE_FILES
     ${CMAKE_SOURCE_DIR}/src/Corpus.ice
 )
 
+MAKE_DIRECTORY(${SLICE_OUTPUT_PYTHONDIR})
+
 #
 # Copy easy.py to the python lib dir without expanding
 #
