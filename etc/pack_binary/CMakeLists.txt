@@ -67,10 +67,17 @@ IF(WIN32)
     # Specify the default location to install CVAC.  It will install it
     # in this and a version directory underneath this.
     SET(CPACK_NSIS_INSTALL_ROOT "c:\\\\CVAC")
-ELSE(WIN32)
+ELSEIF(APPLE)
     SET( SCRIPT_EXT sh )
-  SET(CPACK_GENERATOR "TGZ")
-ENDIF(WIN32)
+    SET(CPACK_GENERATOR "Bundle")
+    SET(CPACK_BUNDLE_NAME "EasyComputerVision")
+    SET(CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
+    SET(CPACK_BUNDLE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/EasyComputerVision.icns)
+    CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
+ELSE()
+    SET( SCRIPT_EXT sh )
+    SET(CPACK_GENERATOR "TGZ")
+ENDIF()
 
 SET (PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/../python")
 INSTALL(DIRECTORY ${PYTHON_BUILD_DIR}
