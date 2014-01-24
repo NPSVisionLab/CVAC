@@ -249,6 +249,12 @@ ENDIF(WIN32)
 # the binary package and the install copies them with the install script
 IF (BUILD_BINARY_PACKAGE)
 
+    WRAP_SLICE2PY( SLICE_FILES
+        ${CMAKE_SOURCE_DIR}/src/Files.ice
+        ${CMAKE_SOURCE_DIR}/src/Data.ice
+        ${CMAKE_SOURCE_DIR}/src/Services.ice
+        ${CMAKE_SOURCE_DIR}/src/Corpus.ice
+    )
     SET (SLICE_OUTPUT_PATH "${SLICE_OUTPUT_PYTHONDIR}")
     add_custom_target(copyslice ALL
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/cvac"
@@ -256,6 +262,7 @@ IF (BUILD_BINARY_PACKAGE)
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/cvac"
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/cvac"
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
+        DEPENDS ${SLICE_OUTPUT_PATH}/Corpus_ice.py ${SLICE_OUTPUT_PATH}/Data_ice.py ${SLICE_OUTPUT_PATH}/Files_ice.py ${SLICE_OUTPUT_PATH}/Services_ice.py 
     )
 ENDIF (BUILD_BINARY_PACKAGE)
 

@@ -279,7 +279,7 @@ void CascadeDetectI::process( const Identity &client,
   int nSkipFrames = 150;  //the number of skip frames
   mServiceMan->setStoppable();
   cvac::RunSetIterator mRunsetIterator(&mRunsetWrapper,mRunsetConstraint,
-                                       mServiceMan,nSkipFrames);
+                                       mServiceMan,callback,nSkipFrames);
   mServiceMan->clearStop();
   if(!mRunsetIterator.isInitialized())
   {
@@ -495,11 +495,12 @@ void DetectorPropertiesI::load(const DetectorProperties &p)
 {
     verbosity = p.verbosity;
     props = p.props;
-    videoFPS = p.videoFPS;
+    if (p.videoFPS > 0)
+        videoFPS = p.videoFPS;
     //Only load values that are not zero
     if (p.nativeWindowSize.width > 0 && p.nativeWindowSize.height > 0)
         nativeWindowSize = p.nativeWindowSize;
-    if (p.minNeighbors > -1)
+    if (p.minNeighbors >= 0)
         minNeighbors = p.minNeighbors;
     if (p.slideScaleFactor > 0)
         slideScaleFactor = p.slideScaleFactor;

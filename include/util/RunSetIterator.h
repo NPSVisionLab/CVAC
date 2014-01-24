@@ -79,10 +79,12 @@ namespace cvac
   public:
     RunSetIterator(RunSetWrapper* _rsw,RunSetConstraint& _cons,
                    ServiceManager *_sman,
+                   const CallbackHandlerPrx& _callback,
                    int _nSkipFrames = 100);
     ~RunSetIterator();		
 
   private:
+    CallbackHandlerPrx mCallback2Client;
     bool mFlagInitialize;
     ServiceManager* mServiceMan;
     string mMediaRootDirectory;
