@@ -21,7 +21,10 @@ export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${OpenCV_LIB_DIR_OPT}:$MATLAB_MCR_D
 
 # C/C++ services, via IceBox
 cd ${CVAC_ROOT_DIR}
-${ICE_BOX_EXECUTABLE} --Ice.Config=config.icebox &
+if [ "${START_ICE_SERVICES}" == "1" ]
+then
+    ${ICE_BOX_EXECUTABLE} --Ice.Config=config.icebox &
+fi
 
 # Java services, via Java IceBox
 if [ "${START_JAVA_SERVICES}" == "1" ]
