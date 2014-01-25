@@ -4,8 +4,14 @@ cmake_minimum_required(VERSION 2.8)
 # CPack Package Properties
 #
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
-set(CPACK_PACKAGE_NAME "CVAC_binary")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC binary install package")
+IF (NOT PYTHON_ONLY_CLIENT)
+    set(CPACK_PACKAGE_NAME "CVAC_binary")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC binary install package")
+ELSE (NOT PYTHON_ONLY_CLIENT)
+    set(CPACK_PACKAGE_NAME "CVAC_client")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC client install package")
+ENDIF (NOT PYTHON_ONLY_CLIENT)
+
 set(CPACK_PACKAGE_VENDOR "NPS Vision Lab")
 
 IF( NOT DEFINED CVAC_VERSION_MAJOR )
@@ -127,27 +133,22 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/version.h
        COMPONENT Runtime
       )
 
-INSTALL(FILES ${CMAKE_SOURCE_DIR}/config.admin ${CMAKE_SOURCE_DIR}/config.icebox ${CMAKE_SOURCE_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.java_admin ${CMAKE_SOURCE_DIR}/config.java_icebox ${CMAKE_SOURCE_DIR}/config.client 
+IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
+    INSTALL(FILES ${CMAKE_SOURCE_DIR}/config.admin ${CMAKE_SOURCE_DIR}/config.icebox ${CMAKE_SOURCE_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.java_admin ${CMAKE_SOURCE_DIR}/config.java_icebox ${CMAKE_SOURCE_DIR}/config.client 
        DESTINATION .
        COMPONENT Runtime
       )
-
-INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/etc/startServices.${SCRIPT_EXT} ${CMAKE_SOURCE_DIR}/etc/stopServices.${SCRIPT_EXT}
+    INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/bin/startServices.${SCRIPT_EXT} ${CMAKE_SOURCE_DIR}/etc/stopServices.${SCRIPT_EXT}
        DESTINATION bin
        COMPONENT Runtime
       )
-
-# pre-written versions of startIcebox and stopIcebox for binary distribution, so it's easier to edit:
-INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/etc/startServices.${SCRIPT_EXT} ${CMAKE_SOURCE_DIR}/etc/stopServices.${SCRIPT_EXT}
-       DESTINATION bin
-       COMPONENT Runtime
-      )
+ENDIF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
 
 # ThirdParty dependencies for building CVAC
 
 IF (WIN32)
 
-INSTALL(DIRECTORY   ${ICE_ROOT}/bin
+  INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
@@ -157,22 +158,25 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         PATTERN *.exe EXCLUDE
         PATTERN *.pdb EXCLUDE
         )
-INSTALL(DIRECTORY   ${ICE_ROOT}/lib
+  IF (NOT PYTHON_ONLY_CLIENT)
+    INSTALL(DIRECTORY   ${ICE_ROOT}/lib
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
         PATTERN *.pdb EXCLUDE
         PATTERN *.lib EXCLUDE
        )
+  ENDIF (NOT PYTHON_ONLY_CLIENT)
 
-INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1.win32-py2.6.exe
+
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1.win32-py2.6.exe
        DESTINATION 3rdparty
        COMPONENT Runtime 
       )
 
 ELSE (WIN32)
 
-INSTALL(DIRECTORY   ${ICE_ROOT}/lib
+  INSTALL(DIRECTORY   ${ICE_ROOT}/lib
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
@@ -181,63 +185,64 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/lib
 
 ENDIF (WIN32)
 
-INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox${CMAKE_EXECUTABLE_SUFFIX}
+IF (NOT PYTHON_ONLY_CLIENT)
+    INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox${CMAKE_EXECUTABLE_SUFFIX}
                  ${ICE_BOX_ADMIN}
         DESTINATION 3rdparty/ICE/bin
         COMPONENT ThirdParty
        )
 
-INSTALL(DIRECTORY   ${ICE_ROOT}/python
+    INSTALL(DIRECTORY   ${ICE_ROOT}/python
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
         PATTERN *.pyc EXCLUDE
        )
 
-# libarchive is a symlink, but we want the file:
-# CONFIGURE_FILE( ${LIBARCHIVE_LIBRARY} ${CMAKE_CURRENT_BINARY_DIR}/tmp/ COPYONLY)
-GET_FILENAME_COMPONENT( LIBARCHIVE_LIBRARY_REALPATH ${LIBARCHIVE_LIBRARY} REALPATH )
-IF (WIN32)
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/bin
+    # libarchive is a symlink, but we want the file:
+    # CONFIGURE_FILE( ${LIBARCHIVE_LIBRARY} ${CMAKE_CURRENT_BINARY_DIR}/tmp/ COPYONLY)
+    GET_FILENAME_COMPONENT( LIBARCHIVE_LIBRARY_REALPATH ${LIBARCHIVE_LIBRARY} REALPATH )
+    IF (WIN32)
+    INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/bin
        DESTINATION 3rdparty/libarchive
        COMPONENT ThirdParty
       )
-ELSE (WIN32)
-INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
+    ELSE (WIN32)
+    INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
        DESTINATION 3rdparty/libarchive/lib
        COMPONENT ThirdParty
       )
-ENDIF (WIN32)
+    ENDIF (WIN32)
 
-# OpenCV needs to be isolated in some staging area.  You need
-# to configure this CMake to pull OpenCV from there.
-# OpenCV_DIR points to the shared/OpenCV subdirectory.
-IF( WIN32 )
-  GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}" REALPATH)
-ELSE( WIN32 )
-  GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}/../.." REALPATH)
-ENDIF( WIN32 )
-MESSAGE( STATUS "OpenCV will be 3rd-party archived from this path: ${OpenCV_INSTALL_PATH}" )
-INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
+    # OpenCV needs to be isolated in some staging area.  You need
+    # to configure this CMake to pull OpenCV from there.
+    # OpenCV_DIR points to the shared/OpenCV subdirectory.
+    IF( WIN32 )
+      GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}" REALPATH)
+    ELSE( WIN32 )
+      GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}/../.." REALPATH)
+    ENDIF( WIN32 )
+    MESSAGE( STATUS "OpenCV will be 3rd-party archived from this path: ${OpenCV_INSTALL_PATH}" )
+    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
       DESTINATION 3rdparty/opencv
        COMPONENT ThirdParty
       ) 
 
-IF (WIN32)
-INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/python
-      DESTINATION 3rdparty/opencv
-       COMPONENT ThirdParty
-      ) 
+    IF (WIN32)
+    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/python
+          DESTINATION 3rdparty/opencv
+           COMPONENT ThirdParty
+          ) 
 
-ELSE (WIN32)
-#If not windows need the libs for the shared libraries
-INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
-      DESTINATION 3rdparty/opencv
-       COMPONENT ThirdParty
-      ) 
-ENDIF(WIN32)
+    ELSE (WIN32)
+    #If not windows need the libs for the shared libraries
+    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
+          DESTINATION 3rdparty/opencv
+           COMPONENT ThirdParty
+          ) 
+    ENDIF(WIN32)
 
-
+ENDIF (NOT PYTHON_ONLY_CLIENT)
 
 # First copy over cvac.  Need to wait for build time since these files
 # are created by slicing at build time.  Since FILE commands work at

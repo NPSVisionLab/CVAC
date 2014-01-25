@@ -17,6 +17,7 @@ OPTION(BUILD_WITH_BOW "Build a Bag of Words trainer and detector (requires OpenC
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Build the OpenCV Cascade trainer and detector" ON)
 OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" ON) 
 OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" ON) 
+OPTION(BUILD_CORPUS_SERVICE_PYTHON "Configure a Python Corpus Server" ON) 
 OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
 OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" ON)
 OPTION(BUILD_CPP_TRAINER_CLIENT "Build a C++ client for trainers" OFF)
@@ -31,6 +32,12 @@ IF (PYTHON_ONLY_CLIENT)
     IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
         SET (PYTHON_ONLY_CLIENT false)
     ENDIF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
+ENDIF (PYTHON_ONLY_CLIENT)
+
+IF (PYTHON_ONLY_CLIENT)
+    SET (START_ICE_SERVICES 0)
+ELSE (PYTHON_ONLY_CLIENT)
+    SET (START_ICE_SERVICES 1)
 ENDIF (PYTHON_ONLY_CLIENT)
 
 

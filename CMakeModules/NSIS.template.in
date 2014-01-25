@@ -584,13 +584,15 @@ Function customDialog
   ${NSD_CreateBrowseButton} -18u 13u 18u 12u "..."
   Pop $0
   ${NSD_OnClick} $0 BrowsePython
-  ${NSD_CreateLabel} 0 35u 100% 12u "Enter path to Java"
-  Pop $LabelJava
-  ${NSD_CreateText} 0 48u -20u 12u "C:\Windows\system32\java.exe"
-  Pop $JavaPathText
-  ${NSD_CreateBrowseButton} -18u 48u 18u 12u "..."
-  Pop $0
-  ${NSD_OnClick} $0 BrowseJava
+  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
+      ${NSD_CreateLabel} 0 35u 100% 12u "Enter path to Java"
+      Pop $LabelJava
+      ${NSD_CreateText} 0 48u -20u 12u "C:\Windows\system32\java.exe"
+      Pop $JavaPathText
+      ${NSD_CreateBrowseButton} -18u 48u 18u 12u "..."
+      Pop $0
+      ${NSD_OnClick} $0 BrowseJava
+  ${endif}
   ${NSD_CreateLabel} 0 70u 100% 12u "Enter path to data directory"
   Pop $LabelData
   ${NSD_CreateText} 0 83u -20u 12u "data"
@@ -643,16 +645,20 @@ Function customDialogLeave
     Abort
   ${endif}
 
-  ${ifnot} ${FileExists} "$JavaPathValue"
-    MessageBox MB_OK "Java path incorrect" /SD IDOK
-    Abort
+  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
+      ${ifnot} ${FileExists} "$JavaPathValue"
+        MessageBox MB_OK "Java path incorrect" /SD IDOK
+        Abort
+      ${endif}
   ${endif}
 
   #Set a local EnvirnomentVariable
   System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("PYTHON_HOME", $PythonPathValue).r0'
   StrCmp $0 0 error
-  System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("JAVA_HOME", $JavaPathValue).r0'
-  StrCmp $0 0 error
+  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
+      System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("JAVA_HOME", $JavaPathValue).r0'
+      StrCmp $0 0 error
+  ${endif}
   System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("CVAC_DATADIR", $DataPathValue).r0'
   StrCmp $0 0 error
   Goto done
@@ -977,14 +983,16 @@ Section "-Core installation"
   # CVAC Changes start
   # Set working directory for shortcut to be the INSTDIR
   SetOutPath "$INSTDIR"
-  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\startServices.lnk" "$INSTDIR\bin\startServices.bat"
-  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\stopServices.lnk" "$INSTDIR\bin\stopServices.bat"
-  # Client needs the ice dlls in its path to run demos
-  Push $INSTDIR\3rdparty\ICE\bin
-  #StrCmp "@CPACK_NSIS_MODIFY_PATH@" "ON" 0 cvacdoNotAddToPath
-  #StrCmp $DO_NOT_ADD_TO_PATH "1" cvacdoNotAddToPath 0  
-    Call AddToPath
-  cvacdoNotAddToPath:
+  ${if} ${FileExists} "$INSTDIR\bin\startServices.bat"
+      CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\startServices.lnk" "$INSTDIR\bin\startServices.bat"
+      CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\stopServices.lnk" "$INSTDIR\bin\stopServices.bat"
+      # Client needs the ice dlls in its path to run demos
+      Push $INSTDIR\3rdparty\ICE\bin
+      #StrCmp "@CPACK_NSIS_MODIFY_PATH@" "ON" 0 cvacdoNotAddToPath
+      #StrCmp $DO_NOT_ADD_TO_PATH "1" cvacdoNotAddToPath 0  
+      Call AddToPath
+      cvacdoNotAddToPath:
+ ${endif} 
   # CVAC Changes end
 
   ;Read a value from an InstallOptions INI file
