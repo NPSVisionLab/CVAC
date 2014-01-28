@@ -94,6 +94,14 @@ FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/ice)
 CONFIGURE_FILE(setup.py.in "${PYTHON_BUILD_DIR}/setup.py")
 CONFIGURE_FILE(easy.pth "${PYTHON_BUILD_DIR}/easy.pth")
 CONFIGURE_FILE(ice.pth "${PYTHON_BUILD_DIR}/ice.pth")
+# For unix set the install prefix for the python command to be the
+# same as the cmake install prefix.  We do this since installing directly
+# to the python site-packages require root access.
+IF (WIN32)
+    SET (PREFIX_CMD "")
+ELSE (WIN32)
+    SET (PREFIX_CMD "--prefix=${CMAKE_INSTALL_PREFIX")
+IF (WIN32)
 CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_SOURCE_DIR}/PostInstall.cmake)
 
 INSTALL(SCRIPT "PostInstall.cmake")
