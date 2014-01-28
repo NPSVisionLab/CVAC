@@ -9,9 +9,9 @@ setup (name = '${PYTHON_PACK_NAME}',
                     ],
        packages = ['cvac', 'easy', 'easy/util', 'ice', ${GOOGLE_PACKAGE}
                   ],
-       data_files=[('Lib/site-packages/Ice',['Ice/IcePy.pyd']),
+       data_files=[('Lib/site-packages/Ice',['Ice/IcePy.${PYTHON_EXT}']),
                    ('Lib/site-packages',['ice.pth']),
-                   ('Lib/site-packages',['cv2.pyd']),
+                   ('Lib/site-packages',['cv2.${PYTHON_EXT}']),
                    ('Lib/site-packages',['easy.pth'])],
 
     )
