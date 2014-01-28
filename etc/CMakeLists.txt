@@ -101,7 +101,7 @@ IF (WIN32)
     SET (PREFIX_CMD "")
 ELSE (WIN32)
     SET (PREFIX_CMD "--prefix=${CMAKE_INSTALL_PREFIX")
-IF (WIN32)
+ENDIF (WIN32)
 CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_SOURCE_DIR}/PostInstall.cmake)
 
 INSTALL(SCRIPT "PostInstall.cmake")
