@@ -18,6 +18,9 @@ definition of these columns are:
     9   generated. If 1, the annotation was automatically interpolated.
     10  label. The label for this annotation, enclosed in quotation marks.
     11+ attributes. Each column after this is an attribute.
+
+Note: Frame numbers start with '0' as the first frame.  This convention
+is used by the CVAC code as well.
 '''
 
 import cvac
