@@ -55,14 +55,6 @@ class SamplesParams
   int height;
 };
 
-// TODO: change to K's class name
-class RunSetWrapper {
-public:
-  RunSetWrapper(const cvac::RunSet& rs ): runset(rs) { }
-
-public:
-  const cvac::RunSet &runset;
-};
 
 class TrainerPropertiesI : public cvac::TrainerProperties
 {
@@ -115,12 +107,13 @@ class CascadeTrainI : public cvac::DetectorTrainer, public cvac::StartStop
   virtual ::std::string getDescription(const ::Ice::Current& = ::Ice::Current() );
   virtual ::cvac::TrainerProperties getTrainerProperties(const ::Ice::Current& = ::Ice::Current());
 
-  void writeBgFile( const RunSetWrapper& rsw, const std::string& bgFilename, 
-                    int* pNumNeg, std::string datadir );
+  void writeBgFile( cvac::RunSetWrapper& rsw, const std::string& bgFilename, 
+      int* pNumNeg, std::string datadir, const cvac::CallbackHandlerPrx &callback );
 
-  bool createSamples( const RunSetWrapper& rsw, const SamplesParams& params,
+  bool createSamples(cvac::RunSetWrapper& rsw, const SamplesParams& params,
                     const std::string& infoFilename,
-                    const std::string& vecFilename, int* pNumPos, std::string datadir);
+                    const std::string& vecFilename, int* pNumPos, std::string datadir,
+                    const cvac::CallbackHandlerPrx &callback);
   bool createClassifier( const std::string& tempDir, 
                          const std::string& vecFname, 
                          const std::string& bgName,

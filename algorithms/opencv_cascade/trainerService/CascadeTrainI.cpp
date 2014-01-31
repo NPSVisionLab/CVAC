@@ -168,8 +168,10 @@ void CascadeTrainI::addDataPath(RunSet runset, const std::string &CVAC_DataDir)
 }
 
 
-void CascadeTrainI::writeBgFile( const RunSetWrapper& rsw, 
-                                const string& bgFilename, int* pNumNeg, string CVAC_DataDir )
+void CascadeTrainI::writeBgFile(cvac::RunSetWrapper& rsw, 
+                                const string& bgFilename, int* pNumNeg, string CVAC_DataDir,
+                                const CallbackHandlerPrx &callback
+                                )
 {
   // TODO: iterate over NEGATIVE purposes only, count numNeg, write 
   // file names to bgFilename as we did for the old OpenCV Performance training;
@@ -183,22 +185,23 @@ void CascadeTrainI::writeBgFile( const RunSetWrapper& rsw,
   // for labelable in it ...
   // Save stored data from RunSet to OpenCv negative samples file
 
-  unsigned int i;
+
   std::vector<RectangleLabels> negRectlabels;
   int imgCnt = 0;
-  const cvac::RunSet &runset = rsw.runset;
-  for (i = 0; i < runset.purposedLists.size(); i++)
-  {
-    // Only look for positive purposes
-    if (NEGATIVE == runset.purposedLists[i]->pur.ptype)
-    {
-        // Store training-input data to vectors
-        cvac::PurposedLabelableSeq* lab = static_cast<cvac::PurposedLabelableSeq*>(runset.purposedLists[i].get());
-        LabelableList artifacts = lab->labeledArtifacts;
-        imgCnt += cvac::processLabelArtifactsToRects(&artifacts, 
-                                    NULL, &negRectlabels, true);
-     }
-  }
+// Fetch all the neg samples
+  RunSetConstraint constraint;
+  constraint.compatiblePurpose = std::string("Negative");
+  constraint.spacesInFilenamesPermitted = false;
+  //constraint.addType("png");
+  //constraint.addType("tif");
+  constraint.addType("jpg");
+
+
+  imgCnt = cvac::processLabelArtifactsToRects(rsw, constraint, 
+                                       CVAC_DataDir, mServiceMan,
+                                       callback, NULL, 0,
+                                       &negRectlabels, true);
+  
   ofstream backgroundFile;
   backgroundFile.open(bgFilename.c_str());
   int cnt = 0;
@@ -243,32 +246,30 @@ bool static getImageWidthHeight(std::string filename, int &width, int &height)
    return res;
 }
 
-bool CascadeTrainI::createSamples( const RunSetWrapper& rsw, 
+bool CascadeTrainI::createSamples( RunSetWrapper& rsw, 
                                    const SamplesParams& params,
                     const string& infoFilename,
-                    const string& vecFilename, int* pNumPos, string CVAC_DataDir
+                    const string& vecFilename, int* pNumPos, string CVAC_DataDir,
+                    const CallbackHandlerPrx &callback
                     )
 {
  
   bool showsamples = false;
 
-  unsigned int i;
   std::vector<RectangleLabels> posRectlabels;
   int imgCnt = 0;
-  const cvac::RunSet &runset = rsw.runset;
-  for (i = 0; i < runset.purposedLists.size(); i++)
-  {
-    // Only look for positive purposes
-    if (POSITIVE == runset.purposedLists[i]->pur.ptype)
-    {
-        // Store training-input data to vectors
-        cvac::PurposedLabelableSeq* lab = static_cast<cvac::PurposedLabelableSeq*>(runset.purposedLists[i].get());
-        // expand the file names
-        // TODO call the utils fixupRunSet function.
-        LabelableList artifacts = lab->labeledArtifacts;
-        imgCnt += cvac::processLabelArtifactsToRects(&artifacts, getImageWidthHeight, &posRectlabels, true);
-     }
-  }
+  // Fetch all the positive samples
+  RunSetConstraint constraint;
+  constraint.compatiblePurpose = std::string("Positive");
+  constraint.spacesInFilenamesPermitted = false;
+  //constraint.addType("png");
+  //constraint.addType("tif");
+  constraint.addType("jpg");
+
+  imgCnt = cvac::processLabelArtifactsToRects(rsw, constraint, 
+                                       CVAC_DataDir, mServiceMan,
+                                       callback, getImageWidthHeight, 0,
+                                       &posRectlabels, true);
 
   ofstream infoFile;
  
@@ -492,7 +493,7 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
                                                              connectName);
   std::string tempDir = mServiceMan->getSandbox()->createTrainingDir(clientName);
-  RunSetWrapper rsw( tempRunSet );
+  RunSetWrapper rsw( &tempRunSet, CVAC_DataDir, mServiceMan );
   // We can't put the bgName and infoName in the tempdir without
   // changing cvSamples since it assumes that this files location is the root
   // directory for the data.
@@ -501,7 +502,7 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   string bgName = "cascade_negatives.txt";
   string infoName = "cascade_positives.txt";
   int numNeg = 0;
-  writeBgFile( rsw, bgName, &numNeg, CVAC_DataDir );
+  writeBgFile( rsw, bgName, &numNeg, CVAC_DataDir, callback );
 
 
   // set parameters to createsamples
@@ -513,7 +514,7 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   // run createsamples
   std::string vecFname = tempDir + "/cascade_positives.vec";
   int numPos = 0;
-  createSamples( rsw, samplesParams, infoName, vecFname, &numPos, CVAC_DataDir);
+  createSamples( rsw, samplesParams, infoName, vecFname, &numPos, CVAC_DataDir, callback);
   // invoke the actual training vec file needs extra positive samples
   // so we need to figure out how many to save back.
   // Determine the number of samples extra we need.  We need this
