@@ -121,7 +121,7 @@ namespace cvac
                              const string& _rDirTemp,int _originalIdx);
     rsMediaType getType(const LabelablePtr _pla);
     bool matchPurpose(int origIdx);
-    LabelablePtr RunSetIterator::cloneLabelablePtr(const LabelablePtr _pla, int frameNum);
+    LabelablePtr cloneLabelablePtr(const LabelablePtr _pla, int frameNum);
 
   public:    
     bool hasNext();
