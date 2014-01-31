@@ -44,12 +44,14 @@
 using namespace Ice;
 using namespace cvac;
 
-static std::string processLabelable(LabelablePtr lptr, RectangleLabels *rlabels, bool square, GetImageSizeFunction sfunc)
+static std::string processLabelable(string CVAC_DataDir,
+                                    LabelablePtr lptr, RectangleLabels *rlabels, bool square, 
+                                    GetImageSizeFunction sfunc)
 {    
   
         Substrate sub = lptr->sub;
         FilePath  filePath = sub.path;
-        std::string fname = filePath.directory.relativePath;
+        std::string fname = CVAC_DataDir + "/" + filePath.directory.relativePath;
         fname += std::string("/");
         fname += filePath.filename;
        
@@ -58,6 +60,7 @@ static std::string processLabelable(LabelablePtr lptr, RectangleLabels *rlabels,
         if (locptr.get() != NULL)
         {
             SilhouettePtr sptr = SilhouettePtr::dynamicCast(locptr->loc);
+            BBoxPtr bptr = BBoxPtr::dynamicCast(locptr->loc);
             if (sptr.get() != NULL)
             {
                 BBoxPtr lrect = new BBox();
@@ -112,7 +115,10 @@ static std::string processLabelable(LabelablePtr lptr, RectangleLabels *rlabels,
 
                 }
                 rlabels->rects.push_back(lrect);  
-            } 
+            } else if (bptr != NULL)
+            {
+                rlabels->rects.push_back(bptr);
+            }
             
         }else if (sfunc != NULL) {
             // Assume no location so return with and height of the image
@@ -181,7 +187,7 @@ int cvac::processLabelArtifactsToRects(cvac::RunSetWrapper &wrapper, cvac::RunSe
         tempLabels.rects = std::vector<BBoxPtr>();
         
         // Get the filename and the rectangles for this labelable
-        fname = processLabelable(labelable, &tempLabels, square, sfunc);
+        fname = processLabelable(cvacDataDir, labelable, &tempLabels, square, sfunc);
         if (lastFile.size() == 0)
             lastFile = fname;
         if (lastFile.compare(fname) != 0)
@@ -219,7 +225,7 @@ int cvac::processLabelArtifactsToRects(cvac::RunSetWrapper &wrapper, cvac::RunSe
  * listed then have a single rectangle of the size of the image file.
  */
 int cvac::processLabelArtifactsToRects(LabelableList *artifacts, GetImageSizeFunction sfunc, 
-                                        std::vector<RectangleLabels> *result, bool square)
+                                        std::vector<RectangleLabels> *result, bool square, string cvacDataDir)
 {
     int count = 0;
     if (NULL == artifacts)
@@ -236,7 +242,7 @@ int cvac::processLabelArtifactsToRects(LabelableList *artifacts, GetImageSizeFun
         tempLabels.rects = std::vector<BBoxPtr>();
         LabelablePtr lptr = (*it);
         // Get the filename and the rectangles for this labelable
-        fname = processLabelable(lptr, &tempLabels, square, sfunc);
+        fname = processLabelable(cvacDataDir, lptr, &tempLabels, square, sfunc);
         
         if (lastFile.size() != 0 && lastFile.compare(fname) != 0)
         { // IF we have a new file name write out the old data

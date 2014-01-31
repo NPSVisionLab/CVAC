@@ -62,6 +62,7 @@ RunSetIterator::RunSetIterator(RunSetWrapper* _rsw,RunSetConstraint& _cons,
   }      
 
   mConstraintType = _cons.mimeTypes;
+  mConstraintPurpose = _cons.compatiblePurpose;
 
   //////////////////////////////////////////////////////////////////////////    
   mConv_openCV_i2i = new MediaConverter_openCV_i2i(_sman);
@@ -190,14 +191,63 @@ bool RunSetIterator::makeList(ResultSet& _resultSet)
   return true;
 }
 
+// Create a new Labelable that is consistant with the target type.  If we have a video source type and
+// and a image target type then convert the Labelable from a video type to image type. We need
+// to new it since the contents will be changed.  For now we assume the target type will always be
+// an image target type.
+LabelablePtr RunSetIterator::cloneLabelablePtr(const LabelablePtr _pla, int frameNum)
+{
+  LabelablePtr result;
+  LabeledLocationPtr locptr = LabeledLocationPtr::dynamicCast(_pla);
+  LabeledVideoSegmentPtr vsptr = LabeledVideoSegmentPtr::dynamicCast(_pla);
+  LabeledTrackPtr tptr = LabeledTrackPtr::dynamicCast(_pla);
+  if (locptr)
+  {
+    locptr = new LabeledLocation(*locptr);
+    result = (LabelablePtr)locptr;
+  }else if (vsptr)
+  {
+    locptr = new LabeledLocation();
+    locptr->loc = vsptr->loc;
+    result = (LabelablePtr)locptr;
+  }else if (tptr && frameNum != -1)
+  {
+    FrameLocationList frames = tptr->keyframesLocations;
+    FrameLocationList::iterator it;
+    for (it = frames.begin(); it != frames.end(); it++)
+    {
+        FrameLocation floc = *it;
+        if (floc.frame.framecnt == frameNum)
+        {
+            locptr = new LabeledLocation();
+            locptr->loc = floc.loc;
+            break;
+        }
+    }
+    if (locptr != NULL)
+        //result = LabelablePtr::dynamicCast(locptr);
+        result = (LabelablePtr)locptr;
+    else
+    {
+        localAndClientMsg(VLogger::WARN, mCallback2Client,
+          "Could not find frame number %d to get labelable\n",
+          frameNum);
+        result = new Labelable();
+    }
+  }else
+  {
+    result = new Labelable(*_pla);
+  }
+  return result;
+}
 
 bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
-                                         const rsMediaType& _targerType,
+                                         const rsMediaType& _targetType,
                                          MediaConverter* _pConv,
                                          const string& _rDirTemp,int _originalIdx)
 {
   string tFileNameOld = _pla->sub.path.filename;
-  string tFileNameNew = tFileNameOld + "." + _targerType;
+  string tFileNameNew = tFileNameOld + "." + _targetType;
   string tRDirOld = _pla->sub.path.directory.relativePath;
   string tRDirNew = _rDirTemp;
 
@@ -218,7 +268,10 @@ bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
         return false;
       }
 
-      LabelablePtr _la = new Labelable();
+      int frameNum = -1;
+      if(!tAuxInfo.empty())
+          frameNum = atoi(tAuxInfo[_idx].c_str());
+      LabelablePtr _la = cloneLabelablePtr(_pla, frameNum);
       _la->sub.isImage = true;
       _la->sub.isVideo = !(_la->sub.isImage);
       _la->sub.path.filename = (*tItrFilename);
@@ -289,20 +342,60 @@ void RunSetIterator::showList()
   }
 }
 
+bool RunSetIterator::matchPurpose(int origIdx)
+{
+  Label lab = mResultSet.results[origIdx].original->lab;
+  std::string pname = getPurposeName(mConstraintPurpose);
+  if (pname.compare("any") != 0 && pname.compare("unpurposed") != 0)
+  { // only return labelables that match the contraint purpose
+      if (lab.hasLabel && pname.compare(lab.name) == 0)
+        return true;
+      else
+        return false;
+  }else
+      return true;
+}
+
 bool RunSetIterator::hasNext()
 {
   if(mListItr != mList.end())
+  {
+    while (matchPurpose(*mListOrginalIdxItr) == false)
+    {
+        mListItr++;
+        mListOrginalIdxItr++;
+        if (mListItr == mList.end())
+            return false;
+    }
     return true;
-  else
+  }else
+  {
     return false;
+  }
 }
 
 LabelablePtr RunSetIterator::getNext()
 {
   if(hasNext())
   {
+    LabelablePtr lptr = *mListItr;
+    int idx = *mListOrginalIdxItr;
     mListOrginalIdxItr++;
-    return (*(mListItr++));
+    mListItr++;
+    while (matchPurpose(idx) == false)
+    {
+        if (mListItr == mList.end())
+        {
+            localAndClientMsg(VLogger::WARN, NULL,
+               "There is no more elements.\n");
+            return NULL;
+        }
+        lptr = *mListItr;
+        idx = *mListOrginalIdxItr;
+        mListOrginalIdxItr++;
+        mListItr++;
+    }
+    return lptr;
   }
   else
   {

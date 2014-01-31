@@ -85,11 +85,13 @@ namespace cvac
                            const vector<rsMediaType>& _types,
                            rsMediaType& _resType);    
   private:	//main functions
-    void addToList(const LabelablePtr _pla,const rsMediaType _type);
+    void addToList(const LabelablePtr _pla,const rsMediaType _type, 
+                     cvac::Purpose);
     bool makeBasicList();	
     bool makeBasicList_parse(const string& _absDir,bool _recursive,
                              const string& _relDir,
-                             const vector<rsMediaType>& _types);	
+                             const vector<rsMediaType>& _types,
+                             cvac::Purpose purpose);	
   public:     
     ResultSet& getResultSet();
     vector<rsMediaType>& getResultSetType();

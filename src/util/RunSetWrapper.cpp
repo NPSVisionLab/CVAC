@@ -167,7 +167,7 @@ bool RunSetWrapper::isInRunset(const string&_rDir,const string& _fname,
 
 
 //---------------------------------------------------------------------------
-void RunSetWrapper::addToList(const LabelablePtr _pla,const rsMediaType _type)
+void RunSetWrapper::addToList(const LabelablePtr _pla,const rsMediaType _type, cvac::Purpose purpose)
 {
   if(!_pla)
   {
@@ -177,6 +177,8 @@ void RunSetWrapper::addToList(const LabelablePtr _pla,const rsMediaType _type)
 
   cvac::Result  _result;
   _result.original = _pla;
+  _result.original->lab.hasLabel = true;
+  _result.original->lab.name = getPurposeName(purpose);
   mResultSet.results.push_back(_result);
   mResultSetType.push_back(_type);
 }
@@ -205,6 +207,7 @@ bool RunSetWrapper::makeBasicList()
     
 	for(out_itr=list_out.begin();out_itr!=list_out.end();out_itr++)
     {
+      cvac::Purpose curPurpose = (*out_itr)->pur;
       out_seq=PurposedLabelableSeqPtr::dynamicCast(*out_itr);
       out_dir=PurposedDirectoryPtr::dynamicCast(*out_itr);
 
@@ -240,7 +243,7 @@ bool RunSetWrapper::makeBasicList()
             //////////////////////////////////////////////////////////////////////////            
             
             //fileExists routine is not working for a symbolic link
-            addToList(in_la,getType(symlinkFullPath));
+            addToList(in_la,getType(symlinkFullPath), curPurpose);
             /*            
             if(fileExists(symlinkFullPath)) 
               addToList(in_la,getType(symlinkFullPath));
@@ -260,7 +263,7 @@ bool RunSetWrapper::makeBasicList()
       {
         string tRelativePath = out_dir->directory.relativePath;
         string tAbsPath = convertToAbsDirectory(tRelativePath,mMediaRootPath);			
-        if(!makeBasicList_parse(tAbsPath,true,tRelativePath,out_dir->fileSuffixes))
+        if(!makeBasicList_parse(tAbsPath,true,tRelativePath,out_dir->fileSuffixes, curPurpose))
           return false;
       }
       else
@@ -277,7 +280,8 @@ bool RunSetWrapper::makeBasicList()
 
 //---------------------------------------------------------------------------
 bool RunSetWrapper::makeBasicList_parse(const string& _absDir,bool _recursive,
-                                   const string& _rDir,const vector<rsMediaType>& _types)
+                                   const string& _rDir,const vector<rsMediaType>& _types,
+                                   cvac::Purpose purpose)
 {
     struct dirent *walker;
     DIR *dir;
@@ -307,7 +311,7 @@ bool RunSetWrapper::makeBasicList_parse(const string& _absDir,bool _recursive,
       {
         dirNext = _absDir + "/" + string(walker->d_name);
         string tRDir = _rDir + "/" + string(walker->d_name);
-        if(!makeBasicList_parse(dirNext, _recursive,tRDir,_types))
+        if(!makeBasicList_parse(dirNext, _recursive,tRDir,_types, purpose))
           return false;
       }
       else if (walker->d_type == DT_REG)
@@ -321,7 +325,7 @@ bool RunSetWrapper::makeBasicList_parse(const string& _absDir,bool _recursive,
           //tpla->sub.isVideo = false;
           tpla->sub.path.filename = tfname;
           tpla->sub.path.directory.relativePath = _rDir;
-          addToList(tpla,tType);
+          addToList(tpla,tType, purpose);
         }        
       }
     }
