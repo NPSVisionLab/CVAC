@@ -88,6 +88,7 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   FILE (COPY ${OPENCV_PY_PY} DESTINATION ${PYTHON_BUILD_DIR} )
 ENDIF()
 
+SET (PYTHON_PACK_NAME "CVAC")
 # Next copy over ice. Since we need to change directory name
 # from python to ice copy over the files.  Not sliced so do it now
 FILE (GLOB ICE_FILES ${ICE_ROOT}/python/*)

@@ -11,6 +11,8 @@ Ice.ACM.Client=0
 ## CVAC Services Config:
 CVAC.DataDir = data
 
+VideoValidatorForOpenCVClient.Proxy = VideoValidatorForOpenCV:tcp -p 10108
+
 bowIceTrain.Proxy=bowTrain:tcp -p 10103
 
 # CVPerf Detector CvFaces

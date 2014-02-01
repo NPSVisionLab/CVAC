@@ -190,16 +190,16 @@ void CascadeTrainI::writeBgFile(cvac::RunSetWrapper& rsw,
   int imgCnt = 0;
 // Fetch all the neg samples
   RunSetConstraint constraint;
-  constraint.compatiblePurpose = std::string("Negative");
+  constraint.compatiblePurpose.ptype = NEGATIVE;
   constraint.spacesInFilenamesPermitted = false;
-  //constraint.addType("png");
-  //constraint.addType("tif");
+  constraint.addType("png");
+  constraint.addType("tif");
   constraint.addType("jpg");
 
 
   imgCnt = cvac::processLabelArtifactsToRects(rsw, constraint, 
                                        CVAC_DataDir, mServiceMan,
-                                       callback, NULL, 0,
+                                       callback, NULL, 1,
                                        &negRectlabels, true);
   
   ofstream backgroundFile;
@@ -260,15 +260,15 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
   int imgCnt = 0;
   // Fetch all the positive samples
   RunSetConstraint constraint;
-  constraint.compatiblePurpose = std::string("Positive");
+  constraint.compatiblePurpose.ptype = POSITIVE;
   constraint.spacesInFilenamesPermitted = false;
-  //constraint.addType("png");
-  //constraint.addType("tif");
+  constraint.addType("png");
+  constraint.addType("tif");
   constraint.addType("jpg");
 
   imgCnt = cvac::processLabelArtifactsToRects(rsw, constraint, 
                                        CVAC_DataDir, mServiceMan,
-                                       callback, getImageWidthHeight, 0,
+                                       callback, getImageWidthHeight, 1,
                                        &posRectlabels, true);
 
   ofstream infoFile;
@@ -484,7 +484,7 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   // and provide symbolic links to files that name spaces in there names.
   cvac::RunSet tempRunSet = runset;
   // Add the cvac data dir to the directories in the runset
-  addDataPath(tempRunSet, CVAC_DataDir);
+  //addDataPath(tempRunSet, CVAC_DataDir);
   // The symbolic links are created in a tempdir so lets remember it so we can delete it at the end
   std::string tempRSDir = fixupRunSet(tempRunSet, CVAC_DataDir);
   // Iterate over runset, inserting each POSITIVE Labelable into
