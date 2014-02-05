@@ -159,6 +159,9 @@ bool RunSetIterator::makeList(ResultSet& _resultSet,
             mConvertibleItr->second,mMediaTempDirectory,k))
           {
             //this case may be very rare: error while converting, stopping by user interruption
+            localAndClientMsg(VLogger::ERROR, mCallback2Client,
+              "Conversion is stopped by error or user interruption for %s.\n",
+              (_resultSet.results[k].original)->sub.path.filename.c_str());
             return false;
           }
 
@@ -259,6 +262,8 @@ bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
   vector<string> tAuxInfo;
   if(_pConv->convert(tAbsPathOld,tAbsDirNew,tFileNameNew,tListFileName,tAuxInfo))
   {
+    //if tAuxInfo is not empty, above conversion comes from "video2image"
+    //the variable "tAuxInfo" includes frame numbers
     vector<string>::iterator tItrFilename = tListFileName.begin();
     for(int _idx=0;tItrFilename!=tListFileName.end();tItrFilename++,_idx++)
     {
@@ -271,17 +276,18 @@ bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
       int frameNum = -1;
       if(!tAuxInfo.empty())
           frameNum = atoi(tAuxInfo[_idx].c_str());
+      
       LabelablePtr _la = cloneLabelablePtr(_pla, frameNum);
       _la->sub.isImage = true;
+      //currently, conversion target is only an image.
+      //refer to the function in RunSetWrapper: getTypeMacro
       _la->sub.isVideo = !(_la->sub.isImage);
       _la->sub.path.filename = (*tItrFilename);
       _la->sub.path.directory.relativePath = tRDirNew;
+      _la->lab.hasLabel = false;
 
       if(!tAuxInfo.empty())
-      {
-        _la->lab.hasLabel = false;  
         _la->lab.name = tAuxInfo[_idx];
-      }
       else
         _la->lab.name = "";
       /*
@@ -418,216 +424,41 @@ ResultSet& RunSetIterator::getResultSet()
 
 void RunSetIterator::makeConversionList()
 {  
-  mConvertible["bmp2dib"] = mConv_openCV_i2i;
-  mConvertible["bmp2jpeg"] = mConv_openCV_i2i;
-  mConvertible["bmp2jpg"] = mConv_openCV_i2i;
-  mConvertible["bmp2jpe"] = mConv_openCV_i2i;
-  mConvertible["bmp2jp2"] = mConv_openCV_i2i;
-  mConvertible["bmp2png"] = mConv_openCV_i2i;
-  mConvertible["bmp2pbm"] = mConv_openCV_i2i;
-  mConvertible["bmp2pgm"] = mConv_openCV_i2i;
-  mConvertible["bmp2ppm"] = mConv_openCV_i2i;
-  mConvertible["bmp2sr"] = mConv_openCV_i2i;
-  mConvertible["bmp2ras"] = mConv_openCV_i2i;
-  mConvertible["bmp2tiff"] = mConv_openCV_i2i;
-  mConvertible["bmp2tif"] = mConv_openCV_i2i;
-  mConvertible["dib2bmp"] = mConv_openCV_i2i;
-  mConvertible["dib2jpeg"] = mConv_openCV_i2i;
-  mConvertible["dib2jpg"] = mConv_openCV_i2i;
-  mConvertible["dib2jpe"] = mConv_openCV_i2i;
-  mConvertible["dib2jp2"] = mConv_openCV_i2i;
-  mConvertible["dib2png"] = mConv_openCV_i2i;
-  mConvertible["dib2pbm"] = mConv_openCV_i2i;
-  mConvertible["dib2pgm"] = mConv_openCV_i2i;
-  mConvertible["dib2ppm"] = mConv_openCV_i2i;
-  mConvertible["dib2sr"] = mConv_openCV_i2i;
-  mConvertible["dib2ras"] = mConv_openCV_i2i;
-  mConvertible["dib2tiff"] = mConv_openCV_i2i;
-  mConvertible["dib2tif"] = mConv_openCV_i2i;
-  mConvertible["jpeg2bmp"] = mConv_openCV_i2i;
-  mConvertible["jpeg2dib"] = mConv_openCV_i2i;
-  mConvertible["jpeg2jpg"] = mConv_openCV_i2i;
-  mConvertible["jpeg2jpe"] = mConv_openCV_i2i;
-  mConvertible["jpeg2jp2"] = mConv_openCV_i2i;
-  mConvertible["jpeg2png"] = mConv_openCV_i2i;
-  mConvertible["jpeg2pbm"] = mConv_openCV_i2i;
-  mConvertible["jpeg2pgm"] = mConv_openCV_i2i;
-  mConvertible["jpeg2ppm"] = mConv_openCV_i2i;
-  mConvertible["jpeg2sr"] = mConv_openCV_i2i;
-  mConvertible["jpeg2ras"] = mConv_openCV_i2i;
-  mConvertible["jpeg2tiff"] = mConv_openCV_i2i;
-  mConvertible["jpeg2tif"] = mConv_openCV_i2i;
-  mConvertible["jpg2bmp"] = mConv_openCV_i2i;
-  mConvertible["jpg2dib"] = mConv_openCV_i2i;
-  mConvertible["jpg2jpeg"] = mConv_openCV_i2i;
-  mConvertible["jpg2jpe"] = mConv_openCV_i2i;
-  mConvertible["jpg2jp2"] = mConv_openCV_i2i;
-  mConvertible["jpg2png"] = mConv_openCV_i2i;
-  mConvertible["jpg2pbm"] = mConv_openCV_i2i;
-  mConvertible["jpg2pgm"] = mConv_openCV_i2i;
-  mConvertible["jpg2ppm"] = mConv_openCV_i2i;
-  mConvertible["jpg2sr"] = mConv_openCV_i2i;
-  mConvertible["jpg2ras"] = mConv_openCV_i2i;
-  mConvertible["jpg2tiff"] = mConv_openCV_i2i;
-  mConvertible["jpg2tif"] = mConv_openCV_i2i;
-  mConvertible["jpe2bmp"] = mConv_openCV_i2i;
-  mConvertible["jpe2dib"] = mConv_openCV_i2i;
-  mConvertible["jpe2jpeg"] = mConv_openCV_i2i;
-  mConvertible["jpe2jpg"] = mConv_openCV_i2i;
-  mConvertible["jpe2jp2"] = mConv_openCV_i2i;
-  mConvertible["jpe2png"] = mConv_openCV_i2i;
-  mConvertible["jpe2pbm"] = mConv_openCV_i2i;
-  mConvertible["jpe2pgm"] = mConv_openCV_i2i;
-  mConvertible["jpe2ppm"] = mConv_openCV_i2i;
-  mConvertible["jpe2sr"] = mConv_openCV_i2i;
-  mConvertible["jpe2ras"] = mConv_openCV_i2i;
-  mConvertible["jpe2tiff"] = mConv_openCV_i2i;
-  mConvertible["jpe2tif"] = mConv_openCV_i2i;
-  mConvertible["jp22bmp"] = mConv_openCV_i2i;
-  mConvertible["jp22dib"] = mConv_openCV_i2i;
-  mConvertible["jp22jpeg"] = mConv_openCV_i2i;
-  mConvertible["jp22jpg"] = mConv_openCV_i2i;
-  mConvertible["jp22jpe"] = mConv_openCV_i2i;
-  mConvertible["jp22png"] = mConv_openCV_i2i;
-  mConvertible["jp22pbm"] = mConv_openCV_i2i;
-  mConvertible["jp22pgm"] = mConv_openCV_i2i;
-  mConvertible["jp22ppm"] = mConv_openCV_i2i;
-  mConvertible["jp22sr"] = mConv_openCV_i2i;
-  mConvertible["jp22ras"] = mConv_openCV_i2i;
-  mConvertible["jp22tiff"] = mConv_openCV_i2i;
-  mConvertible["jp22tif"] = mConv_openCV_i2i;
-  mConvertible["png2bmp"] = mConv_openCV_i2i;
-  mConvertible["png2dib"] = mConv_openCV_i2i;
-  mConvertible["png2jpeg"] = mConv_openCV_i2i;
-  mConvertible["png2jpg"] = mConv_openCV_i2i;
-  mConvertible["png2jpe"] = mConv_openCV_i2i;
-  mConvertible["png2jp2"] = mConv_openCV_i2i;
-  mConvertible["png2pbm"] = mConv_openCV_i2i;
-  mConvertible["png2pgm"] = mConv_openCV_i2i;
-  mConvertible["png2ppm"] = mConv_openCV_i2i;
-  mConvertible["png2sr"] = mConv_openCV_i2i;
-  mConvertible["png2ras"] = mConv_openCV_i2i;
-  mConvertible["png2tiff"] = mConv_openCV_i2i;
-  mConvertible["png2tif"] = mConv_openCV_i2i;
-  mConvertible["pbm2bmp"] = mConv_openCV_i2i;
-  mConvertible["pbm2dib"] = mConv_openCV_i2i;
-  mConvertible["pbm2jpeg"] = mConv_openCV_i2i;
-  mConvertible["pbm2jpg"] = mConv_openCV_i2i;
-  mConvertible["pbm2jpe"] = mConv_openCV_i2i;
-  mConvertible["pbm2jp2"] = mConv_openCV_i2i;
-  mConvertible["pbm2png"] = mConv_openCV_i2i;
-  mConvertible["pbm2pgm"] = mConv_openCV_i2i;
-  mConvertible["pbm2ppm"] = mConv_openCV_i2i;
-  mConvertible["pbm2sr"] = mConv_openCV_i2i;
-  mConvertible["pbm2ras"] = mConv_openCV_i2i;
-  mConvertible["pbm2tiff"] = mConv_openCV_i2i;
-  mConvertible["pbm2tif"] = mConv_openCV_i2i;
-  mConvertible["pgm2bmp"] = mConv_openCV_i2i;
-  mConvertible["pgm2dib"] = mConv_openCV_i2i;
-  mConvertible["pgm2jpeg"] = mConv_openCV_i2i;
-  mConvertible["pgm2jpg"] = mConv_openCV_i2i;
-  mConvertible["pgm2jpe"] = mConv_openCV_i2i;
-  mConvertible["pgm2jp2"] = mConv_openCV_i2i;
-  mConvertible["pgm2png"] = mConv_openCV_i2i;
-  mConvertible["pgm2pbm"] = mConv_openCV_i2i;
-  mConvertible["pgm2ppm"] = mConv_openCV_i2i;
-  mConvertible["pgm2sr"] = mConv_openCV_i2i;
-  mConvertible["pgm2ras"] = mConv_openCV_i2i;
-  mConvertible["pgm2tiff"] = mConv_openCV_i2i;
-  mConvertible["pgm2tif"] = mConv_openCV_i2i;
-  mConvertible["ppm2bmp"] = mConv_openCV_i2i;
-  mConvertible["ppm2dib"] = mConv_openCV_i2i;
-  mConvertible["ppm2jpeg"] = mConv_openCV_i2i;
-  mConvertible["ppm2jpg"] = mConv_openCV_i2i;
-  mConvertible["ppm2jpe"] = mConv_openCV_i2i;
-  mConvertible["ppm2jp2"] = mConv_openCV_i2i;
-  mConvertible["ppm2png"] = mConv_openCV_i2i;
-  mConvertible["ppm2pbm"] = mConv_openCV_i2i;
-  mConvertible["ppm2pgm"] = mConv_openCV_i2i;
-  mConvertible["ppm2sr"] = mConv_openCV_i2i;
-  mConvertible["ppm2ras"] = mConv_openCV_i2i;
-  mConvertible["ppm2tiff"] = mConv_openCV_i2i;
-  mConvertible["ppm2tif"] = mConv_openCV_i2i;
-  mConvertible["sr2bmp"] = mConv_openCV_i2i;
-  mConvertible["sr2dib"] = mConv_openCV_i2i;
-  mConvertible["sr2jpeg"] = mConv_openCV_i2i;
-  mConvertible["sr2jpg"] = mConv_openCV_i2i;
-  mConvertible["sr2jpe"] = mConv_openCV_i2i;
-  mConvertible["sr2jp2"] = mConv_openCV_i2i;
-  mConvertible["sr2png"] = mConv_openCV_i2i;
-  mConvertible["sr2pbm"] = mConv_openCV_i2i;
-  mConvertible["sr2pgm"] = mConv_openCV_i2i;
-  mConvertible["sr2ppm"] = mConv_openCV_i2i;
-  mConvertible["sr2ras"] = mConv_openCV_i2i;
-  mConvertible["sr2tiff"] = mConv_openCV_i2i;
-  mConvertible["sr2tif"] = mConv_openCV_i2i;
-  mConvertible["ras2bmp"] = mConv_openCV_i2i;
-  mConvertible["ras2dib"] = mConv_openCV_i2i;
-  mConvertible["ras2jpeg"] = mConv_openCV_i2i;
-  mConvertible["ras2jpg"] = mConv_openCV_i2i;
-  mConvertible["ras2jpe"] = mConv_openCV_i2i;
-  mConvertible["ras2jp2"] = mConv_openCV_i2i;
-  mConvertible["ras2png"] = mConv_openCV_i2i;
-  mConvertible["ras2pbm"] = mConv_openCV_i2i;
-  mConvertible["ras2pgm"] = mConv_openCV_i2i;
-  mConvertible["ras2ppm"] = mConv_openCV_i2i;
-  mConvertible["ras2sr"] = mConv_openCV_i2i;
-  mConvertible["ras2tiff"] = mConv_openCV_i2i;
-  mConvertible["ras2tif"] = mConv_openCV_i2i;
-  mConvertible["tiff2bmp"] = mConv_openCV_i2i;
-  mConvertible["tiff2dib"] = mConv_openCV_i2i;
-  mConvertible["tiff2jpeg"] = mConv_openCV_i2i;
-  mConvertible["tiff2jpg"] = mConv_openCV_i2i;
-  mConvertible["tiff2jpe"] = mConv_openCV_i2i;
-  mConvertible["tiff2jp2"] = mConv_openCV_i2i;
-  mConvertible["tiff2png"] = mConv_openCV_i2i;
-  mConvertible["tiff2pbm"] = mConv_openCV_i2i;
-  mConvertible["tiff2pgm"] = mConv_openCV_i2i;
-  mConvertible["tiff2ppm"] = mConv_openCV_i2i;
-  mConvertible["tiff2sr"] = mConv_openCV_i2i;
-  mConvertible["tiff2ras"] = mConv_openCV_i2i;
-  mConvertible["tiff2tif"] = mConv_openCV_i2i;
-  mConvertible["tif2bmp"] = mConv_openCV_i2i;
-  mConvertible["tif2dib"] = mConv_openCV_i2i;
-  mConvertible["tif2jpeg"] = mConv_openCV_i2i;
-  mConvertible["tif2jpg"] = mConv_openCV_i2i;
-  mConvertible["tif2jpe"] = mConv_openCV_i2i;
-  mConvertible["tif2jp2"] = mConv_openCV_i2i;
-  mConvertible["tif2png"] = mConv_openCV_i2i;
-  mConvertible["tif2pbm"] = mConv_openCV_i2i;
-  mConvertible["tif2pgm"] = mConv_openCV_i2i;
-  mConvertible["tif2ppm"] = mConv_openCV_i2i;
-  mConvertible["tif2sr"] = mConv_openCV_i2i;
-  mConvertible["tif2ras"] = mConv_openCV_i2i;
-  mConvertible["tif2tiff"] = mConv_openCV_i2i;
+  //assuming openCV
+  const std::string _supportedImage[] = {"bmp","dib","jpeg","jpg","jpe","jp2",
+                                         "png","pbm","pgm","ppm","sr","ras",
+                                         "tiff","tif"};
 
+  //assuming openCV
+  const std::string _supportedVideo[] = {"mpg","mpeg"};
 
-  mConvertible["mpg2bmp"] = mConv_openCV_v2i;
-  mConvertible["mpg2dib"] = mConv_openCV_v2i;
-  mConvertible["mpg2jpeg"] = mConv_openCV_v2i;
-  mConvertible["mpg2jpg"] = mConv_openCV_v2i;
-  mConvertible["mpg2jpe"] = mConv_openCV_v2i;
-  mConvertible["mpg2jp2"] = mConv_openCV_v2i;
-  mConvertible["mpg2png"] = mConv_openCV_v2i;
-  mConvertible["mpg2pbm"] = mConv_openCV_v2i;
-  mConvertible["mpg2pgm"] = mConv_openCV_v2i;
-  mConvertible["mpg2sr"] = mConv_openCV_v2i;
-  mConvertible["mpg2ras"] = mConv_openCV_v2i;
-  mConvertible["mpg2tiff"] = mConv_openCV_v2i;
-  mConvertible["mpg2tif"] = mConv_openCV_v2i;
+  vector<string> typeImage;
+  for(int k = 0;k<(sizeof(_supportedImage)/sizeof(_supportedImage[0]));k++)
+    typeImage.push_back(_supportedImage[k]);
 
-  mConvertible["mpeg2bmp"] = mConv_openCV_v2i;
-  mConvertible["mpeg2dib"] = mConv_openCV_v2i;
-  mConvertible["mpeg2jpeg"] = mConv_openCV_v2i;
-  mConvertible["mpeg2jpg"] = mConv_openCV_v2i;
-  mConvertible["mpeg2jpe"] = mConv_openCV_v2i;
-  mConvertible["mpeg2jp2"] = mConv_openCV_v2i;
-  mConvertible["mpeg2png"] = mConv_openCV_v2i;
-  mConvertible["mpeg2pbm"] = mConv_openCV_v2i;
-  mConvertible["mpeg2pgm"] = mConv_openCV_v2i;
-  mConvertible["mpeg2sr"] = mConv_openCV_v2i;
-  mConvertible["mpeg2ras"] = mConv_openCV_v2i;
-  mConvertible["mpeg2tiff"] = mConv_openCV_v2i;
-  mConvertible["mpeg2tif"] = mConv_openCV_v2i;
+  vector<string> typeVideo;
+  for(int k = 0;k<(sizeof(_supportedVideo)/sizeof(_supportedVideo[0]));k++)
+    typeVideo.push_back(_supportedVideo[k]);
+  
+  int i,j;
+  for(i=0;i<typeImage.size();i++)
+  {
+    for(j=0;j<typeImage.size();j++)
+    {
+	  if(i==j)
+	    continue;
+	  else
+	  {
+	    string msg = typeImage[i] + "2" + typeImage[j];
+		mConvertible[msg.c_str()] = mConv_openCV_i2i;
+	  }
+    }
+    
+    for(j=0;j<typeVideo.size();j++)
+    {
+	  string msg = typeVideo[j] + "2" + typeImage[i];
+	  mConvertible[msg.c_str()] = mConv_openCV_v2i;
+	}
+  }
 }
 

@@ -72,7 +72,6 @@ namespace cvac
       mimeTypes.clear();
     }
   };
-
 //--------------------------------------------------------------------------- 
 
   class RunSetIterator
@@ -119,7 +118,6 @@ namespace cvac
                              const rsMediaType& _targerType,
                              MediaConverter* _pConv,
                              const string& _rDirTemp,int _originalIdx);
-    rsMediaType getType(const LabelablePtr _pla);
     bool matchPurpose(int origIdx);
     LabelablePtr cloneLabelablePtr(const LabelablePtr _pla, int frameNum);
 

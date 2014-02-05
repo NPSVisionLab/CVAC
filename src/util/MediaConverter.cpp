@@ -63,7 +63,7 @@ bool MediaConverter_openCV_i2i::convert(const string& _srcAbsPath,
   cv::Mat tImg = cv::imread(_srcAbsPath);
   if(tImg.empty())
   {    
-    localAndClientMsg(VLogger::WARN, NULL,"Conversion error from %s to %s.\n",
+    localAndClientMsg(VLogger::ERROR, NULL,"Conversion error from %s to %s.\n",
       _srcAbsPath.c_str(),tDesPath.c_str());
     return false;
   }
@@ -100,9 +100,9 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
                                         const string& _desAbsDir,
                                         const string& _desFilename,
                                         vector<string>& _resFilename,
-                                        vector<string>& _resAuxInfo)
+                                        vector<string>& _resFrameInfo)
 {
-  _resAuxInfo.clear();
+  _resFrameInfo.clear();
   _resFilename.clear();
    string tDesAbsPath = _desAbsDir + "/" + _desFilename;
 
@@ -117,7 +117,7 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
     tnFrame = (long)mVideoFile.get(CV_CAP_PROP_FRAME_COUNT);
   else
   {
-    localAndClientMsg(VLogger::WARN, NULL,"Conversion error from %s to %s.\n",
+    localAndClientMsg(VLogger::ERROR, NULL,"Conversion error from %s to %s.\n",
       _srcAbsPath.c_str(),tDesAbsPath.c_str());
     return false;
   }
@@ -161,7 +161,7 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
         if(imwrite(tDesAbsPath,tMatFrame))
         {
           _resFilename.push_back(tfileNameNew);
-          _resAuxInfo.push_back(ss.str());
+          _resFrameInfo.push_back(ss.str());
         }
         else
         {
