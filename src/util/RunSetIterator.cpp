@@ -232,10 +232,9 @@ LabelablePtr RunSetIterator::cloneLabelablePtr(const LabelablePtr _pla, int fram
         result = (LabelablePtr)locptr;
     else
     {
-        localAndClientMsg(VLogger::WARN, mCallback2Client,
-          "Could not find frame number %d to get labelable\n",
-          frameNum);
-        result = new Labelable();
+        // The object is not in this frame to return NULL since we don't have
+        // an object.
+        result = NULL;
     }
   }else
   {
@@ -278,28 +277,31 @@ bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
           frameNum = atoi(tAuxInfo[_idx].c_str());
       
       LabelablePtr _la = cloneLabelablePtr(_pla, frameNum);
-      _la->sub.isImage = true;
-      //currently, conversion target is only an image.
-      //refer to the function in RunSetWrapper: getTypeMacro
-      _la->sub.isVideo = !(_la->sub.isImage);
-      _la->sub.path.filename = (*tItrFilename);
-      _la->sub.path.directory.relativePath = tRDirNew;
-      _la->lab.hasLabel = false;
-
-      if(!tAuxInfo.empty())
-        _la->lab.name = tAuxInfo[_idx];
-      else
-        _la->lab.name = "";
-      /*
-      if(!tAuxInfo.empty())
+      if (_la != NULL)
       {
-        FrameLocation _tFrm;
-        _tFrm.frame.time = 0;
-        _tFrm.frame.framecnt = atoi(tAuxInfo[_idx].c_str());
-        (static_cast<LabeledTrack*>(_la.get()))->keyframesLocations.push_back(_tFrm);
-      }
-      */
-      addToList(_la,_originalIdx);
+          _la->sub.isImage = true;
+          //currently, conversion target is only an image.
+          //refer to the function in RunSetWrapper: getTypeMacro
+          _la->sub.isVideo = !(_la->sub.isImage);
+          _la->sub.path.filename = (*tItrFilename);
+          _la->sub.path.directory.relativePath = tRDirNew;
+          _la->lab.hasLabel = false;
+
+          if(!tAuxInfo.empty())
+            _la->lab.name = tAuxInfo[_idx];
+          else
+            _la->lab.name = "";
+          /*
+          if(!tAuxInfo.empty())
+          {
+            FrameLocation _tFrm;
+            _tFrm.frame.time = 0;
+            _tFrm.frame.framecnt = atoi(tAuxInfo[_idx].c_str());
+            (static_cast<LabeledTrack*>(_la.get()))->keyframesLocations.push_back(_tFrm);
+          }
+          */
+          addToList(_la,_originalIdx);
+       }
     }
     return true;
   }

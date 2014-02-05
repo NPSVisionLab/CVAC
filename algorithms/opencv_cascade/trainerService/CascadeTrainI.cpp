@@ -426,7 +426,19 @@ bool CascadeTrainI::checkPurposedLists(
     }
     if ((artifacts.size() < MIN_SAMPLE_SIZE))
     {
-        tooSmall = true;
+        bool hasVideo = false;
+        LabelableList::iterator it;
+        for (it = artifacts.begin(); it < artifacts.end(); it++)
+        {
+            LabelablePtr lab = *it;
+            if (lab->sub.isVideo)
+            {
+                hasVideo = true;
+                break;
+            }
+        }
+        if (hasVideo == false)
+            tooSmall = true;
     }
  
   }
