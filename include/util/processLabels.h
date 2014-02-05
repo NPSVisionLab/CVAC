@@ -84,7 +84,8 @@ namespace cvac
    * @return the number of added rectangles in the result vector. 
    */
    int processLabelArtifactsToRects( LabelableList* artifacts, GetImageSizeFunction sfunc, 
-                                     std::vector<RectangleLabels> *result, bool square);
+                                     std::vector<RectangleLabels> *result, bool square,
+                                     std::string cvacDataDir);
     
    /**
     * Cleanup the memory allocated inside the RectangleLabels but not the RectangleLabels itself

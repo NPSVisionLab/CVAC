@@ -40,6 +40,22 @@
 using namespace Ice;
 using namespace cvac;
 
+const std::string _typeMacro_Image[] = {"bmp","dib","jpeg","jpg","jpe","jp2",
+                                  "png","pbm","pgm","ppm","sr","ras",
+                                  "tiff","tif","gif","giff","emf","pct",
+                                  "pcx","pic","pix","vga","wmf"};
+
+const std::string _typeMacro_Video[] = {"mpg","mpeg","avi","wmv","wmp","wm",
+                                  "asf","mpe","m1v","m2v","mpv2","mp2v",
+                                  "dat","ts","tp","tpr","trp","vob","ifo",
+                                  "ogm","ogv","mp4","m4v","m4p","m4b","3gp",
+                                  "3gpp","3g2","3gp2","mkv","rm","ram",
+                                  "rmvb","rpm","flv","swf","mov","qt",
+                                  "amr","nsv","dpg","m2ts","m2t","mts",
+                                  "k3g","skm","evo","nsr","amv","divx","webm"};
+
+const std::string _typeMacro[] = {"image","video","etc"};
+
 //---------------------------------------------------------------------------
 RunSetWrapper::RunSetWrapper(const RunSet* _runset,string _mediaRootPath,
                              ServiceManager *_sman)
@@ -47,7 +63,16 @@ RunSetWrapper::RunSetWrapper(const RunSet* _runset,string _mediaRootPath,
   mFlagIntialize = false;
   mRunset = NULL;
   mMediaRootPath = "";	
-  mServiceMan = NULL;	
+  mServiceMan = NULL;  
+
+  for(int k = 0;k<(sizeof(_typeMacro_Image)/sizeof(_typeMacro_Image[0]));k++)
+    mTypeMacro_Image.push_back(_typeMacro_Image[k]);
+
+  for(int k = 0;k<(sizeof(_typeMacro_Video)/sizeof(_typeMacro_Video[0]));k++)
+    mTypeMacro_Video.push_back(_typeMacro_Video[k]); 
+
+  for(int k = 0;k<(sizeof(_typeMacro)/sizeof(_typeMacro[0]));k++)
+    mTypeMacro.push_back(_typeMacro[k]);
 
   if(_runset)
   {
@@ -83,14 +108,14 @@ RunSetWrapper::~RunSetWrapper()
 
 
 //---------------------------------------------------------------------------
-rsMediaType RunSetWrapper::getType(const string _aPath)
+rsMediaType RunSetWrapper::getTypeMicro(const string _aPath)
 {
-  string tExt = getFileExtension(_aPath);
+  string tExt = getFileExtension(_aPath);  
   return (rsMediaType)tExt;
 }
 
 //---------------------------------------------------------------------------
-rsMediaType RunSetWrapper::getType(const LabelablePtr _pla)
+rsMediaType RunSetWrapper::getTypeMicro(const LabelablePtr _pla)
 {
   rsMediaType tType = "unknown";
 
@@ -104,7 +129,7 @@ rsMediaType RunSetWrapper::getType(const LabelablePtr _pla)
     tAbsFilePath += "/";
     tAbsFilePath += _pla->sub.path.filename;
 
-    return getType(tAbsFilePath);
+    return getTypeMicro(tAbsFilePath);
   }	
 }
 
@@ -157,7 +182,7 @@ bool RunSetWrapper::isInRunset(const string&_rDir,const string& _fname,
 {
   //In future, fileType will be examined by accessing the file itself (not using the extension)
   //So, the directory is remained in this function.
-  _resType = getType(convertToAbsDirectory(_rDir) + "/" + _fname);
+  _resType = getTypeMicro(convertToAbsDirectory(_rDir) + "/" + _fname);
 
   if(_types.empty())
     return true;
@@ -167,7 +192,7 @@ bool RunSetWrapper::isInRunset(const string&_rDir,const string& _fname,
 
 
 //---------------------------------------------------------------------------
-void RunSetWrapper::addToList(const LabelablePtr _pla,const rsMediaType _type)
+void RunSetWrapper::addToList(const LabelablePtr _pla,const rsMediaType _type,cvac::Purpose purpose)
 {
   if(!_pla)
   {
@@ -175,10 +200,47 @@ void RunSetWrapper::addToList(const LabelablePtr _pla,const rsMediaType _type)
     return;
   }
 
+  //Verify a media type for an original
+  std::string _typeMacro = getTypeMacro(_pla->sub.path.filename);
+  if(_typeMacro.compare(mTypeMacro[0]) == 0)
+  {
+    _pla->sub.isImage = true;
+    _pla->sub.isVideo = false;
+  }
+  else if(_typeMacro.compare(mTypeMacro[1]) == 0)
+  {
+    _pla->sub.isImage = false;
+    _pla->sub.isVideo = true;
+  }
+  else
+  {
+    _pla->sub.isImage = false;
+    _pla->sub.isVideo = false;
+  } 
+
   cvac::Result  _result;
   _result.original = _pla;
+  _result.original->lab.hasLabel = true;
+  _result.original->lab.name = getPurposeName(purpose);
   mResultSet.results.push_back(_result);
   mResultSetType.push_back(_type);
+}
+
+//---------------------------------------------------------------------------
+std::string RunSetWrapper::getTypeMacro(const std::string& _path)
+{
+  string tExt = getFileExtension(_path);   
+
+  vector<string>::iterator _itr;
+  _itr = std::find(mTypeMacro_Image.begin(),mTypeMacro_Image.end(),tExt);
+  if(_itr!=mTypeMacro_Image.end())
+    return (rsMediaType)mTypeMacro[0];  //for image
+
+  _itr = std::find(mTypeMacro_Video.begin(),mTypeMacro_Video.end(),tExt);
+  if(_itr!=mTypeMacro_Video.end())
+    return (rsMediaType)mTypeMacro[1];  //for video
+  else
+    return (rsMediaType)mTypeMacro[2];  //for etc
 }
 
 //---------------------------------------------------------------------------
@@ -205,6 +267,7 @@ bool RunSetWrapper::makeBasicList()
     
 	for(out_itr=list_out.begin();out_itr!=list_out.end();out_itr++)
     {
+      cvac::Purpose curPurpose = (*out_itr)->pur;
       out_seq=PurposedLabelableSeqPtr::dynamicCast(*out_itr);
       out_dir=PurposedDirectoryPtr::dynamicCast(*out_itr);
 
@@ -240,10 +303,10 @@ bool RunSetWrapper::makeBasicList()
             //////////////////////////////////////////////////////////////////////////            
             
             //fileExists routine is not working for a symbolic link
-            addToList(in_la,getType(symlinkFullPath));
+            addToList(in_la,getTypeMicro(symlinkFullPath), curPurpose);
             /*            
             if(fileExists(symlinkFullPath)) 
-              addToList(in_la,getType(symlinkFullPath));
+              addToList(in_la,getTypeMicro(symlinkFullPath), curPurpose);
             else	//no file
               continue;
             */
@@ -260,7 +323,7 @@ bool RunSetWrapper::makeBasicList()
       {
         string tRelativePath = out_dir->directory.relativePath;
         string tAbsPath = convertToAbsDirectory(tRelativePath,mMediaRootPath);			
-        if(!makeBasicList_parse(tAbsPath,true,tRelativePath,out_dir->fileSuffixes))
+        if(!makeBasicList_parse(tAbsPath,true,tRelativePath,out_dir->fileSuffixes, curPurpose))
           return false;
       }
       else
@@ -277,7 +340,8 @@ bool RunSetWrapper::makeBasicList()
 
 //---------------------------------------------------------------------------
 bool RunSetWrapper::makeBasicList_parse(const string& _absDir,bool _recursive,
-                                   const string& _rDir,const vector<rsMediaType>& _types)
+                                   const string& _rDir,const vector<rsMediaType>& _types,
+                                   cvac::Purpose purpose)
 {
     struct dirent *walker;
     DIR *dir;
@@ -307,7 +371,7 @@ bool RunSetWrapper::makeBasicList_parse(const string& _absDir,bool _recursive,
       {
         dirNext = _absDir + "/" + string(walker->d_name);
         string tRDir = _rDir + "/" + string(walker->d_name);
-        if(!makeBasicList_parse(dirNext, _recursive,tRDir,_types))
+        if(!makeBasicList_parse(dirNext, _recursive,tRDir,_types, purpose))
           return false;
       }
       else if (walker->d_type == DT_REG)
@@ -316,12 +380,10 @@ bool RunSetWrapper::makeBasicList_parse(const string& _absDir,bool _recursive,
         rsMediaType tType;
         if(isInRunset(_rDir,tfname,_types,tType))
         {
-          LabelablePtr tpla = new Labelable();	
-          //tpla->sub.isImage = true; 
-          //tpla->sub.isVideo = false;
+          LabelablePtr tpla = new Labelable();
           tpla->sub.path.filename = tfname;
           tpla->sub.path.directory.relativePath = _rDir;
-          addToList(tpla,tType);
+          addToList(tpla,tType, purpose);
         }        
       }
     }

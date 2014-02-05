@@ -59,7 +59,7 @@ namespace cvac
 //---------------------------------------------------------------------------
   struct RunSetConstraint
   {
-    string compatiblePurpose;
+    cvac::Purpose compatiblePurpose;
     string substrateType ;
     vector<rsMediaType> mimeTypes;  //new string[3] { "hi", "there"};
     bool spacesInFilenamesPermitted;
@@ -90,6 +90,7 @@ namespace cvac
     string mMediaRootDirectory;
     string mMediaTempDirectory;
     ResultSet mResultSet;
+    cvac::Purpose mConstraintPurpose;
     vector<rsMediaType>  mResultSetType;
     vector<int>          mListOrginalIdx;
     vector<LabelablePtr> mList;    
@@ -117,7 +118,8 @@ namespace cvac
                              const rsMediaType& _targerType,
                              MediaConverter* _pConv,
                              const string& _rDirTemp,int _originalIdx);
-    rsMediaType getType(const LabelablePtr _pla);
+    bool matchPurpose(int origIdx);
+    LabelablePtr cloneLabelablePtr(const LabelablePtr _pla, int frameNum);
 
   public:    
     bool hasNext();
