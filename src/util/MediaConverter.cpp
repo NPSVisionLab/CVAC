@@ -143,7 +143,7 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
                                         const string& _desFilename,
                                         vector<string>& _resFilename,
                                         vector<string>& _resFrameInfo)
-{ 
+{
   _resFrameInfo.clear();
   _resFilename.clear();
   string tDesAbsPath = _desAbsDir + "/" + _desFilename;
@@ -163,7 +163,7 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
  
   //////////////////////////////////////////////////////////////////////////
   // Check - is Opened successfully?
-  mVideoFile.open(_srcAbsPath);  
+  mVideoFile.open(_srcAbsPath);
   int tnFrame = -1;
   if(mVideoFile.isOpened())
     tnFrame = (long)mVideoFile.get(CV_CAP_PROP_FRAME_COUNT);
