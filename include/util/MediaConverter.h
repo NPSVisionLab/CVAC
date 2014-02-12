@@ -84,8 +84,16 @@ namespace cvac
     ~MediaConverter_openCV_v2i();
 
   private:
+    bool checkDuplicateConversion(const string& _srcAbsPath,
+                                  const int& _perfrm,
+                                  vector<string>& _resFilename,
+                                  vector<string>& _resFrameInfo);
     cv::VideoCapture mVideoFile;	
     int PerFrame;
+    vector< vector<string> > dupli_Filename;
+    vector< vector<string> > dupli_FrameInfo;
+    vector<string> dupli_srcPath;
+    vector<int> dupli_perFrame;
 
   public:
     bool convert(const string& _srcAbsPath,
