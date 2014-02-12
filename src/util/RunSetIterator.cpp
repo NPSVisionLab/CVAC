@@ -63,6 +63,8 @@ RunSetIterator::RunSetIterator(RunSetWrapper* _rsw,RunSetConstraint& _cons,
 
   mConstraintType = _cons.mimeTypes;
   mConstraintPurpose = _cons.compatiblePurpose;
+  mLost = _cons.excludeLostFrames;
+  mOccluded = _cons.excludeOccludedFrames;
 
   //////////////////////////////////////////////////////////////////////////    
   mConv_openCV_i2i = new MediaConverter_openCV_i2i(_sman);
@@ -232,8 +234,9 @@ LabelablePtr RunSetIterator::cloneLabelablePtr(const LabelablePtr _pla, int fram
         result = (LabelablePtr)locptr;
     else
     {
-        // The object is not in this frame to return NULL since we don't have
-        // an object.
+        // The object is not in this frame.  If we return a default labelable
+        // The the whole image size will be selected so instead we return
+        // NULL which should cause frame not to be used.
         result = NULL;
     }
   }else
@@ -364,11 +367,47 @@ bool RunSetIterator::matchPurpose(int origIdx)
       return true;
 }
 
+bool RunSetIterator::isConstrained(int origIdx, LabelablePtr lptr)
+{
+  if (matchPurpose(origIdx) == false)
+      return true;
+  // If we have a video then make sure its not lost or occluded if that is in the constrants
+  if (mLost == false && mOccluded == false)
+      return false;
+  if (mResultSet.results[origIdx].original->sub.isVideo == false)
+      return false;
+  if (lptr->lab.name.empty())
+      return false;
+  int frameNum = atoi(lptr->lab.name.c_str());
+  if (frameNum > -1)
+  {// Find this frame and see if its lost or occluded
+     LabeledTrackPtr origtptr = LabeledTrackPtr::dynamicCast(mResultSet.results[origIdx].original);
+     if (origtptr != NULL)
+     { // We have a valid LabeledTrackPtr so lets see if this frame is lost or occluded
+        FrameLocationList::iterator it;
+        FrameLocationList frames = origtptr->keyframesLocations;
+        for (it = frames.begin(); it != frames.end(); it++)
+        {
+            FrameLocation floc = *it;
+            if (floc.frame.framecnt == frameNum)
+            {
+                if (floc.occluded && mOccluded)
+                    return true;
+                if (floc.outOfFrame && mLost)
+                    return true;
+                return false;
+            }
+        }
+     }
+   }
+   return false;
+}
+  
 bool RunSetIterator::hasNext()
 {
   if(mListItr != mList.end())
   {
-    while (matchPurpose(*mListOrginalIdxItr) == false)
+    while (isConstrained(*mListOrginalIdxItr, *mListItr))
     {
         mListItr++;
         mListOrginalIdxItr++;
@@ -390,7 +429,7 @@ LabelablePtr RunSetIterator::getNext()
     int idx = *mListOrginalIdxItr;
     mListOrginalIdxItr++;
     mListItr++;
-    while (matchPurpose(idx) == false)
+    while (isConstrained(idx, lptr))
     {
         if (mListItr == mList.end())
         {
@@ -442,7 +481,7 @@ void RunSetIterator::makeConversionList()
   for(int k = 0;k<(sizeof(_supportedVideo)/sizeof(_supportedVideo[0]));k++)
     typeVideo.push_back(_supportedVideo[k]);
   
-  int i,j;
+  unsigned int i,j;
   for(i=0;i<typeImage.size();i++)
   {
     for(j=0;j<typeImage.size();j++)
