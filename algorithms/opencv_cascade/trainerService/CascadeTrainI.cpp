@@ -192,6 +192,8 @@ void CascadeTrainI::writeBgFile(cvac::RunSetWrapper& rsw,
   RunSetConstraint constraint;
   constraint.compatiblePurpose.ptype = NEGATIVE;
   constraint.spacesInFilenamesPermitted = false;
+  constraint.excludeLostFrames = true;
+  constraint.excludeOccludedFrames = true;
   constraint.addType("png");
   constraint.addType("tif");
   constraint.addType("jpg");
@@ -262,6 +264,8 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
   RunSetConstraint constraint;
   constraint.compatiblePurpose.ptype = POSITIVE;
   constraint.spacesInFilenamesPermitted = false;
+  constraint.excludeLostFrames = true;
+  constraint.excludeOccludedFrames = true;
   constraint.addType("png");
   constraint.addType("tif");
   constraint.addType("jpg");
@@ -426,7 +430,19 @@ bool CascadeTrainI::checkPurposedLists(
     }
     if ((artifacts.size() < MIN_SAMPLE_SIZE))
     {
-        tooSmall = true;
+        bool hasVideo = false;
+        LabelableList::iterator it;
+        for (it = artifacts.begin(); it < artifacts.end(); it++)
+        {
+            LabelablePtr lab = *it;
+            if (lab->sub.isVideo)
+            {
+                hasVideo = true;
+                break;
+            }
+        }
+        if (hasVideo == false)
+            tooSmall = true;
     }
  
   }

@@ -61,6 +61,8 @@ namespace cvac
   {
     cvac::Purpose compatiblePurpose;
     string substrateType ;
+    bool excludeLostFrames;
+    bool excludeOccludedFrames;
     vector<rsMediaType> mimeTypes;  //new string[3] { "hi", "there"};
     bool spacesInFilenamesPermitted;
     void addType(rsMediaType _type)  //how to handle duplication
@@ -72,7 +74,6 @@ namespace cvac
       mimeTypes.clear();
     }
   };
-
 //--------------------------------------------------------------------------- 
 
   class RunSetIterator
@@ -87,6 +88,8 @@ namespace cvac
   private:
     CallbackHandlerPrx mCallback2Client;
     bool mFlagInitialize;
+    bool mLost;
+    bool mOccluded;
     ServiceManager* mServiceMan;
     string mMediaRootDirectory;
     string mMediaTempDirectory;
@@ -119,9 +122,9 @@ namespace cvac
                              const rsMediaType& _targerType,
                              MediaConverter* _pConv,
                              const string& _rDirTemp,int _originalIdx);
-    rsMediaType getType(const LabelablePtr _pla);
     bool matchPurpose(int origIdx);
     LabelablePtr cloneLabelablePtr(const LabelablePtr _pla, int frameNum);
+    bool isConstrained(int origIdx, LabelablePtr lptr);  // True if the index is contrained by constraint restrictions
 
   public:    
     bool hasNext();

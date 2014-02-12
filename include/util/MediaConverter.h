@@ -92,6 +92,6 @@ namespace cvac
                  const string& _desAbsDir,
                  const string& _desFilename,
                  vector<string>& _resFilename,
-                 vector<string>& _resAuxInfo);
+                 vector<string>& _resFrameInfo);
   };
 }
