@@ -192,6 +192,8 @@ void CascadeTrainI::writeBgFile(cvac::RunSetWrapper& rsw,
   RunSetConstraint constraint;
   constraint.compatiblePurpose.ptype = NEGATIVE;
   constraint.spacesInFilenamesPermitted = false;
+  constraint.excludeLostFrames = true;
+  constraint.excludeOccludedFrames = true;
   constraint.addType("png");
   constraint.addType("tif");
   constraint.addType("jpg");
@@ -262,6 +264,8 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
   RunSetConstraint constraint;
   constraint.compatiblePurpose.ptype = POSITIVE;
   constraint.spacesInFilenamesPermitted = false;
+  constraint.excludeLostFrames = true;
+  constraint.excludeOccludedFrames = true;
   constraint.addType("png");
   constraint.addType("tif");
   constraint.addType("jpg");
