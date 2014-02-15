@@ -110,7 +110,11 @@ ENDIF( ${BUILD_CORPUS_LABELME} )
 
 SET( CMAKE_JAVA_INCLUDE_PATH ${Ice.jar} ${IceBox.jar} ${javatar.jar} ${IO.jar} ${javabuilder.jar} ${labelme.jar})
 SET( CMAKE_JAVA_TARGET_OUTPUT_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
+IF (WIN32)
 SET( CMAKE_JAVA_JAR_PATH ${Ice.jar};${IceBox.jar};${javatar.jar};${IO.jar};${javabuilder.jar};${labelme.jar})
+ELSE (WIN32)
+SET( CMAKE_JAVA_JAR_PATH ${Ice.jar}:${IceBox.jar}:${javatar.jar}:${IO.jar}:${javabuilder.jar}:${labelme.jar})
+ENDIF (WIN32)
 
 
 FUNCTION( copy_file target destdir )
@@ -125,66 +129,82 @@ endfunction()
 # Create a jar file for the sliced Corpus files only
 # and then some for all, including the hardcoded "implementation" files;
 # The former is handy to have if the hardcoded ones are built in another IDE
-IF (MSVC)
+#IF (MSVC)
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cvac)
-add_custom_target(CvacSliced
+#add_custom_target(CvacSliced
+add_custom_command(TARGET ${target}
+                   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar
                    COMMAND ${Java_JAVAC_EXECUTABLE} -d ${CMAKE_CURRENT_BINARY_DIR}/cvac -cp "${CMAKE_JAVA_JAR_PATH}" ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar -C ${CMAKE_CURRENT_BINARY_DIR}/cvac .
                    DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
-ELSE (MSVC)
-ADD_JAR( CvacSliced ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-        ${SLICE_OUTPUT_PATH}/cvac/*.java
-        DEPENDS
-            ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-)
-ENDIF (MSVC)
+add_custom_target(CvacSliced ALL
+                  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar
+                  DEPENDS "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java"
+                  )
+#ELSE (MSVC)
+#ADD_JAR( CvacSliced ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+#        ${SLICE_OUTPUT_PATH}/cvac/*.java
+#        DEPENDS
+#            ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+#)
+#ENDIF (MSVC)
 
 
 IF( ${BUILD_CORPUS_SERVER} )
 
-IF (MSVC)
+#IF (MSVC)
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/corpus)
 #ALL causes all corpus.jar to be build always
-add_custom_target(Corpus ALL
+add_custom_command(TARGET ${target}
+                   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar
                    COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/corpus -cp "${CMAKE_JAVA_JAR_PATH}" ${CORPUS_SOURCE_FILES} util/*java ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar -C ${CMAKE_CURRENT_BINARY_DIR}/corpus .
                    DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
+add_custom_target(Corpus ALL
+                  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar
+                  DEPENDS "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java"
+                  )
   copy_file( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
-ELSE (MSVC)
-  ADD_JAR( Corpus ${CORPUS_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-        ${SLICE_OUTPUT_PATH}/cvac/*.java
-        DEPENDS
-            ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-  )
-IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
-  INSTALL_JAR( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
-ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )
-ENDIF(MSVC)
+#ELSE (MSVC)
+#  ADD_JAR( Corpus ${CORPUS_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+#        ${SLICE_OUTPUT_PATH}/cvac/*.java
+#        DEPENDS
+#            ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+#  )
+#IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
+#  INSTALL_JAR( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
+#ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )
+#ENDIF(MSVC)
 
 ENDIF( ${BUILD_CORPUS_SERVER} )
 
 IF( ${BUILD_FILESERVER} )
-IF (MSVC)
+#IF (MSVC)
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fileserver)
 #ALL causes all FileServer.jar to be build always
-add_custom_target(FileServer ALL
+add_custom_command(TARGET ${target}
+                   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar
                    COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/fileserver -cp "${CMAKE_JAVA_JAR_PATH}" ${FILESERVER_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar -C ${CMAKE_CURRENT_BINARY_DIR}/fileserver .
                    DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
+add_custom_target(FileServer ALL
+                  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar
+                  DEPENDS "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java"
+                  )
  copy_file( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
-ELSE (MSVC)
- ADD_JAR( FileServer ${FILESERVER_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-        ${SLICE_OUTPUT_PATH}/cvac/*.java
-        DEPENDS
-            ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-  )
-IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
-  INSTALL_JAR( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
-ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )
-ENDIF (MSVC)
+#ELSE (MSVC)
+# ADD_JAR( FileServer ${FILESERVER_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+#        ${SLICE_OUTPUT_PATH}/cvac/*.java
+#        DEPENDS
+#            ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+#  )
+#IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
+#  INSTALL_JAR( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
+#ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )
+#ENDIF (MSVC)
 
 
 ENDIF( ${BUILD_FILESERVER} )
