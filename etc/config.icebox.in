@@ -31,7 +31,7 @@ ${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
 # Enable Ice.Admin object:
 #
 Ice.Admin.InstanceName=DemoIceBox
-Ice.Admin.Endpoints=tcp -p 9997 -h 127.0.0.1
+Ice.Admin.Endpoints=tcp -p ${ADMIN_PORT} -h 127.0.0.1
 
 # Warn about connection exceptions
 #

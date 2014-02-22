@@ -60,11 +60,11 @@ Ice.MessageSizeMax=100000
 
 #The services
 
-OpenCVCascadeDetector.Endpoints=tcp -p 10102
-OpenCVCascadeTrainer.Endpoints=tcp -p  10107
-BOW_Trainer.Endpoints=tcp -p          10103
-BOW_Detector.Endpoints=tcp -p         10104
-CorpusService.Endpoints=tcp ${HOST} -p        10011
-PythonCorpusService.Endpoints=tcp -p 10021
-FileService.Endpoints=tcp ${HOST} -p          10110
-RSItrTest_Detector.Endpoints=tcp ${HOST} -p          10109
+OpenCVCascadeDetector.Endpoints=tcp -p ${OPENCV_CASCADE_DETECTOR_PORT}
+OpenCVCascadeTrainer.Endpoints=tcp -p  ${OPENCV_CASCADE_TRAINER_PORT}
+BOW_Trainer.Endpoints=tcp -p          ${BOW_TRAINER_PORT}
+BOW_Detector.Endpoints=tcp -p         ${BOW_DETECTOR_PORT}
+CorpusService.Endpoints=tcp ${HOST} -p  ${CORPUS_PORT}      
+PythonCorpusService.Endpoints=tcp -p ${PYTHON_CORPUS_PORT}
+FileService.Endpoints=tcp ${HOST} -p ${FILE_SERVER_PORT}
+RSItrTest_Detector.Endpoints=tcp ${HOST} -p ${RSITR_TEST_PORT}

@@ -10,6 +10,7 @@ ENDIF(WIN32)
 PROJECT(CVAC)
 
 SET (PYTHON_ONLY_CLIENT true)
+SET(CVAC_FIRST_SERVICE_PORT "10000" CACHE STRING "First socket port to use")
 
 INCLUDE (UserCMakeLists.txt OPTIONAL)
 
@@ -322,6 +323,7 @@ ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 ## selected by the user.  These CF_ variables are defined in the config files
 ## and they get turned into comments or not.
 
+
 IF( BUILD_WITH_BOW )
 SET(CF_BOW "" )
 SET( CF_BOW_T "" )
@@ -383,14 +385,34 @@ ADD_SUBDIRECTORY(algorithms)
 ADD_SUBDIRECTORY(demo)
 ADD_SUBDIRECTORY( etc )
 
+#Get all the port numbers based upon the CVAC_FIRST_SERVICE_PORT
+MATH(EXPR ADMIN_PORT "${CVAC_FIRST_SERVICE_PORT}-3")
+MATH(EXPR JAVA_ADMIN_PORT "${CVAC_FIRST_SERVICE_PORT}-5")
+MATH(EXPR OPENCV_CASCADE_DETECTOR_PORT "${CVAC_FIRST_SERVICE_PORT}+102")
+MATH(EXPR OPENCV_CASCADE_TRAINER_PORT "${CVAC_FIRST_SERVICE_PORT}+107")
+MATH(EXPR BOW_TRAINER_PORT "${CVAC_FIRST_SERVICE_PORT}+103")
+MATH(EXPR BOW_DETECTOR_PORT "${CVAC_FIRST_SERVICE_PORT}+104")
+MATH(EXPR CORPUS_PORT "${CVAC_FIRST_SERVICE_PORT}+11")
+MATH(EXPR PYTHON_CORPUS_PORT "${CVAC_FIRST_SERVICE_PORT}+21")
+MATH(EXPR FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+110")
+MATH(EXPR RSITR_TEST_PORT "${CVAC_FIRST_SERVICE_PORT}+109")
+
 # the configuration of config.{icebox,service} must come after including the
 # etc directory, because that's where the user.config.{..} get configured.
 CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
 CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
+CONFIGURE_FILE("etc/config.client.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.client")
+CONFIGURE_FILE("etc/config.admin.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.admin")
+CONFIGURE_FILE("etc/config.java_admin.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.java_admin")
+CONFIGURE_FILE("etc/config.java_icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.java_icebox")
 IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
     FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service" FILE_DATA )
     FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.service" ${FILE_DATA} )
 ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
+IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client")
+    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.client" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client")
 IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
     FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
     FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
