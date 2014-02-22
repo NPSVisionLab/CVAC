@@ -29,8 +29,12 @@ class FileServerTest(unittest.TestCase):
             raise RuntimeError("cvac module not loaded correctly (from file "+cvac.__file__+")")
         if not inspect.ismodule( cvac ) or not inspect.isclass( cvac.FileServicePrx ):
             raise RuntimeError("cvac module not loaded")
+        sys.argv.append('--Ice.Config=config.client')
         self.ic = Ice.initialize(sys.argv)
-        base = self.ic.stringToProxy("FileService:default -p 10110")
+        properties = self.ic.getProperties()
+        proxyStr = properties.getProperty('FileService.Proxy')
+        print(proxyStr)
+        base = self.ic.stringToProxy(proxyStr)
         self.fs = cvac.FileServicePrx.checkedCast(base)
         if not self.fs:
             raise RuntimeError("Invalid proxy")

@@ -40,8 +40,11 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # Test the initialization of Ice and the service proxy
     #
     def setUp(self):
+        sys.argv.append('--Ice.Config=config.client')
         self.ic = Ice.initialize(sys.argv)
-        base = self.ic.stringToProxy("CorpusServer:default -p 10011")
+        properties = self.ic.getProperties()
+        proxyStr = properties.getProperty('CorpusServer.Proxy')
+        base = self.ic.stringToProxy(proxyStr)
         self.cs = cvac.CorpusServicePrx.checkedCast(base)
         if not self.cs:
             raise RuntimeError("Invalid proxy")
