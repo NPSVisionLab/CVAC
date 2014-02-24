@@ -131,8 +131,9 @@ class FileServerTest(unittest.TestCase):
         properties = self.ic.getProperties()
         proxyStr = properties.getProperty('FileService.Proxy')
         #need to get the server host to connect to
-        remoteHost = os.getenv('CVAC_REMOTE_TEST_SERVER', 'vision.nps.edu')
-        proxyStr = proxyStr + " -h " + remoteHost
+        remoteHost = os.getenv('CVAC_REMOTE_TEST_SERVER')
+        if remoteHost != None:
+            proxyStr = proxyStr + " -h " + remoteHost
         print(proxyStr)
         base = self.ic.stringToProxy(proxyStr)
         #configStr = "FileService:default -h vision.nps.edu -p 10110"
