@@ -132,7 +132,7 @@ class FileServerTest(unittest.TestCase):
         proxyStr = properties.getProperty('FileService.Proxy')
         #need to get the server host to connect to
         remoteHost = os.getenv('CVAC_REMOTE_TEST_SERVER')
-        if remoteHost != None:
+        if remoteHost:
             proxyStr = proxyStr + " -h " + remoteHost
         print(proxyStr)
         base = self.ic.stringToProxy(proxyStr)
