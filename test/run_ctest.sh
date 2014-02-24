@@ -8,10 +8,13 @@ ROOT_DIR=$1
 BUILD_DIR=$2
 CTEST_ARGS=$3
 
+#Tell the Tests what machine to use for remote fileserver tests
+export CVAC_REMOTE_TEST_SERVER=10.0.2.15
+
 # start up services
 cd ${ROOT_DIR}
 bin/startIcebox.sh
-sleep 5
+sleep 30
 
 # run the tests, capture exit status
 cd ${BUILD_DIR}
@@ -21,5 +24,6 @@ EXIT_STATUS=$?
 # irrespective of exit status: shut down services
 # then return exit status
 cd ${ROOT_DIR}
+sleep 300
 bin/stopIcebox.sh
 exit ${EXIT_STATUS}
