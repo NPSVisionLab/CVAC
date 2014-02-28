@@ -230,7 +230,6 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
             categories[lb.lab.name] = [lb]
     return (categories, labelList)
 
-'''
 def testRunSetIntegrity(runset, printFiles=False):
     if type(runset) is dict and not runset['runset'] is None\
         and isinstance(runset['runset'], cvac.RunSet):
@@ -274,7 +273,6 @@ def testRunSetIntegrity(runset, printFiles=False):
                     print("LabeldArtifact has no label.")
         else:
             raise RuntimeError("unexpected plist type "+type(plist))
-'''
 
 def printCategoryInfo( categories ):
     '''Categories are a dictionary, key being the label and the
