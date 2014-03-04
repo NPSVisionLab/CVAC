@@ -18,8 +18,18 @@ def parsePolygon( etelem ):
     polygon = cvac.Silhouette()
     polygon.points = []
     for pt in etelem.findall('pt'):
+        # Matlab Notation: 1-based
+        tx = int(pt.find('x').text)
+        if tx<1:
+            tx = 1
+        
+        ty = int(pt.find('y').text)
+        if ty<1:
+            ty = 1;        
+        
+        # OpenCV Notation: 0-based
         polygon.points = polygon.points \
-          + [cvac.Point2D(pt.find('x').text, pt.find('y').text)]
+          + [cvac.Point2D(str(tx-1), str(ty-1))]
     return polygon
 
 def parseLabeledObjects( root, substrate ):
@@ -27,7 +37,17 @@ def parseLabeledObjects( root, substrate ):
     that does not have the <deleted> tag set,
     collect the name, attributes and the polygon and create the
     equivalent cvac.Silhouette from it
-    '''
+    '''    
+    objImgSize = root.find('imagesize')
+    if objImgSize != None:
+        objH = objImgSize.find('nrows')
+        if objH != None:            
+            substrate.height = int(objH.text)
+            
+        objW = objImgSize.find('ncols')
+        if objW != None:
+            substrate.width = int(objW.text)
+    
     labels = []
     for lmobj in root.findall('object'):
         deleted = lmobj.find('deleted').text
