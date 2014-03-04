@@ -129,7 +129,8 @@ def parseFolder( localDir, lmAnnotations, lmImages, lmFolder, CVAC_DataDir ):
                   ' does not have filename element')
             continue
         else:
-            imgFname = felem.text
+            imgFname = felem.text.strip() # strip any leading or trailing white space
+            
         cvacFp = cvac.FilePath( cvacDir, imgFname )
         substrate = cvac.Substrate( True, False, cvacFp, -1, -1 )
         labels = labels + parseLabeledObjects( root, substrate )
