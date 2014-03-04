@@ -56,7 +56,7 @@ def parseLabeledObjects( root, substrate ):
         label = cvac.LabeledLocation()
         label.confidence = 1.0
         label.sub = substrate
-        name = lmobj.find('name').text
+        name = lmobj.find('name').text.strip()
     
         properties = {}
         for attrib in lmobj.findall('attributes'):
