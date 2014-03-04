@@ -584,7 +584,7 @@ Function customDialog
   ${NSD_CreateBrowseButton} -18u 13u 18u 12u "..."
   Pop $0
   ${NSD_OnClick} $0 BrowsePython
-  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
+  ${if} ${FileExists} "$INSTDIR\config.java_icebox"
       ${NSD_CreateLabel} 0 35u 100% 12u "Enter path to Java"
       Pop $LabelJava
       ${NSD_CreateText} 0 48u -20u 12u "C:\Windows\system32\java.exe"
@@ -645,7 +645,7 @@ Function customDialogLeave
     Abort
   ${endif}
 
-  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
+  ${if} ${FileExists} "$INSTDIR\config.java_icebox"
       ${ifnot} ${FileExists} "$JavaPathValue"
         MessageBox MB_OK "Java path incorrect" /SD IDOK
         Abort
@@ -655,7 +655,7 @@ Function customDialogLeave
   #Set a local EnvirnomentVariable
   System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("PYTHON_HOME", $PythonPathValue).r0'
   StrCmp $0 0 error
-  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
+  ${if} ${FileExists} "$INSTDIR\config.java_icebox"
       System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("JAVA_HOME", $JavaPathValue).r0'
       StrCmp $0 0 error
   ${endif}
