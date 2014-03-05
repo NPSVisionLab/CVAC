@@ -12,6 +12,7 @@ import cvac
 # is set in config.icebox, config.client, and config.service, and
 # which defaults to your installation directory /data.
 objname = 'apple'
+#objname = 'bookshelfFrontal'
 corpus_fname = 'corpus/labelme_'+objname+'.properties'
 
 
@@ -35,6 +36,11 @@ posPurpose = easy.getPurpose('pos')
 negPurpose = easy.getPurpose('neg')
 trainset = cvac.RunSet()
 easy.addToRunSet(trainset, categories[objname], posPurpose);
+#trainset = easy.createRunSet( categories, purpose=posPurpose );
+flag = easy.testRunSetIntegrity(trainset)
+if flag == False:
+    print("failed Integrity test!!!!")
+    exit()
 #trainset = easy.createRunSet( categories, purpose=posPurpose );
 #easy.printRunSetInfo( trainset, printLabels=True )
 easy.printRunSetInfo( trainset )
