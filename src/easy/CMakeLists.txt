@@ -28,6 +28,7 @@ CONFIGURE_FILE(evaluate.py "${SLICE_OUTPUT_PYTHONDIR}/easy/evaluate.py" COPYONLY
 CONFIGURE_FILE(corpus_service.py "${SLICE_OUTPUT_PYTHONDIR}/easy/corpus_service.py" COPYONLY)
 CONFIGURE_FILE(labelme.py "${SLICE_OUTPUT_PYTHONDIR}/easy/labelme.py" COPYONLY)
 CONFIGURE_FILE(vatic.py "${SLICE_OUTPUT_PYTHONDIR}/easy/vatic.py" COPYONLY)
+CONFIGURE_FILE(gui.py "${SLICE_OUTPUT_PYTHONDIR}/easy/gui.py" COPYONLY)
 CONFIGURE_FILE(__init__.py "${SLICE_OUTPUT_PYTHONDIR}/easy/__init__.py" COPYONLY)
 CONFIGURE_FILE(util/ArchiveHandler.py "${SLICE_OUTPUT_PYTHONDIR}/easy/util/ArchiveHandler.py" COPYONLY)
 CONFIGURE_FILE(util/__init__.py "${SLICE_OUTPUT_PYTHONDIR}/easy/util/__init__.py" COPYONLY)
