@@ -34,8 +34,9 @@ SET ( SLICE_ARGS -I${ICE_ROOT}/slice --output-dir ${SLICE_OUTPUT_PATH} )
 #    COMMAND "${ICE_SLICE2JAVA_EXECUTABLE}"  ARGS "${SLICE_ARGS}"
 
 ADD_CUSTOM_COMMAND(
-    OUTPUT "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java"
-    COMMAND "${ICE_SLICE2JAVA_EXECUTABLE}"  ARGS ${SLICE_FILES} ${SLICE_ARGS}
+    OUTPUT "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java" "${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt"
+    COMMAND ${ICE_SLICE2JAVA_EXECUTABLE}  ARGS ${SLICE_FILES} ${SLICE_ARGS}
+    COMMAND "${CMAKE_COMMAND}" -E touch "${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt"
     DEPENDS ${SLICE_FILES}
     WORKING_DIRECTORY "${CVAC_ROOT_DIR}/src"
     COMMENT "Generating (slicing) .java files from .ice sources")
@@ -43,8 +44,6 @@ MESSAGE ( STATUS "Java source files will be created from Slice definitions using
 
 MESSAGE ( STATUS "${ICE_SLICE2JAVA_EXECUTABLE} ${SLICE_FILES} ${SLICE_ARGS}" )
 
-
-             
 
 SET( CORPUS_SOURCE_FILES
     cvac/corpus/CorpusI.java
@@ -137,6 +136,7 @@ add_custom_command(TARGET ${target}
                    COMMAND ${Java_JAVAC_EXECUTABLE} -d ${CMAKE_CURRENT_BINARY_DIR}/cvac -cp "${CMAKE_JAVA_JAR_PATH}" ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar -C ${CMAKE_CURRENT_BINARY_DIR}/cvac .
                    DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
 add_custom_target(CvacSliced ALL
                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar
@@ -161,6 +161,7 @@ add_custom_command(TARGET ${target}
                    COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/corpus -cp "${CMAKE_JAVA_JAR_PATH}" ${CORPUS_SOURCE_FILES} util/*java ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar -C ${CMAKE_CURRENT_BINARY_DIR}/corpus .
                    DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
 add_custom_target(Corpus ALL
                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar
@@ -189,6 +190,7 @@ add_custom_command(TARGET ${target}
                    COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/fileserver -cp "${CMAKE_JAVA_JAR_PATH}" ${FILESERVER_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar -C ${CMAKE_CURRENT_BINARY_DIR}/fileserver .
                    DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
 add_custom_target(FileServer ALL
                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar
