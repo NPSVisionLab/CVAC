@@ -1,4 +1,5 @@
 message("Copying python ice files")
+message("from ${SLICE_OUTPUT_PATH}")
 execute_process(
         COMMAND "${CMAKE_COMMAND}" -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/cvac"
         COMMAND "${CMAKE_COMMAND}" -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/cvac"

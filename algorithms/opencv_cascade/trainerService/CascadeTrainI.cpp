@@ -192,6 +192,8 @@ void CascadeTrainI::writeBgFile(cvac::RunSetWrapper& rsw,
   RunSetConstraint constraint;
   constraint.compatiblePurpose.ptype = NEGATIVE;
   constraint.spacesInFilenamesPermitted = false;
+  constraint.excludeLostFrames = true;
+  constraint.excludeOccludedFrames = true;
   constraint.addType("png");
   constraint.addType("tif");
   constraint.addType("jpg");
@@ -262,6 +264,8 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
   RunSetConstraint constraint;
   constraint.compatiblePurpose.ptype = POSITIVE;
   constraint.spacesInFilenamesPermitted = false;
+  constraint.excludeLostFrames = true;
+  constraint.excludeOccludedFrames = true;
   constraint.addType("png");
   constraint.addType("tif");
   constraint.addType("jpg");
@@ -426,7 +430,19 @@ bool CascadeTrainI::checkPurposedLists(
     }
     if ((artifacts.size() < MIN_SAMPLE_SIZE))
     {
-        tooSmall = true;
+        bool hasVideo = false;
+        LabelableList::iterator it;
+        for (it = artifacts.begin(); it < artifacts.end(); it++)
+        {
+            LabelablePtr lab = *it;
+            if (lab->sub.isVideo)
+            {
+                hasVideo = true;
+                break;
+            }
+        }
+        if (hasVideo == false)
+            tooSmall = true;
     }
  
   }
@@ -502,6 +518,7 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   string bgName = "cascade_negatives.txt";
   string infoName = "cascade_positives.txt";
   int numNeg = 0;
+  
   writeBgFile( rsw, bgName, &numNeg, CVAC_DataDir, callback );
 
 
@@ -514,25 +531,14 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   // run createsamples
   std::string vecFname = tempDir + "/cascade_positives.vec";
   int numPos = 0;
+  
   createSamples( rsw, samplesParams, infoName, vecFname, &numPos, CVAC_DataDir, callback);
-  // invoke the actual training vec file needs extra positive samples
-  // so we need to figure out how many to save back.
-  // Determine the number of samples extra we need.  We need this
-  // since the algorithm 
-  // this is (Stages-1)*(1-minHitRate)*numPos + S
-  // where S = numpos / minHitRate^Stages - numpos
-  int S = int((double)numPos / 
-            pow(mTrainProps->minHitRate, mTrainProps->numStages)) - numPos;
-  int lessSamples = (int)((double)(mTrainProps->numStages -1) * 
-               (1.0 - mTrainProps->minHitRate) * double(numPos)) + S;
-  localAndClientMsg(VLogger::INFO, NULL, "Starting with positive count less " +
-                     lessSamples);
 
   // Tell ServiceManager that we will listen for stop
   mServiceMan->setStoppable();
 
   bool created = createClassifier( tempDir, vecFname, bgName,
-                    numPos - lessSamples, numNeg, mTrainProps );
+                    numPos, numNeg, mTrainProps );
 
   // Tell ServiceManager that we are done listening for stop
   mServiceMan->clearStop();  

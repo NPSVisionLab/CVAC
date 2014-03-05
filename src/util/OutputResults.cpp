@@ -63,35 +63,68 @@ void OutputResults::addResult(cvac::Result& _res,
 
     if(_rects.size()>0)
     {
-        LabeledTrackPtr newFound = new LabeledTrack();    
-        for (std::vector<cv::Rect>::iterator it = _rects.begin(); 
-            it != _rects.end(); ++it)
-        {
-            newFound->lab.hasLabel = true;
-            newFound->lab.name = labName;
-            newFound->confidence = confidence;
+      if(_res.original->sub.isVideo)
+      {
+        LabeledTrackPtr newFound = new LabeledTrack();
+        newFound->lab.hasLabel = true;
+        newFound->confidence = 1.0f;
 
-            cv::Rect r = *it;
+        for(std::vector<cv::Rect>::iterator it = _rects.begin(); it != _rects.end(); ++it)
+        { 
+          newFound->lab.hasLabel = true;
+          newFound->lab.name = labName;
+          newFound->confidence = confidence;
 
-            BBox* box = new BBox();
-            box->x = r.x;
-            box->y = r.y;
-            box->width = r.width;
-            box->height = r.height;
+          BBox* box = new BBox();
+          box->x = (*it).x;
+          box->y = (*it).y;
+          box->width = (*it).width;
+          box->height = (*it).height;
 
-            FrameLocation floc;
-            floc.loc = box;        
-      
-            if(!_converted.lab.hasLabel && !_converted.lab.name.empty())
-                //This info. is frameNumber.
-                floc.frame.framecnt = atoi(_converted.lab.name.c_str());
-            else
-                floc.frame.framecnt = -1; 
+          FrameLocation floc;
+          floc.loc = box;        
 
-            newFound->keyframesLocations.push_back(floc);
+          if(!_converted.lab.hasLabel && !_converted.lab.name.empty())  //the sign for frame information
+            floc.frame.framecnt = atoi(_converted.lab.name.c_str());  //This info. is frameNumber
+          else
+          {
+            floc.frame.framecnt = -1; //there is no frame info. even though it comes from a video 
+            localAndClientMsg(VLogger::WARN, NULL,
+              "There is no frame info. even though it comes from a video (%s).\n",
+              (_res.original->sub.path.filename).c_str()); 
+          }
+          newFound->keyframesLocations.push_back(floc);
         }
         _res.foundLabels.push_back( newFound );
-    } else
+      }
+      else
+      {
+        if(!_res.original->sub.isImage) //Is this case possible?
+        {
+          localAndClientMsg(VLogger::WARN, NULL,
+            "Though this file (%s) is not an image or a video, somethings are found.\n",
+            (_res.original->sub.path.filename).c_str());  
+        }
+
+        for(std::vector<cv::Rect>::iterator it = _rects.begin(); it != _rects.end(); ++it)
+        {
+          LabeledLocationPtr newFound = new LabeledLocation();    
+
+          newFound->lab.hasLabel = true;
+          newFound->lab.name = labName;
+          newFound->confidence = confidence;
+
+          BBox* box = new BBox();
+          box->x = (*it).x;
+          box->y = (*it).y;
+          box->width = (*it).width;
+          box->height = (*it).height;
+          newFound->loc = box; 
+
+          _res.foundLabels.push_back( newFound );
+        }
+      }
+    }else
     { // we got not hits but still return the label
         LabelablePtr newFound = new Labelable();
         newFound->lab.hasLabel = true;

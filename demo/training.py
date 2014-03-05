@@ -18,7 +18,7 @@ easy.printRunSetInfo( trainset, printLabels=True )
 # Connect to the trainer for a Bag of Words algorithm, then
 # train with the given runset
 #
-trainer = easy.getTrainer( "BOW_Trainer:default -p 10103 ")
+trainer = easy.getTrainer( "BOW_Trainer")
 trainedModel = easy.train( trainer, trainset )
 
 #
@@ -38,7 +38,7 @@ print("Training model stored in file {0}; file contents:\n{1}".\
 print("==== Test runset: ====")
 testset = easy.createRunSet( "testImg" )
 easy.printRunSetInfo( testset, printLabels=True )
-detector = easy.getDetector( "BOW_Detector:default -p 10104" )
+detector = easy.getDetector( "BOW_Detector" )
 results = easy.detect( detector, trainedModel, testset )
 print("==== Results: ====")
 easy.printResults( results )

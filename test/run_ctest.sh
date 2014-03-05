@@ -4,9 +4,14 @@
 # $1: super-dir to bin/startIcebox.sh
 # $2: dir where tests are located
 # $3: ctest arguments, such as "-R File --verbose"
+# $4: remote file service test machine to connect to
+
 ROOT_DIR=$1
 BUILD_DIR=$2
 CTEST_ARGS=$3
+
+#Tell the Tests what machine to use for remote fileserver tests
+export CVAC_REMOTE_TEST_SERVER=$4
 
 # start up services
 cd ${ROOT_DIR}
