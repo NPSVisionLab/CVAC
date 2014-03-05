@@ -287,6 +287,12 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         print( 'createLocalMirror called' )
     
     def getDataSet( self, corpus, current=None ):
+        '''
+        if pydevd' in sys.modules:
+            import pydevd
+            pydevd.connected = True
+            pydevd.settrace(suspend=False)
+        '''
         if not type(corpus) is cvac.Corpus:
             raise RuntimeError("wrong argument type")
         print( 'getDataSet called' )
