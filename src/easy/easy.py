@@ -230,49 +230,66 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
             categories[lb.lab.name] = [lb]
     return (categories, labelList)
 
-def testRunSetIntegrity(runset, printFiles=False):
+def testRunSetIntegrity(runset):
     if type(runset) is dict and not runset['runset'] is None\
         and isinstance(runset['runset'], cvac.RunSet):
         runset = runset['runset']
+        
     if not runset or not isinstance(runset, cvac.RunSet) or not runset.purposedLists:
         print("Not a valid runset")
-        return
-    categories = {}
+        return False
+    
+    #categories = {}
     for plist in runset.purposedLists:
-        if isinstance(plist, cvac.PurposedLabelableSeq): 
-            for lb in plist.labeledArtifacts:
-                if lb.lab.hasLabel:
-                    if printFiles:
-                        print("File= " + lb.sub.path.filename)
-                        print("Label= " + lb.lab.name)
-                    if lb.lab.name in categories:
-                        categories[lb.lab.name].append(lb)
-                    else:    
-                        if printFiles == False:
-                            print("Label= " + lb.lab.name)        
-                        categories[lb.lab.name] = [lb]
-                    if isinstance(lb, cvac.LabeledTrack):
-                        if printFiles:
-                            framestart = -1
-                            curFrame = -1
-                            for frame in lb.keyframesLocations:
-                                frameNo = frame.frame.framecnt
-                                if framestart == -1:
-                                    framestart = frameNo
-                                    curFrame = frameNo
-                                if frameNo == curFrame:
-                                    curFrame = curFrame + 1
-                                else:
-                                    print ("Track frames {0} to {1}".format(framestart, curFrame))
-                                    framestart = frameNo
-                                    curFrame = frameNo + 1  
-                            if framestart != curFrame:   
-                                print ("Track frames {0} to {1}".format(framestart, curFrame))   
-                                
-                else:
-                    print("LabeldArtifact has no label.")
+        if isinstance(plist, cvac.PurposedLabelableSeq) != True: 
+            print("unexpected plist type "+type(plist))
+            return False
         else:
-            raise RuntimeError("unexpected plist type "+type(plist))
+            for lb in plist.labeledArtifacts:                
+                minX = 0
+                minY = 0
+                maxX = sys.maxint 
+                maxY = sys.maxint                
+                if lb.sub.width>0:
+                    maxX = lb.sub.width
+                    
+                if lb.sub.height>0:
+                    maxY = lb.sub.height
+                
+                for pt in lb.loc.points:
+                    if (pt.x < minX) or (pt.y < minY) \
+                    or (pt.x >= maxX) or (pt.y >= maxY):
+                        print("Out of boundary in " + lb.sub.path.filename + \
+                               ": X=" + str(pt.x) + ", Y=" + str(pt.y))
+                        return False
+                
+                if lb.lab.hasLabel != True:
+                    print("Warning: " + lb.sub.path.filename + " has no label.")
+#                 else:
+#                     print("File= " + lb.sub.path.filename)
+#                     print("Label= " + lb.lab.name)
+#                     if lb.lab.name in categories:
+#                         categories[lb.lab.name].append(lb)
+#                     else:       
+#                         categories[lb.lab.name] = [lb]
+#                         
+#                     if isinstance(lb, cvac.LabeledTrack):                        
+#                         framestart = -1
+#                         curFrame = -1
+#                         for frame in lb.keyframesLocations:
+#                             frameNo = frame.frame.framecnt
+#                             if framestart == -1:
+#                                 framestart = frameNo
+#                                 curFrame = frameNo
+#                             if frameNo == curFrame:
+#                                 curFrame = curFrame + 1
+#                             else:
+#                                 print ("Track frames {0} to {1}".format(framestart, curFrame))
+#                                 framestart = frameNo
+#                                 curFrame = frameNo + 1  
+#                         if framestart != curFrame:   
+#                             print ("Track frames {0} to {1}".format(framestart, curFrame))
+    return True    
 
 def printCategoryInfo( categories ):
     '''Categories are a dictionary, key being the label and the

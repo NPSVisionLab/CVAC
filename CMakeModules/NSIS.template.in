@@ -584,7 +584,8 @@ Function customDialog
   ${NSD_CreateBrowseButton} -18u 13u 18u 12u "..."
   Pop $0
   ${NSD_OnClick} $0 BrowsePython
-  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
+
+  StrCmp "@CPACK_PACKAGE_NAME@" "CVAC_binary" 0 nojava
       ${NSD_CreateLabel} 0 35u 100% 12u "Enter path to Java"
       Pop $LabelJava
       ${NSD_CreateText} 0 48u -20u 12u "C:\Windows\system32\java.exe"
@@ -592,7 +593,7 @@ Function customDialog
       ${NSD_CreateBrowseButton} -18u 48u 18u 12u "..."
       Pop $0
       ${NSD_OnClick} $0 BrowseJava
-  ${endif}
+  nojava:
   ${NSD_CreateLabel} 0 70u 100% 12u "Enter path to data directory"
   Pop $LabelData
   ${NSD_CreateText} 0 83u -20u 12u "data"
@@ -645,20 +646,20 @@ Function customDialogLeave
     Abort
   ${endif}
 
-  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
+  StrCmp "@CPACK_PACKAGE_NAME@" "CVAC_binary" 0 nojava1
       ${ifnot} ${FileExists} "$JavaPathValue"
         MessageBox MB_OK "Java path incorrect" /SD IDOK
         Abort
       ${endif}
-  ${endif}
+nojava1:
 
   #Set a local EnvirnomentVariable
   System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("PYTHON_HOME", $PythonPathValue).r0'
   StrCmp $0 0 error
-  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
+  StrCmp "@CPACK_PACKAGE_NAME@" "CVAC_binary" 0 nojava2
       System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("JAVA_HOME", $JavaPathValue).r0'
       StrCmp $0 0 error
-  ${endif}
+nojava2:
   System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("CVAC_DATADIR", $DataPathValue).r0'
   StrCmp $0 0 error
   Goto done

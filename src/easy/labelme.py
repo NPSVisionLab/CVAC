@@ -18,8 +18,18 @@ def parsePolygon( etelem ):
     polygon = cvac.Silhouette()
     polygon.points = []
     for pt in etelem.findall('pt'):
+        # Matlab Notation: 1-based
+        tx = int(pt.find('x').text)
+        if tx<1:
+            tx = 1
+        
+        ty = int(pt.find('y').text)
+        if ty<1:
+            ty = 1;        
+        
+        # OpenCV Notation: 0-based
         polygon.points = polygon.points \
-          + [cvac.Point2D(pt.find('x').text, pt.find('y').text)]
+          + [cvac.Point2D(str(tx-1), str(ty-1))]
     return polygon
 
 def parseLabeledObjects( root, substrate ):
@@ -27,7 +37,17 @@ def parseLabeledObjects( root, substrate ):
     that does not have the <deleted> tag set,
     collect the name, attributes and the polygon and create the
     equivalent cvac.Silhouette from it
-    '''
+    '''    
+    objImgSize = root.find('imagesize')
+    if objImgSize != None:
+        objH = objImgSize.find('nrows')
+        if objH != None:            
+            substrate.height = int(objH.text)
+            
+        objW = objImgSize.find('ncols')
+        if objW != None:
+            substrate.width = int(objW.text)
+    
     labels = []
     for lmobj in root.findall('object'):
         deleted = lmobj.find('deleted').text
@@ -36,7 +56,7 @@ def parseLabeledObjects( root, substrate ):
         label = cvac.LabeledLocation()
         label.confidence = 1.0
         label.sub = substrate
-        name = lmobj.find('name').text
+        name = lmobj.find('name').text.strip()
     
         properties = {}
         for attrib in lmobj.findall('attributes'):
@@ -109,7 +129,8 @@ def parseFolder( localDir, lmAnnotations, lmImages, lmFolder, CVAC_DataDir ):
                   ' does not have filename element')
             continue
         else:
-            imgFname = felem.text
+            imgFname = felem.text.strip() # strip any leading or trailing white space
+            
         cvacFp = cvac.FilePath( cvacDir, imgFname )
         substrate = cvac.Substrate( True, False, cvacFp, -1, -1 )
         labels = labels + parseLabeledObjects( root, substrate )

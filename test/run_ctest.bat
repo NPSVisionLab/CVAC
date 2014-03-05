@@ -14,7 +14,7 @@ set RES=0
 REM start up services
 cd "%ROOT_DIR%"
 call bin\startIcebox.bat
-timeout /T 5
+waitfor DUMMY /T 5 2> NUL
 REM run the tests, capture exit status
 cd "%BUILD_DIR%"
 if "%CTEST_ARGS%" equ "" (
