@@ -34,7 +34,7 @@ print("==== Training runset: ====")
 posPurpose = easy.getPurpose('pos')
 negPurpose = easy.getPurpose('neg')
 trainset = cvac.RunSet()
-easy.addToRunSet(trainset, categories['apple'], posPurpose);
+easy.addToRunSet(trainset, categories[objname], posPurpose);
 #trainset = easy.createRunSet( categories, purpose=posPurpose );
 #easy.printRunSetInfo( trainset, printLabels=True )
 easy.printRunSetInfo( trainset )
