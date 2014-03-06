@@ -161,12 +161,18 @@ add_custom_command(TARGET ${target}
                    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar
                    COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/corpus -cp "${CMAKE_JAVA_JAR_PATH}" ${CORPUS_SOURCE_FILES} util/*java ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar -C ${CMAKE_CURRENT_BINARY_DIR}/corpus . > list
-                   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
                    DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
                    DEPENDS ${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
+
+#copy the jar to the libaray dir
+add_custom_command(TARGET ${target}
+                   OUTPUT ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar
+                   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar)
+
 add_custom_target(Corpus ALL
-                  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar
+                  DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar
                   DEPENDS "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java"
                   )
   #copy_file( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
@@ -191,12 +197,18 @@ add_custom_command(TARGET ${target}
                    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar
                    COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/fileserver -cp "${CMAKE_JAVA_JAR_PATH}" ${FILESERVER_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar -C ${CMAKE_CURRENT_BINARY_DIR}/fileserver . > list
-                   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
                    DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
                    DEPENDS ${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
+
+#copy the jar to the libaray dir
+add_custom_command(TARGET ${target}
+                   OUTPUT ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar
+                   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar)
+
 add_custom_target(FileServer ALL
-                  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar
+                  DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar
                   DEPENDS "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java"
                   )
  #copy_file( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
