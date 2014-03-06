@@ -40,7 +40,7 @@ print("Trying to import Ice... ")
 try:
     import Ice
     print("  succeeded.")
-    check_degenerate( Ice, 287 )
+    check_degenerate( Ice, 286 )
 except ImportError as ex:
     print("  failed:")
     print("  Please add /your/CVAC_dir/3rdparty/ICE/python to PYTHONPATH.")
