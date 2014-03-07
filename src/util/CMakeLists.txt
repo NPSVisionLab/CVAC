@@ -42,6 +42,7 @@ SET(HEADER_FILES
 )
 
 INCLUDE_DIRECTORIES(${CVAC_INCLUDE_DIR} ${ICE_INCLUDE}
+                    ${OpenCV_INCLUDE_DIRS}
                     ${CMAKE_CURRENT_BINARY_DIR}#for the generated slice files
                     ${LIBARCHIVE_INCLUDE}
                     )
