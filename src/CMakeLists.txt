@@ -134,7 +134,7 @@ FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cvac)
 add_custom_command(TARGET ${target}
                    OUTPUT ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.class
                    COMMAND ${Java_JAVAC_EXECUTABLE} -d ${CMAKE_CURRENT_BINARY_DIR}/cvac -cp "${CMAKE_JAVA_JAR_PATH}" ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
-#                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
                    COMMENT "compiling CvacSliced"
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
 #make a jar
