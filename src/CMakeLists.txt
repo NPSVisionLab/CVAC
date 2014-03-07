@@ -34,10 +34,9 @@ SET ( SLICE_ARGS -I${ICE_ROOT}/slice --output-dir ${SLICE_OUTPUT_PATH} )
 #    COMMAND "${ICE_SLICE2JAVA_EXECUTABLE}"  ARGS "${SLICE_ARGS}"
 
 ADD_CUSTOM_COMMAND(
-    OUTPUT "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java" "${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt"
+    OUTPUT "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java" 
     PRE_BUILD
     COMMAND "${ICE_SLICE2JAVA_EXECUTABLE}"  ${SLICE_FILES} ${SLICE_ARGS}
-    COMMAND "${CMAKE_COMMAND}" -E touch "${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt"
     DEPENDS ${SLICE_FILES}
     WORKING_DIRECTORY "${CVAC_ROOT_DIR}/src"
     COMMENT "Generating (slicing) .java files from .ice sources")
@@ -135,20 +134,27 @@ FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cvac)
 add_custom_command(TARGET ${target}
                    OUTPUT ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.class
                    COMMAND ${Java_JAVAC_EXECUTABLE} -d ${CMAKE_CURRENT_BINARY_DIR}/cvac -cp "${CMAKE_JAVA_JAR_PATH}" ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
-                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt
+#                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
+                   COMMENT "compiling CvacSliced"
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
 #make a jar
 add_custom_command(TARGET ${target}
                    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar
-                   COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar -C ${CMAKE_CURRENT_BINARY_DIR}/cvac . > list
+                   COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar -C ${CMAKE_CURRENT_BINARY_DIR}/cvac . > list
                    DEPENDS "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.class"
+                   COMMENT "jaring CvacSliced"
                    )
 
+add_custom_command(TARGET ${target}
+                   OUTPUT ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/CvacSliced.jar
+                   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+                   COMMENT "copying CvacSliced"
+                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar)
+
 add_custom_target(CvacSliced ALL
-                  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar
-                  DEPENDS "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java"
+                  DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/CvacSliced.jar
                   )
+
 #ELSE (MSVC)
 #ADD_JAR( CvacSliced ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
 #        ${SLICE_OUTPUT_PATH}/cvac/*.java
@@ -166,8 +172,7 @@ FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/corpus)
 add_custom_command(TARGET ${target}
                    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/corpus/cvac/corpus/CorpusServer.class
                    COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/corpus -cp "${CMAKE_JAVA_JAR_PATH}" ${CORPUS_SOURCE_FILES} util/*java ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
-                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt
+                   COMMENT "compiling Corpus"
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
 
 #make the jar
@@ -175,18 +180,21 @@ add_custom_command(TARGET ${target}
                    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar -C ${CMAKE_CURRENT_BINARY_DIR}/corpus . > list
                    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/corpus/cvac/corpus/CorpusServer.class
+                   COMMENT "jaring Corpus"
                    )
 
 #copy the jar to the libaray dir
 add_custom_command(TARGET ${target}
                    OUTPUT ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+                   COMMENT "copying Corpus"
                    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Corpus.jar)
 
 add_custom_target(Corpus ALL
                   DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar
-                  DEPENDS "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java"
                   )
+#Add target level dependancy so CvacSliced gets done first
+add_dependencies(Corpus CvacSliced)
   #copy_file( Corpus ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
 #ELSE (MSVC)
 #  ADD_JAR( Corpus ${CORPUS_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
@@ -208,8 +216,7 @@ FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fileserver)
 add_custom_command(TARGET ${target}
                    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/fileserver/cvac/fileserver/FileServer.class
                    COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/fileserver -cp "${CMAKE_JAVA_JAR_PATH}" ${FILESERVER_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
-                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
-                   DEPENDS ${SLICE_OUTPUT_PATH}/cvac/sliceDone.txt
+                   COMMENT "compiling FileServer"
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
 
 #make the jar
@@ -217,19 +224,21 @@ add_custom_command(TARGET ${target}
                    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar
                    COMMAND ${Java_JAR_EXECUTABLE}  -cvf ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar -C ${CMAKE_CURRENT_BINARY_DIR}/fileserver . > list
                    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/fileserver/cvac/fileserver/FileServer.class
+                   COMMENT "jaring FileServer"
                    )
 
-#copy the jar to the libaray dir
 #copy the jar to the libaray dir
 add_custom_command(TARGET ${target}
                    OUTPUT ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+                   COMMENT "copying FileServer"
                    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/FileServer.jar)
 
 add_custom_target(FileServer ALL
                   DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar
-                  DEPENDS "${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java"
                   )
+#Add target level dependancy so Corpus gets done first
+add_dependencies(FileServer Corpus)
  #copy_file( FileServer ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} )
 #ELSE (MSVC)
 # ADD_JAR( FileServer ${FILESERVER_SOURCE_FILES} ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java
