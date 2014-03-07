@@ -29,13 +29,13 @@ if exist %LOCKFILE% (
     exit /b 1
 )
 
-if "${START_ICE_SERVICES}" == "1" goto starticebox
+if "@START_ICE_SERVICES@" == "1" goto starticebox
 goto noice
 :starticebox
 start "CVAC Services (C++)" "cmd /K ""%ICEDIR%/bin/icebox.exe" --Ice.Config=config.icebox"
 :noice
 
-if "${START_JAVA_SERVICES}" == "1" goto startjava
+if "@START_JAVA_SERVICES@" == "1" goto startjava
 goto next
 :startjava
     start "CVAC Services (Java)" "cmd /K ""%JAVAEXE%" -cp "%ICEDIR%/lib/Ice.jar;%ICEBOXJAR%;%JARDIR%/FileServer.jar;%JARDIR%/Corpus.jar;%THRDPARTYLIBDIR%/labelme.jar;%THRDPARTYLIBDIR%/javabuilder.jar;%THRDPARTYLIBDIR%/commons-io-2.4.jar;%THRDPARTYLIBDIR%/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox"

@@ -31,7 +31,7 @@ ENDIF (WIN32)
 
 CONFIGURE_FILE( startIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/startIcebox.${SCRIPT_EXT} )
 CONFIGURE_FILE( stopIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/stopIcebox.${SCRIPT_EXT} )
-CONFIGURE_FILE( startServices.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/startServices.${SCRIPT_EXT} )
+CONFIGURE_FILE( startServices.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/startServices.${SCRIPT_EXT} @ONLY )
 
 INCLUDE (UserCMakeLists.txt OPTIONAL)
 

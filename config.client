@@ -11,6 +11,15 @@ Ice.ACM.Client=0
 ## CVAC Services Config:
 CVAC.DataDir = data
 
+OpenCVCascadeDetector.Proxy=OpenCVCascadeDetector:tcp -p 10102
+OpenCVCascadeTrainer..Proxy=OpenCVCascadeTrainer:tcp -p  10107
+BOW_Trainer.Proxy=BOW_Trainer:tcp -p          10103
+BOW_Detector.Proxy=BOW_Detector:tcp -p         10104
+CorpusServer.Proxy=CorpusServer:tcp  -p  10011      
+PythonCorpusService.Proxy=PythonCorpusService:tcp -p 10021
+FileService.Proxy=FileService:tcp  -p 10110
+RSItrTest_Detector.Proxy=RSItrTest_Detector:tcp  -p 10109
+
 VideoValidatorForOpenCVClient.Proxy = VideoValidatorForOpenCV:tcp -p 10108
 
 bowIceTrain.Proxy=bowTrain:tcp -p 10103
