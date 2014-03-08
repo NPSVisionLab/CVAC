@@ -16,7 +16,7 @@ export CVAC_REMOTE_TEST_SERVER=$4
 # start up services
 cd ${ROOT_DIR}
 bin/startIcebox.sh
-sleep 5
+sleep 10
 
 # run the tests, capture exit status
 cd ${BUILD_DIR}
