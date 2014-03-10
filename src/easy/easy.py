@@ -246,6 +246,12 @@ def testRunSetIntegrity(runset):
             return False
         else:
             for lb in plist.labeledArtifacts:                
+                labelname  = 'nolabel'
+                if lb.lab.hasLabel != True:
+                    print("Warning: " + lb.sub.path.filename + " has no label.")
+                else:
+                    labelname = lb.lab.name
+
                 minX = 0
                 minY = 0
                 maxX = sys.maxint 
@@ -259,12 +265,12 @@ def testRunSetIntegrity(runset):
                 for pt in lb.loc.points:
                     if (pt.x < minX) or (pt.y < minY) \
                     or (pt.x >= maxX) or (pt.y >= maxY):
-                        print("Out of boundary in " + lb.sub.path.filename + \
-                               ": X=" + str(pt.x) + ", Y=" + str(pt.y))
+                        print("Warning: label \"" \
+                              + labelname + "\" is out of bounds in file \"" \
+                              + lb.sub.path.filename + "\"" \
+                              + " (X=" + str(pt.x) + ", Y=" + str(pt.y) + ")")
                         return False
-                
-                if lb.lab.hasLabel != True:
-                    print("Warning: " + lb.sub.path.filename + " has no label.")
+                 
 #                 else:
 #                     print("File= " + lb.sub.path.filename)
 #                     print("Label= " + lb.lab.name)
