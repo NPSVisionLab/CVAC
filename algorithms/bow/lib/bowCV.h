@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <util/ServiceMan.h>
 #include <util/DetectorDataArchive.h>
+#include <util/FileUtils.h>
 
 #include <opencv2/opencv.hpp>
 // #include <opencv2/opencv.hpp>
@@ -71,6 +72,7 @@
 
 
 using namespace cv;
+using namespace cvac;
 
 class bowCV {
 public:
@@ -81,7 +83,7 @@ public:
     BOW_REJECT_CLASS_IGNORE_SAMPLES, BOW_REJECT_CLASS_AS_FIRST_STAGE;
   
 public:
-  bowCV();
+  bowCV(const CallbackHandlerPrx& _callback = NULL);
   ~bowCV();	
 
   bool  isInitialized();
@@ -150,6 +152,9 @@ private:
   std::vector<int>          vClassIDTrain;
   std::vector<int>          vBoundX,vBoundY;
   std::vector<int>          vBoundWidth,vBoundHeight;
+
+private:
+  CallbackHandlerPrx        mCallback2Client;
 };
 
 #endif	//_BOWCV_H__

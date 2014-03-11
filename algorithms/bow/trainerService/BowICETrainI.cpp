@@ -191,7 +191,7 @@ bowCV* BowICETrainI::initialize( TrainerCallbackHandlerPrx& _callback,
     }      
   }
   
-  bowCV* pBowCV = new bowCV();
+  bowCV* pBowCV = new bowCV(_callback);
   bool fInitialized =
     pBowCV->train_initialize(_nameFeature,_nameDescriptor,_nameMatcher,_countWords, &dda);
   if (fInitialized)

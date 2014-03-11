@@ -109,7 +109,9 @@ void BowICEI::stopping()
 
                           // Client verbosity
 void BowICEI::initialize( DetectorDataArchive& dda,
-                          const ::cvac::FilePath &file, const::Ice::Current &current)
+                          const ::cvac::FilePath &file,
+                          const::Ice::Current &current,
+                          DetectorCallbackHandlerPrx& _callback)
 {
   // Set CVAC verbosity according to ICE properties
   Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
@@ -124,7 +126,7 @@ void BowICEI::initialize( DetectorDataArchive& dda,
   // can be called.  We need to make sure we have it
   if (pBowCV == NULL)
   {
-    pBowCV = new bowCV();
+    pBowCV = new bowCV(_callback);
   }
   cvac::FilePath model;
   if (configModelFileName.empty())
@@ -164,7 +166,7 @@ void BowICEI::initialize( DetectorDataArchive& dda,
   }else
   {
       zipfilename = getFSPath( model, m_CVAC_DataDir );
-  }
+  }  
   dda.unarchive(zipfilename, clientDir);
 
   // add the CVAC.DataDir root path and initialize from dda  
@@ -273,7 +275,7 @@ void BowICEI::process(const Ice::Identity &client,
   // this must not go out of scope before processRunSet has completed:
   DetectorDataArchive dda;
 
-  initialize( dda, trainedModelFile, current);
+  initialize( dda, trainedModelFile, current,_callback);
   if (!fInitialized || NULL==pBowCV || !pBowCV->isInitialized())
   {
     localAndClientMsg(VLogger::ERROR, _callback, "BowICEI not initialized, aborting.\n");

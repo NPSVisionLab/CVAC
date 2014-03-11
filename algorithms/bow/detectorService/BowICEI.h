@@ -73,8 +73,10 @@ public:
     virtual void stopping();
     
 protected:
-    void initialize( cvac::DetectorDataArchive& dda, const ::cvac::FilePath &file,
-                     const::Ice::Current &current);
+    void initialize( cvac::DetectorDataArchive& dda,
+                     const ::cvac::FilePath &file,
+                     const::Ice::Current &current,
+                     DetectorCallbackHandlerPrx& _callback);
     bool isInitialized();
     virtual void destroy(const ::Ice::Current& current);
 
