@@ -63,8 +63,9 @@ const string bowCV::BOW_REJECT_CLASS_AS_FIRST_STAGE = "stages";
 
 bowCV* pLib = NULL;
 
-bowCV::bowCV()
-{	
+bowCV::bowCV(const CallbackHandlerPrx& _callback)
+{
+  mCallback2Client = _callback;
     flagTrain = false;
     flagName = false;
     flagOneClass = false;
@@ -266,14 +267,35 @@ void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID)
     train_stackTrainImage(_fullpath,_classID,0,0,0,0);
 }
 
-void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID,const int& _x,const int& _y,const int& _width,const int& _height)
+void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID,
+                                  const int& _x,const int& _y,
+                                  const int& _width,const int& _height)
 {
-    vFilenameTrain.push_back(_fullpath);
-    vClassIDTrain.push_back(_classID);
-    vBoundX.push_back(_x);	
-    vBoundY.push_back(_y);	
-    vBoundWidth.push_back(_width);	
-    vBoundHeight.push_back(_height);	
+  _img = imread(_fullpath);
+  if(_img.empty())
+  {
+    localAndClientMsg(VLogger::WARN, mCallback2Client,
+      "There is not file %s. This file will be skipped for the processing.\n",
+      _fullpath.c_str());
+  }
+  else
+  {
+    if((_x<0) || (_y<0) || ((_x+_width)>_img.cols) || ((_y+_height)>_img.rows))
+    {
+      localAndClientMsg(VLogger::WARN, mCallback2Client,
+        "Out of boundary in file %s. This file will be skipped for the processing.\n",
+        _fullpath.c_str());
+    }
+    else
+    {
+      vFilenameTrain.push_back(_fullpath);
+      vClassIDTrain.push_back(_classID);
+      vBoundX.push_back(_x);	
+      vBoundY.push_back(_y);	
+      vBoundWidth.push_back(_width);	
+      vBoundHeight.push_back(_height);
+    }
+  }	
 }
 
 
@@ -310,7 +332,9 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         _img = imread(_fullFilePathImg);
         if(_img.empty())
         {			
-            cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
+            cout<<"Error - no file: " << _fullFilePathImg << endl;	
+            cout<<_fullFilePathImg << endl;
+            fflush(stdout);
             continue;
             //return false;
         }
@@ -323,7 +347,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
       	
         _rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
         if((_rect.width != 0) && (_rect.height != 0))
-	        _img = _img(_rect);
+          _img = _img(_rect);
 
         fDetector->detect(_img, _keypoints);
         if(_keypoints.size()<1) //According to the version of openCV, it may cause an exceptional error.
@@ -384,6 +408,13 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
             return false;
         }
         _img = imread(_fullFilePathImg);
+        
+        if(_img.empty())
+        {			
+          cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
+          continue;
+          //return false;
+        }
 
         _rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
         if((_rect.width != 0) && (_rect.height != 0))
