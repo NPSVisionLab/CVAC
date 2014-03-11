@@ -331,12 +331,11 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
 
         _img = imread(_fullFilePathImg);
         if(_img.empty())
-        {			
-            cout<<"Error - no file: " << _fullFilePathImg << endl;	
-            cout<<_fullFilePathImg << endl;
-            fflush(stdout);
+        {
+          localAndClientMsg(VLogger::WARN, mCallback2Client,
+            "There is not file %s. This file will be skipped for the processing.\n",
+            _fullFilePathImg.c_str());
             continue;
-            //return false;
         }
 
         if ((sman!=NULL) && (sman->stopRequested()))
@@ -411,9 +410,10 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         
         if(_img.empty())
         {			
-          cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
+          localAndClientMsg(VLogger::WARN, mCallback2Client,
+            "There is not file %s. This file will be skipped for the processing.\n",
+            _fullFilePathImg.c_str());
           continue;
-          //return false;
         }
 
         _rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
@@ -431,8 +431,9 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         }
         else
         {
-            cout << "The file: " << vFilenameTrain[k] << "has no keypoints and will not be used for training!" << endl;
-            fflush(stdout);
+          localAndClientMsg(VLogger::WARN, mCallback2Client,
+            "The file %s has no keypoints, and will not be used for training.\n",
+            vFilenameTrain[k].c_str());
         }
         
     }
