@@ -81,7 +81,9 @@ extern "C"
     cascade->setServiceManager( sMan );
     return sMan;
   }
+      
 }
+extern void icvMergeVecVec( const char* invecname, const char* outvecname, int posCnt, int showsamples, int width, int height );
 
 CascadeTrainI::CascadeTrainI()
   : fInitialized(false)
@@ -252,7 +254,7 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
                                    const SamplesParams& params,
                     const string& infoFilename,
                     const string& vecFilename, int* pNumPos, string CVAC_DataDir,
-                    const CallbackHandlerPrx &callback
+                    const CallbackHandlerPrx &callback, const string &bgInfo, int bgCnt
                     )
 {
  
@@ -324,25 +326,51 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
                   infoFile << rect->x << " " << rect->y << " " << rect->width <<
                           " " << rect->height  << " ";
           }
-       }
+       }   
     }
     if (skipFile == false)
+    {
         cnt++;
+    }
     // NO EXTRA BLANK LINE after the last sample, or cvhaartraining.cpp can fail on: "CV_Assert(elements_read == 1);"
     if ((cnt < imgCnt) && skipFile == false)
         infoFile << endl;
   }
   infoFile.flush();
   infoFile.close();
-  // Clean up any memory 
-  cvac::cleanupRectangleLabels(&posRectlabels);
+  
   // Save stored data from RunSet to OpenCv negative samples file
-
-  *pNumPos = cvCreateTrainingSamplesFromInfo( infoFilename.c_str(), 
+  int numPos;
+  numPos = cvCreateTrainingSamplesFromInfo( infoFilename.c_str(), 
                                               vecFilename.c_str(), 
                                               cnt, showsamples,
                                               params.width, params.height
                                              );
+  // Add geneated samples to vec file if properties say so
+  if (mTrainProps->rotate_count > 0)
+  {
+      std::vector<cvac::RectangleLabels>::iterator it;
+      for (it = posRectlabels.begin(); it < posRectlabels.end(); it++)
+      {
+          cvac::RectangleLabels recLabel = *it;
+          string tempVec = "tempVec";
+          // Use background images as background if we have enough
+          const char *bgInfoFile = NULL;
+          if (bgCnt >= mTrainProps->rotate_count)
+          {
+              bgInfoFile = bgInfo.c_str();
+          }
+          // Rotate max of 45 degrees on the z axis so we have no distortion.  
+          cvCreateTrainingSamples(tempVec.c_str(), recLabel.filename.c_str(), 0, 0, bgInfoFile, mTrainProps->rotate_count, 0, 40,
+                                  0, 0, 0.8535, showsamples, params.width, params.height);
+          // now merge new vec file info main one.
+          icvMergeVecVec(tempVec.c_str(), vecFilename.c_str(), numPos, showsamples, params.width, params.height );
+          numPos +=  mTrainProps->rotate_count;
+      }
+  }
+  // Clean up any memory 
+  cvac::cleanupRectangleLabels(&posRectlabels);
+  *pNumPos = numPos;
   return true;
 }
 
@@ -532,7 +560,8 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   std::string vecFname = tempDir + "/cascade_positives.vec";
   int numPos = 0;
   
-  createSamples( rsw, samplesParams, infoName, vecFname, &numPos, CVAC_DataDir, callback);
+  createSamples( rsw, samplesParams, infoName, vecFname, &numPos, CVAC_DataDir, callback,
+                 bgName, numNeg);
 
   // Tell ServiceManager that we will listen for stop
   mServiceMan->setStoppable();
@@ -586,6 +615,7 @@ TrainerPropertiesI::TrainerPropertiesI()
     windowSize.height = 0;
     falseAlarmRate = 0.0;
     recall = 0.0;
+    rotate_count = 0;
 }
 
 void TrainerPropertiesI::load(const TrainerProperties &p) 
@@ -654,6 +684,9 @@ bool TrainerPropertiesI::readProps()
         }else if (it->first.compare("weakCount") == 0)
         {
             weak_count = atoi(it->second.c_str());
+        }else if (it->first.compare("rotateSamples") == 0)
+        {
+            rotate_count = atoi(it->second.c_str());
         }
     }
    
@@ -698,6 +731,8 @@ bool TrainerPropertiesI::writeProps()
     props.insert(std::pair<string, string>("maxDepth", buff));
     sprintf(buff, "%d", weak_count);
     props.insert(std::pair<string, string>("weakCount", buff));
+    sprintf(buff, "%d", rotate_count);
+    props.insert(std::pair<string, string>("rotateSamples", buff));
 
     windowSize.width = width;
     windowSize.height = height;
