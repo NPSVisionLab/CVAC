@@ -72,6 +72,7 @@ extern "C"
 BowICEI::BowICEI()
 : pBowCV(NULL),fInitialized(false)
 {
+  callbackPtr = NULL;
     mServiceMan = NULL;
 }
 
@@ -109,9 +110,7 @@ void BowICEI::stopping()
 
                           // Client verbosity
 void BowICEI::initialize( DetectorDataArchive& dda,
-                          const ::cvac::FilePath &file,
-                          const::Ice::Current &current,
-                          DetectorCallbackHandlerPrx& _callback)
+                          const ::cvac::FilePath &file, const::Ice::Current &current)
 {
   // Set CVAC verbosity according to ICE properties
   Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
@@ -126,7 +125,7 @@ void BowICEI::initialize( DetectorDataArchive& dda,
   // can be called.  We need to make sure we have it
   if (pBowCV == NULL)
   {
-    pBowCV = new bowCV(_callback);
+    pBowCV = new bowCV((MsgLogger*)this);
   }
   cvac::FilePath model;
   if (configModelFileName.empty())
@@ -166,7 +165,7 @@ void BowICEI::initialize( DetectorDataArchive& dda,
   }else
   {
       zipfilename = getFSPath( model, m_CVAC_DataDir );
-  }  
+  }
   dda.unarchive(zipfilename, clientDir);
 
   // add the CVAC.DataDir root path and initialize from dda  
@@ -269,23 +268,29 @@ void BowICEI::process(const Ice::Identity &client,
                       const::cvac::DetectorProperties &props,
                       const ::Ice::Current& current)
 {
-  DetectorCallbackHandlerPrx _callback = 
+  callbackPtr = 
     DetectorCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
 
   // this must not go out of scope before processRunSet has completed:
   DetectorDataArchive dda;
 
-  initialize( dda, trainedModelFile, current,_callback);
+  initialize( dda, trainedModelFile, current);
   if (!fInitialized || NULL==pBowCV || !pBowCV->isInitialized())
   {
-    localAndClientMsg(VLogger::ERROR, _callback, "BowICEI not initialized, aborting.\n");
+    localAndClientMsg(VLogger::ERROR, callbackPtr, "BowICEI not initialized, aborting.\n");
   }
   DoDetectFunc func = BowICEI::processSingleImg;
 
   try {
-    processRunSet(this, _callback, func, runset, m_CVAC_DataDir, mServiceMan);
+    processRunSet(this, callbackPtr, func, runset, m_CVAC_DataDir, mServiceMan);
   }
   catch (exception e) {
-    localAndClientMsg(VLogger::ERROR, _callback, "BOW detector could not process given file-path.\n");
+    localAndClientMsg(VLogger::ERROR, callbackPtr, "BOW detector could not process given file-path.\n");
   }
 }
+
+void BowICEI::message(MsgLogger::Levels msgLevel, const string& _msgStr)
+{  
+  localAndClientMsg((VLogger::Levels)msgLevel,callbackPtr,_msgStr.c_str());
+}
+

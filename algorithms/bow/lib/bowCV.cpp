@@ -63,9 +63,8 @@ const string bowCV::BOW_REJECT_CLASS_AS_FIRST_STAGE = "stages";
 
 bowCV* pLib = NULL;
 
-bowCV::bowCV(const CallbackHandlerPrx& _callback)
-{
-  mCallback2Client = _callback;
+bowCV::bowCV(MsgLogger* _msgLog)
+{	
     flagTrain = false;
     flagName = false;
     flagOneClass = false;
@@ -77,6 +76,8 @@ bowCV::bowCV(const CallbackHandlerPrx& _callback)
 
     filenameVocabulary = "logTrain_Vocabulary.xml.gz";
     filenameSVM = "logTrain_svm.xml.gz";
+
+    msgLogger = _msgLog;
 }
 
 bowCV::~bowCV()
@@ -267,35 +268,14 @@ void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID)
     train_stackTrainImage(_fullpath,_classID,0,0,0,0);
 }
 
-void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID,
-                                  const int& _x,const int& _y,
-                                  const int& _width,const int& _height)
+void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID,const int& _x,const int& _y,const int& _width,const int& _height)
 {
-  _img = imread(_fullpath);
-  if(_img.empty())
-  {
-    localAndClientMsg(VLogger::WARN, mCallback2Client,
-      "There is not file %s. This file will be skipped for the processing.\n",
-      _fullpath.c_str());
-  }
-  else
-  {
-    if((_x<0) || (_y<0) || ((_x+_width)>_img.cols) || ((_y+_height)>_img.rows))
-    {
-      localAndClientMsg(VLogger::WARN, mCallback2Client,
-        "Out of boundary in file %s. This file will be skipped for the processing.\n",
-        _fullpath.c_str());
-    }
-    else
-    {
-      vFilenameTrain.push_back(_fullpath);
-      vClassIDTrain.push_back(_classID);
-      vBoundX.push_back(_x);	
-      vBoundY.push_back(_y);	
-      vBoundWidth.push_back(_width);	
-      vBoundHeight.push_back(_height);
-    }
-  }	
+    vFilenameTrain.push_back(_fullpath);
+    vClassIDTrain.push_back(_classID);
+    vBoundX.push_back(_x);	
+    vBoundY.push_back(_y);	
+    vBoundWidth.push_back(_width);	
+    vBoundHeight.push_back(_height);	
 }
 
 
@@ -323,6 +303,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     // START - Clustering (Most time-consuming step)
     //////////////////////////////////////////////////////////////////////////
 
+    vector<int> vSkipIndex;
     Mat _descriptorRepository;		
     Rect _rect;
     for(unsigned int k=0;k<vFilenameTrain.size();k++)
@@ -332,21 +313,33 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         _img = imread(_fullFilePathImg);
         if(_img.empty())
         {
-          localAndClientMsg(VLogger::WARN, mCallback2Client,
-            "There is not file %s. This file will be skipped for the processing.\n",
-            _fullFilePathImg.c_str());
-            continue;
+          string outMsg;
+          outMsg = "There is no file " + _fullFilePathImg + 
+                   ". This file will be skipped for the processing.\n";
+          msgLogger->message(MsgLogger::WARN,outMsg);          
+          continue;
         }
 
         if ((sman!=NULL) && (sman->stopRequested()))
         {
           sman->stopCompleted();
           return false;
-        }        
+        }  
+
+        if((vBoundX[k]<0) || (vBoundY[k]<0) || 
+          ((vBoundX[k]+vBoundWidth[k])>_img.cols) || 
+          ((vBoundY[k]+vBoundHeight[k])>_img.rows))
+        {
+          string outMsg;
+          outMsg = "Out of boundary in file " + _fullFilePathImg + 
+                   ". This file will be skipped for the processing.\n";
+          msgLogger->message(MsgLogger::WARN,outMsg);
+          continue;
+        }
       	
         _rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
         if((_rect.width != 0) && (_rect.height != 0))
-          _img = _img(_rect);
+	        _img = _img(_rect);
 
         fDetector->detect(_img, _keypoints);
         if(_keypoints.size()<1) //According to the version of openCV, it may cause an exceptional error.
@@ -407,14 +400,13 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
             return false;
         }
         _img = imread(_fullFilePathImg);
-        
         if(_img.empty())
-        {			
-          localAndClientMsg(VLogger::WARN, mCallback2Client,
-            "There is not file %s. This file will be skipped for the processing.\n",
-            _fullFilePathImg.c_str());
           continue;
-        }
+
+        if((vBoundX[k]<0) || (vBoundY[k]<0) || 
+          ((vBoundX[k]+vBoundWidth[k])>_img.cols) || 
+          ((vBoundY[k]+vBoundHeight[k])>_img.rows))
+          continue;
 
         _rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
         if((_rect.width != 0) && (_rect.height != 0))
@@ -431,9 +423,8 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         }
         else
         {
-          localAndClientMsg(VLogger::WARN, mCallback2Client,
-            "The file %s has no keypoints, and will not be used for training.\n",
-            vFilenameTrain[k].c_str());
+            cout << "The file: " << vFilenameTrain[k] << "has no keypoints and will not be used for training!" << endl;
+            fflush(stdout);
         }
         
     }
@@ -537,12 +528,23 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
     _img = imread(_fullfilename);
     if(_img.empty())
     {
-        cout << "Error - could not read image file: " << _fullfilename <<endl;
-        fflush(stdout);
-        return false;
+      string outMsg;
+      outMsg = "There is no file " + _fullfilename + 
+               ". This file will be skipped for the processing.\n";
+      msgLogger->message(MsgLogger::ERROR,outMsg);
+      return false;
     }
     else
     {
+      if((_boxX<0) || (_boxY<0) || 
+        ((_boxX+_boxWidth)>_img.cols) || ((_boxY+_boxHeight)>_img.rows))
+      {
+        string outMsg;
+        outMsg = "Out of boundary in file " + _fullfilename + 
+          ". This file will be skipped for the processing.\n";
+        msgLogger->message(MsgLogger::ERROR,outMsg);
+        return false;
+      }
         Rect tRect = Rect(_boxX,_boxY,_boxWidth,_boxHeight);
         if((tRect.width != 0) && (tRect.height != 0))
             _img = _img(tRect);

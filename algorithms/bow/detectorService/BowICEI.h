@@ -48,6 +48,7 @@
 #include <util/processRunSet.h>
 #include <util/ServiceMan.h>
 #include <util/ServiceManI.h>
+#include <util/MsgLogger.h>
 
 class BowICEI : public cvac::Detector, public cvac::StartStop
 {
@@ -73,10 +74,8 @@ public:
     virtual void stopping();
     
 protected:
-    void initialize( cvac::DetectorDataArchive& dda,
-                     const ::cvac::FilePath &file,
-                     const::Ice::Current &current,
-                     DetectorCallbackHandlerPrx& _callback);
+    void initialize( cvac::DetectorDataArchive& dda, const ::cvac::FilePath &file,
+                     const::Ice::Current &current);
     bool isInitialized();
     virtual void destroy(const ::Ice::Current& current);
 
@@ -86,6 +85,10 @@ private:
     bool   fInitialized;    
     std::string configModelFileName;
     static cvac::ResultSet processSingleImg(cvac::DetectorPtr detector,const char* fullfilename);
+
+private:
+  cvac::DetectorCallbackHandlerPrx callbackPtr; 
+  virtual void message(MsgLogger::Levels msgLevel, const string& _msgStr);
 };
 
 #endif //_BowICEI_H__
