@@ -36,6 +36,7 @@ SET(HEADER_FILES
 	${CVAC_INCLUDE_DIR}/util/RunSetWrapper.h
 	${CVAC_INCLUDE_DIR}/util/MediaConverter.h
 	${CVAC_INCLUDE_DIR}/util/OutputResults.h
+	${CVAC_INCLUDE_DIR}/util/MsgLogger.h
 #if (WIN32)
     ${CVAC_INCLUDE_DIR}/util/wdirent.h
 #endif (WIN32)
