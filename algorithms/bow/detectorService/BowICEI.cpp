@@ -125,7 +125,7 @@ void BowICEI::initialize( DetectorDataArchive& dda,
   // can be called.  We need to make sure we have it
   if (pBowCV == NULL)
   {
-    pBowCV = new bowCV((MsgLogger*)this);
+    pBowCV = new bowCV(this);
   }
   cvac::FilePath model;
   if (configModelFileName.empty())

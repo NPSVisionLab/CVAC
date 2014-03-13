@@ -529,9 +529,8 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
     if(_img.empty())
     {
       string outMsg;
-      outMsg = "There is no file " + _fullfilename + 
-               ". This file will be skipped for the processing.\n";
-      msgLogger->message(MsgLogger::ERROR,outMsg);
+      outMsg = "There is no file " + _fullfilename + ".\n";
+      msgLogger->message(MsgLogger::WARN,outMsg);
       return false;
     }
     else
@@ -540,9 +539,8 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
         ((_boxX+_boxWidth)>_img.cols) || ((_boxY+_boxHeight)>_img.rows))
       {
         string outMsg;
-        outMsg = "Out of boundary in file " + _fullfilename + 
-          ". This file will be skipped for the processing.\n";
-        msgLogger->message(MsgLogger::ERROR,outMsg);
+        outMsg = "Out of boundary in file " + _fullfilename + ".\n";
+        msgLogger->message(MsgLogger::WARN,outMsg);
         return false;
       }
         Rect tRect = Rect(_boxX,_boxY,_boxWidth,_boxHeight);
