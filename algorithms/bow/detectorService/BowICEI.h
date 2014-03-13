@@ -50,7 +50,7 @@
 #include <util/ServiceManI.h>
 #include <util/MsgLogger.h>
 
-class BowICEI : public cvac::Detector, public cvac::StartStop
+class BowICEI : public cvac::Detector, public cvac::StartStop, public MsgLogger
 {
 public:
     BowICEI();
