@@ -48,8 +48,9 @@
 #include <util/processRunSet.h>
 #include <util/ServiceMan.h>
 #include <util/ServiceManI.h>
+#include <util/MsgLogger.h>
 
-class BowICEI : public cvac::Detector, public cvac::StartStop
+class BowICEI : public cvac::Detector, public cvac::StartStop, public MsgLogger
 {
 public:
     BowICEI();
@@ -84,6 +85,10 @@ private:
     bool   fInitialized;    
     std::string configModelFileName;
     static cvac::ResultSet processSingleImg(cvac::DetectorPtr detector,const char* fullfilename);
+
+private:
+  cvac::DetectorCallbackHandlerPrx callbackPtr; 
+  virtual void message(MsgLogger::Levels msgLevel, const string& _msgStr);
 };
 
 #endif //_BowICEI_H__

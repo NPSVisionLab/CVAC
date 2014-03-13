@@ -71,8 +71,9 @@ extern "C"
 }
 
 BowICETrainI::BowICETrainI()
-{
-    mServiceMan = NULL;	
+:mServiceMan(NULL)
+{    
+  callbackPtr = NULL;
 }
 
 BowICETrainI::~BowICETrainI()
@@ -191,7 +192,7 @@ bowCV* BowICETrainI::initialize( TrainerCallbackHandlerPrx& _callback,
     }      
   }
   
-  bowCV* pBowCV = new bowCV();
+  bowCV* pBowCV = new bowCV(this);
   bool fInitialized =
     pBowCV->train_initialize(_nameFeature,_nameDescriptor,_nameMatcher,_countWords, &dda);
   if (fInitialized)
@@ -367,24 +368,23 @@ void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
                            const Current& current)
 {	
   localAndClientMsg(VLogger::DEBUG, NULL, "starting BOW training process\n");
-  TrainerCallbackHandlerPrx _callback =
-    TrainerCallbackHandlerPrx::uncheckedCast(
-      current.con->createProxy(client)->ice_oneway());		
-  localAndClientMsg( VLogger::DEBUG_2, _callback, 
+  callbackPtr = TrainerCallbackHandlerPrx::uncheckedCast(
+                     current.con->createProxy(client)->ice_oneway());		
+  localAndClientMsg( VLogger::DEBUG_2, callbackPtr, 
                      "starting BOW training process, got callback pointer\n");
 
   PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
   std::string CVAC_DataDir = props->getProperty("CVAC.DataDir");
 
   // argument error checking: any data? consistent multiclass or pos/neg purpose?
-  if (!checkPurposedLists( runset.purposedLists, _callback ))
+  if (!checkPurposedLists( runset.purposedLists, callbackPtr ))
     return;
 
   DetectorDataArchive dda;
-  bowCV* pBowCV = initialize(_callback, tprops, dda, current);
+  bowCV* pBowCV = initialize(callbackPtr, tprops, dda, current);
   if ( NULL==pBowCV )
   {
-    localAndClientMsg(VLogger::ERROR, _callback,
+    localAndClientMsg(VLogger::ERROR, callbackPtr,
                       "Trainer not initialized, aborting.\n");
     return;
   }
@@ -397,7 +397,7 @@ void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
   for (size_t listidx = 0; listidx < runset.purposedLists.size(); listidx++)
   {
     processPurposedList( runset.purposedLists[listidx], pBowCV,
-                         _callback, CVAC_DataDir,
+                         callbackPtr, CVAC_DataDir,
                          labelmap, &labelsMatch );
   }
   if ( !labelsMatch ) labelmap.clear();
@@ -410,7 +410,7 @@ void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
   std::string tTempDir = mServiceMan->getSandbox()->createTrainingDir(clientName);
   // TODO: when should this tTempDir be deleted?
 
-  localAndClientMsg(VLogger::INFO, _callback, 
+  localAndClientMsg(VLogger::INFO, callbackPtr, 
                     "Starting actual training procedure...\n"); 
   // Tell ServiceManager that we will listen for stop
   mServiceMan->setStoppable();
@@ -427,7 +427,7 @@ void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
   if(!fTrain)
   {
     deleteDirectory(tTempDir);
-    localAndClientMsg(VLogger::ERROR, _callback,
+    localAndClientMsg(VLogger::ERROR, callbackPtr,
                       "Error during the training of BoW.\n");
     return;
   }
@@ -435,12 +435,12 @@ void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
   // create the archive of the trained model
   FilePath trainedModel =
     createArchive( dda, pBowCV, labelmap, clientName, CVAC_DataDir, tTempDir );
-  _callback->createdDetector(trainedModel);
+  callbackPtr->createdDetector(trainedModel);
 
   delete pBowCV;
   pBowCV = NULL;
 
-  localAndClientMsg(VLogger::INFO, _callback, "Training procedure completed.\n");
+  localAndClientMsg(VLogger::INFO, callbackPtr, "Training procedure completed.\n");
 }
 
 int BowICETrainI::getPurposeId( const Purpose& pur,
@@ -572,4 +572,9 @@ FilePath BowICETrainI::createArchive( DetectorDataArchive& dda,
   file.directory.relativePath = relDir;
   
   return file;
+}
+
+void BowICETrainI::message(MsgLogger::Levels msgLevel, const string& _msgStr)
+{  
+  localAndClientMsg((VLogger::Levels)msgLevel,callbackPtr,_msgStr.c_str());
 }
