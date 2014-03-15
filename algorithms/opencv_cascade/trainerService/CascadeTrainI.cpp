@@ -119,8 +119,8 @@ void CascadeTrainI::initialize()
   mTrainProps->weight_trim_rate = 0.95F; // From opencv/modules/ml/src/boost.cpp
   mTrainProps->max_depth = 1;
   mTrainProps->weak_count = 100;
-  mTrainProps->width = 25;
-  mTrainProps->height = 25;
+  mTrainProps->windowSize.width = 25;
+  mTrainProps->windowSize.height = 25;
   
   fInitialized = true;
 }
@@ -350,6 +350,7 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
   if (mTrainProps->rotate_count > 0)
   {
       std::vector<cvac::RectangleLabels>::iterator it;
+      printf("Adding %d rotated images per sample\n", mTrainProps->rotate_count);
       for (it = posRectlabels.begin(); it < posRectlabels.end(); it++)
       {
           cvac::RectangleLabels recLabel = *it;
@@ -360,15 +361,19 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
           {
               bgInfoFile = bgInfo.c_str();
           }
-          // Rotate max of 45 degrees on the z axis so we have no distortion.  
-          cvCreateTrainingSamples(tempVec.c_str(), recLabel.filename.c_str(), 0, 0, bgInfoFile, mTrainProps->rotate_count, 0, 40,
-                                  0, 0, 0.8535, showsamples, params.width, params.height);
+          // Rotate max of 15 degrees on the z axis and 5 degrees on x, y.  
+          cvCreateTrainingSamples(tempVec.c_str(), recLabel.filename.c_str(), 0, 0, bgInfoFile, mTrainProps->rotate_count, 0, 0,
+                                    0.0872, 0.0872, 0.2618, showsamples, params.width, params.height);
+  
           // now merge new vec file info main one.
           icvMergeVecVec(tempVec.c_str(), vecFilename.c_str(), numPos, showsamples, params.width, params.height );
           numPos +=  mTrainProps->rotate_count;
       }
+       printf("Adding rotated images complete\n");
   }
   // Clean up any memory 
+  //debug
+  //printf("Using vec file %s\n", vecFilename.c_str());
   cvac::cleanupRectangleLabels(&posRectlabels);
   *pNumPos = numPos;
   return true;
@@ -385,8 +390,8 @@ bool CascadeTrainI::createClassifier( const string& tempDir,
       precalcIdxBufSize = 256;
   bool baseFormatSave = false;
   CvCascadeParams cascadeParams;
-  cascadeParams.winSize.width = trainProps->width;
-  cascadeParams.winSize.height = trainProps->height;
+  cascadeParams.winSize.width = trainProps->windowSize.width;
+  cascadeParams.winSize.height = trainProps->windowSize.height;
   CvCascadeBoostParams stageParams;
   Ptr<CvFeatureParams> featureParams[] = 
   { Ptr<CvFeatureParams>(new CvHaarFeatureParams),
@@ -553,8 +558,8 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   // set parameters to createsamples
   SamplesParams samplesParams;
   samplesParams.numSamples = 1000;
-  samplesParams.width = mTrainProps->width;
-  samplesParams.height = mTrainProps->height;
+  samplesParams.width = mTrainProps->windowSize.width;
+  samplesParams.height = mTrainProps->windowSize.height;
 
   // run createsamples
   std::string vecFname = tempDir + "/cascade_positives.vec";
@@ -734,8 +739,6 @@ bool TrainerPropertiesI::writeProps()
     sprintf(buff, "%d", rotate_count);
     props.insert(std::pair<string, string>("rotateSamples", buff));
 
-    windowSize.width = width;
-    windowSize.height = height;
     falseAlarmRate = maxFalseAlarm;
     recall = minHitRate;
     return res;

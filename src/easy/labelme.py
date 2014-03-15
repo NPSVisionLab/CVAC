@@ -18,16 +18,8 @@ def parsePolygon( etelem ):
     polygon = cvac.Silhouette()
     polygon.points = []
     for pt in etelem.findall('pt'):
-        # Matlab Notation: 1-based
         tx = int(pt.find('x').text)
-        if tx<1:
-            tx = 1
-        
         ty = int(pt.find('y').text)
-        if ty<1:
-            ty = 1;        
-        
-        # OpenCV Notation: 0-based
         polygon.points = polygon.points \
           + [cvac.Point2D(str(tx-1), str(ty-1))]
     return polygon
@@ -64,6 +56,13 @@ def parseLabeledObjects( root, substrate ):
             properties[ attrib.text ] = ''
         label.lab = cvac.Label( True, name, properties, cvac.Semantics() )
         label.loc = parsePolygon( lmobj.find('polygon') )
+        
+        #assumption: 0-based notation
+        for pt in label.loc.points:
+            if (int(pt.x)<0) or (int(pt.y)<0):
+                print("Warning: label \"" \
+                      + name + "\" is out of bounds in file \"" \
+                      + label.sub.path.filename + "\"")
 
         labels = labels + [label]
 

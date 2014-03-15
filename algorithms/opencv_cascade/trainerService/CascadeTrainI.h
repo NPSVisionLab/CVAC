@@ -86,8 +86,7 @@ class TrainerPropertiesI : public cvac::TrainerProperties
   int max_depth;
   int weak_count;
   int rotate_count;
-  int width;
-  int height;
+  
 };
 
 class CascadeTrainI : public cvac::DetectorTrainer, public cvac::StartStop
