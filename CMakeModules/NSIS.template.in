@@ -601,6 +601,12 @@ Function customDialog
   ${NSD_CreateBrowseButton} -18u 83u 18u 12u "..."
   Pop $0
   ${NSD_OnClick} $0 BrowseData
+  # If we are in silent mode then set defaults to requests for path info
+  IfSilent 0 nonSilentDialog
+      StrCpy $PythonPathText  "C:\Python26\python.exe"
+      StrCpy $JavaPathText "C:\Windows\system32\java.exe"
+      StrCpy $DataPathText "data"
+nonSilentDialog:
  
   nsDialogs::Show
 
@@ -827,6 +833,7 @@ FunctionEnd
 ; End CVAC changes
 ;--------------------------------
 ;Pages
+
   !insertmacro MUI_PAGE_WELCOME
 
   !insertmacro MUI_PAGE_LICENSE "@CPACK_RESOURCE_FILE_LICENSE@"
