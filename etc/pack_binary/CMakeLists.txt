@@ -188,6 +188,11 @@ IF (WIN32)
       )
   ENDIF (NOT MSVC10)
 
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/python-2.6.6.msi
+       DESTINATION 3rdparty
+       COMPONENT Runtime 
+      )
+
 ELSE (WIN32)
 
   INSTALL(DIRECTORY   ${ICE_ROOT}/lib
