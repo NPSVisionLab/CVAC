@@ -229,7 +229,7 @@ LabelablePtr RunSetIterator::cloneLabelablePtr(const LabelablePtr _pla, int fram
             break;
         }
     }
-    if (locptr != NULL)
+    if (locptr.get() != NULL)
         //result = LabelablePtr::dynamicCast(locptr);
         result = (LabelablePtr)locptr;
     else
@@ -280,7 +280,7 @@ bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
           frameNum = atoi(tAuxInfo[_idx].c_str());
       
       LabelablePtr _la = cloneLabelablePtr(_pla, frameNum);
-      if (_la != NULL)
+      if (_la.get() != NULL)
       {
           _la->sub.isImage = true;
           //currently, conversion target is only an image.
@@ -382,7 +382,7 @@ bool RunSetIterator::isConstrained(int origIdx, LabelablePtr lptr)
   if (frameNum > -1)
   {// Find this frame and see if its lost or occluded
      LabeledTrackPtr origtptr = LabeledTrackPtr::dynamicCast(mResultSet.results[origIdx].original);
-     if (origtptr != NULL)
+     if (origtptr.get() != NULL)
      { // We have a valid LabeledTrackPtr so lets see if this frame is lost or occluded
         FrameLocationList::iterator it;
         FrameLocationList frames = origtptr->keyframesLocations;

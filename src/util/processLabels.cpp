@@ -115,7 +115,7 @@ static std::string processLabelable(string CVAC_DataDir,
 
                 }
                 rlabels->rects.push_back(lrect);  
-            } else if (bptr != NULL)
+            } else if (bptr.get() != NULL)
             {
                 rlabels->rects.push_back(bptr);
             }
