@@ -95,6 +95,8 @@ namespace cvac
     string mMediaTempDirectory;
     ResultSet mResultSet;
     cvac::Purpose mConstraintPurpose;
+	bool mNoSpaces;
+	string mTempDir;
     vector<rsMediaType>  mResultSetType;
     vector<int>          mListOrginalIdx;
     vector<LabelablePtr> mList;    

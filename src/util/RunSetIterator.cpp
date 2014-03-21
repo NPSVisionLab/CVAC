@@ -36,6 +36,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 #include <util/RunSetIterator.h>
+#include <util/FileUtils.h>
 
 using namespace Ice;
 using namespace cvac;
@@ -64,6 +65,18 @@ RunSetIterator::RunSetIterator(RunSetWrapper* _rsw,RunSetConstraint& _cons,
   mConstraintType = _cons.mimeTypes;
   mConstraintPurpose = _cons.compatiblePurpose;
   mLost = _cons.excludeLostFrames;
+  if (_cons.spacesInFilenamesPermitted)
+	  mNoSpaces = false;
+  else {
+	  mNoSpaces = true;
+	  std::string dir = getCurrentWorkingDirectory();
+#ifdef WIN32
+      char *tTempName = _tempnam(dir.c_str(), NULL);
+#else
+      char *tTempName = tempnam(dir.c_str(), NULL);
+#endif /* WIN32 */
+      mTempDir = tTempName; //for being used in making a symbolic link
+  }
   mOccluded = _cons.excludeOccludedFrames;
 
   //////////////////////////////////////////////////////////////////////////    
@@ -80,7 +93,10 @@ RunSetIterator::~RunSetIterator()
   delete mConv_openCV_i2i;
   
   clear();
-
+  if (!mTempDir.empty())
+  {
+	  deleteDirectory(mTempDir);
+  }
   //if(!mMediaTempDirectory.empty())
   //  deleteDirectory(mMediaRootDirectory + "/" + mMediaTempDirectory);
 }
@@ -109,7 +125,33 @@ void RunSetIterator::addToList(const LabelablePtr _pla,int _originalIdx)
     return;
   }
 
-  mList.push_back(_pla);  
+  if (mNoSpaces)
+  { // check if filename has spaces and get symlink
+		bool newSymlink;
+		std::string symlinkFullPath = getLegalPath(mTempDir, _pla->sub.path, newSymlink);            
+		if(newSymlink)
+		{             
+			cout << "symbolic link is going to be generated..\n";
+			string fPath = getFSPath(_pla->sub.path, mMediaRootDirectory);
+			if (makeSymlinkFile(symlinkFullPath, fPath))
+			{
+				DirectoryPath dirPath;
+				dirPath.relativePath = getFileDirectory(symlinkFullPath);
+				FilePath filePath;
+				filePath.directory = dirPath;
+				filePath.filename = getFileName(symlinkFullPath);
+				Substrate sub(_pla->sub.isImage, _pla->sub.isVideo, filePath, 0, 0);
+			    LabelablePtr newlab = new Labelable(_pla->confidence, _pla->lab, sub);
+				mList.push_back(newlab);
+			}else
+				mList.push_back(_pla);
+		}else
+			mList.push_back(_pla);
+
+  }else
+  {
+    mList.push_back(_pla);  
+  }
   mListOrginalIdx.push_back(_originalIdx);
 }
 
