@@ -13,7 +13,7 @@ WRAP_SLICE2PY( SLICE_FILES
 MAKE_DIRECTORY(${SLICE_OUTPUT_PYTHONDIR})
 
 IF (NOT BUILD_3RDPARY_PACKAGE)
-    INSTALL(FILES corpus_service.py gui.py labelme.py evaluate.py vatic.py 
+    INSTALL(FILES corpus_service.py gui.py labelme.py evaluate.py vatic.py videosegment.py
         DESTINATION src/easy
         COMPONENT Runtime
         )
@@ -28,6 +28,7 @@ CONFIGURE_FILE(evaluate.py "${SLICE_OUTPUT_PYTHONDIR}/easy/evaluate.py" COPYONLY
 CONFIGURE_FILE(corpus_service.py "${SLICE_OUTPUT_PYTHONDIR}/easy/corpus_service.py" COPYONLY)
 CONFIGURE_FILE(labelme.py "${SLICE_OUTPUT_PYTHONDIR}/easy/labelme.py" COPYONLY)
 CONFIGURE_FILE(vatic.py "${SLICE_OUTPUT_PYTHONDIR}/easy/vatic.py" COPYONLY)
+CONFIGURE_FILE(videosegment.py "${SLICE_OUTPUT_PYTHONDIR}/easy/videosegment.py" COPYONLY)
 CONFIGURE_FILE(gui.py "${SLICE_OUTPUT_PYTHONDIR}/easy/gui.py" COPYONLY)
 CONFIGURE_FILE(__init__.py "${SLICE_OUTPUT_PYTHONDIR}/easy/__init__.py" COPYONLY)
 CONFIGURE_FILE(util/ArchiveHandler.py "${SLICE_OUTPUT_PYTHONDIR}/easy/util/ArchiveHandler.py" COPYONLY)
