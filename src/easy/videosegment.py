@@ -63,34 +63,36 @@ def parseSamples( root, CVAC_DataDir ):
     dirCommon = ''
     dir = root.find('directory')
     if dir != None:
-        dirCommon = dir.text + '/'    
+        dirCommon = dir.text    
     
     labels = []
     for sample in root.findall('sample'):
         media = sample.find('media')
-        mediaLocal = media.find('local_media')
+        mediaLocal = media.find('local')
         mediaDir = dirCommon        
         if mediaLocal.find('relativePath') != None:
-            mediaDir = mediaDir + mediaLocal.find('relativePath').text + '/'
+            mediaDir=os.path.join(mediaDir,mediaLocal.find('relativePath').text)
         mediaName = mediaLocal.find('filename').text
         mediaFilepath = cvac.FilePath(cvac.DirectoryPath(mediaDir),mediaName)
         
         annot = sample.find('annotation')
-        annotLocal = annot.find('local_annotation')
+        annotLocal = annot.find('local')
         annotDir = dirCommon        
         if annotLocal.find('relativePath') != None:
-            annotDir = annotDir + annotLocal.find('relativePath').text + '/'
+            annotDir=os.path.join(annotDir,annotLocal.find('relativePath').text)
         annotName = annotLocal.find('filename').text
         
-        annotObj = TRECVIDAnnotaitonParser(CVAC_DataDir+'/'+annotDir+annotName)
-        #print(CVAC_DataDir+'/'+annotDir+annotName)
+        
+        annotObj = TRECVIDAnnotaitonParser(os.path.join(CVAC_DataDir,\
+                                                        annotDir,annotName))
+        #print(os.path.join(CVAC_DataDir,annotDir,annotName))
         bndFrms = annotObj.getCutAll() 
         #annotObj.getCutHard() for HardCuts
         #annotObj.getCutSoft() for SoftCuts        
         for frm in bndFrms:
             label = cvac.LabeledVideoSegment()
-            label.confidence = 1.0        
-            label.lab = cvac.Label(True,(sample.find('nickname')).get('uniqueid'))        
+            label.confidence = 1.0
+            label.lab = cvac.Label(True,os.path.join(mediaDir,mediaName))        
             label.sub = cvac.Substrate(False,True,mediaFilepath,-1,-1)
             label.start = cvac.VideoSeekTime(frm[0],-1)
             label.last = cvac.VideoSeekTime(frm[1],-1)
@@ -107,7 +109,7 @@ def parseCatalog( CVAC_DataDir, localDir, catalogFile ):
     '''
 
     labels = []
-    catalogPath = os.path.join(CVAC_DataDir, localDir, catalogFile) + '.xml'
+    catalogPath = os.path.join(CVAC_DataDir, localDir, catalogFile)
     
     tree = et.parse( catalogPath )
     root = tree.getroot()
