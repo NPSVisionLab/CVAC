@@ -204,7 +204,7 @@ void CascadeTrainI::writeBgFile(cvac::RunSetWrapper& rsw,
   imgCnt = cvac::processLabelArtifactsToRects(rsw, constraint, 
                                        CVAC_DataDir, mServiceMan,
                                        callback, NULL, 1,
-                                       &negRectlabels, true);
+                                       &negRectlabels, false);
   
   ofstream backgroundFile;
   backgroundFile.open(bgFilename.c_str());
@@ -250,6 +250,17 @@ bool static getImageWidthHeight(std::string filename, int &width, int &height)
    return res;
 }
 
+int CascadeTrainI::addRotatedSamples(string tempVec, string vecFilename, string filename, const char *bgInfoFile, int numPos, int showSamples, int w, int h)
+{
+	 // Rotate max of 15 degrees on the z axis and 5 degrees on x, y.  
+	 
+     cvCreateTrainingSamples(tempVec.c_str(), filename.c_str(), 0, 0, bgInfoFile, mTrainProps->rotate_count, 0, 0,
+                                    0.0872, 0.0872, 0.2618, showSamples, w, h);
+	 // now merge new vec file info main one.
+     icvMergeVecVec(tempVec.c_str(), vecFilename.c_str(), numPos, showSamples, w, h );
+     return mTrainProps->rotate_count;
+}
+
 bool CascadeTrainI::createSamples( RunSetWrapper& rsw, 
                                    const SamplesParams& params,
                     const string& infoFilename,
@@ -275,7 +286,7 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
   imgCnt = cvac::processLabelArtifactsToRects(rsw, constraint, 
                                        CVAC_DataDir, mServiceMan,
                                        callback, getImageWidthHeight, 1,
-                                       &posRectlabels, true);
+                                       &posRectlabels, false);
 
   ofstream infoFile;
  
@@ -355,20 +366,64 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
       {
           cvac::RectangleLabels recLabel = *it;
           string tempVec = "tempVec";
+		  string tempImg = "tempImage.jpg";
           // Use background images as background if we have enough
           const char *bgInfoFile = NULL;
           if (bgCnt >= mTrainProps->rotate_count)
           {
               bgInfoFile = bgInfo.c_str();
           }
-          // Rotate max of 15 degrees on the z axis and 5 degrees on x, y.  
-          cvCreateTrainingSamples(tempVec.c_str(), recLabel.filename.c_str(), 0, 0, bgInfoFile, mTrainProps->rotate_count, 0, 0,
-                                    0.0872, 0.0872, 0.2618, showsamples, params.width, params.height);
-  
-          // now merge new vec file info main one.
-          icvMergeVecVec(tempVec.c_str(), vecFilename.c_str(), numPos, showsamples, params.width, params.height );
-          numPos +=  mTrainProps->rotate_count;
-      }
+		  if (recLabel.rects.size() <= 0)
+          { // No rectangle so rotate the whole image
+              int w, h;
+              getImageWidthHeight(recLabel.filename, w, h);
+			  if (w < params.width || h < params.height)
+                  continue;
+			  if (w < params.width*3 && h < params.height *3)
+			  {
+				  numPos += addRotatedSamples(tempVec, vecFilename, recLabel.filename, bgInfoFile, numPos, showsamples, params.width, params.height);
+			  }else
+			  { // shrink the image down before rotating so we don't crash
+				  cv::Mat mat = cv::imread(recLabel.filename.c_str(), 0);
+				  cv::Size mysize(params.width*2, params.height*2);
+				  cv::Mat sizeMat;
+				  cv::resize(mat, sizeMat, mysize, CV_INTER_AREA);
+				  if (cv::imwrite(tempImg.c_str(), sizeMat))
+				  {
+					  numPos += addRotatedSamples(tempVec, vecFilename, tempImg, bgInfoFile, numPos, showsamples, params.width, params.height);
+				  }
+			  }
+        
+          }else 
+          {
+           
+              std::vector<cvac::BBoxPtr>::iterator rit;
+              // Create a temp image with just the cropped part and rotate that and add to the vec file
+              for (rit = recLabel.rects.begin(); rit < recLabel.rects.end(); rit++)
+              {
+                  cvac::BBoxPtr rect = *rit;
+                  if (rect->width < params.width || rect->height < params.height)
+                     continue;  // Skip.
+                  // Create a temp image of just the part we want
+				  cv::Mat mat = cv::imread(recLabel.filename.c_str(), 0);
+				  cv::Rect myrect(rect->x, rect->y, rect->width, rect->height);
+				  cv::Mat rMat;
+				  cv::Mat(mat, myrect).copyTo(rMat);
+				  if (rect->width > params.width*3 || rect->height > params.height *3)
+				  {
+					   cv::Size mysize(params.width*2, params.height*2);
+				       cv::Mat sizeMat;
+				       cv::resize(mat, sizeMat, mysize, CV_INTER_AREA);
+					   sizeMat.copyTo(rMat);
+				  }
+				  if (cv::imwrite(tempImg.c_str(), rMat))
+				  {
+					  numPos += addRotatedSamples(tempVec, vecFilename, tempImg, bgInfoFile, numPos, showsamples, params.width, params.height);
+				  }
+			  }
+		  }
+       }
+       
        printf("Adding rotated images complete\n");
   }
   // Clean up any memory 
@@ -531,18 +586,19 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   }
   // Since createSamples fails if there is a space in a file name we will create a temporary runset
   // and provide symbolic links to files that name spaces in there names.
-  cvac::RunSet tempRunSet = runset;
+  //cvac::RunSet tempRunSet = runset;
   // Add the cvac data dir to the directories in the runset
   //addDataPath(tempRunSet, CVAC_DataDir);
   // The symbolic links are created in a tempdir so lets remember it so we can delete it at the end
-  std::string tempRSDir = fixupRunSet(tempRunSet, CVAC_DataDir);
+  //std::string tempRSDir = fixupRunSet(tempRunSet, CVAC_DataDir);
   // Iterate over runset, inserting each POSITIVE Labelable into
   // the input file to "createsamples".  Add each NEGATIVE into
   // the bgFile.  Put both created files into a tempdir.
   std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
                                                              connectName);
   std::string tempDir = mServiceMan->getSandbox()->createTrainingDir(clientName);
-  RunSetWrapper rsw( &tempRunSet, CVAC_DataDir, mServiceMan );
+  //RunSetWrapper rsw( &tempRunSet, CVAC_DataDir, mServiceMan );
+  RunSetWrapper rsw( &runset, CVAC_DataDir, mServiceMan );
   // We can't put the bgName and infoName in the tempdir without
   // changing cvSamples since it assumes that this files location is the root
   // directory for the data.
@@ -606,7 +662,7 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   {
       localAndClientMsg(VLogger::INFO, callback, "Cascade training failed.\n");
   }
-  deleteDirectory(tempRSDir);
+  //deleteDirectory(tempRSDir);
 }
 
 //----------------------------------------------------------------------------

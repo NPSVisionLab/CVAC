@@ -280,36 +280,9 @@ bool RunSetWrapper::makeBasicList()
 
           if(in_la)	//default: LabelablePtr
           {	
-            string tAbsDir = convertToAbsDirectory(in_la->sub.path.directory.relativePath);
-            string tPath = tAbsDir + "/" + in_la->sub.path.filename;
-            FilePath tFilePath;
-            tFilePath.directory.relativePath = tAbsDir;
-            tFilePath.filename = in_la->sub.path.filename;           
-            
-            //////////////////////////////////////////////////////////////////////////
-            // From processRunSet.cpp
-            bool newSymlink;
-            std::string symlinkFullPath = getLegalPath(tTempDir, tFilePath, newSymlink);            
-
-            if(newSymlink)
-            {             
-              cout << "symbolic link is going to be generated..\n";
-              if(!makeSymlinkFile(symlinkFullPath, tPath))
-              {
-                cout << "But, it's failed..\n";
-                symlinkFullPath = tPath;  // put the orig name back so it can fail.
-              }
-            }
-            //////////////////////////////////////////////////////////////////////////            
-            
-            //fileExists routine is not working for a symbolic link
-            addToList(in_la,getTypeMicro(symlinkFullPath), curPurpose);
-            /*            
-            if(fileExists(symlinkFullPath)) 
-              addToList(in_la,getTypeMicro(symlinkFullPath), curPurpose);
-            else	//no file
-              continue;
-            */
+			
+            addToList(in_la,getTypeMicro(in_la->sub.path.filename), curPurpose);
+          
           }
           else
           {
