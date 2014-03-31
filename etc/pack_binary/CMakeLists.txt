@@ -37,6 +37,7 @@ IF ( NOT CVAC_GIT_BRANCH )
 ENDIF()
 IF ( ${CVAC_GIT_BRANCH} STREQUAL "devel" )
   set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION}-devel)
+  set(CVAC_VERSION_DIR ${CVAC_VERSION_DIR}-devel)
 ENDIF()
 
 # If Windows 8 then add -W8 to version
