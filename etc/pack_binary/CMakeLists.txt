@@ -182,12 +182,10 @@ IF (WIN32)
   ENDIF (NOT PYTHON_ONLY_CLIENT)
 
 
-  IF (NOT MSVC10)
   INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1.win32-py2.6.exe
        DESTINATION 3rdparty
        COMPONENT Runtime 
       )
-  ENDIF (NOT MSVC10)
 
   INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/python-2.6.6.msi
        DESTINATION 3rdparty

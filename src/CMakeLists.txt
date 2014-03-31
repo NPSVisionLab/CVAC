@@ -172,6 +172,7 @@ FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/corpus)
 add_custom_command(TARGET ${target}
                    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/corpus/cvac/corpus/CorpusServer.class
                    COMMAND ${Java_JAVAC_EXECUTABLE}  -d ${CMAKE_CURRENT_BINARY_DIR}/corpus -cp "${CMAKE_JAVA_JAR_PATH}" ${CORPUS_SOURCE_FILES} util/*java ${SLICE_OUTPUT_PATH}/cvac/${SLICE_TOKEN_CLASS}.java ${SLICE_OUTPUT_PATH}/cvac/*.java
+                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CvacSliced.jar
                    COMMENT "compiling Corpus"
                    WORKING_DIRECTORY ${CVAC_ROOT_DIR}/src )
 

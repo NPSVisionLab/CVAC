@@ -119,7 +119,7 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 # -O2 or -O3 on OSX causes ice to fail in Purpose list code
 IF (APPLE)
-   SET(CMAKE_CXX_FLAGS_RELEASE "-O1 -NDEBUG")
+   SET(CMAKE_CXX_FLAGS_RELEASE "")
 ENDIF (APPLE)
 
 #
