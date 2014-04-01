@@ -279,7 +279,7 @@ void CascadeDetectI::process( const Identity &client,
   int nSkipFrames = 150;  //the number of skip frames
   mServiceMan->setStoppable();
   cvac::RunSetIterator mRunsetIterator(&mRunsetWrapper,mRunsetConstraint,
-                                       mServiceMan,nSkipFrames);
+                                       mServiceMan,callback,nSkipFrames);
   mServiceMan->clearStop();
   if(!mRunsetIterator.isInitialized())
   {
@@ -302,7 +302,14 @@ void CascadeDetectI::process( const Identity &client,
     Result &curres = mRunsetIterator.getCurrentResult();
    
     std::vector<cv::Rect> objects = detectObjects( callback, labelable );
-    outputres.addResult(curres,labelable,objects, cascade_name, 1.0f);      
+    // return the label name with result
+    string resultName;
+    if (objects.size() > 0)
+        resultName = "positive";
+    else
+        resultName = "negative";
+    // returning the cascade file name as label name: outputres.addResult(curres,labelable,objects, cascadeName, 1.0f); 
+    outputres.addResult(curres,labelable,objects, resultName, 1.0f);      
     
   }  
   // We are done so send any final results
@@ -321,8 +328,10 @@ void CascadeDetectI::process( const Identity &client,
     unsigned int kfnd;
     for(kfnd=0;kfnd<tResSet.results[kres].foundLabels.size();kfnd++)
     {
-      LabeledTrackPtr _tPtr = static_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());      
-      if(_tPtr->lab.hasLabel)
+      //LabeledTrackPtr _tPtr = static_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());     
+      LabeledTrackPtr _tPtr = dynamic_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());
+      //if(_tPtr->lab.hasLabel)
+      if (_tPtr && _tPtr->lab.hasLabel)
       {
         if(_tPtr->keyframesLocations[0].frame.framecnt != -1)
           localAndClientMsg( VLogger::DEBUG, NULL, "at Frame=%i\n",_tPtr->keyframesLocations[0].frame.framecnt);
@@ -486,11 +495,12 @@ void DetectorPropertiesI::load(const DetectorProperties &p)
 {
     verbosity = p.verbosity;
     props = p.props;
-    videoFPS = p.videoFPS;
+    if (p.videoFPS > 0)
+        videoFPS = p.videoFPS;
     //Only load values that are not zero
     if (p.nativeWindowSize.width > 0 && p.nativeWindowSize.height > 0)
         nativeWindowSize = p.nativeWindowSize;
-    if (p.minNeighbors > -1)
+    if (p.minNeighbors >= 0)
         minNeighbors = p.minNeighbors;
     if (p.slideScaleFactor > 0)
         slideScaleFactor = p.slideScaleFactor;

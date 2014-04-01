@@ -92,6 +92,10 @@ REFERENCES_RELATION    = NO
 REFERENCES_LINK_SOURCE = YES
 USE_HTAGS              = NO
 VERBATIM_HEADERS       = YES
+# Setup Server side searching.  Should work well running on Jenkins.
+SEARCHENGINE           = YES
+SERVER_BASED_SEARCH    = YES
+EXTERNAL_SEARCH        = NO
 
 #---------------------------------------------------------------------------
 # configuration options related to the alphabetical class index

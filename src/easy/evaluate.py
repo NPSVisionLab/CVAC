@@ -9,30 +9,70 @@ import numpy
 import easy
 import cvac
 import math
+from operator import attrgetter, itemgetter
+
+class TestResult:
+    def __init__(self, tp=0, fp=0, tn=0, fn=0):
+        self.tp = tp;
+        self.fp = fp;
+        self.tn = tn;
+        self.fn = fn;
+        
+    def __str__(self):
+        desc = "{0} tp, {1} fp, {2} tn, {3} fn"\
+           .format(self.tp, self.fp, self.tn, self.fn)
+        return desc
+    
+class MultipleHitStrategy:
+    CountEveryFalsePositive, CountAsOneFalsPositive = range(2)
+    
+    def __init__(self, value):
+        self.value = value;
 
 def getRelativePath( label ):
     return label.sub.path.directory.relativePath + "/" + label.sub.path.filename
 
-def getConfusionTable( results, foundMap, origMap=None, origSet=None ):
+def verifyFoundMap(foundMap):
+    ''' Verify that the all the purposes in the found map are pos or neg '''
+    for purpose in foundMap.itervalues():
+        if purpose.ptype != cvac.PurposeType.POSITIVE \
+           and purpose.ptype != cvac.PurposeType.NEGATIVE:
+            print ("Not a negative or positive purpose found")
+            return False
+    return True
+
+def getConfusionTable( results, foundMap, origMap=None, origSet=None, 
+                       multipleHitStrategy=MultipleHitStrategy.CountEveryFalsePositive ):
     '''Determine true and false positives and negatives based on
     the purpose of original and found labels.
     origMap maps the relative file path of every label to the assigned purpose.
     The origMap can be constructed from the original RunSet if it
     contained purposes.
-    Returns tp, fp, tn, fn'''
+    Returns TestReult, nores'''
 
     if not origMap and not origSet:
         raise RuntimeError("need either origMap or origSet")
     if not foundMap:
         raise RuntimeError("need a foundMap")
+    if not verifyFoundMap(foundMap):
+        raise RuntimeError("Invalid found map")
     if not origMap:
         origMap = {}
         for plist in origSet.purposedLists:
             assert( isinstance(plist, cvac.PurposedLabelableSeq) )
             for sample in plist.labeledArtifacts:
+                if plist.pur.ptype != cvac.PurposeType.POSITIVE \
+                     and plist.pur.ptype != cvac.PurposeType.NEGATIVE:
+                    raise RuntimeError("Non pos or neg purpose in runset")
                 origMap[ getRelativePath(sample) ] = plist.pur
-    
-    tp = 0; fp = 0; tn = 0; fn = 0
+    # compute the number of samples in the origSet that was not evaluated
+    nores = 0
+    if origSet:
+        origSize = len( asList( origSet ) )
+        nores = origSize - len(results)
+    else:
+        print("warning: Not able to determine samples not evaluated")
+    tres = TestResult()
     for res in results:
         foundPurposes = []
         for lbl in res.foundLabels:
@@ -41,29 +81,46 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None ):
                 foundPurpose = foundMap[labelText]
                 foundPurposes.append(foundPurpose)
             else:
-                print("warning: Label " + labelText + " not in foundMap can't compute evaulation.")
+                print("warning: Label " + labelText + " not in foundMap can't compute evaluation.")
         numfound = len(res.foundLabels)
         origpur = origMap[ getRelativePath(res.original) ]
-        # todo: should check the other found labels; need a strategy
-        # to deal with more than one found label
-        if numfound==1 and len(foundPurposes) > 0 and origpur==foundPurposes[0]:
-            # "true"
+       
+        if numfound==0:
             if origpur.ptype==cvac.PurposeType.POSITIVE:
-                tp += 1
+                tres.fn += 1
             else:
-                tn += 1
+                tres.tn += 1
         else:
-            if numfound>1:
-                print("warning: evalResults cannot deal with multiple found labels yet")
-            # "false"
-            if origpur.ptype==cvac.PurposeType.POSITIVE:
-                fn += 1
-            else:
-                fp += 1
-
-    print("tp: {0}, fp: {1}, tn: {2}, fp: {3}".format(tp,fp,tn,fn))
-            
-    return tp, fp, tn, fn
+            # We found multiple things so look at multiple hit strategy to see how to count
+            foundFalsePos = False 
+            for lbl in res.foundLabels:
+                labelText = easy.getLabelText( lbl.lab, guess=False )
+                if labelText in foundMap:
+                    foundPurpose = foundMap[labelText]
+                    '''We only want to count a purpose once
+                       so remove it from the foundPurposes list '''
+                    if foundPurpose in foundPurposes:
+                        foundPurposes.remove(foundPurpose)
+                        if origpur.ptype == cvac.PurposeType.POSITIVE:
+                            if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
+                                tres.tp += 1
+                            else:
+                                tres.fn += 1
+                        else:
+                            if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
+                                if multipleHitStrategy == MultipleHitStrategy.CountEveryFalsePositive:
+                                    tres.fp += 1
+                                elif foundFalsePos == False:
+                                    tres.fp += 1
+                                    foundFalsePos = True
+                            else:
+                                tres.tn += 1
+                            
+                            
+                   
+    print('{0}, nores: {1}'.format(tres, nores))
+       
+    return tres, nores
 
 def splitRunSet( runset_pos, runset_neg, fold, chunksize, evalsize, rndidx ):
     '''Take parts of runset_pos and runset_neg and re-combine into
@@ -118,32 +175,36 @@ def asList( runset, purpose=None ):
     return rsList
 
 class EvaluationResult:
-    def __init__( self, folds, tp, fp, tn, fn, detail=None, name=None ):
+    def __init__( self, folds, testResult, nores, detail=None, name=None ):
         self.folds = folds
-        self.tp = tp
-        self.fp = fp
-        self.tn = tn
-        self.fn = fn
+        self.res = testResult
+        self.nores = nores
         self.detail = detail
         self.name = name
-        num_pos = self.tp+self.fn
+        num_pos = self.res.tp+self.res.fn
         if num_pos!=0:
-            self.recall = self.tp/float(num_pos)
+            self.recall = self.res.tp/float(num_pos)
         else:
             self.recall = 0
-        num_det = self.tp+self.fp
+        num_det = self.res.tp+self.res.fp
         if num_det!=0:
-            self.precision = self.tp/float(self.tp+self.fp)
+            self.precision = self.res.tp/float(self.res.tp+self.res.fp)
         else:
             self.precision = 0
         # calculate combined recall/precision score:
         self.score = (self.recall + self.precision)/2.0
+        # add in to the score no result counts
+        allSam = self.res.tp + self.res.tn + \
+                  self.res.fp + self.res.fn + self.nores;
+        resfactor = (allSam - nores) / float(allSam)
+        self.score = self.score * resfactor;
 
     def __str__(self):
-        desc = "{0:5.2f} score, {1:5.2f}% recall, {2:5.2f}% precision " \
-            "({3} tp, {4} fp, {5} tn, {6} fn)" \
+        desc = "{0:5.2f}% score, {1:5.2f}% recall, {2:5.2f}% precision " \
+            "({3} tp, {4} fp, {5} tn, {6} fn, {7} nores)" \
             .format( self.score*100.0, self.recall*100.0, self.precision*100.0,
-                     self.tp, self.fp, self.tn, self.fn )
+                     self.res.tp, self.res.fp, 
+                     self.res.tn, self.res.fn, self.nores )
         if self.name:
             return self.name + ": " + desc
         return desc
@@ -188,7 +249,8 @@ def crossValidate( contender, runset, folds=10, printVerbose=False ):
     random.shuffle( rndidx[0] ) # shuffles items in place
     random.shuffle( rndidx[1] ) # shuffles items in place
 
-    confusionTables = numpy.empty( [folds, 4], dtype=int )
+    #confusionTables = numpy.empty( [folds, 5], dtype=int )
+    confusionTables = []
     
     for fold in range( folds ):
         # split the runset
@@ -209,14 +271,20 @@ def crossValidate( contender, runset, folds=10, printVerbose=False ):
         detector = contender.getDetector()
         detections = easy.detect( detector, model, evalset,
                                   detectorProperties=contender.detectorProps )
-        confusionTables[fold,:] = \
-            getConfusionTable( detections, origSet=evalset, foundMap=contender.foundMap )
+        confusionTables.append( \
+            getConfusionTable( detections, origSet=evalset, foundMap=contender.foundMap ))
 
-    # calculate statistics
-    sums = numpy.sum( confusionTables, 0 )  # sum over rows
-    r = EvaluationResult( folds,
-                          tp=sums[0], fp=sums[1], tn=sums[2], fn=sums[3],
-                          detail=confusionTables, name=contender.name )
+    # calculate statistics of our tuble TestResult,nores
+    
+    sumTestResult = TestResult()
+    sumNoRes = 0;
+    for entry in confusionTables:
+        sumTestResult.tp += entry[0].tp
+        sumTestResult.tn += entry[0].tn
+        sumTestResult.fp += entry[0].fp
+        sumTestResult.fn += entry[0].fn
+        sumNoRes += entry[1]
+    r = EvaluationResult(folds, sumTestResult, sumNoRes, detail=None, name=contender.name)
     return r
 
 def evaluate( contender, runset, printVerbose=False ):
@@ -235,8 +303,8 @@ def evaluate( contender, runset, printVerbose=False ):
     ct = getConfusionTable( detections, origSet=evalset, foundMap=contender.foundMap )
 
     # create result structure
-    r = EvaluationResult( 0, tp=ct[0], fp=ct[1], tn=ct[2], fn=ct[3],
-                          detail=ct, name=contender.name )
+    r = EvaluationResult( 0, ct[0], nores=ct[1],
+                          detail=None, name=contender.name )
     return r
 
 
@@ -295,6 +363,11 @@ class Contender:
             self.detector = easy.getDetector( self.detectorString )
         return self.detector
 
+    def getDetectorProps( self ):
+        if not self.detectorProps:
+            self.detectorProps = easy.getDetectorProperties( self.getDetector() )
+        return self.detectorProps
+
 def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     '''evaluate the contenders on the runset, possibly training
     and evaluating with n-fold cross-validation or another method.
@@ -328,21 +401,40 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     if verbose:
         print("======== done! ========")
     # sort the results by "score"
-    sorted( results, key=lambda result: result.score ) 
-    return results
+    sortedResults = sorted( results, key=lambda result: result.score, reverse=True ) 
+    return sortedResults
+
+def printEvaluationResults(results):
+    print('name        ||  score |  recall | precis. ||  tp  |  fp  |  tn  |  fn  | nores')
+    print('-------------------------------------------------------------------')
+    for result in results:
+        # need 6.2 instead of 5.2 to allow for 100.0%
+        desc = "{0:6.2f}% | {1:6.2f}% | {2:6.2f}% || " \
+            "{3:4d} | {4:4d} | {5:4d} | {6:4d} | {7:4d}" \
+            .format( result.score*100.0, result.recall*100.0, result.precision*100.0,
+                     result.res.tp, result.res.fp, result.res.tn, result.res.fn, result.nores )
+        if result.name:
+            if len(result.name) > 12:
+                print (result.name[0:11] + '.' + '||'+ desc)  
+            else: 
+                print (result.name.ljust(12) + "||" + desc)
+                
 
 # for testing only:
 if __name__ == '__main__' :
     # test the comparative detector evaluation including
     # training of a model
     easy.CVAC_ClientVerbosity = 4
+    posPurpose = easy.getPurpose('pos')
+    negPurpose = easy.getPurpose('neg')
 
     # Bag of Words
     c1 = Contender("BOW")
     c1.trainerString = "BOW_Trainer:default -p 10103"
     c1.detectorString = "BOW_Detector:default -p 10104"
-    c1.foundMap = {'1':easy.getPurpose('pos'), '0':easy.getPurpose('neg')}
+    c1.foundMap = {'1':posPurpose, '0':negPurpose}
 
+    
     # Histogram of Oriented Gradients
     c2 = Contender("HOG")
     c2.trainerString = "HOG_Trainer:default -p 10117"
@@ -357,6 +449,15 @@ if __name__ == '__main__' :
     c3.foundMap = {'Positive':easy.getPurpose('pos'), 'Negative':easy.getPurpose('neg')}
 
     # OpenCVCascade
+    c2 = Contender("cascade")
+    c2.trainerString = "OpenCVCascadeTrainer:default -p 10107"
+    c2.detectorString = "OpenCVCascadeDetector:default -p 10102"
+    c2.foundMap = {'positive':posPurpose, 'negative':negPurpose}
+    detector = easy.getDetector(c2.detectorString)
+    detectorProps = easy.getDetectorProperties(detector)
+    c2.detectorProps = detectorProps;
+    c2.detectorProps.props["maxRectangles"] = "200"
+    c2.detectorProps.minNeighbors = 0; # This prevents hang up in evaluator when training has too few samples
     c4 = Contender("cascade")
     c4.trainerString = "OpenCVCascadeTrainer:default -p 10107"
     c4.detectorString = "OpenCVCascadeDetector:default -p 10102"
@@ -370,7 +471,6 @@ if __name__ == '__main__' :
     easy.addToRunSet( runset, "trainImg/ca/ca0005.jpg", "neg" )
     easy.printRunSetInfo( runset, printArtifacts=False, printLabels=True )
     
-    perfdata = joust( [c1, c2, c3, c4], runset, folds=3 )
-    for res in perfdata:
-        print res
+    perfdata = joust( [c1, c2], runset, folds=3 )
+    printEvaluationResults(perfdata)
     

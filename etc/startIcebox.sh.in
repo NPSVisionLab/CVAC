@@ -21,7 +21,10 @@ export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${OpenCV_LIB_DIR_OPT}:$MATLAB_MCR_D
 
 # C/C++ services, via IceBox
 cd ${CVAC_ROOT_DIR}
-${ICE_BOX_EXECUTABLE} --Ice.Config=config.icebox &
+if [ "${START_ICE_SERVICES}" == "1" ]
+then
+    ${ICE_BOX_EXECUTABLE} --Ice.Config=config.icebox &
+fi
 
 # Java services, via Java IceBox
 if [ "${START_JAVA_SERVICES}" == "1" ]
@@ -33,7 +36,7 @@ fi
 # Python services that are listed in python.config
 if [ "${PYTHON_EXECUTABLE}" != "" ] && [ -f "${CMAKE_SOURCE_DIR}/python.config" ]
 then
-    export PYTHONPATH="${ICE_PYTHON_DIR}:${SLICE_OUTPUT_PYTHONDIR}:3rdparty/opencv/lib/python2.6/site-packages"
+    export PYTHONPATH="${ICE_PYTHON_DIR}:${SLICE_OUTPUT_PYTHONDIR}:3rdparty/opencv/lib/python2.6/site-packages:$PYTHONPATH"
     grep -v -e ^# ${CMAKE_SOURCE_DIR}/python.config | while read LINE
     do
         ${PYTHON_EXECUTABLE} $LINE &

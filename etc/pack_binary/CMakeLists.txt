@@ -4,8 +4,14 @@ cmake_minimum_required(VERSION 2.8)
 # CPack Package Properties
 #
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
-set(CPACK_PACKAGE_NAME "CVAC_binary")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC binary install package")
+IF (NOT PYTHON_ONLY_CLIENT)
+    set(CPACK_PACKAGE_NAME "CVAC_binary")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC binary install package")
+ELSE (NOT PYTHON_ONLY_CLIENT)
+    set(CPACK_PACKAGE_NAME "CVAC_client")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CVAC client install package")
+ENDIF (NOT PYTHON_ONLY_CLIENT)
+
 set(CPACK_PACKAGE_VENDOR "NPS Vision Lab")
 
 IF( NOT DEFINED CVAC_VERSION_MAJOR )
@@ -15,7 +21,7 @@ set(CPACK_PACKAGE_VERSION_MAJOR ${CVAC_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${CVAC_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${CVAC_VERSION_PATCH})
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CVAC_VERSION_PATCH}")
-set( CVAC_VERSION_DIR CVAC-${CVAC_VERSION} )
+set( CVAC_VERSION_DIR ${CPACK_PACKAGE_NAME}-${CVAC_VERSION} )
 
 # If devel branch, add -devel to version number
 if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" )
@@ -31,6 +37,7 @@ IF ( NOT CVAC_GIT_BRANCH )
 ENDIF()
 IF ( ${CVAC_GIT_BRANCH} STREQUAL "devel" )
   set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION}-devel)
+  set(CVAC_VERSION_DIR ${CVAC_VERSION_DIR}-devel)
 ENDIF()
 
 # If Windows 8 then add -W8 to version
@@ -44,6 +51,9 @@ set(CVAC_VERSION_DIR ${CVAC_VERSION_DIR}-Win7)
 set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION}-Win7)
 ENDIF (WIN32)
 ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+
+#Force the install directory (Required since windows will put spaces in name
+set( CPACK_PACKAGE_INSTALL_DIRECTORY ${CVAC_VERSION_DIR} )
 
 set( CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE.txt )
 set(CPACK_COMPONENTS_ALL Runtime data ThirdParty)
@@ -67,10 +77,21 @@ IF(WIN32)
     # Specify the default location to install CVAC.  It will install it
     # in this and a version directory underneath this.
     SET(CPACK_NSIS_INSTALL_ROOT "c:\\\\CVAC")
-ELSE(WIN32)
+ELSEIF(APPLE)
     SET( SCRIPT_EXT sh )
-  SET(CPACK_GENERATOR "TGZ")
-ENDIF(WIN32)
+    SET(CPACK_GENERATOR "Bundle")
+    SET(CPACK_BUNDLE_NAME "EasyComputerVision")
+    SET(CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
+    # CMake renames the startup command file to ${CPACK_BUNDLE_NAME}
+    SET(CPACK_BUNDLE_STARTUP_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/startup.py)
+    SET(CPACK_BUNDLE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/EasyComputerVision.icns)
+    SET(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/EasyComputerVision.icns)
+    CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
+      ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
+ELSE()
+    SET( SCRIPT_EXT sh )
+    SET(CPACK_GENERATOR "TGZ")
+ENDIF()
 
 SET (PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/../python")
 INSTALL(DIRECTORY ${PYTHON_BUILD_DIR}
@@ -120,19 +141,19 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/version.h
        COMPONENT Runtime
       )
 
-INSTALL(FILES ${CMAKE_SOURCE_DIR}/config.admin ${CMAKE_SOURCE_DIR}/config.icebox ${CMAKE_SOURCE_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.java_admin ${CMAKE_SOURCE_DIR}/config.java_icebox ${CMAKE_SOURCE_DIR}/config.client 
+IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
+    INSTALL(FILES ${CMAKE_SOURCE_DIR}/config.admin ${CMAKE_SOURCE_DIR}/config.icebox ${CMAKE_SOURCE_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.java_admin ${CMAKE_SOURCE_DIR}/config.java_icebox ${CMAKE_SOURCE_DIR}/config.client 
        DESTINATION .
        COMPONENT Runtime
       )
-
-INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/etc/startServices.${SCRIPT_EXT} ${CMAKE_SOURCE_DIR}/etc/stopServices.${SCRIPT_EXT}
+    INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/bin/startServices.${SCRIPT_EXT} ${CMAKE_SOURCE_DIR}/etc/stopServices.${SCRIPT_EXT}
        DESTINATION bin
        COMPONENT Runtime
       )
+ENDIF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
 
-# pre-written versions of startIcebox and stopIcebox for binary distribution, so it's easier to edit:
-INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/etc/startServices.${SCRIPT_EXT} ${CMAKE_SOURCE_DIR}/etc/stopServices.${SCRIPT_EXT}
-       DESTINATION bin
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/test/run_demos.py 
+       DESTINATION test
        COMPONENT Runtime
       )
 
@@ -140,7 +161,7 @@ INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/etc/startServices.${SCRIPT_EXT} ${CMAKE_SOU
 
 IF (WIN32)
 
-INSTALL(DIRECTORY   ${ICE_ROOT}/bin
+  INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
@@ -150,22 +171,30 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         PATTERN *.exe EXCLUDE
         PATTERN *.pdb EXCLUDE
         )
-INSTALL(DIRECTORY   ${ICE_ROOT}/lib
+  IF (NOT PYTHON_ONLY_CLIENT)
+    INSTALL(DIRECTORY   ${ICE_ROOT}/lib
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
         PATTERN *.pdb EXCLUDE
         PATTERN *.lib EXCLUDE
        )
+  ENDIF (NOT PYTHON_ONLY_CLIENT)
 
-INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1.win32-py2.6.exe
+
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1.win32-py2.6.exe
+       DESTINATION 3rdparty
+       COMPONENT Runtime 
+      )
+
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/python-2.6.6.msi
        DESTINATION 3rdparty
        COMPONENT Runtime 
       )
 
 ELSE (WIN32)
 
-INSTALL(DIRECTORY   ${ICE_ROOT}/lib
+  INSTALL(DIRECTORY   ${ICE_ROOT}/lib
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
@@ -174,63 +203,64 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/lib
 
 ENDIF (WIN32)
 
-INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox${CMAKE_EXECUTABLE_SUFFIX}
+IF (NOT PYTHON_ONLY_CLIENT)
+    INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox${CMAKE_EXECUTABLE_SUFFIX}
                  ${ICE_BOX_ADMIN}
         DESTINATION 3rdparty/ICE/bin
         COMPONENT ThirdParty
        )
 
-INSTALL(DIRECTORY   ${ICE_ROOT}/python
+    INSTALL(DIRECTORY   ${ICE_ROOT}/python
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT ThirdParty
         PATTERN *.pyc EXCLUDE
        )
 
-# libarchive is a symlink, but we want the file:
-# CONFIGURE_FILE( ${LIBARCHIVE_LIBRARY} ${CMAKE_CURRENT_BINARY_DIR}/tmp/ COPYONLY)
-GET_FILENAME_COMPONENT( LIBARCHIVE_LIBRARY_REALPATH ${LIBARCHIVE_LIBRARY} REALPATH )
-IF (WIN32)
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/bin
+    # libarchive is a symlink, but we want the file:
+    # CONFIGURE_FILE( ${LIBARCHIVE_LIBRARY} ${CMAKE_CURRENT_BINARY_DIR}/tmp/ COPYONLY)
+    GET_FILENAME_COMPONENT( LIBARCHIVE_LIBRARY_REALPATH ${LIBARCHIVE_LIBRARY} REALPATH )
+    IF (WIN32)
+    INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/bin
        DESTINATION 3rdparty/libarchive
        COMPONENT ThirdParty
       )
-ELSE (WIN32)
-INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
+    ELSE (WIN32)
+    INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
        DESTINATION 3rdparty/libarchive/lib
        COMPONENT ThirdParty
       )
-ENDIF (WIN32)
+    ENDIF (WIN32)
 
-# OpenCV needs to be isolated in some staging area.  You need
-# to configure this CMake to pull OpenCV from there.
-# OpenCV_DIR points to the shared/OpenCV subdirectory.
-IF( WIN32 )
-  GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}" REALPATH)
-ELSE( WIN32 )
-  GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}/../.." REALPATH)
-ENDIF( WIN32 )
-MESSAGE( STATUS "OpenCV will be 3rd-party archived from this path: ${OpenCV_INSTALL_PATH}" )
-INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
+    # OpenCV needs to be isolated in some staging area.  You need
+    # to configure this CMake to pull OpenCV from there.
+    # OpenCV_DIR points to the shared/OpenCV subdirectory.
+    IF( WIN32 )
+      GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}" REALPATH)
+    ELSE( WIN32 )
+      GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}/../.." REALPATH)
+    ENDIF( WIN32 )
+    MESSAGE( STATUS "OpenCV will be 3rd-party archived from this path: ${OpenCV_INSTALL_PATH}" )
+    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
       DESTINATION 3rdparty/opencv
        COMPONENT ThirdParty
       ) 
 
-IF (WIN32)
-INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/python
-      DESTINATION 3rdparty/opencv
-       COMPONENT ThirdParty
-      ) 
+    IF (WIN32)
+    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/python
+          DESTINATION 3rdparty/opencv
+           COMPONENT ThirdParty
+          ) 
 
-ELSE (WIN32)
-#If not windows need the libs for the shared libraries
-INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
-      DESTINATION 3rdparty/opencv
-       COMPONENT ThirdParty
-      ) 
-ENDIF(WIN32)
+    ELSE (WIN32)
+    #If not windows need the libs for the shared libraries
+    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
+          DESTINATION 3rdparty/opencv
+           COMPONENT ThirdParty
+          ) 
+    ENDIF(WIN32)
 
-
+ENDIF (NOT PYTHON_ONLY_CLIENT)
 
 # First copy over cvac.  Need to wait for build time since these files
 # are created by slicing at build time.  Since FILE commands work at
@@ -242,6 +272,12 @@ ENDIF(WIN32)
 # the binary package and the install copies them with the install script
 IF (BUILD_BINARY_PACKAGE)
 
+    WRAP_SLICE2PY( SLICE_FILES
+        ${CMAKE_SOURCE_DIR}/src/Files.ice
+        ${CMAKE_SOURCE_DIR}/src/Data.ice
+        ${CMAKE_SOURCE_DIR}/src/Services.ice
+        ${CMAKE_SOURCE_DIR}/src/Corpus.ice
+    )
     SET (SLICE_OUTPUT_PATH "${SLICE_OUTPUT_PYTHONDIR}")
     add_custom_target(copyslice ALL
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/cvac"
@@ -249,6 +285,7 @@ IF (BUILD_BINARY_PACKAGE)
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/cvac"
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/cvac"
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
+        DEPENDS ${SLICE_OUTPUT_PATH}/Corpus_ice.py ${SLICE_OUTPUT_PATH}/Data_ice.py ${SLICE_OUTPUT_PATH}/Files_ice.py ${SLICE_OUTPUT_PATH}/Services_ice.py 
     )
 ENDIF (BUILD_BINARY_PACKAGE)
 

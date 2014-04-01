@@ -13,14 +13,14 @@ import easy
 trainset1 = easy.createRunSet( "corporate_logos" )
 
 # train, round 1
-trainer = easy.getTrainer( "BOW_Trainer:default -p 10103 ")
+trainer = easy.getTrainer( "BOW_Trainer")
 model1 = easy.train( trainer, trainset1 )
 
 # evaluate the model on a separate test set, images and videos
 # in DataDir/testdata1
 testset1 = easy.createRunSet( "testImg", "UNPURPOSED" )
 easy.printRunSetInfo( testset1 )
-detector = easy.getDetector( "BOW_Detector:default -p 10104" )
+detector = easy.getDetector( "BOW_Detector" )
 result1 = easy.detect( detector, model1, testset1 )
 easy.printResults(result1)
 

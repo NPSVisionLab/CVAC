@@ -18,6 +18,9 @@ definition of these columns are:
     9   generated. If 1, the annotation was automatically interpolated.
     10  label. The label for this annotation, enclosed in quotation marks.
     11+ attributes. Each column after this is an attribute.
+
+Note: Frame numbers start with '0' as the first frame.  This convention
+is used by the CVAC code as well.
 '''
 
 import cvac
@@ -41,7 +44,6 @@ def parse( CVAC_DataDir, localDir,
     labels = []
     paths = {}
     lastTrackID = -1
-    warned_lost = False
     lbltrack = None
     for line in af:
         cols = line.strip().split(' ')  # line has \n - remove it
@@ -59,11 +61,15 @@ def parse( CVAC_DataDir, localDir,
         # print trackID, xmin, ymin, labelname, attributes
 
         # ignore lost and occluded labels
-        if lost=="1" or occluded=="1":
-            if not warned_lost:
-                print("warning: lost or occluded track, will be included in labels")
-                warned_lost = True
-
+        if lost=="1":
+            isLost = True
+        else:
+            isLost = False
+        if occluded=="1":
+            isOccluded = True
+        else:
+            isOccluded = False
+       
         # format consistency checks
         if trackID==-1 or trackID<lastTrackID or trackID>lastTrackID+1:
             raise RuntimeError("unexpected trackID: {0} (was {1})."
@@ -92,7 +98,7 @@ def parse( CVAC_DataDir, localDir,
 
         vst = cvac.VideoSeekTime( -1, frame )  # no time, but frame number
         loc = cvac.BBox(xmin, ymin, xmax-xmin, ymax-ymin)
-        frameloc = cvac.FrameLocation( vst, loc )
+        frameloc = cvac.FrameLocation( vst, loc, isOccluded, isLost)
         lbltrack.keyframesLocations.append( frameloc )
 
     return labels

@@ -36,13 +36,28 @@
  *(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****/
+#include <stdarg.h>
+#include <iostream>
+#include <fstream>
+#include <stdio.h>
+#include <iostream>
+#include <vector>
+using namespace std;
 
-#ifndef __VERSION_H_INCLUDED__
-#define __VERSION_H_INCLUDED__
+#ifdef ERROR
+#undef ERROR
+#endif
 
-#define CVAC_VERSION 0.6.63
-#define CVAC_VERSION_MAJOR 0
-#define CVAC_VERSION_MINOR 6
-#define CVAC_VERSION_PATCH 63
+class MsgLogger
+{
+public:
+  enum Levels{ SILENT, 
+               ERROR, // The symbol ERROR is often #defined - be aware
+               WARN,
+               INFO,
+               DEBUG, 
+               DEBUG_1, DEBUG_2, DEBUG_3 };
 
-#endif // __VERSION_H_INCLUDED__
+  MsgLogger(){};
+  virtual void message(Levels msgLevel, const string& _msgStr) = 0;
+};

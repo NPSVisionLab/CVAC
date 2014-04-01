@@ -10,7 +10,7 @@
 # IceBox.ServiceManager configuration
 #
 
-${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
+#Ice.Default.EncodingVersion=1.0
 
 #
 # The IceBox instance name is used to set the category field of the
@@ -30,9 +30,14 @@ ${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
 #
 # Enable Ice.Admin object:
 #
-Ice.Admin.InstanceName=DemoIceBox
-Ice.Admin.Endpoints=tcp -p ${ADMIN_PORT} -h 127.0.0.1
+Ice.Admin.InstanceName=JavaIceBox
+Ice.Admin.Endpoints=tcp -p ${JAVA_ADMIN_PORT} -h 127.0.0.1
 
+# CorpusService
+IceBox.Service.CorpusService=cvac.corpus.CorpusServiceI --Ice.Config=config.service
+IceBox.Service.FileService=cvac.fileserver.FileServiceI --Ice.Config=config.service
+
+#
 # Warn about connection exceptions
 #
 #Ice.Warn.Connections=1
@@ -55,13 +60,3 @@ Ice.Admin.Endpoints=tcp -p ${ADMIN_PORT} -h 127.0.0.1
 # 1 = trace protocol messages
 #
 #Ice.Trace.Protocol=1
-
-#
-# The local services that this icebox should start up
-#
-${CF_CAS}IceBox.Service.OpenCVCascadeDetector=OpenCVCascadeDetector:create --Ice.Config=config.service
-${CF_CAS_T}IceBox.Service.OpenCVCascadeTrainer=OpenCVCascadeTrainer:create --Ice.Config=config.service
-${CF_BOW}IceBox.Service.BOW_Detector=bowICEServer:create --Ice.Config=config.service
-${CF_BOW_T}IceBox.Service.BOW_Trainer=bowICEServerTrain:create --Ice.Config=config.service
-${CF_RSI}IceBox.Service.RSItrTest_Detector=RSItrICEServer:create --Ice.Config=config.service
-

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+        <key>CFBundleDevelopmentRegion</key>
+        <string>English</string>
+        <key>CFBundleExecutable</key>
+        <string>${CPACK_BUNDLE_NAME}</string>
+        <key>CFBundleGetInfoString</key>
+        <string></string>
+        <key>CFBundleIconFile</key>
+        <string>EasyComputerVision.icns</string>
+        <key>CFBundleIdentifier</key>
+        <string>edu.nps.EasyCV</string>
+        <key>CFBundleInfoDictionaryVersion</key>
+        <string>6.0</string>
+        <key>CFBundleName</key>
+        <string>${CPACK_BUNDLE_NAME}</string>
+        <key>CFBundlePackageType</key>
+        <string>APPL</string>
+        <key>CFBundleShortVersionString</key>
+        <string>${CVAC_VERSION}</string>
+        <key>CFBundleSignature</key>
+        <string>EasyCVSig</string>
+        <key>CFBundleVersion</key>
+        <string>${CVAC_VERSION}_bundle</string>
+        <key>CSResourcesFileMapped</key>
+        <true/>
+        <key>NSHumanReadableCopyright</key>
+        <string>Developed at the NPS Vision Lab.</string>
+</dict>
+</plist>

@@ -9,12 +9,16 @@ ENDIF(WIN32)
 
 PROJECT(CVAC)
 
+SET (PYTHON_ONLY_CLIENT true)
+SET(CVAC_FIRST_SERVICE_PORT "10000" CACHE STRING "First socket port to use")
+
 INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 OPTION(BUILD_WITH_BOW "Build a Bag of Words trainer and detector (requires OpenCV)" ON)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Build the OpenCV Cascade trainer and detector" ON)
 OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" ON) 
 OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" ON) 
+OPTION(BUILD_CORPUS_SERVICE_PYTHON "Configure a Python Corpus Server" ON) 
 OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
 OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" ON)
 OPTION(BUILD_CPP_TRAINER_CLIENT "Build a C++ client for trainers" OFF)
@@ -24,6 +28,18 @@ OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-pa
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
 OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" OFF)
+
+IF (PYTHON_ONLY_CLIENT)
+    IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
+        SET (PYTHON_ONLY_CLIENT false)
+    ENDIF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
+ENDIF (PYTHON_ONLY_CLIENT)
+
+IF (PYTHON_ONLY_CLIENT)
+    SET (START_ICE_SERVICES 0)
+ELSE (PYTHON_ONLY_CLIENT)
+    SET (START_ICE_SERVICES 1)
+ENDIF (PYTHON_ONLY_CLIENT)
 
 
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
@@ -103,7 +119,7 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 # -O2 or -O3 on OSX causes ice to fail in Purpose list code
 IF (APPLE)
-   SET(CMAKE_CXX_FLAGS_RELEASE "-O1 -NDEBUG")
+   SET(CMAKE_CXX_FLAGS_RELEASE "")
 ENDIF (APPLE)
 
 #
@@ -274,12 +290,13 @@ IF( PYTHONINTERP_FOUND AND WIN32 )
   ENDIF()
 ENDIF()
 
-IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
-  FIND_PACKAGE( OpenCV 2.4 REQUIRED
+#Opencv includes now required for src/util library
+FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv
   )
+IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   #For Python set a variable for cv2 dynamic library
   #
   IF (WIN32)
@@ -306,6 +323,7 @@ ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 ## Setup the config.service and config.icebox files based upon detectors
 ## selected by the user.  These CF_ variables are defined in the config files
 ## and they get turned into comments or not.
+
 
 IF( BUILD_WITH_BOW )
 SET(CF_BOW "" )
@@ -349,6 +367,13 @@ ELSE( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
     SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cvac" )
 ENDIF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
 
+#Need to have this at top level since multiple directories need it
+#SET( SLICE_FILES
+#    ${CVAC_ROOT_DIR}/src/Files.ice
+#    ${CVAC_ROOT_DIR}/src/Data.ice
+#    ${CVAC_ROOT_DIR}/src/Services.ice
+#    ${CVAC_ROOT_DIR}/src/Corpus.ice
+#)
 IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
     # This requires CMake 2.8 for Java support
     ADD_SUBDIRECTORY( src )
@@ -361,14 +386,34 @@ ADD_SUBDIRECTORY(algorithms)
 ADD_SUBDIRECTORY(demo)
 ADD_SUBDIRECTORY( etc )
 
+#Get all the port numbers based upon the CVAC_FIRST_SERVICE_PORT
+MATH(EXPR ADMIN_PORT "${CVAC_FIRST_SERVICE_PORT}-3")
+MATH(EXPR JAVA_ADMIN_PORT "${CVAC_FIRST_SERVICE_PORT}-5")
+MATH(EXPR OPENCV_CASCADE_DETECTOR_PORT "${CVAC_FIRST_SERVICE_PORT}+102")
+MATH(EXPR OPENCV_CASCADE_TRAINER_PORT "${CVAC_FIRST_SERVICE_PORT}+107")
+MATH(EXPR BOW_TRAINER_PORT "${CVAC_FIRST_SERVICE_PORT}+103")
+MATH(EXPR BOW_DETECTOR_PORT "${CVAC_FIRST_SERVICE_PORT}+104")
+MATH(EXPR CORPUS_PORT "${CVAC_FIRST_SERVICE_PORT}+11")
+MATH(EXPR PYTHON_CORPUS_PORT "${CVAC_FIRST_SERVICE_PORT}+21")
+MATH(EXPR FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+110")
+MATH(EXPR RSITR_TEST_PORT "${CVAC_FIRST_SERVICE_PORT}+109")
+
 # the configuration of config.{icebox,service} must come after including the
 # etc directory, because that's where the user.config.{..} get configured.
 CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
 CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
+CONFIGURE_FILE("etc/config.client.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.client")
+CONFIGURE_FILE("etc/config.admin.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.admin")
+CONFIGURE_FILE("etc/config.java_admin.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.java_admin")
+CONFIGURE_FILE("etc/config.java_icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.java_icebox")
 IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
     FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service" FILE_DATA )
     FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.service" ${FILE_DATA} )
 ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
+IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client")
+    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.client" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client")
 IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
     FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
     FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
