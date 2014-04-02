@@ -10,6 +10,7 @@ import random
 import shutil
 import zipfile
 import datetime
+import re
 
 DEF_TRAIN_PREFIX = "train_"
 DEF_SANDBOX = "sboxes"
@@ -191,3 +192,15 @@ class ArchiveHandler(object):
         
     def unArchive(self,_zipfilepath,_dir):
         return self.mDDA.unArchive(_zipfilepath, _dir)
+
+    def getClientConnectionName(self, current):
+        connectionName = current.con.toString()
+
+        print (connectionName)
+        ips = re.findall("(.*)remote address =(.*)[^\d](\d*\.\d*\.\d*\.\d*):(\d*)", connectionName)
+        # should return [local address = xxxx, xxx, client ip, client port]
+        if not ips: 
+            return "localhost"
+        # return the client ip address
+        return ips[0][2] 
+
