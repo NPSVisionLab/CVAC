@@ -29,8 +29,12 @@ class FileServerTest(unittest.TestCase):
             raise RuntimeError("cvac module not loaded correctly (from file "+cvac.__file__+")")
         if not inspect.ismodule( cvac ) or not inspect.isclass( cvac.FileServicePrx ):
             raise RuntimeError("cvac module not loaded")
+        sys.argv.append('--Ice.Config=config.client')
         self.ic = Ice.initialize(sys.argv)
-        base = self.ic.stringToProxy("FileService:default -p 10110")
+        properties = self.ic.getProperties()
+        proxyStr = properties.getProperty('FileService.Proxy')
+        print(proxyStr)
+        base = self.ic.stringToProxy(proxyStr)
         self.fs = cvac.FileServicePrx.checkedCast(base)
         if not self.fs:
             raise RuntimeError("Invalid proxy")
@@ -124,8 +128,16 @@ class FileServerTest(unittest.TestCase):
     #
     def test_remotePutGetDelete(self):
         print('putFile remote')
-        configStr = "FileService:default -h vision.nps.edu -p 10110"
-        baser = self.ic.stringToProxy( configStr )
+        properties = self.ic.getProperties()
+        proxyStr = properties.getProperty('FileService.Proxy')
+        #need to get the server host to connect to
+        remoteHost = os.getenv('CVAC_REMOTE_TEST_SERVER')
+        if remoteHost:
+            proxyStr = proxyStr + " -h " + remoteHost
+        print(proxyStr)
+        base = self.ic.stringToProxy(proxyStr)
+        #configStr = "FileService:default -h vision.nps.edu -p 10110"
+        baser = self.ic.stringToProxy(proxyStr)
         if not baser:
             raise RuntimeError("Unknown service?", configStr)
         fsr = cvac.FileServicePrx.checkedCast(baser)

@@ -6,6 +6,10 @@
 
 module cvac {
 
+  /** This is required to fix a defect with slice2c++ not initializing
+   * floats correctly (bad type cast).  
+   */
+  const int MINUSONE = -1;
 
   /** The client needs to implement these callback interfaces
    */
@@ -64,7 +68,7 @@ module cvac {
     */
     int verbosity;
     
-    bool isSlidingWindow;
+    bool isSlidingWindow = false;
     /** Returns the size of the "native" detector, that is,
      *  the size of objects that can be detected without scaling
      */
@@ -77,20 +81,20 @@ module cvac {
      */
     Size slideStartSize;
     Size slideStopSize;
-    float slideScaleFactor;
-    float slideStepX;
-    float slideStepY;
+    float slideScaleFactor = MINUSONE;
+    float slideStepX = MINUSONE;
+    float slideStepY = MINUSONE;
 
-    bool canSetSensitivity;
+    bool canSetSensitivity = false;
     /** To use current values for one parameter, use the value of -1
      */
-    double falseAlarmRate;
-    double recall;
+    double falseAlarmRate = -1.0;
+    double recall = -1.0;
 
     bool canPostProcessNeighbors;
     /** -1 for default
      */
-    int minNeighbors;
+    int minNeighbors = MINUSONE;
 
     /** If applicable, process frames in a video at the specified number of
      *  frames per second.  This fps is a suggestion to the algorithm which might
@@ -100,7 +104,7 @@ module cvac {
      *  -2: process at the native video frame rate
      *  -3.n: process every n-th frame in the video
      */
-    double videoFPS;
+    double videoFPS = -1.0;
     
     /** Props are name-value pairs that can
     *  specify detector-specific properties, if any.
@@ -120,16 +124,16 @@ module cvac {
     /**
      * Set the training window size
      */
-    bool canSetWindowSize;
+    bool canSetWindowSize = false;
     Size windowSize;
 
-    bool canSetSensitivity;
+    bool canSetSensitivity = false;
     /**
      *  Set the sensitivity for the detector to be trained. Pass -1
      *  if you want to hold that parameter to the current value.
      */
-    double falseAlarmRate;
-    double recall;
+    double falseAlarmRate = -1.0;
+    double recall = -1.0;
 
     /** If applicable, process frames in a video at the specified number of
      *  frames per second.  This fps is a suggestion to the algorithm which might
@@ -139,7 +143,7 @@ module cvac {
      *  -2: process at the native video frame rate
      *  -3.n: process every n-th frame in the video
      */
-    double videoFPS;
+    double videoFPS = -1.0;
     
     /** Props are name-value pairs that can
     *  specify detector-specific properties, if any.

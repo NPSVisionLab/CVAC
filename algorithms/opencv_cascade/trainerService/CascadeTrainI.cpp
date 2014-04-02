@@ -81,7 +81,9 @@ extern "C"
     cascade->setServiceManager( sMan );
     return sMan;
   }
+      
 }
+extern void icvMergeVecVec( const char* invecname, const char* outvecname, int posCnt, int showsamples, int width, int height );
 
 CascadeTrainI::CascadeTrainI()
   : fInitialized(false)
@@ -117,8 +119,8 @@ void CascadeTrainI::initialize()
   mTrainProps->weight_trim_rate = 0.95F; // From opencv/modules/ml/src/boost.cpp
   mTrainProps->max_depth = 1;
   mTrainProps->weak_count = 100;
-  mTrainProps->width = 25;
-  mTrainProps->height = 25;
+  mTrainProps->windowSize.width = 25;
+  mTrainProps->windowSize.height = 25;
   
   fInitialized = true;
 }
@@ -168,8 +170,10 @@ void CascadeTrainI::addDataPath(RunSet runset, const std::string &CVAC_DataDir)
 }
 
 
-void CascadeTrainI::writeBgFile( const RunSetWrapper& rsw, 
-                                const string& bgFilename, int* pNumNeg, string CVAC_DataDir )
+void CascadeTrainI::writeBgFile(cvac::RunSetWrapper& rsw, 
+                                const string& bgFilename, int* pNumNeg, string CVAC_DataDir,
+                                const CallbackHandlerPrx &callback
+                                )
 {
   // TODO: iterate over NEGATIVE purposes only, count numNeg, write 
   // file names to bgFilename as we did for the old OpenCV Performance training;
@@ -183,22 +187,25 @@ void CascadeTrainI::writeBgFile( const RunSetWrapper& rsw,
   // for labelable in it ...
   // Save stored data from RunSet to OpenCv negative samples file
 
-  unsigned int i;
+
   std::vector<RectangleLabels> negRectlabels;
   int imgCnt = 0;
-  const cvac::RunSet &runset = rsw.runset;
-  for (i = 0; i < runset.purposedLists.size(); i++)
-  {
-    // Only look for positive purposes
-    if (NEGATIVE == runset.purposedLists[i]->pur.ptype)
-    {
-        // Store training-input data to vectors
-        cvac::PurposedLabelableSeq* lab = static_cast<cvac::PurposedLabelableSeq*>(runset.purposedLists[i].get());
-        LabelableList artifacts = lab->labeledArtifacts;
-        imgCnt += cvac::processLabelArtifactsToRects(&artifacts, 
-                                    NULL, &negRectlabels, true);
-     }
-  }
+// Fetch all the neg samples
+  RunSetConstraint constraint;
+  constraint.compatiblePurpose.ptype = NEGATIVE;
+  constraint.spacesInFilenamesPermitted = false;
+  constraint.excludeLostFrames = true;
+  constraint.excludeOccludedFrames = true;
+  constraint.addType("png");
+  constraint.addType("tif");
+  constraint.addType("jpg");
+
+
+  imgCnt = cvac::processLabelArtifactsToRects(rsw, constraint, 
+                                       CVAC_DataDir, mServiceMan,
+                                       callback, NULL, 1,
+                                       &negRectlabels, false);
+  
   ofstream backgroundFile;
   backgroundFile.open(bgFilename.c_str());
   int cnt = 0;
@@ -243,32 +250,43 @@ bool static getImageWidthHeight(std::string filename, int &width, int &height)
    return res;
 }
 
-bool CascadeTrainI::createSamples( const RunSetWrapper& rsw, 
+int CascadeTrainI::addRotatedSamples(string tempVec, string vecFilename, string filename, const char *bgInfoFile, int numPos, int showSamples, int w, int h)
+{
+	 // Rotate max of 15 degrees on the z axis and 5 degrees on x, y.  
+	 
+     cvCreateTrainingSamples(tempVec.c_str(), filename.c_str(), 0, 0, bgInfoFile, mTrainProps->rotate_count, 0, 0,
+                                    0.0872, 0.0872, 0.2618, showSamples, w, h);
+	 // now merge new vec file info main one.
+     icvMergeVecVec(tempVec.c_str(), vecFilename.c_str(), numPos, showSamples, w, h );
+     return mTrainProps->rotate_count;
+}
+
+bool CascadeTrainI::createSamples( RunSetWrapper& rsw, 
                                    const SamplesParams& params,
                     const string& infoFilename,
-                    const string& vecFilename, int* pNumPos, string CVAC_DataDir
+                    const string& vecFilename, int* pNumPos, string CVAC_DataDir,
+                    const CallbackHandlerPrx &callback, const string &bgInfo, int bgCnt
                     )
 {
  
   bool showsamples = false;
 
-  unsigned int i;
   std::vector<RectangleLabels> posRectlabels;
   int imgCnt = 0;
-  const cvac::RunSet &runset = rsw.runset;
-  for (i = 0; i < runset.purposedLists.size(); i++)
-  {
-    // Only look for positive purposes
-    if (POSITIVE == runset.purposedLists[i]->pur.ptype)
-    {
-        // Store training-input data to vectors
-        cvac::PurposedLabelableSeq* lab = static_cast<cvac::PurposedLabelableSeq*>(runset.purposedLists[i].get());
-        // expand the file names
-        // TODO call the utils fixupRunSet function.
-        LabelableList artifacts = lab->labeledArtifacts;
-        imgCnt += cvac::processLabelArtifactsToRects(&artifacts, getImageWidthHeight, &posRectlabels, true);
-     }
-  }
+  // Fetch all the positive samples
+  RunSetConstraint constraint;
+  constraint.compatiblePurpose.ptype = POSITIVE;
+  constraint.spacesInFilenamesPermitted = false;
+  constraint.excludeLostFrames = true;
+  constraint.excludeOccludedFrames = true;
+  constraint.addType("png");
+  constraint.addType("tif");
+  constraint.addType("jpg");
+
+  imgCnt = cvac::processLabelArtifactsToRects(rsw, constraint, 
+                                       CVAC_DataDir, mServiceMan,
+                                       callback, getImageWidthHeight, 1,
+                                       &posRectlabels, false);
 
   ofstream infoFile;
  
@@ -319,25 +337,100 @@ bool CascadeTrainI::createSamples( const RunSetWrapper& rsw,
                   infoFile << rect->x << " " << rect->y << " " << rect->width <<
                           " " << rect->height  << " ";
           }
-       }
+       }   
     }
     if (skipFile == false)
+    {
         cnt++;
+    }
     // NO EXTRA BLANK LINE after the last sample, or cvhaartraining.cpp can fail on: "CV_Assert(elements_read == 1);"
     if ((cnt < imgCnt) && skipFile == false)
         infoFile << endl;
   }
   infoFile.flush();
   infoFile.close();
-  // Clean up any memory 
-  cvac::cleanupRectangleLabels(&posRectlabels);
+  
   // Save stored data from RunSet to OpenCv negative samples file
-
-  *pNumPos = cvCreateTrainingSamplesFromInfo( infoFilename.c_str(), 
+  int numPos;
+  numPos = cvCreateTrainingSamplesFromInfo( infoFilename.c_str(), 
                                               vecFilename.c_str(), 
                                               cnt, showsamples,
                                               params.width, params.height
                                              );
+  // Add geneated samples to vec file if properties say so
+  if (mTrainProps->rotate_count > 0)
+  {
+      std::vector<cvac::RectangleLabels>::iterator it;
+      printf("Adding %d rotated images per sample\n", mTrainProps->rotate_count);
+      for (it = posRectlabels.begin(); it < posRectlabels.end(); it++)
+      {
+          cvac::RectangleLabels recLabel = *it;
+          string tempVec = "tempVec";
+		  string tempImg = "tempImage.jpg";
+          // Use background images as background if we have enough
+          const char *bgInfoFile = NULL;
+          if (bgCnt >= mTrainProps->rotate_count)
+          {
+              bgInfoFile = bgInfo.c_str();
+          }
+		  if (recLabel.rects.size() <= 0)
+          { // No rectangle so rotate the whole image
+              int w, h;
+              getImageWidthHeight(recLabel.filename, w, h);
+			  if (w < params.width || h < params.height)
+                  continue;
+			  if (w < params.width*3 && h < params.height *3)
+			  {
+				  numPos += addRotatedSamples(tempVec, vecFilename, recLabel.filename, bgInfoFile, numPos, showsamples, params.width, params.height);
+			  }else
+			  { // shrink the image down before rotating so we don't crash
+				  cv::Mat mat = cv::imread(recLabel.filename.c_str(), 0);
+				  cv::Size mysize(params.width*2, params.height*2);
+				  cv::Mat sizeMat;
+				  cv::resize(mat, sizeMat, mysize, CV_INTER_AREA);
+				  if (cv::imwrite(tempImg.c_str(), sizeMat))
+				  {
+					  numPos += addRotatedSamples(tempVec, vecFilename, tempImg, bgInfoFile, numPos, showsamples, params.width, params.height);
+				  }
+			  }
+        
+          }else 
+          {
+           
+              std::vector<cvac::BBoxPtr>::iterator rit;
+              // Create a temp image with just the cropped part and rotate that and add to the vec file
+              for (rit = recLabel.rects.begin(); rit < recLabel.rects.end(); rit++)
+              {
+                  cvac::BBoxPtr rect = *rit;
+                  if (rect->width < params.width || rect->height < params.height)
+                     continue;  // Skip.
+                  // Create a temp image of just the part we want
+				  cv::Mat mat = cv::imread(recLabel.filename.c_str(), 0);
+				  cv::Rect myrect(rect->x, rect->y, rect->width, rect->height);
+				  cv::Mat rMat;
+				  cv::Mat(mat, myrect).copyTo(rMat);
+				  if (rect->width > params.width*3 || rect->height > params.height *3)
+				  {
+					   cv::Size mysize(params.width*2, params.height*2);
+				       cv::Mat sizeMat;
+				       cv::resize(mat, sizeMat, mysize, CV_INTER_AREA);
+					   sizeMat.copyTo(rMat);
+				  }
+				  if (cv::imwrite(tempImg.c_str(), rMat))
+				  {
+					  numPos += addRotatedSamples(tempVec, vecFilename, tempImg, bgInfoFile, numPos, showsamples, params.width, params.height);
+				  }
+			  }
+		  }
+       }
+       
+       printf("Adding rotated images complete\n");
+  }
+  // Clean up any memory 
+  //debug
+  //printf("Using vec file %s\n", vecFilename.c_str());
+  cvac::cleanupRectangleLabels(&posRectlabels);
+  *pNumPos = numPos;
   return true;
 }
 
@@ -352,8 +445,8 @@ bool CascadeTrainI::createClassifier( const string& tempDir,
       precalcIdxBufSize = 256;
   bool baseFormatSave = false;
   CvCascadeParams cascadeParams;
-  cascadeParams.winSize.width = trainProps->width;
-  cascadeParams.winSize.height = trainProps->height;
+  cascadeParams.winSize.width = trainProps->windowSize.width;
+  cascadeParams.winSize.height = trainProps->windowSize.height;
   CvCascadeBoostParams stageParams;
   Ptr<CvFeatureParams> featureParams[] = 
   { Ptr<CvFeatureParams>(new CvHaarFeatureParams),
@@ -376,6 +469,92 @@ bool CascadeTrainI::createClassifier( const string& tempDir,
   return res;
 }
 
+/** argument error checking: any data? consistent multiclass or pos/neg purpose?
+ *  having Negative purpose samples and multiclass is fine, but
+ *  having Positive and multiclass is probably incorrect.  WARN.
+ */
+const static int MIN_SAMPLE_SIZE = 8;
+
+bool CascadeTrainI::checkPurposedLists(
+    const PurposedListSequence& purposedLists,
+    TrainerCallbackHandlerPrx& _callback )
+{
+  if(purposedLists.size() == 0)
+  {
+    localAndClientMsg(VLogger::WARN, _callback, 
+                      "Error: no data (runset) for processing\n");
+    return false;
+  }
+
+  bool havemul = false;
+  bool havepos = false;
+  bool haveneg = false;
+  bool tooSmall = false;
+
+  for (size_t listidx = 0; listidx < purposedLists.size(); listidx++)
+  {
+    Purpose &pur = purposedLists[listidx]->pur;
+    PurposedLabelableSeq * purSeq = NULL;
+    purSeq = static_cast<PurposedLabelableSeq *>(purposedLists[listidx].get());
+    LabelableList artifacts = purSeq->labeledArtifacts;
+    
+    switch(pur.ptype)
+    {
+      case cvac::POSITIVE:
+      {
+        havepos = true;
+        break;
+      }
+      case cvac::NEGATIVE:
+      {
+        haveneg = true;
+        break;
+      }
+      case cvac::MULTICLASS:
+      {
+        havemul = true;
+        break;
+      }
+    }
+    if ((artifacts.size() < MIN_SAMPLE_SIZE))
+    {
+        bool hasVideo = false;
+        LabelableList::iterator it;
+        for (it = artifacts.begin(); it < artifacts.end(); it++)
+        {
+            LabelablePtr lab = *it;
+            if (lab->sub.isVideo)
+            {
+                hasVideo = true;
+                break;
+            }
+        }
+        if (hasVideo == false)
+            tooSmall = true;
+    }
+ 
+  }
+  
+  if (havepos == false)
+  {
+    localAndClientMsg(VLogger::ERROR, _callback, "Your runset does not contain a pos purpose\n");  
+    return false;
+  }
+  if (haveneg == false)
+  {
+    localAndClientMsg(VLogger::ERROR, _callback, "Your runset does not contain a neg purpose\n");       
+    return false;
+  }
+  if (tooSmall == true)
+  {
+    localAndClientMsg(VLogger::ERROR, _callback,
+                      "Your runset must contain at least %d+%d (pos+neg) samples\n",
+                      MIN_SAMPLE_SIZE, MIN_SAMPLE_SIZE);       
+    return false;
+  }
+  return true;
+}
+
 void CascadeTrainI::process(const Identity &client, const RunSet& runset,
                             const TrainerProperties& trainProps,
                             const Current& current)
@@ -392,6 +571,9 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   TrainerCallbackHandlerPrx callback =
     TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
 
+  // check the validity of the runset.
+  if (!checkPurposedLists( runset.purposedLists, callback ))
+    return;
   // Get the remote client name to use to save cascade file 
   std::string connectName = cvac::getClientConnectionName(current);
   const std::string CVAC_DataDir = svcprops->getProperty("CVAC.DataDir");
@@ -404,18 +586,19 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   }
   // Since createSamples fails if there is a space in a file name we will create a temporary runset
   // and provide symbolic links to files that name spaces in there names.
-  cvac::RunSet tempRunSet = runset;
+  //cvac::RunSet tempRunSet = runset;
   // Add the cvac data dir to the directories in the runset
-  addDataPath(tempRunSet, CVAC_DataDir);
+  //addDataPath(tempRunSet, CVAC_DataDir);
   // The symbolic links are created in a tempdir so lets remember it so we can delete it at the end
-  std::string tempRSDir = fixupRunSet(tempRunSet, CVAC_DataDir);
+  //std::string tempRSDir = fixupRunSet(tempRunSet, CVAC_DataDir);
   // Iterate over runset, inserting each POSITIVE Labelable into
   // the input file to "createsamples".  Add each NEGATIVE into
   // the bgFile.  Put both created files into a tempdir.
   std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
                                                              connectName);
   std::string tempDir = mServiceMan->getSandbox()->createTrainingDir(clientName);
-  RunSetWrapper rsw( tempRunSet );
+  //RunSetWrapper rsw( &tempRunSet, CVAC_DataDir, mServiceMan );
+  RunSetWrapper rsw( &runset, CVAC_DataDir, mServiceMan );
   // We can't put the bgName and infoName in the tempdir without
   // changing cvSamples since it assumes that this files location is the root
   // directory for the data.
@@ -424,37 +607,28 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   string bgName = "cascade_negatives.txt";
   string infoName = "cascade_positives.txt";
   int numNeg = 0;
-  writeBgFile( rsw, bgName, &numNeg, CVAC_DataDir );
+  
+  writeBgFile( rsw, bgName, &numNeg, CVAC_DataDir, callback );
 
 
   // set parameters to createsamples
   SamplesParams samplesParams;
   samplesParams.numSamples = 1000;
-  samplesParams.width = mTrainProps->width;
-  samplesParams.height = mTrainProps->height;
+  samplesParams.width = mTrainProps->windowSize.width;
+  samplesParams.height = mTrainProps->windowSize.height;
 
   // run createsamples
   std::string vecFname = tempDir + "/cascade_positives.vec";
   int numPos = 0;
-  createSamples( rsw, samplesParams, infoName, vecFname, &numPos, CVAC_DataDir);
-  // invoke the actual training vec file needs extra positive samples
-  // so we need to figure out how many to save back.
-  // Determine the number of samples extra we need.  We need this
-  // since the algorithm 
-  // this is (Stages-1)*(1-minHitRate)*numPos + S
-  // where S = numpos / minHitRate^Stages - numpos
-  int S = int((double)numPos / 
-            pow(mTrainProps->minHitRate, mTrainProps->numStages)) - numPos;
-  int lessSamples = (int)((double)(mTrainProps->numStages -1) * 
-               (1.0 - mTrainProps->minHitRate) * double(numPos)) + S;
-  localAndClientMsg(VLogger::INFO, NULL, "Starting with positive count less " +
-                     lessSamples);
+  
+  createSamples( rsw, samplesParams, infoName, vecFname, &numPos, CVAC_DataDir, callback,
+                 bgName, numNeg);
 
   // Tell ServiceManager that we will listen for stop
   mServiceMan->setStoppable();
 
   bool created = createClassifier( tempDir, vecFname, bgName,
-                    numPos - lessSamples, numNeg, mTrainProps );
+                    numPos, numNeg, mTrainProps );
 
   // Tell ServiceManager that we are done listening for stop
   mServiceMan->clearStop();  
@@ -488,7 +662,7 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   {
       localAndClientMsg(VLogger::INFO, callback, "Cascade training failed.\n");
   }
-  deleteDirectory(tempRSDir);
+  //deleteDirectory(tempRSDir);
 }
 
 //----------------------------------------------------------------------------
@@ -497,11 +671,12 @@ TrainerPropertiesI::TrainerPropertiesI()
     verbosity = 0;
     canSetWindowSize = true;
     canSetSensitivity = true;
-    videoFPS = 0;
+    videoFPS = 0.0;
     windowSize.width = 0;
     windowSize.height = 0;
     falseAlarmRate = 0.0;
     recall = 0.0;
+    rotate_count = 0;
 }
 
 void TrainerPropertiesI::load(const TrainerProperties &p) 
@@ -510,7 +685,8 @@ void TrainerPropertiesI::load(const TrainerProperties &p)
     canSetSensitivity = true;
     verbosity = p.verbosity;
     props = p.props;
-    videoFPS = p.videoFPS;
+    if (p.videoFPS > 0.0)
+        videoFPS = p.videoFPS;
     //Only load values that are not zero
     if (p.windowSize.width > 0 && p.windowSize.height > 0)
         windowSize = p.windowSize;
@@ -569,6 +745,9 @@ bool TrainerPropertiesI::readProps()
         }else if (it->first.compare("weakCount") == 0)
         {
             weak_count = atoi(it->second.c_str());
+        }else if (it->first.compare("rotateSamples") == 0)
+        {
+            rotate_count = atoi(it->second.c_str());
         }
     }
    
@@ -613,9 +792,9 @@ bool TrainerPropertiesI::writeProps()
     props.insert(std::pair<string, string>("maxDepth", buff));
     sprintf(buff, "%d", weak_count);
     props.insert(std::pair<string, string>("weakCount", buff));
+    sprintf(buff, "%d", rotate_count);
+    props.insert(std::pair<string, string>("rotateSamples", buff));
 
-    windowSize.width = width;
-    windowSize.height = height;
     falseAlarmRate = maxFalseAlarm;
     recall = minHitRate;
     return res;

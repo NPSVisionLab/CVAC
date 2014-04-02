@@ -27,6 +27,7 @@ ADD_EXECUTABLE(${APP_NAME}
                ${HEADER_FILES}
                ${SLICE_FILES}
               )
+ADD_DEPENDENCIES(${APP_NAME} ${SLICE_FILES})
 
 TARGET_LINK_LIBRARIES(${APP_NAME}
                       utils

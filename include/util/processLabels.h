@@ -48,6 +48,8 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include <util/RunSetIterator.h>
+#include <util/RunSetWrapper.h>
 
 
 namespace cvac
@@ -65,6 +67,11 @@ namespace cvac
     */
    typedef bool (*GetImageSizeFunction)(std::string filename, int &width, int &height);
 
+    int processLabelArtifactsToRects(cvac::RunSetWrapper &wrapper, cvac::RunSetConstraint &constraint, 
+                                       std::string cvacDataDir, cvac::ServiceManager *serviceMan,
+                                       const CallbackHandlerPrx & callback,
+                                       GetImageSizeFunction sfunc, int skipFrames,
+                                       std::vector<RectangleLabels> *result, bool square);
    /**
    * Process a LabelableList and fill the result data with the information.
    * If the LabelableList has no data but the sfunc is not null
@@ -77,7 +84,8 @@ namespace cvac
    * @return the number of added rectangles in the result vector. 
    */
    int processLabelArtifactsToRects( LabelableList* artifacts, GetImageSizeFunction sfunc, 
-                                     std::vector<RectangleLabels> *result, bool square);
+                                     std::vector<RectangleLabels> *result, bool square,
+                                     std::string cvacDataDir);
     
    /**
     * Cleanup the memory allocated inside the RectangleLabels but not the RectangleLabels itself

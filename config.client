@@ -11,6 +11,17 @@ Ice.ACM.Client=0
 ## CVAC Services Config:
 CVAC.DataDir = data
 
+OpenCVCascadeDetector.Proxy=OpenCVCascadeDetector:tcp -p 10102
+OpenCVCascadeTrainer..Proxy=OpenCVCascadeTrainer:tcp -p  10107
+BOW_Trainer.Proxy=BOW_Trainer:tcp -p          10103
+BOW_Detector.Proxy=BOW_Detector:tcp -p         10104
+CorpusServer.Proxy=CorpusServer:tcp  -p  10011      
+PythonCorpusService.Proxy=PythonCorpusService:tcp -p 10021
+FileService.Proxy=FileService:tcp  -p 10110
+RSItrTest_Detector.Proxy=RSItrTest_Detector:tcp  -p 10109
+
+VideoValidatorForOpenCVClient.Proxy = VideoValidatorForOpenCV:tcp -p 10108
+
 bowIceTrain.Proxy=bowTrain:tcp -p 10103
 
 # CVPerf Detector CvFaces
@@ -77,3 +88,15 @@ CVAC.ClientVerbosity = info
 #IceSSL.CertAuthFile=cacert.pem
 #IceSSL.CertFile=c_rsa1024_pub.pem
 #IceSSL.KeyFile=c_rsa1024_priv.pem
+#MultiBoost.Proxy=MultiBoost:tcp -p 10101
+#SBD_Trainer.Proxy=SBD_Trainer:tcp -p 10105
+#SBDTest.Proxy=SBDTest:tcp -p 10106
+VideoValidatorForOpenCV.Proxy=VideoValidatorForOpenCV:tcp -p 10108
+ScreenShot_Detector.Proxy=ScreenShot_Detector:tcp -p 10112
+ScreenShot_Training.Proxy=ScreenShot_Training:tcp -p  10113
+WireDiagram_Detector.Proxy=WireDiagram_Detector:tcp -p  10114
+WireDiagram_Training.Proxy=WireDiagram_Training:tcp -p  10115
+#DPM_Detector.Proxy=DPM_Detector:tcp -p 10116
+#HOG_Trainer.Proxy=HOG_Trainer:tcp -p 10117
+#HOGTest.Proxy=HOGTest:tcp -p 10118
+#MatlabBridge_Detector.Proxy=MatlabBridge_Detector:tcp -p 10131

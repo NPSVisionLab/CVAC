@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <util/ServiceMan.h>
 #include <util/DetectorDataArchive.h>
+#include <util/MsgLogger.h>
 
 #include <opencv2/opencv.hpp>
 // #include <opencv2/opencv.hpp>
@@ -76,10 +77,12 @@ class bowCV {
 public:
 
   static const std::string BOW_VOC_FILE, BOW_SVM_FILE, BOW_DETECTOR_NAME,
-    BOW_EXTRACTOR_NAME, BOW_MATCHER_NAME, BOW_OPENCV_VERSION, BOW_ONECLASS_ID;
+    BOW_EXTRACTOR_NAME, BOW_MATCHER_NAME, BOW_OPENCV_VERSION, BOW_ONECLASS_ID,
+    BOW_REJECT_CLASS_STRATEGY, BOW_REJECT_CLASS_AS_MULTICLASS,
+    BOW_REJECT_CLASS_IGNORE_SAMPLES, BOW_REJECT_CLASS_AS_FIRST_STAGE;
   
 public:
-  bowCV();
+  bowCV(MsgLogger* _msgLog);
   ~bowCV();	
 
   bool  isInitialized();
@@ -148,6 +151,9 @@ private:
   std::vector<int>          vClassIDTrain;
   std::vector<int>          vBoundX,vBoundY;
   std::vector<int>          vBoundWidth,vBoundHeight;
+
+private:
+  MsgLogger* msgLogger;
 };
 
 #endif	//_BOWCV_H__

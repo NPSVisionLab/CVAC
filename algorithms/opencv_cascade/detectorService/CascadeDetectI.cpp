@@ -37,6 +37,7 @@
  *****************************************************************************/
 #include <iostream>
 #include <vector>
+#include <string>
 
 #include <Ice/Communicator.h>
 #include <Ice/Initialize.h>
@@ -45,8 +46,10 @@
 #include <util/FileUtils.h>
 #include <util/DetectorDataArchive.h>
 #include <util/ServiceManI.h>
+#include <util/OutputResults.h>
 
 #include <highgui.h>
+#include <stdlib.h>
 
 #include "CascadeDetectI.h"
 
@@ -116,6 +119,9 @@ void CascadeDetectI::starting()
   {
     localAndClientMsg(VLogger::DEBUG, NULL, "Will read trained model file as specified in service config: %s\n",
                       modelfile.c_str());
+    if (pathAbsolute(modelfile) == false)
+        modelfile =  m_CVAC_DataDir + "/" + modelfile;
+        
     gotModel = readModelFile( modelfile, Ice::Current() );
     if (!gotModel)
     {
@@ -266,12 +272,14 @@ void CascadeDetectI::process( const Identity &client,
   }
   // End - RunsetWrapper
 
+  OutputResults outputres(callback, mDetectorProps->callbackFreq);
+
   //////////////////////////////////////////////////////////////////////////
   // Start - RunsetIterator
   int nSkipFrames = 150;  //the number of skip frames
   mServiceMan->setStoppable();
   cvac::RunSetIterator mRunsetIterator(&mRunsetWrapper,mRunsetConstraint,
-                                       mServiceMan,nSkipFrames);
+                                       mServiceMan,callback,nSkipFrames);
   mServiceMan->clearStop();
   if(!mRunsetIterator.isInitialized())
   {
@@ -289,29 +297,41 @@ void CascadeDetectI::process( const Identity &client,
       mServiceMan->stopCompleted();
       break;
     }
-  
+    
     cvac::Labelable& labelable = *(mRunsetIterator.getNext());
-    {
-      std::vector<cv::Rect> objects = detectObjects( callback, labelable );
-      addResult(mRunsetIterator.getCurrentResult(),labelable,objects);      
-    }
+    Result &curres = mRunsetIterator.getCurrentResult();
+   
+    std::vector<cv::Rect> objects = detectObjects( callback, labelable );
+    // return the label name with result
+    string resultName;
+    if (objects.size() > 0)
+        resultName = "positive";
+    else
+        resultName = "negative";
+    // returning the cascade file name as label name: outputres.addResult(curres,labelable,objects, cascadeName, 1.0f); 
+    outputres.addResult(curres,labelable,objects, resultName, 1.0f);      
+    
   }  
-  callback->foundNewResults(mRunsetIterator.getResultSet());
+  // We are done so send any final results
+  outputres.finishedResults(mRunsetIterator);
   mServiceMan->clearStop();
 
   //////////////////////////////////////////////////////////////////////////
   // Example to show results
   cvac::ResultSet& tResSet = mRunsetIterator.getResultSet();
-  for(int kres=0;kres<tResSet.results.size();kres++)
+  unsigned int kres;
+  for(kres=0;kres<tResSet.results.size();kres++)
   {
     localAndClientMsg( VLogger::DEBUG, NULL, "Original= %s, Found= %i labels\n", 
       tResSet.results[kres].original->sub.path.filename.c_str(),
       tResSet.results[kres].foundLabels.size());
-
-    for(int kfnd=0;kfnd<tResSet.results[kres].foundLabels.size();kfnd++)
+    unsigned int kfnd;
+    for(kfnd=0;kfnd<tResSet.results[kres].foundLabels.size();kfnd++)
     {
-      LabeledTrackPtr _tPtr = static_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());      
-      if(_tPtr->lab.hasLabel)
+      //LabeledTrackPtr _tPtr = static_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());     
+      LabeledTrackPtr _tPtr = dynamic_cast<LabeledTrack*>(tResSet.results[kres].foundLabels[kfnd].get());
+      //if(_tPtr->lab.hasLabel)
+      if (_tPtr && _tPtr->lab.hasLabel)
       {
         if(_tPtr->keyframesLocations[0].frame.framecnt != -1)
           localAndClientMsg( VLogger::DEBUG, NULL, "at Frame=%i\n",_tPtr->keyframesLocations[0].frame.framecnt);
@@ -369,53 +389,23 @@ std::vector<cv::Rect> CascadeDetectI::detectObjects( const CallbackHandlerPrx& c
       minwinSize.width = mDetectorProps->slideStartSize.width;
       minwinSize.height = mDetectorProps->slideStartSize.height;
   }
+  
   cascade->detectMultiScale(eq_img, results, mDetectorProps->slideScaleFactor, 
                   mDetectorProps->minNeighbors, flags, minwinSize, maxwinSize);
-
+  
+  if (results.size() > mDetectorProps->maxRectangles)
+  { // Only return maxRectangles
+      unsigned long len = results.size();
+      results.erase(results.begin()+mDetectorProps->maxRectangles, results.end());
+      localAndClientMsg(VLogger::WARN, callback, "reducing result rectangles from %d to %d\n", len, mDetectorProps->maxRectangles);
+  }
   return results;
 }
 
-/** add OpenCV Result to CVAC Result
- */
-void CascadeDetectI::addResult(cvac::Result& _res,cvac::Labelable& _converted,
-                               std::vector<cv::Rect> _rects)
-{	
-  int detcount = _rects.size();
-  localAndClientMsg(VLogger::DEBUG, NULL, "detections: %d\n", detcount); 
-
-  if(_rects.size()>0)
-  {
-    LabeledTrackPtr newFound = new LabeledTrack();    
-    for(std::vector<cv::Rect>::iterator it = _rects.begin(); it != _rects.end(); ++it)
-    {
-      newFound->lab.hasLabel = true;
-      newFound->lab.name = cascade_name;
-      newFound->confidence = 1.0f;
-
-      cv::Rect r = *it;
-
-      BBox* box = new BBox();
-      box->x = r.x;
-      box->y = r.y;
-      box->width = r.width;
-      box->height = r.height;
-
-      FrameLocation floc;
-      floc.loc = box;        
-      
-      if(!_converted.lab.hasLabel && !_converted.lab.name.empty())
-        floc.frame.framecnt = atoi(_converted.lab.name.c_str());  //This info. is frameNumber.
-      else
-        floc.frame.framecnt = -1; 
-
-      newFound->keyframesLocations.push_back(floc);
-    }
-    _res.foundLabels.push_back( newFound );
-  }  
-}
 
 /** convert from OpenCV result to CVAC ResultSet
  */
+
 ResultSet CascadeDetectI::convertResults( const Labelable& original, std::vector<cv::Rect> rects)
 {	
   int detcount = rects.size();
@@ -425,7 +415,7 @@ ResultSet CascadeDetectI::convertResults( const Labelable& original, std::vector
   // The original field is for the original label and file name.  Results need
   // to be returned in foundLabels.
   tResult.original = new Labelable( original );
-
+  int cnt = 0; // Only return a max number of rectangles
   for (std::vector<cv::Rect>::iterator it = rects.begin(); it != rects.end(); ++it)
   {
     cv::Rect r = *it;
@@ -498,17 +488,19 @@ DetectorPropertiesI::DetectorPropertiesI()
     slideStopSize.height = 0;
     slideStepX = 0.0f;
     slideStepY = 0.0f;
+    maxRectangles = 5000;
 }
 
 void DetectorPropertiesI::load(const DetectorProperties &p) 
 {
     verbosity = p.verbosity;
     props = p.props;
-    videoFPS = p.videoFPS;
+    if (p.videoFPS > 0)
+        videoFPS = p.videoFPS;
     //Only load values that are not zero
     if (p.nativeWindowSize.width > 0 && p.nativeWindowSize.height > 0)
         nativeWindowSize = p.nativeWindowSize;
-    if (p.minNeighbors > -1)
+    if (p.minNeighbors >= 0)
         minNeighbors = p.minNeighbors;
     if (p.slideScaleFactor > 0)
         slideScaleFactor = p.slideScaleFactor;
@@ -521,14 +513,45 @@ void DetectorPropertiesI::load(const DetectorProperties &p)
 
 bool DetectorPropertiesI::readProps()
 {
-    // No properties to read
     bool res = true;
+    cvac::Properties::iterator it;
+    for (it = props.begin(); it != props.end(); it++)
+    {
+        if (it->first.compare("callbackFrequency") == 0)
+        {
+            callbackFreq = it->second;
+            if ((it->second.compare("labelable") != 0) &&
+                (it->second.compare("immediate") != 0) &&
+                (it->second.compare("final") == 0))
+            {
+                localAndClientMsg(VLogger::ERROR, NULL, 
+                         "callbackFrequency type not supported.\n");
+                res = false;
+            }
+        }
+        if (it->first.compare("maxRectangles") == 0)
+        {
+            long cnt = strtol(it->second.c_str(), NULL, 10);
+            if (cnt > 0 && cnt != LONG_MAX && cnt != LONG_MIN)
+                maxRectangles = cnt;
+            else
+            {
+                localAndClientMsg(VLogger::ERROR, NULL, 
+                         "Invalid maxRectangles property.\n");
+                res = false;
+            }
+        }
+    }   
     return res;
 }
-
+ 
 bool DetectorPropertiesI::writeProps()
 {
+    std::stringstream stream;
+    stream << maxRectangles;
     bool res = true;
+    props.insert(std::pair<string, string>("callbackFrequency", callbackFreq));
+    props.insert(std::pair<string, string>("maxRectangles", stream.str()));
     return res;
 }
 

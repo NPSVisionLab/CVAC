@@ -46,7 +46,7 @@ abstract public class CorpusI extends Corpus
         }
     }
     
-    public static final String[] IMAGE_SUFFIXES = {".jpg",".jpeg",".png", ".pgm"};
+    public static final String[] IMAGE_SUFFIXES = {".jpg",".jpeg",".png", ".pgm", ".gif"};
     public static final String[] VIDEO_SUFFIXES = {".3g2", ".3gp", ".4xm", ".ajp", ".amc", ".amv", ".asf", ".ass", ".avi", ".bik", ".dpg", ".dsv", ".dv", ".dvf", ".dvx", ".flc", ".flv", ".gvi", ".hdmov", ".hdv", ".heu", ".ivf", ".k3g", ".m2p", ".m2ts", ".mjp", ".mkv", ".mmv", ".mod", ".modd", ".moff", ".mov", ".mp4", ".mpb", ".mpg", ".mswmm", ".mvb", ".mve", ".mxf", ".nsv", ".ogv", ".pva", ".rm", ".rms", ".rv", ".s2k", ".scm", ".smk", ".smv", ".sol", ".srt", ".ssa", ".str", ".sub", ".svi", ".tod", ".tp", ".ts", ".vc1", ".vid", ".vod", ".vp6", ".vp7", ".vqa", ".wm", ".wma", ".wmdb", ".wmv", ".xas", ".xma"};
 
     protected static Logger logger = Logger.getLogger(Corpus.class.getName());

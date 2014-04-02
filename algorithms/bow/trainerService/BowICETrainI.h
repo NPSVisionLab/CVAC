@@ -50,10 +50,11 @@
 #include <IceUtil/UUID.h>
 #include <util/processRunSet.h>
 #include <util/ServiceManI.h>
+#include <util/MsgLogger.h>
 
 typedef std::map<cvac::Purpose, std::string> LabelMap;
 
-class BowICETrainI : public cvac::DetectorTrainer, public cvac::StartStop
+class BowICETrainI : public cvac::DetectorTrainer, public cvac::StartStop, public MsgLogger
 {
 public:
   BowICETrainI();
@@ -73,9 +74,11 @@ public:
   virtual ::cvac::TrainerProperties
     getTrainerProperties(const ::Ice::Current& = ::Ice::Current());
   
- private:
+ private:  
   int                    m_cvacVerbosity;
   cvac::ServiceManager  *mServiceMan;
+  int                    maxClassId;
+  std::string            rejectClassStrategy;
 
  private:
   bowCV* initialize( cvac::TrainerCallbackHandlerPrx& _callback,
@@ -97,6 +100,13 @@ public:
                                   const std::string& clientName,
                                   const std::string& CVAC_DataDir,
                                   const std::string& tempDir );
+  int getPurposeId( const cvac::Purpose& pur,
+                    cvac::TrainerCallbackHandlerPrx& _callback );
+  bool checkPurposedLists( const cvac::PurposedListSequence& purposedLists,
+                           cvac::TrainerCallbackHandlerPrx& _callback );
+private:
+  cvac::TrainerCallbackHandlerPrx callbackPtr;
+  virtual void message(MsgLogger::Levels msgLevel, const string& _msgStr);
 };
 
 #endif //_BowICETrainI_H__
