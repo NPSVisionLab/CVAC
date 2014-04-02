@@ -68,7 +68,10 @@ class DetectorPropertiesI : public cvac::DetectorProperties
   /**
    * Load the struct's values into our class ignoring uninitialized values
    */
- void load(const DetectorProperties &p);
+  void load(const DetectorProperties &p);
+
+   std::string callbackFreq;
+   unsigned long maxRectangles;
 
 };
 
@@ -100,8 +103,6 @@ private:
     bool initialize(const ::cvac::DetectorProperties& props,
                     const ::cvac::FilePath& model, const ::Ice::Current& current);
     bool readModelFile( std::string modelFSpath, const ::Ice::Current& current);
-    void addResult(cvac::Result& _res,cvac::Labelable& _converted,
-                     std::vector<cv::Rect> _rects);
     
     cvac::ServiceManager    *mServiceMan;
     cvac::DetectorCallbackHandlerPrx callback;

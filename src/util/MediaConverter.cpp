@@ -50,6 +50,7 @@ MediaConverter_openCV_i2i::MediaConverter_openCV_i2i(ServiceManager *_sman)
 {
 }
 
+// convert an image to another image
 bool MediaConverter_openCV_i2i::convert(const string& _srcAbsPath,
                                         const string& _desAbsDir,
                                         const string& _desFilename,
@@ -63,7 +64,7 @@ bool MediaConverter_openCV_i2i::convert(const string& _srcAbsPath,
   cv::Mat tImg = cv::imread(_srcAbsPath);
   if(tImg.empty())
   {    
-    localAndClientMsg(VLogger::WARN, NULL,"Conversion error from %s to %s.\n",
+    localAndClientMsg(VLogger::ERROR, NULL,"Conversion error from %s to %s.\n",
       _srcAbsPath.c_str(),tDesPath.c_str());
     return false;
   }
@@ -96,15 +97,66 @@ MediaConverter_openCV_v2i::~MediaConverter_openCV_v2i()
     mVideoFile.release();
 }
 
+bool MediaConverter_openCV_v2i::checkDuplicateConversion(const string& _srcAbsPath,
+                                                          const int& _perfrm,
+                                                          vector<string>& _resFilename,
+                                                          vector<string>& _resFrameInfo)
+{ 
+  std::vector<string>::iterator itr = dupli_srcPath.begin();  
+  int fndIdx = -1;
+  while(true) 
+  {
+    itr = std::find(itr,dupli_srcPath.end(),_srcAbsPath);
+    if (itr == dupli_srcPath.end())
+      break;
+    else
+    {
+      int tIdx = itr - dupli_srcPath.begin();
+      if((_perfrm%dupli_perFrame[tIdx]) == 0)  
+      {
+        fndIdx = tIdx;
+        break;
+      } 
+      itr++;
+    }
+  }
+
+  if(fndIdx >= 0)
+  {
+    _resFilename.clear();
+    _resFrameInfo.clear();
+
+    int _diff = _perfrm/dupli_perFrame[fndIdx];
+    for(int k=(_diff-1);k<(dupli_Filename[fndIdx]).size();k+=_diff)
+    {
+      _resFilename.push_back(dupli_Filename[fndIdx][k]);
+      _resFrameInfo.push_back(dupli_FrameInfo[fndIdx][k]);
+    }
+    return true;
+  }
+  else
+    return false;
+}
+
 bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
                                         const string& _desAbsDir,
                                         const string& _desFilename,
                                         vector<string>& _resFilename,
-                                        vector<string>& _resAuxInfo)
+                                        vector<string>& _resFrameInfo)
 {
-  _resAuxInfo.clear();
+  _resFrameInfo.clear();
   _resFilename.clear();
-   string tDesAbsPath = _desAbsDir + "/" + _desFilename;
+  string tDesAbsPath = _desAbsDir + "/" + _desFilename;
+
+  //////////////////////////////////////////////////////////////////////////
+  // Check - Duplicate Conversion
+  if(checkDuplicateConversion(_srcAbsPath,PerFrame,_resFilename,_resFrameInfo))
+  {
+    localAndClientMsg(VLogger::DEBUG, NULL,"Conversion was already done from %s to %s.\n",
+      _srcAbsPath.c_str(),tDesAbsPath.c_str());
+    return true;
+  } 
+  //////////////////////////////////////////////////////////////////////////
 
   if(mVideoFile.isOpened())
     mVideoFile.release();
@@ -117,14 +169,13 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
     tnFrame = (long)mVideoFile.get(CV_CAP_PROP_FRAME_COUNT);
   else
   {
-    localAndClientMsg(VLogger::WARN, NULL,"Conversion error from %s to %s.\n",
+    localAndClientMsg(VLogger::ERROR, NULL,"Conversion error from %s to %s.\n",
       _srcAbsPath.c_str(),tDesAbsPath.c_str());
     return false;
   }
-  int tnDigit = (tnFrame>0)?(int)log10((double)tnFrame)+1:1;
+  int tnDigit = (tnFrame>0)?(int)log10((double)tnFrame)+1:5;
   tnDigit += 1;
   //////////////////////////////////////////////////////////////////////////
-
 
   //////////////////////////////////////////////////////////////////////////
   // Adjusting Filename
@@ -133,13 +184,12 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
   fileNamePre = _desFilename.substr(0,dot);    
   fileNameSuf = _desFilename.substr(dot,_desFilename.length());
   //////////////////////////////////////////////////////////////////////////  
-  
 
   //////////////////////////////////////////////////////////////////////////
-  // Video to Images
-  cv::Mat tMatFrame;	
+  // Video to Images  
   string tfileNameNew;
-  long tCount = 0;		  
+  cv::Mat tMatFrame;  
+  long tCount = -1; //0-based frame counting
   bool tFlagRepeat = true;
   do{
     tFlagRepeat = mVideoFile.read(tMatFrame);
@@ -152,7 +202,10 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
       }
 
       if((++tCount%PerFrame)==0)
-      {	
+      {
+        if(tCount ==0)  //ignoring 1st frame
+          continue;
+
         std::ostringstream ss;
         ss << std::setw( tnDigit ) << std::setfill( '0' ) << tCount;
         tfileNameNew = fileNamePre + "_" + ss.str() + fileNameSuf;
@@ -161,7 +214,7 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
         if(imwrite(tDesAbsPath,tMatFrame))
         {
           _resFilename.push_back(tfileNameNew);
-          _resAuxInfo.push_back(ss.str());
+          _resFrameInfo.push_back(ss.str());
         }
         else
         {
@@ -173,6 +226,11 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
       }
     }
   }while(tFlagRepeat);
+
+  dupli_Filename.push_back(_resFilename);
+  dupli_FrameInfo.push_back(_resFrameInfo);
+  dupli_srcPath.push_back(_srcAbsPath);
+  dupli_perFrame.push_back(PerFrame);  
 
   return true;  
 }

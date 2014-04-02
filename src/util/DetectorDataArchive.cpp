@@ -56,6 +56,23 @@ using namespace std;
 
 static const std::string PROPS = "trainer.properties";
 
+/** TODO:
+    The DetectorDataArchive implementation should be changed as follows.
+    Only one minor interface modification would result: DDA client would
+    need to make the distinction between keys that are references to files
+    and keys that are other properties.
+
+Changes:
+*    use a std::map instead of two parallel vectors of keys and values.
+*    Make the key comparison operator perform a case-insensitive string comparison.
+*    Don't distinguish between a property and file in DDA; always use "=" as separator.
+*    Instead, provide a function that returns a full file path for a given key which a
+        DDA client can call: getFSPathForProperty( const std::string& key )
+*    Do not require the space before and after the =
+*    Chop the keys and values (remove leading and trailing whitespace)
+*    Write a unit test for DDA.
+
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 cvac::DetectorDataArchive::DetectorDataArchive()
@@ -141,7 +158,6 @@ void cvac::DetectorDataArchive::unarchive(const string &archiveFile, const strin
     std::string line;
     while( std::getline(propfile, line))
     {
-        int res;
         // See if its a property
         int idx = line.find(":");
         if (idx > 0)
@@ -290,7 +306,23 @@ int copy_data(struct archive *ar, struct archive *aw)
     if (r == ARCHIVE_EOF)
       return (ARCHIVE_OK);
     if (r != ARCHIVE_OK)
-      return (r);
+    {
+      //forcefully copy to destination
+      r = archive_write_data_block(aw, buff, size, offset);
+      if (r != ARCHIVE_OK)
+      {
+        //if the destination has a problem, it would return Error.        
+        localAndClientMsg(VLogger::WARN, NULL, archive_error_string(aw));
+        return (r);
+      }
+      else
+      {
+        localAndClientMsg(VLogger::WARN, NULL,
+          "It's desirable to check validity of the zip file because it may be truncated or corrupted.\n");
+        return ARCHIVE_OK;
+      }
+    }
+
     r = archive_write_data_block(aw, buff, size, offset);
     if (r != ARCHIVE_OK) {
       localAndClientMsg(VLogger::WARN, NULL, archive_error_string(aw));

@@ -18,6 +18,7 @@ SET(SOURCE_FILES
     RunSetIterator.cpp
     RunSetWrapper.cpp
 	MediaConverter.cpp
+    OutputResults.cpp
 )
 
 SET(HEADER_FILES
@@ -34,12 +35,15 @@ SET(HEADER_FILES
 	${CVAC_INCLUDE_DIR}/util/RunSetIterator.h
 	${CVAC_INCLUDE_DIR}/util/RunSetWrapper.h
 	${CVAC_INCLUDE_DIR}/util/MediaConverter.h
+	${CVAC_INCLUDE_DIR}/util/OutputResults.h
+	${CVAC_INCLUDE_DIR}/util/MsgLogger.h
 #if (WIN32)
     ${CVAC_INCLUDE_DIR}/util/wdirent.h
 #endif (WIN32)
 )
 
 INCLUDE_DIRECTORIES(${CVAC_INCLUDE_DIR} ${ICE_INCLUDE}
+                    ${OpenCV_INCLUDE_DIRS}
                     ${CMAKE_CURRENT_BINARY_DIR}#for the generated slice files
                     ${LIBARCHIVE_INCLUDE}
                     )

@@ -168,6 +168,8 @@ module cvac {
   struct FrameLocation {
     VideoSeekTime frame;
     Location loc;
+    bool occluded = false;
+    bool outOfFrame = false;
   };
 
   /** Baseclass for video (temporal) annotations.  This permits labeling

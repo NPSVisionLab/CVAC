@@ -13,7 +13,11 @@ if exist %LOCKFILE% (
     echo lock file \'%LOCKFILE%\'.
     exit /b 1
 )
+if "${START_ICE_SERVICES}" == "1" goto starticebox
+goto noice
+:starticebox
 start "CVAC Services (C++)" "cmd /K ""${ICE_BOX_EXECUTABLE}" --Ice.Config=config.icebox"
+:noice
 
 if "${START_JAVA_SERVICES}" == "1" goto startjava
 goto next

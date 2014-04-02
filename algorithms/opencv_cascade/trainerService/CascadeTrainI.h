@@ -55,14 +55,6 @@ class SamplesParams
   int height;
 };
 
-// TODO: change to K's class name
-class RunSetWrapper {
-public:
-  RunSetWrapper(const cvac::RunSet& rs ): runset(rs) { }
-
-public:
-  const cvac::RunSet &runset;
-};
 
 class TrainerPropertiesI : public cvac::TrainerProperties
 {
@@ -93,8 +85,8 @@ class TrainerPropertiesI : public cvac::TrainerProperties
   float weight_trim_rate;
   int max_depth;
   int weak_count;
-  int width;
-  int height;
+  int rotate_count;
+  
 };
 
 class CascadeTrainI : public cvac::DetectorTrainer, public cvac::StartStop
@@ -115,18 +107,23 @@ class CascadeTrainI : public cvac::DetectorTrainer, public cvac::StartStop
   virtual ::std::string getDescription(const ::Ice::Current& = ::Ice::Current() );
   virtual ::cvac::TrainerProperties getTrainerProperties(const ::Ice::Current& = ::Ice::Current());
 
-  void writeBgFile( const RunSetWrapper& rsw, const std::string& bgFilename, 
-                    int* pNumNeg, std::string datadir );
+  void writeBgFile( cvac::RunSetWrapper& rsw, const std::string& bgFilename, 
+      int* pNumNeg, std::string datadir, const cvac::CallbackHandlerPrx &callback );
 
-  bool createSamples( const RunSetWrapper& rsw, const SamplesParams& params,
+  bool createSamples(cvac::RunSetWrapper& rsw, const SamplesParams& params,
                     const std::string& infoFilename,
-                    const std::string& vecFilename, int* pNumPos, std::string datadir);
+                    const std::string& vecFilename, int* pNumPos, std::string datadir,
+                    const cvac::CallbackHandlerPrx &callback,
+                    const std::string &bgFilename, int numNeg);
   bool createClassifier( const std::string& tempDir, 
                          const std::string& vecFname, 
                          const std::string& bgName,
                          int numPos, int numNeg, 
                          const TrainerPropertiesI *trainProps );
   void addDataPath(cvac::RunSet runset, const std::string &CVAC_DataDir);
+  int addRotatedSamples(string tempVecfile, string vecfile, string image, const char *bgInfo, int numPos, int showSamples, int w, int h);
+  bool checkPurposedLists(const cvac::PurposedListSequence& purposedLists,
+                          cvac::TrainerCallbackHandlerPrx& _callback );
   
  private:
   void initialize();

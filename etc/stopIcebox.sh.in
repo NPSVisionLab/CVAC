@@ -10,7 +10,7 @@ then
 fi
 
 export PATH=$PATH:/opt/local/bin
-export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${CVAC_ROOT_DIR}/lib"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_ROOT_DIR}/lib"
 cd ${CVAC_ROOT_DIR}
 
 # C/C++ and Java services, via icebox admin
@@ -25,8 +25,8 @@ then
         if [ "`which pkill`"  != "" ];
         then
             # pkill seems to work better than killall
-            #echo pkill -xf "${PYTHON_EXECUTABLE} $LINE"
-            pkill -xf "${PYTHON_EXECUTABLE} $LINE"
+            #echo pkill -f "${PYTHON_EXECUTABLE} $LINE"
+            pkill -f "${PYTHON_EXECUTABLE} $LINE"
         else
             # echo killall $LINE
             killall $LINE

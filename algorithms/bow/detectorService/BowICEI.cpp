@@ -72,6 +72,7 @@ extern "C"
 BowICEI::BowICEI()
 : pBowCV(NULL),fInitialized(false)
 {
+  callbackPtr = NULL;
     mServiceMan = NULL;
 }
 
@@ -88,7 +89,18 @@ void BowICEI::setServiceManager(cvac::ServiceManagerI *sman)
 
 void BowICEI::starting()
 {
-    // Do anything needed on service starting
+    // check if the config.service file contains a trained model
+    // if so, read it.
+    configModelFileName = mServiceMan->getModelFileFromConfig();
+    if (configModelFileName.empty())
+    {
+        localAndClientMsg(VLogger::DEBUG, NULL, "No trained model file specified in service config.\n" );
+    }
+    else
+    {
+        localAndClientMsg(VLogger::DEBUG, NULL, "Will read trained model file as specified in service config: %s\n",
+              configModelFileName.c_str()); 
+    }
 }
 
 void BowICEI::stopping()
@@ -113,14 +125,23 @@ void BowICEI::initialize( DetectorDataArchive& dda,
   // can be called.  We need to make sure we have it
   if (pBowCV == NULL)
   {
-    pBowCV = new bowCV();
+    pBowCV = new bowCV(this);
+  }
+  cvac::FilePath model;
+  if (configModelFileName.empty())
+  {
+      model = file;
+  }else
+  {
+      model.directory.relativePath = getFileDirectory(configModelFileName);
+      model.filename = getFileName(configModelFileName);
   }
 	
   // Get the default CVAC data directory as defined in the config file
   std::string expandedSubfolder = "";
   std::string filename = "";
-  std::string _extFile = file.filename.substr( file.filename.rfind(".")+1,
-                                                    file.filename.length());
+  std::string _extFile = model.filename.substr( model.filename.rfind(".")+1,
+                                                    model.filename.length());
   std::string connectName = getClientConnectionName(current);
   std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
                                                              connectName);                               
@@ -133,8 +154,18 @@ void BowICEI::initialize( DetectorDataArchive& dda,
     return;
   }
 
-  // for a zip file
-  std::string zipfilename = getFSPath( file, m_CVAC_DataDir );
+  std::string zipfilename;
+  // Only support absolute paths if they are from the config file
+  if (configModelFileName.empty() == false)
+  {
+      if (pathAbsolute(configModelFileName) == false)
+	  zipfilename = m_CVAC_DataDir + "/" + configModelFileName;
+      else
+	  zipfilename = configModelFileName;
+  }else
+  {
+      zipfilename = getFSPath( model, m_CVAC_DataDir );
+  }
   dda.unarchive(zipfilename, clientDir);
 
   // add the CVAC.DataDir root path and initialize from dda  
@@ -237,7 +268,7 @@ void BowICEI::process(const Ice::Identity &client,
                       const::cvac::DetectorProperties &props,
                       const ::Ice::Current& current)
 {
-  DetectorCallbackHandlerPrx _callback = 
+  callbackPtr = 
     DetectorCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
 
   // this must not go out of scope before processRunSet has completed:
@@ -246,14 +277,20 @@ void BowICEI::process(const Ice::Identity &client,
   initialize( dda, trainedModelFile, current);
   if (!fInitialized || NULL==pBowCV || !pBowCV->isInitialized())
   {
-    localAndClientMsg(VLogger::ERROR, _callback, "BowICEI not initialized, aborting.\n");
+    localAndClientMsg(VLogger::ERROR, callbackPtr, "BowICEI not initialized, aborting.\n");
   }
   DoDetectFunc func = BowICEI::processSingleImg;
 
   try {
-    processRunSet(this, _callback, func, runset, m_CVAC_DataDir, mServiceMan);
+    processRunSet(this, callbackPtr, func, runset, m_CVAC_DataDir, mServiceMan);
   }
   catch (exception e) {
-    localAndClientMsg(VLogger::ERROR, _callback, "BOW detector could not process given file-path.\n");
+    localAndClientMsg(VLogger::ERROR, callbackPtr, "BOW detector could not process given file-path.\n");
   }
 }
+
+void BowICEI::message(MsgLogger::Levels msgLevel, const string& _msgStr)
+{  
+  localAndClientMsg((VLogger::Levels)msgLevel,callbackPtr,_msgStr.c_str());
+}
+

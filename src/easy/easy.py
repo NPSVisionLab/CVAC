@@ -9,6 +9,7 @@ and to provide, uhm, easy access functions to its functionality.
 
 from __future__ import print_function
 import os
+import re
 import sys, traceback
 import shutil
 # paths should setup the PYTHONPATH.  If you special requirements
@@ -23,6 +24,8 @@ import unittest
 import stat
 import threading
 
+import os
+
 # for drawing only:
 try:
     import Tkinter as tk
@@ -34,10 +37,17 @@ except:
 #
 # one-time initialization code, upon loading the module
 #
-ic = Ice.initialize(sys.argv)
+args = sys.argv
+args.append('--Ice.MessageSizeMax=100000')
+args.append('--Ice.ACM.Client=0')
+if os.path.isfile('config.client'):
+    args.append('--Ice.Config=config.client')
+ic = Ice.initialize(args)
 defaultCS = None
 # IF the environment variable is set, then use that else use data
 CVAC_DataDir = os.getenv("CVAC_DATADIR", "data")
+CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
+
 
 def getFSPath( cvacPath ):
     '''Turn a CVAC path into a file system path'''
@@ -98,7 +108,8 @@ def getLabelable( filepath, labelText=None ):
 
 def getCorpusServer( configstr ):
     '''Connect to a Corpus server based on the given configuration string'''
-    cs_base = ic.stringToProxy( configstr )
+    proxyStr = getProxyString(configstr)
+    cs_base = ic.stringToProxy( proxyStr )
     if not cs_base:
         raise RuntimeError("CorpusServer not found in config:", configstr)
     cs = cvac.CorpusServicePrx.checkedCast(cs_base)
@@ -110,7 +121,12 @@ def getDefaultCorpusServer():
     '''Returns the CorpusServer that is expected to run locally at port 10011'''
     global defaultCS
     if not defaultCS:
-        defaultCS = getCorpusServer( "CorpusServer:default -p 10011" )
+        #first try configured Corpus Server
+        proxstr = getProxyString("CorpusServer")
+        if not proxstr:
+            defaultCS = getCorpusServer( "CorpusServer:default -p 10011" )
+        else:
+            defaultCS = getCorpusServer( proxstr)
     return defaultCS
 
 def openCorpus( corpusPath, corpusServer=None ):
@@ -214,6 +230,73 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
             categories[lb.lab.name] = [lb]
     return (categories, labelList)
 
+def testRunSetIntegrity(runset):
+    if type(runset) is dict and not runset['runset'] is None\
+        and isinstance(runset['runset'], cvac.RunSet):
+        runset = runset['runset']
+        
+    if not runset or not isinstance(runset, cvac.RunSet) or not runset.purposedLists:
+        print("Not a valid runset")
+        return False
+    
+    #categories = {}
+    for plist in runset.purposedLists:
+        if isinstance(plist, cvac.PurposedLabelableSeq) != True: 
+            print("unexpected plist type "+type(plist))
+            return False
+        else:
+            for lb in plist.labeledArtifacts:                
+                labelname  = 'nolabel'
+                if lb.lab.hasLabel != True:
+                    print("Warning: " + lb.sub.path.filename + " has no label.")
+                else:
+                    labelname = lb.lab.name
+
+                minX = 0
+                minY = 0
+                maxX = sys.maxint 
+                maxY = sys.maxint                
+                if lb.sub.width>0:
+                    maxX = lb.sub.width
+                    
+                if lb.sub.height>0:
+                    maxY = lb.sub.height
+                
+                for pt in lb.loc.points:
+                    if (pt.x < minX) or (pt.y < minY) \
+                    or (pt.x >= maxX) or (pt.y >= maxY):
+                        print("Warning: label \"" \
+                              + labelname + "\" is out of bounds in file \"" \
+                              + lb.sub.path.filename + "\"" \
+                              + " (X=" + str(pt.x) + ", Y=" + str(pt.y) + ")")
+                        return False
+                 
+#                 else:
+#                     print("File= " + lb.sub.path.filename)
+#                     print("Label= " + lb.lab.name)
+#                     if lb.lab.name in categories:
+#                         categories[lb.lab.name].append(lb)
+#                     else:       
+#                         categories[lb.lab.name] = [lb]
+#                         
+#                     if isinstance(lb, cvac.LabeledTrack):                        
+#                         framestart = -1
+#                         curFrame = -1
+#                         for frame in lb.keyframesLocations:
+#                             frameNo = frame.frame.framecnt
+#                             if framestart == -1:
+#                                 framestart = frameNo
+#                                 curFrame = frameNo
+#                             if frameNo == curFrame:
+#                                 curFrame = curFrame + 1
+#                             else:
+#                                 print ("Track frames {0} to {1}".format(framestart, curFrame))
+#                                 framestart = frameNo
+#                                 curFrame = frameNo + 1  
+#                         if framestart != curFrame:   
+#                             print ("Track frames {0} to {1}".format(framestart, curFrame))
+    return True    
+
 def printCategoryInfo( categories ):
     '''Categories are a dictionary, key being the label and the
     value being all samples of that label.'''
@@ -254,7 +337,7 @@ def printSubstrateInfo( labelList, indent="", printLabels=False ):
             print("{0}{1} ({2} label{3})".\
                   format( indent, subpath, numlabels, ("s","")[numlabels==1] ))
 
-def printRunSetInfo( runset, printLabels=False ):
+def printRunSetInfo( runset, printLabels=False, printArtifacts=True ):
     '''You can pass in an actual cvac.RunSet or a dictionary with
     the runset and a classmap, as returned by createRunSet.'''
     classmap = None
@@ -262,7 +345,7 @@ def printRunSetInfo( runset, printLabels=False ):
         and isinstance(runset['runset'], cvac.RunSet):
         classmap = runset['classmap']
         runset = runset['runset']
-    if not runset or not isinstance(runset, cvac.RunSet):
+    if not runset or not isinstance(runset, cvac.RunSet) or not runset.purposedLists:
         print("no (proper) runset, nothing to print")
         return
     sys.stdout.softspace=False;
@@ -274,10 +357,12 @@ def printRunSetInfo( runset, printLabels=False ):
             print("directory with Purpose '{0}'; not listing members"\
                   .format( purposeText ) )
         elif isinstance(plist, cvac.PurposedLabelableSeq):
-            print("sequence with Purpose '{0}' and {1} labeled artifacts:"\
-                  .format( purposeText, len(plist.labeledArtifacts) ) )
-            printSubstrateInfo( plist.labeledArtifacts, indent="  ",
-                                printLabels=printLabels )
+            print("sequence with Purpose '{0}' and {1} labeled artifacts{2}"\
+                  .format( purposeText, len(plist.labeledArtifacts),
+                           (".",":")[printArtifacts]) )
+            if printArtifacts:
+                printSubstrateInfo( plist.labeledArtifacts, indent="  ",
+                                    printLabels=printLabels )
         else:
             raise RuntimeError("unexpected plist type "+type(plist))
     if classmap:
@@ -482,9 +567,10 @@ def createRunSet( samples, purpose=None, classmap=None ):
 def getFileServer( configString ):
     '''Obtain a reference to a remote FileServer.
     Generally, every host of CVAC services also has one FileServer.'''
-    fileserver_base = ic.stringToProxy( configString )
+    proxyStr = getProxyString(configString)
+    fileserver_base = ic.stringToProxy( proxyStr )
     if not fileserver_base:
-        raise RuntimeError("no such FileService: "+configString)
+        raise RuntimeError("no such FileService: "+proxyStr)
     fileserver = cvac.FileServicePrx.checkedCast( fileserver_base )
     if not fileserver:
         raise RuntimeError("Invalid FileServer proxy")
@@ -515,8 +601,12 @@ def getDefaultFileServer( detector ):
     if not host:
         host = "localhost"
 
-    # get the FileServer at said host at the default port
-    configString = "FileService:default -h "+host+" -p 10110"
+    proxyStr = getProxyString('FileService')
+    if not proxyStr:
+        # get the FileServer at said host at the default port
+        configString = "FileService:default -h "+host+" -p 10110"
+    else:
+        configString = proxyStr
     try:
         fs = getFileServer( configString )
     except RuntimeError:
@@ -552,7 +642,7 @@ def getFile( fileserver, filepath ):
     localFS = getFSPath( filepath )
     if not os.path.exists( os.path.dirname(localFS) ):
         os.makedirs( os.path.dirname(localFS) )
-    flocal = open( localFS, 'w' )
+    flocal = open( localFS, 'wb' )
     
     # "get" the file's bytes from the FileServer
     bytes = fileserver.getFile( filepath );
@@ -625,6 +715,32 @@ def putAllFiles( fileserver, runset ):
 
     return {'uploaded':uploadedFiles, 'existing':existingFiles}
 
+def getAllFiles( fileserver, runset ):
+    '''Make sure all files in the RunSet are available on the local site;
+    if they are not then they will be downloaded via the remote fileserver
+    to the local site.
+    For reporting purposes, return what has and has not been uploaded.'''
+    assert( fileserver and runset )
+
+    # collect all "substrates"
+    substrates = collectSubstrates( runset )
+    
+    # upload if not present
+    downloadedFiles = []
+    existingFiles = []
+    for sub in substrates:
+        if not isinstance(sub, cvac.Substrate):
+            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
+        filepath = getFSPath(sub.path)
+        if not os.path.exists( filepath ):
+            getFile( fileserver, sub.path)
+            downloadedFiles.append( sub.path )
+        else:
+            existingFiles.append( sub.path )
+
+    return {'downloaded':downloadedFiles, 'existing':existingFiles}
+
+
 def deleteAllFiles( fileserver, uploadedFiles ):
     '''Delete all files that were previously uploaded to the fileserver.
     For reporting purposes, return what has and has not been uploaded.'''
@@ -648,6 +764,29 @@ def deleteAllFiles( fileserver, uploadedFiles ):
 
     return {'deleted':deletedFiles, 'notDeleted':notDeletedFiles}
 
+def getProxyString(configString):
+    '''If we have a proxy string already then just return it.  If we have
+    a detector name look it up in the config.client file and return the
+    proxy string.  If we don't have either then return empty string '''
+    scanner = re.Scanner([
+      (r"[_a-zA-Z0-9]+", lambda scanner, token:("IDENT", token)),
+      (r"-tp", lambda scanner, token:("PORT", token)),
+      (r"-p", lambda scanner, token:("PORT", token)),
+      (r":", lambda scanner, token:("COLON", token)),
+      (r"\s+", None), #skip white space
+    ])
+    parselist, remainder = scanner.scan(configString)
+    for entry in parselist:
+        if entry[0] == "PORT" or entry[0] == "COLON":
+            return configString
+    # We don't have a proxy so lets see if we have a match in client.config
+    properties = ic.getProperties()
+    prop = properties.getProperty(configString + ".Proxy")   
+    return prop
+
+
+
+
 def getTrainerProperties(trainer):
     ''' Get the trainer properties for this trainer'''
     trainerProps = trainer.getTrainerProperties()
@@ -657,20 +796,51 @@ def getTrainerProperties(trainer):
 
 def getTrainer( configString ):
     '''Connect to a trainer service'''
-    trainer_base = ic.stringToProxy( configString )
+    proxyStr = getProxyString(configString)
+    trainer_base = ic.stringToProxy( proxyStr )
     trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
     if not trainer:
         raise RuntimeError("Invalid DetectorTrainer proxy")
     return trainer
 
+def getVerbosityNumber( verbosityString ):
+    '''Convert error, info, warning etc into 1, 2, 3 etc.
+    '''
+    try:
+        # first see if it's a string digit ("0", "1", etc)
+        return int( verbosityString )
+    except ValueError:
+        pass
+    if verbosityString.lower().startswith("silent"):
+        return 0
+    if verbosityString.lower().startswith("err"):
+        return 1
+    if verbosityString.lower().startswith("warn"):
+        return 2
+    if verbosityString.lower().startswith("info"):
+        return 3
+    if verbosityString.lower().startswith("debug1") or verbosityString.lower()=="debug":
+        return 4
+    if verbosityString.lower().startswith("debug2"):
+        return 5
+    if verbosityString.lower().startswith("debug3"):
+        return 6
+
 # a default implementation for a TrainerCallbackHandler, in case
 # the easy user doesn't specify one;
 # this will get called once the training is done
 class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
-    detectorData = None
-    trainingFinished = False
+    def __init__(self):
+        self.detectorData = None
+        self.trainingFinished = False
+        
     def message( self, level, messageString, current=None ):
-        print("message (level " + str(level) + ") from trainer: "+messageString, end="")
+        global CVAC_ClientVerbosity
+        if isinstance(CVAC_ClientVerbosity, str):
+            CVAC_ClientVerbosity = getVerbosityNumber( CVAC_ClientVerbosity )
+        if level<=CVAC_ClientVerbosity:
+            print("message (level {0}) from trainer: {1}"
+                  .format( str(level), messageString), end="")
         
     def createdDetector(self, detData, current=None):
         if not detData:
@@ -679,7 +849,7 @@ class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
         self.detectorData = detData
         self.trainingFinished = True
 
-def train( trainer, runset, trainerProps=None, callbackRecv=None ):
+def train( trainer, runset, callbackRecv=None, trainerProperties=None ):
     '''A callback receiver can optionally be specified'''
     
     # ICE functionality to enable bidirectional connection for callback
@@ -694,14 +864,12 @@ def train( trainer, runset, trainerProps=None, callbackRecv=None ):
     trainer.ice_getConnection().setAdapter(adapter)
 
     # connect to trainer, initialize with a verbosity value, and train
-    if trainerProps != None:
-        tp = trainerProps
-    else:
-        tp = cvac.TrainerProperties()
-        tp.verbosity = 3
+    if not trainerProperties:
+        trainerProperties = cvac.TrainerProperties()
+        trainerProperties.verbosity = 3
     if type(runset) is dict:
         runset = runset['runset']
-    trainer.process( cbID, runset, tp )
+    trainer.process( cbID, runset, trainerProperties )
 
     # check results
     if not callbackRecv.detectorData:
@@ -718,7 +886,8 @@ def getDetectorProperties(detector):
 
 def getDetector( configString ):
     '''Connect to a detector service'''
-    detector_base = ic.stringToProxy( configString )
+    proxyStr = getProxyString(configString)
+    detector_base = ic.stringToProxy( proxyStr )
     detector = cvac.DetectorPrx.checkedCast(detector_base)
     if not detector:
         raise RuntimeError("Invalid Detector service proxy")
@@ -729,13 +898,23 @@ def getDetector( configString ):
 # this will get called when results have been found;
 # replace the multiclass-ID label with the string label
 class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
-    allResults = []
-    detectionFinished = False
+    def __init__(self):
+        self.allResults = []
+        self.detectionFinished = False
+        
+    def message( self, level, messageString, current=None ):
+        global CVAC_ClientVerbosity
+        if isinstance(CVAC_ClientVerbosity, str):
+            CVAC_ClientVerbosity = getVerbosityNumber( CVAC_ClientVerbosity )
+        if level<=CVAC_ClientVerbosity:
+            print("message (level {0}) from detector: {1}"
+                  .format( str(level), messageString), end="")
+        
     def foundNewResults(self, r2, current=None):
         # collect all results
         self.allResults.extend( r2.results )
 
-def detect( detector, detectorData, runset, detectorProps=None, callbackRecv=None ):
+def detect( detector, detectorData, runset, detectorProperties=None, callbackRecv=None ):
     '''
     Synchronously run detection with the specified detector,
     trained model, and optional callback receiver.
@@ -785,11 +964,9 @@ def detect( detector, detectorData, runset, detectorProps=None, callbackRecv=Non
 
     # connect to detector, initialize with a verbosity value
     # and the trained model, and run the detection on the runset
-    if detectorProps == None:
-        props = cvac.DetectorProperties()
-    else:
-        props = detectorProps
-    detector.process( cbID, runset, detectorData, props )
+    if detectorProperties == None:
+        detectorProperties = cvac.DetectorProperties()
+    detector.process( cbID, runset, detectorData, detectorProperties )
 
     if ourRecv:
         return callbackRecv.allResults
@@ -948,6 +1125,7 @@ def drawResults( results ):
 def drawLabelables( lablist, maxsize=None ):
     # first, collect all image substrates of the labels
     substrates = {}
+    num_videos = 0
     for lbl in lablist:
         if lbl.sub.isImage:
             subpath = getFSPath( lbl.sub )
@@ -955,6 +1133,13 @@ def drawLabelables( lablist, maxsize=None ):
                 substrates[subpath].append( lbl )
             else:
                 substrates[subpath] = [lbl]
+        elif lbl.sub.isVideo:
+            num_videos += 1
+        else:
+            raise RuntimeError("Unknown substrate type")
+    if num_videos>0:
+        print("not drawing {0} video annotation{1}"
+              .format(num_videos, ("s","")[num_videos==1]))
     if not substrates:
         print("no labels and/or no substrates, nothing to draw");
         return
@@ -998,7 +1183,7 @@ def showImagesWithLabels( substrates, maxsize=None ):
                     draw.line( cpts, fill=255, width=2 )
                     del draw
                 else:
-                    print("warning: not rendering Label type {0}".format( type(lbl.loc) ))
+                    print("warning: not rendering Label type {0}".format( type(lbl.loc) ))      
         showImage( img )
 
 def getConfusionMatrix( results, origMap, foundMap ):

@@ -56,10 +56,14 @@ const string bowCV::BOW_MATCHER_NAME = "MatcherType";
 const string bowCV::BOW_OPENCV_VERSION = "OPENCV_VERSION";
 const string bowCV::BOW_ONECLASS_ID = "ONE-CLASS_ID";
 
+const string bowCV::BOW_REJECT_CLASS_STRATEGY       = "RejectClassStrategy";
+const string bowCV::BOW_REJECT_CLASS_AS_MULTICLASS  = "multiclass";
+const string bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES = "ignore";
+const string bowCV::BOW_REJECT_CLASS_AS_FIRST_STAGE = "stages";
 
 bowCV* pLib = NULL;
 
-bowCV::bowCV()
+bowCV::bowCV(MsgLogger* _msgLog)
 {	
     flagTrain = false;
     flagName = false;
@@ -72,6 +76,8 @@ bowCV::bowCV()
 
     filenameVocabulary = "logTrain_Vocabulary.xml.gz";
     filenameSVM = "logTrain_svm.xml.gz";
+
+    msgLogger = _msgLog;
 }
 
 bowCV::~bowCV()
@@ -103,6 +109,11 @@ bool bowCV::train_initialize(const string& _detectorName,
     flagName = false;
     dda = _dda;
 
+//debug
+printf ("detect name %s, extractor %s, matcher %s\n",
+        _detectorName.c_str(),
+        _extractorName.c_str(),
+        _matcherName.c_str());
     fDetector = FeatureDetector::create(_detectorName);
     dExtractor = DescriptorExtractor::create(_extractorName);
     if( fDetector.empty() || dExtractor.empty() )
@@ -292,6 +303,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     // START - Clustering (Most time-consuming step)
     //////////////////////////////////////////////////////////////////////////
 
+    vector<int> vSkipIndex;
     Mat _descriptorRepository;		
     Rect _rect;
     for(unsigned int k=0;k<vFilenameTrain.size();k++)
@@ -300,16 +312,30 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
 
         _img = imread(_fullFilePathImg);
         if(_img.empty())
-        {			
-            cout<<"Error - no file: " << _fullFilePathImg << endl;	fflush(stdout);
-            return false;
+        {
+          string outMsg;
+          outMsg = "There is no file " + _fullFilePathImg + 
+                   ". This file will be skipped for the processing.\n";
+          msgLogger->message(MsgLogger::WARN,outMsg);          
+          continue;
         }
 
         if ((sman!=NULL) && (sman->stopRequested()))
         {
           sman->stopCompleted();
           return false;
-        }        
+        }  
+
+        if((vBoundX[k]<0) || (vBoundY[k]<0) || 
+          ((vBoundX[k]+vBoundWidth[k])>_img.cols) || 
+          ((vBoundY[k]+vBoundHeight[k])>_img.rows))
+        {
+          string outMsg;
+          outMsg = "Out of boundary in file " + _fullFilePathImg + 
+                   ". This file will be skipped for the processing.\n";
+          msgLogger->message(MsgLogger::WARN,outMsg);
+          continue;
+        }
       	
         _rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
         if((_rect.width != 0) && (_rect.height != 0))
@@ -368,15 +394,19 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         _fullFilePathImg = vFilenameTrain[k];
         _classID = vClassIDTrain[k];     
             
-        if(_classID==-1)
-	        continue;
-            
         if ((sman!=NULL) && (sman->stopRequested()))
         {
             sman->stopCompleted();
             return false;
         }
         _img = imread(_fullFilePathImg);
+        if(_img.empty())
+          continue;
+
+        if((vBoundX[k]<0) || (vBoundY[k]<0) || 
+          ((vBoundX[k]+vBoundWidth[k])>_img.cols) || 
+          ((vBoundY[k]+vBoundHeight[k])>_img.rows))
+          continue;
 
         _rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
         if((_rect.width != 0) && (_rect.height != 0))
@@ -384,9 +414,19 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
       	
         fDetector->detect(_img, _keypoints);
         bowExtractor->compute(_img, _keypoints, _descriptors);
-        trainDescriptors.push_back(_descriptors);
-        trainClass.push_back(_classID);
-        _listClassAll.push_back(_classID);
+        //cout << "n_pts of " << vFilenameTrain[k]  << ": " << _keypoints.size() << "\n"; fflush(stdout);
+        if(_keypoints.size() > 1)
+        {           
+            trainDescriptors.push_back(_descriptors);
+            trainClass.push_back(_classID);
+            _listClassAll.push_back(_classID);
+        }
+        else
+        {
+            cout << "The file: " << vFilenameTrain[k] << "has no keypoints and will not be used for training!" << endl;
+            fflush(stdout);
+        }
+        
     }
     _listClassUnique = _listClassAll;
     _listClassUnique.sort();
@@ -488,12 +528,21 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
     _img = imread(_fullfilename);
     if(_img.empty())
     {
-        cout << "Error - could not read image file: " << _fullfilename <<endl;
-        fflush(stdout);
-        return false;
+      string outMsg;
+      outMsg = "There is no file " + _fullfilename + ".\n";
+      msgLogger->message(MsgLogger::WARN,outMsg);
+      return false;
     }
     else
     {
+      if((_boxX<0) || (_boxY<0) || 
+        ((_boxX+_boxWidth)>_img.cols) || ((_boxY+_boxHeight)>_img.rows))
+      {
+        string outMsg;
+        outMsg = "Out of boundary in file " + _fullfilename + ".\n";
+        msgLogger->message(MsgLogger::WARN,outMsg);
+        return false;
+      }
         Rect tRect = Rect(_boxX,_boxY,_boxWidth,_boxHeight);
         if((tRect.width != 0) && (tRect.height != 0))
             _img = _img(tRect);
@@ -519,11 +568,12 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
     _bestClass = (int) predicted;
 
     if(!flagOneClass) //For Multi-class problem
-    {     
-        if (-1 == _bestClass) // no class found
-            return false;
-        else
-            return true;
+    {
+        return true;
+        //if (-1 == _bestClass) // no class found
+        //    return false;
+        //else
+        //    return true;
     }
     else  //For one-class problem
     {      
@@ -576,7 +626,7 @@ bool bowCV::detect_readTrainResult()
         cout << "For the training, OpenCV " << _inputString
              << " was used. But, now you are using OpenCV "
              << CV_VERSION << ". It may cause an exceptional error." << endl; 
-        return false;
+        //return false;
     }
 
     CvSVMParams tParam = classifierSVM.get_params();
