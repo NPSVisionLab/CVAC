@@ -203,18 +203,19 @@ ELSE (WIN32)
 
 ENDIF (WIN32)
 
+#Need ice python for everyone
+INSTALL(DIRECTORY   ${ICE_ROOT}/python
+        DESTINATION 3rdparty/ICE
+        USE_SOURCE_PERMISSIONS
+        COMPONENT ThirdParty
+        PATTERN *.pyc EXCLUDE
+       )
+
 IF (NOT PYTHON_ONLY_CLIENT)
     INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox${CMAKE_EXECUTABLE_SUFFIX}
                  ${ICE_BOX_ADMIN}
         DESTINATION 3rdparty/ICE/bin
         COMPONENT ThirdParty
-       )
-
-    INSTALL(DIRECTORY   ${ICE_ROOT}/python
-        DESTINATION 3rdparty/ICE
-        USE_SOURCE_PERMISSIONS
-        COMPONENT ThirdParty
-        PATTERN *.pyc EXCLUDE
        )
 
     # libarchive is a symlink, but we want the file:
