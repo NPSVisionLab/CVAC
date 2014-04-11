@@ -32,6 +32,18 @@ def patchInstallDir( filename, installpath ):
 patchInstallDir( installpath+'/bin/startServices.sh', installpath )
 patchInstallDir( installpath+'/bin/stopServices.sh', installpath )
 
+#check if we have the correct python version
+versionNum = sys.hexversion
+if versionNum < 0x02060000 or versionNum >= 0x02080000:
+    # bring up the gui to install python
+    import installPython
+
+try:
+    import numpy
+except ImportError as ex:
+    #bring up the gui to install numpy
+    import installNumpy
+
 # open the simple GUI that displays system information
 # and permits startup of the services
 import gui
