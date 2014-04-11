@@ -58,6 +58,8 @@ ADD_LIBRARY(utils
 TARGET_LINK_LIBRARIES(utils
                       ${LIBARCHIVE_LIBRARY}
                      )
+ADD_DEPENDENCIES(utils ${SLICE_FILES})
+
 IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
   INSTALL( TARGETS utils
                 DESTINATION lib
