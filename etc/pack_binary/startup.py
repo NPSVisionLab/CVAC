@@ -17,6 +17,13 @@ sys.path.append(installpath+'/python')
 
 # fill in the INSTALLDIR:
 # export INSTALLDIR=....
+
+def appendLog(string):
+   file = open('/Users/tomb/mylog.txt', 'a')
+   file.write(string)
+   file.write('\n')
+   file.close()
+
 def patchInstallDir( filename, installpath ):
     with open(filename) as inf:
         outfile = tempfile.mkstemp(text=True)
@@ -28,6 +35,9 @@ def patchInstallDir( filename, installpath ):
                 outf.writelines(line)
             os.rename( outfile[1], filename )
             os.chmod( filename, stat.S_IRUSR|stat.S_IWUSR|stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH )
+
+appendLog("in startup")
+appendLog(installpath)
 
 patchInstallDir( installpath+'/bin/startServices.sh', installpath )
 patchInstallDir( installpath+'/bin/stopServices.sh', installpath )

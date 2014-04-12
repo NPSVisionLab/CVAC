@@ -81,6 +81,10 @@ ELSEIF(APPLE)
     SET( SCRIPT_EXT sh )
     SET(CPACK_GENERATOR "Bundle")
     SET(CPACK_BUNDLE_NAME "EasyComputerVision")
+    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/installNumpy.py ${CMAKE_CURRENT_SOURCE_DIR}/installPython.py
+       DESTINATION ../MacOS
+       COMPONENT Runtime 
+    )
     SET(CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
     # CMake renames the startup command file to ${CPACK_BUNDLE_NAME}
     SET(CPACK_BUNDLE_STARTUP_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/startup.py)

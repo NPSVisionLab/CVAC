@@ -1,25 +1,60 @@
-import Tkinter as tk
 import sys
 import os
+import inspect
+
+
+def appendLog(string):
+   file = open('/Users/tomb/mylog.txt', 'a')
+   file.write(string)
+   file.write('\n')
+   file.close()
+
+appendLog("in gui")
+import Tkinter as tk
+
+oldstdout = sys.stdout
 
 # Add demos to sys path so import preqrequistes will work
-thisPath = os.getcwd()
-demoPath = os.path.abspath(thisPath + '/demo')
-sys.path.append(demoPath)
+appendLog("before class")
+scriptfname = inspect.getfile(inspect.currentframe())
+scriptpath  = os.path.dirname(os.path.abspath( scriptfname ))
+installpath = os.path.abspath(scriptpath+'/../Resources')
+
+sys.path.append(installpath+'/python/easy')
+sys.path.append(installpath+'/demo')
+sys.path.append(installpath+'/3rdparty/ICE/python')
+sys.path.append(installpath+'/python')
+
 
 class Application(tk.Frame):
+
+    class StdoutRedirector(object):
+        def __init__(self, text_widget):
+            self.text_space = text_widget
+
+        def write(self, str):
+            self.text_space.insert('end', str)
+            self.text_space.see('end')
+
     def __init__(self, master=None):
+        appendLog("init frame")
         tk.Frame.__init__(self, master)
+        appendLog("init frame done")
         self.root = master;
         self.columnconfigure(1, minsize=295)
         self.grid()
+        appendLog("grid done")
         row = 1
         row = self.uiStartStopServices(row)
         row = self.uiCommands(row)
         row = self.uiLastButtons(row)
+        self.output = tk.Text(self, wrap='word', height=30, width=40)
+        self.output.grid(row=row, columnspan=2, sticky='NSWE', padx=5, pady=5)
+        sys.stdout = self.StdoutRedirector(self.output)
+        print("Output from stdout")
         self.updateServerStatus()
-        self.runPrerequisites()
-        
+        appendLog("running pre")
+        #self.runPrerequisites()
 
     def uiCommands(self, row):
         lf = tk.LabelFrame(self, text='Commands:')
@@ -51,6 +86,7 @@ class Application(tk.Frame):
         return row
 
     def runPrerequisites(self):
+        appendLog(installdir)
         import prerequisites
         if prerequisites.success:
             self.commandStatus.set('prerequisites test succeeded')
@@ -132,7 +168,7 @@ class Application(tk.Frame):
         installpath = os.getcwd()
         if sys.platform=='darwin':
             # a lovely command to get a Terminal window with proper PYTHONPATH set
-            shellcmd = "osascript -e 'tell application \"Terminal\" to activate' -e 'tell application \"System Events\" to tell process \"Terminal\" to keystroke \"n\" using command down' -e 'tell application \"Terminal\" to do script \"export PYTHONPATH="+installpath+'/3rdparty/ICE/python:'+installpath+'/python'+"\" in the front window'"
+            shellcmd = "osascript -e 'tell application \"Terminal\" to activate' -e 'tell application \"System Events\" to tell process \"Terminal\" to keystroke \"n\" using command down' -e 'tell application \"Terminal\" to do script \"export PYTHONPATH="+installpath+'/3rdparty/ICE/python:'+installpath+'/python'+"\"  in the front window'"
             os.system( shellcmd )
         elif sys.platform=='win32':
             shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/bin;{0}/3rdparty/ICE/bin;%PATH% && \\python26\\python.exe {1}"'.format(installpath, demo)
@@ -142,11 +178,18 @@ class Application(tk.Frame):
         
        
         
+appendLog("constructing root")
 root = tk.Tk()
+appendLog(" root constructed")
 # window 300x300 10 pixels left and down from corner of the screen
-root.geometry('330x280+10+10')
+root.geometry('350x380+10+10')
 root.tk_setPalette(background='light grey')
+appendLog("ready to construct application" )
 app = Application( master=root )
+appendLog("application constructed" )
 app.master.title('EasyCV Control Center')
+appendLog("ready for mainloop")
 app.mainloop()
+appendLog("mainloop done")
+sys.stdout = oldstdout
 root.destroy()
