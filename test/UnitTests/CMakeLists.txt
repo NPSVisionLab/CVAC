@@ -44,6 +44,8 @@ SET(LIBS
 
 #libraries to link into the executable, both Release and Debug
 TARGET_LINK_LIBRARIES( ${APP_NAME} ${LIBS} )
+
+ADD_DEPENDENCIES(${APP_NAME} ${SLICE_FILES})
                       
 SET_TARGET_PROPERTIES(${APP_NAME} PROPERTIES DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}")
 

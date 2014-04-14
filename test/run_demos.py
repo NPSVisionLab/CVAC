@@ -11,6 +11,7 @@ from subprocess import call
 
 
 if __name__ == '__main__' :
+try:
     platform = platform.system()
     extension = '.sh'
     if platform == 'Windows':
@@ -29,4 +30,8 @@ if __name__ == '__main__' :
     execfile(demoPath + '/bootstrapping.py')
     time.sleep(5)
     call([binPath + "/stopServices" + extension])
+except:
+    # If we get an error or forced quit we still want to stop the services
+    call([binPath + "/stopServices" + extension])
+
 
