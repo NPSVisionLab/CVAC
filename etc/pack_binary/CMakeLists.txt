@@ -81,7 +81,7 @@ ELSEIF(APPLE)
     SET( SCRIPT_EXT sh )
     SET(CPACK_GENERATOR "Bundle")
     SET(CPACK_BUNDLE_NAME "EasyComputerVision")
-    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/installNumpy.py ${CMAKE_CURRENT_SOURCE_DIR}/installPython.py
+    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/installNumpy.py ${CMAKE_CURRENT_SOURCE_DIR}/installPython.py ${CMAKE_SOURCE_DIR}/src/easy/gui.py
        DESTINATION ../MacOS
        COMPONENT Runtime 
     )
