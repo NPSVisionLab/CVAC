@@ -1,21 +1,17 @@
 import sys
 import os
 import inspect
+import subprocess
+import time
+from subprocess import PIPE
+from StringIO import StringIO
 
-
-def appendLog(string):
-   file = open('/Users/tomb/mylog.txt', 'a')
-   file.write(string)
-   file.write('\n')
-   file.close()
-
-appendLog("in gui")
 import Tkinter as tk
 
+# Save stdout since redirecting to text widget
 oldstdout = sys.stdout
 
 # Add demos to sys path so import preqrequistes will work
-appendLog("before class")
 scriptfname = inspect.getfile(inspect.currentframe())
 scriptpath  = os.path.dirname(os.path.abspath( scriptfname ))
 installpath = os.path.abspath(scriptpath+'/../Resources')
@@ -28,6 +24,7 @@ sys.path.append(installpath+'/python')
 
 class Application(tk.Frame):
 
+    #Since our application might not have a stdout sets redirect it to our text widget
     class StdoutRedirector(object):
         def __init__(self, text_widget):
             self.text_space = text_widget
@@ -36,14 +33,39 @@ class Application(tk.Frame):
             self.text_space.insert('end', str)
             self.text_space.see('end')
 
+    # Execute the command and optional arguments.
+    # Use these envirnoment variables
+    # set shell = true if a shell script with "#! shell"
+    # if dopipe then wait for results and output to our stdout
+    # env is dictionary of env vars that need to be set
+    def doExec(self, command, args=None, shell=False, dopipe=False, env=None):
+        if args == None:
+            try:
+                pipe = subprocess.Popen([command], shell=shell, stdout=PIPE, stderr=PIPE, env=env)
+                if dopipe == True:
+                    #This will hang until process finishes
+                    outstr, errstr = pipe.communicate()
+                    print(outstr)
+                    print(errstr)
+            except Exception, err:
+                print("Could not run: {0}".format(command))
+                print(err)
+        else:
+            try:
+                pipe = subprocess.Popen([command, args], shell=shell, stdout=PIPE, stderr=PIPE, env=env)
+                if dopipe == True:
+                    outstr, errstr = pipe.communicate()
+                    print(outstr)
+                    print(errstr)
+            except Exception, err:
+                print("Could not run: {0}".format(command))
+                print(err)
+      
     def __init__(self, master=None):
-        appendLog("init frame")
         tk.Frame.__init__(self, master)
-        appendLog("init frame done")
         self.root = master;
         self.columnconfigure(1, minsize=295)
         self.grid()
-        appendLog("grid done")
         row = 1
         row = self.uiStartStopServices(row)
         row = self.uiCommands(row)
@@ -51,10 +73,8 @@ class Application(tk.Frame):
         self.output = tk.Text(self, wrap='word', height=30, width=40)
         self.output.grid(row=row, columnspan=2, sticky='NSWE', padx=5, pady=5)
         sys.stdout = self.StdoutRedirector(self.output)
-        print("Output from stdout")
         self.updateServerStatus()
-        appendLog("running pre")
-        #self.runPrerequisites()
+        self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python:'+installpath+'/python'}
 
     def uiCommands(self, row):
         lf = tk.LabelFrame(self, text='Commands:')
@@ -77,24 +97,20 @@ class Application(tk.Frame):
                                             bg="light blue",
                                             command=self.openEnv)
         envButton.grid(row=1, column=1, padx=5, pady=5)
-        self.commandStatus = tk.StringVar()
-        tk.Label(lf, text="Command Status:").grid(row=2, sticky=tk.W)
+        #self.commandStatus = tk.StringVar()
+        #tk.Label(lf, text="Command Status:").grid(row=2, sticky=tk.W)
 
-        statusLabel = tk.Label(lf, textvariable=self.commandStatus)
-        statusLabel.grid(row=3, columnspan=5, sticky=tk.W)
+        #statusLabel = tk.Label(lf, textvariable=self.commandStatus)
+        #statusLabel.grid(row=3, columnspan=5, sticky=tk.W)
   
         return row
 
     def runPrerequisites(self):
-        appendLog(installdir)
-        import prerequisites
-        if prerequisites.success:
-            self.commandStatus.set('prerequisites test succeeded')
-        else:
-            self.commandStatus.set( 'prerequisites test failed')
+        self.doExec("/usr/bin/python2.6", args=installpath + "/demo/prerequisites.py", dopipe=True, 
+                    env=self.env)
    
     def updateServerStatus(self):
-        lockFileExists = os.path.isfile('.services_started.lock')
+        lockFileExists = os.path.isfile(installpath + '/.services_started.lock')
         if lockFileExists:
             self.serverStatus.set(
                     'services have been started (lock file exists)')
@@ -129,18 +145,31 @@ class Application(tk.Frame):
         return row
 
     def startStopServices(self, start):
+        print("StartStopServices called start = {0}".format(start))
         if sys.platform=='darwin':
             if start:
-                os.system(os.getcwd()+'/bin/startServices.sh')
+                try:
+                    self.doExec("/bin/bash", args=installpath + "/bin/startServices.sh") 
+                    #self.doExec(installpath+'/bin/startServices.sh', shell=False)
+                except Exception, err:
+                    print ("Could not start/stop services")
+                    print err
+                #os.system(os.getcwd()+'/bin/startServices.sh')
             else:
-                os.system(os.getcwd()+'/bin/stopServices.sh')
+                try:
+                    self.doExec("/bin/bash", args=installpath + "/bin/stopServices.sh") 
+                except Exception, err:
+                    print ("Could not start/stop services")
+                    print err
         elif sys.platform=='win32':
             if start:
-                os.system(os.getcwd()+'/bin/startServices.bat')
+                os.system(installpath+'/bin/startServices.bat')
             else:
-                os.system(os.getcwd()+'/bin/stopServices.bat')
+                os.system(installpath+'/bin/stopServices.bat')
         else:
             print "please define start/stop commands for this OS: "+sys.platform
+        #give the services a chance to delete or create the lock file
+        time.sleep(2)
         self.updateServerStatus()
 
     def openEnv(self):
@@ -153,7 +182,6 @@ class Application(tk.Frame):
             print "please define openEnv for this OS: "+sys.platform
 
     def openTerminal(self):
-        installpath = os.getcwd()
         if sys.platform=='darwin':
             # a lovely command to get a Terminal window with proper PYTHONPATH set
             shellcmd = "osascript -e 'tell application \"Terminal\" to activate' -e 'tell application \"System Events\" to tell process \"Terminal\" to keystroke \"n\" using command down' -e 'tell application \"Terminal\" to do script \"export PYTHONPATH="+installpath+'/3rdparty/ICE/python:'+installpath+'/python'+"\" in the front window'"
@@ -165,11 +193,9 @@ class Application(tk.Frame):
             print "please define openTerminal command for this OS: "+sys.platform
     
     def runDemo(self, demo):
-        installpath = os.getcwd()
         if sys.platform=='darwin':
             # a lovely command to get a Terminal window with proper PYTHONPATH set
-            shellcmd = "osascript -e 'tell application \"Terminal\" to activate' -e 'tell application \"System Events\" to tell process \"Terminal\" to keystroke \"n\" using command down' -e 'tell application \"Terminal\" to do script \"export PYTHONPATH="+installpath+'/3rdparty/ICE/python:'+installpath+'/python'+"\"  in the front window'"
-            os.system( shellcmd )
+            self.doExec("/usr/bin/python2.6", args=installpath + "/demo/detect.py", dopipe=True, env=self.env)
         elif sys.platform=='win32':
             shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/bin;{0}/3rdparty/ICE/bin;%PATH% && \\python26\\python.exe {1}"'.format(installpath, demo)
             os.system( shellcmd )
@@ -177,19 +203,14 @@ class Application(tk.Frame):
             print "please define openTerminal command for this OS: "+sys.platform
         
        
-        
-appendLog("constructing root")
 root = tk.Tk()
-appendLog(" root constructed")
-# window 300x300 10 pixels left and down from corner of the screen
-root.geometry('350x380+10+10')
+root.geometry('410x720+10+10')
 root.tk_setPalette(background='light grey')
-appendLog("ready to construct application" )
+os.chdir(installpath)
 app = Application( master=root )
-appendLog("application constructed" )
+print("Running Prerequisites")
+app.runPrerequisites()
 app.master.title('EasyCV Control Center')
-appendLog("ready for mainloop")
 app.mainloop()
-appendLog("mainloop done")
 sys.stdout = oldstdout
 root.destroy()
