@@ -36,8 +36,6 @@ def patchInstallDir( filename, installpath ):
             os.rename( outfile[1], filename )
             os.chmod( filename, stat.S_IRUSR|stat.S_IWUSR|stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH )
 
-appendLog("in startup")
-appendLog(installpath)
 
 patchInstallDir( installpath+'/bin/startServices.sh', installpath )
 patchInstallDir( installpath+'/bin/stopServices.sh', installpath )

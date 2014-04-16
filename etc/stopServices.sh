@@ -13,6 +13,12 @@ export PATH=$PATH:${INSTALLDIR}/bin
 export ICEDIR=${INSTALLDIR}/3rdparty/ICE
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${INSTALLDIR}/lib"
 cd ${INSTALLDIR}
+LOCKFILE=.services_started.lock
+if [ ! -f $LOCKFILE ]
+then
+    echo CVAC services supposedly have not been started \(there is no file \'$LOCKFILE\'\).
+    echo Trying to stop them anyway ...
+fi
 
 # C/C++ and Java services, via icebox admin
 ${ICEDIR}/bin/iceboxadmin --Ice.Config=config.admin shutdown
@@ -33,6 +39,11 @@ then
             killall $LINE
         fi
     done
+fi
+
+if [ -f $LOCKFILE ]
+then
+    rm -f $LOCKFILE
 fi
 
 echo CVAC services stopped

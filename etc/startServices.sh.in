@@ -22,7 +22,16 @@ export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${INSTALLDIR}/lib:${OPENCVDIR}/lib:
 
 # C/C++ services, via IceBox
 cd ${INSTALLDIR}
-if [ "${START_ICE_SERVICES}" == "1" ]
+LOCKFILE=.services_started.lock
+if [ -f $LOCKFILE ]
+then
+    echo CVAC services have supposedly been started already.  Either stop them
+    echo first, or if you are sure that they are not running, remove the
+    echo lock file \'$LOCKFILE\'.
+    exit
+fi
+
+if [ "@START_ICE_SERVICES@" == "1" ]
 then
     ${ICEDIR}/bin/icebox --Ice.Config=config.icebox &
 fi
@@ -43,5 +52,6 @@ then
     done
 fi
 
+touch $LOCKFILE
 echo CVAC services launched
 exit

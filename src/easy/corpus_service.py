@@ -9,7 +9,7 @@ import ConfigParser
 import StringIO
 import Ice, IcePy
 import cvac
-import labelme, vatic
+import labelme, vatic, videosegment
 
 class LabelableListI:
     def _init__(self, name):
@@ -155,6 +155,34 @@ class VaticCorpusI(CorpusI):
             except IOError as exc:
                 print exc
         return labels
+    
+'''
+VideosegmentCorpusI is a Video corpus for Shot Boundary Detection.
+This reads the SBD-style annotation file that includes  
+informaition of all videos.
+'''
+class VideosegmentCorpusI(CorpusI): 
+    def __init__(self, name, description, homepageURL, location, CVAC_DataDir):
+        CorpusI.__init__(self, name, description, homepageURL, location,
+                         CVAC_DataDir)   
+        self.catalogs = []
+        
+    def parseConfigProperties(self, configProps, propFile):
+        prop = configProps.get('videoCatalogName')
+        if prop == None:
+            print('No videoCatalogName property in file ' + propFile)
+            return False 
+        self.catalogs = [x.strip() for x in prop.split(',')]       
+        return True
+    
+    def getLabels(self):
+        localDir = self.dataSetFolder
+        labels = []
+        for catalog in self.catalogs:
+            labels += videosegment.parseCatalog(self.CVAC_DataDir,
+                                                localDir,catalog)
+        return labels
+    
 
 class CorpusServiceI(cvac.CorpusService, threading.Thread):   
 
@@ -244,6 +272,9 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
                                     locProp, self.CVAC_DataDir )
         elif dsTypeProp.lower() == 'vatic':
             corpus = VaticCorpusI(nameProp, descProp, homepage,
+                                  locProp, self.CVAC_DataDir )
+        elif dsTypeProp.lower() == 'videosegment':
+            corpus = VideosegmentCorpusI(nameProp, descProp, homepage,
                                   locProp, self.CVAC_DataDir )
         else:
             print('Python corpus only currently supports labelme type dataset')
