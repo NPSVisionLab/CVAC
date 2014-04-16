@@ -14,7 +14,11 @@ oldstdout = sys.stdout
 # Add demos to sys path so import preqrequistes will work
 scriptfname = inspect.getfile(inspect.currentframe())
 scriptpath  = os.path.dirname(os.path.abspath( scriptfname ))
-installpath = os.path.abspath(scriptpath+'/../Resources')
+if sys.platform=='darwin':
+    installpath = os.path.abspath(scriptpath+'/../Resources')
+elif sys.platform=='win32':
+    installpath = os.path.abspath(scriptpath+'/../..')
+    
 
 sys.path.append(installpath+'/python/easy')
 sys.path.append(installpath+'/demo')
@@ -74,7 +78,11 @@ class Application(tk.Frame):
         self.output.grid(row=row, columnspan=2, sticky='NSWE', padx=5, pady=5)
         sys.stdout = self.StdoutRedirector(self.output)
         self.updateServerStatus()
-        self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python:'+installpath+'/python'}
+        if sys.platform=='darwin':
+            self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python:'+installpath+'/python'}
+        elif sys.platform=='win32':
+            self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python;'+installpath+'/python',
+            'PATH':installpath+'/bin;'+installpath+'/3rdparty/opencv/bin;'+installpath+'/3rdparty/ICE/bin;%PATH%'}
 
     def uiCommands(self, row):
         lf = tk.LabelFrame(self, text='Commands:')
@@ -106,7 +114,11 @@ class Application(tk.Frame):
         return row
 
     def runPrerequisites(self):
-        self.doExec("/usr/bin/python2.6", args=installpath + "/demo/prerequisites.py", dopipe=True, 
+        if  sys.platform=='darwin':
+            self.doExec("/usr/bin/python2.6", args=installpath + "/demo/prerequisites.py", dopipe=True, 
+                    env=self.env)
+        elif sys.platform=='win32':
+            self.doExec("/python26/python", args=installpath + "/demo/prerequisites.py", dopipe=True, 
                     env=self.env)
    
     def updateServerStatus(self):
