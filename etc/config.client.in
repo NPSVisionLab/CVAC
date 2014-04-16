@@ -12,7 +12,7 @@ Ice.ACM.Client=0
 CVAC.DataDir = data
 
 OpenCVCascadeDetector.Proxy=OpenCVCascadeDetector:tcp -p ${OPENCV_CASCADE_DETECTOR_PORT}
-OpenCVCascadeTrainer..Proxy=OpenCVCascadeTrainer:tcp -p  ${OPENCV_CASCADE_TRAINER_PORT}
+OpenCVCascadeTrainer.Proxy=OpenCVCascadeTrainer:tcp -p  ${OPENCV_CASCADE_TRAINER_PORT}
 BOW_Trainer.Proxy=BOW_Trainer:tcp -p          ${BOW_TRAINER_PORT}
 BOW_Detector.Proxy=BOW_Detector:tcp -p         ${BOW_DETECTOR_PORT}
 CorpusServer.Proxy=CorpusServer:tcp ${HOST} -p  ${CORPUS_PORT}      
@@ -21,8 +21,6 @@ FileService.Proxy=FileService:tcp ${HOST} -p ${FILE_SERVER_PORT}
 RSItrTest_Detector.Proxy=RSItrTest_Detector:tcp ${HOST} -p ${RSITR_TEST_PORT}
 
 VideoValidatorForOpenCVClient.Proxy = VideoValidatorForOpenCV:tcp -p 10108
-
-bowIceTrain.Proxy=bowTrain:tcp -p ${BOW_TRAINER_PORT}
 
 # CVPerf Detector CvFaces
 CvFaces.Proxy = OpenCVCascadeDetector:tcp -p ${OPENCV_CASCADE_DETECTOR_PORT}
@@ -38,7 +36,6 @@ NpsBagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
 
 #Trainers
 BOWTrainer.Proxy = BOW_Trainer:tcp -p ${BOW_TRAINER_PORT}
-OpenCVCascadeTrainer.Proxy = OpenCVCascadeTrainer:tcp -p ${OPENCV_CASCADE_TRAINER_PORT}
 
 DetectorCallback.Client.Endpoints=default
 TrainerCallback.Client.Endpoints=default

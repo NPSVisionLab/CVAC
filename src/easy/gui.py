@@ -5,6 +5,8 @@ import subprocess
 import time
 from subprocess import PIPE
 from StringIO import StringIO
+import ConfigParser
+import easy
 
 import Tkinter as tk
 
@@ -30,12 +32,15 @@ class Application(tk.Frame):
 
     #Since our application might not have a stdout sets redirect it to our text widget
     class StdoutRedirector(object):
-        def __init__(self, text_widget):
+        def __init__(self, text_widget, root):
             self.text_space = text_widget
+            self.root = root
 
         def write(self, str):
             self.text_space.insert('end', str)
             self.text_space.see('end')
+            #force write of widget
+            self.root.update_idletasks()
 
     # Execute the command and optional arguments.
     # Use these envirnoment variables
@@ -76,7 +81,7 @@ class Application(tk.Frame):
         row = self.uiLastButtons(row)
         self.output = tk.Text(self, wrap='word', height=30, width=40)
         self.output.grid(row=row, columnspan=2, sticky='NSWE', padx=5, pady=5)
-        sys.stdout = self.StdoutRedirector(self.output)
+        sys.stdout = self.StdoutRedirector(self.output, self.root)
         self.updateServerStatus()
         if sys.platform=='darwin':
             self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python:'+installpath+'/python'}
@@ -136,13 +141,17 @@ class Application(tk.Frame):
         self.serverStatus = tk.StringVar()
         row = row + 1
         self.startButton = tk.Button(lf, text='start services', 
-                                 bg="light blue",
+                                 bg="light blue", width=12,
                                  command=lambda: self.startStopServices(True))
         self.startButton.grid(row=0, sticky=tk.W, padx=5)
         self.stopButton = tk.Button(lf, text='stop services', 
-                                 bg="light blue",
+                                 bg="light blue", width=12,
                                  command=lambda: self.startStopServices(False))
-        self.stopButton.grid(row=0, column=1, pady=5)
+        self.stopButton.grid(row=0, column=1, padx=5)
+        self.stopButton = tk.Button(lf, text='status', 
+                                 bg="light blue", width=12,
+                                 command=lambda: self.runServerStatus())
+        self.stopButton.grid(row=0, column=2, padx=5, sticky=tk.E)
         tk.Label(lf, text="Service Status:").grid(row=2, sticky=tk.W)
         statusLabel = tk.Label(lf, textvariable=self.serverStatus)
         statusLabel.grid(row=3, columnspan=5, sticky=tk.W)
@@ -214,6 +223,94 @@ class Application(tk.Frame):
         else:
             print "please define openTerminal command for this OS: "+sys.platform
         
+    def getProxies(self):
+        ''' Fetch all the proxies in the config.client file and return dictionary of
+            {name:proxystring}
+        '''
+        config = StringIO()
+        config.write('[dummysection]\n')
+        res = {}
+        try:
+            f = open('config.client')
+            config.write(f.read())
+            config.seek(0)
+            configParser = ConfigParser.RawConfigParser()
+            # key option names case sensitive
+            configParser.optionxform = str
+            configParser.readfp(config)
+            items = configParser.items('dummysection')
+            for entry in items:
+                if entry[0].endswith('.Proxy'):
+                    name = entry[0].split('.Proxy',1)
+                    if not res.has_key(name[0]):
+                        res[name[0]] = entry[1]
+            # Remove duplicate values
+            inv = {}
+            for k, v in res.iteritems():
+                if not inv.has_key(k):
+                    inv[v] = k
+            res = {}
+            for k, v in inv.iteritems():
+                res[v] = k
+                   
+        except Exception, err:
+            print("Could not get proxies from config.client")
+            print(err)
+         
+        return res
+    
+    def verifyProxies(self, proxies):
+        ''' Take as input dictionary of {name:proxystring} and verify that
+            we can communicate with the server (by getting the detector or trainer).
+            Return a dictionary with 'detector running' or 'trainer running' if running 
+            and 'configured' if not. Also print now so with long config files user
+            sees output.
+        '''
+        res = {}
+        for key, value in proxies.iteritems():
+            # add short timeout
+            value = value + ' -t 100'
+            try:
+                detector = easy.getDetector(value)
+                res[key] = 'detector running'
+                print("{0} {1}".format(key, res[key]))
+                continue
+            except:
+                pass
+            try:
+                trainer = easy.getTrainer(value)
+                res[key] = 'trainer running'
+                print("{0} {1}".format(key, res[key]))
+                continue
+            except:
+                pass
+            try:
+                trainer = easy.getFileServer(value)
+                res[key] = 'FileServer running'
+                print("{0} {1}".format(key, res[key]))
+                continue
+            except:
+                pass
+            try:
+                trainer = easy.getCorpusServer(value)
+                res[key] = 'Corpus running'
+                print("{0} {1}".format(key, res[key]))
+                continue
+            except:
+                pass
+            res[key] = 'not running'
+            print("{0} {1}".format(key, res[key]))
+        return res
+    
+    def runServerStatus(self):
+        print("Server Status")
+        proxies = self.getProxies()
+        if len(proxies) > 0:
+            self.verifyProxies(proxies)
+        print("Server Status complete")  
+    
+       
+            
        
 root = tk.Tk()
 root.geometry('410x720+10+10')
@@ -225,4 +322,4 @@ app.runPrerequisites()
 app.master.title('EasyCV Control Center')
 app.mainloop()
 sys.stdout = oldstdout
-root.destroy()
+
