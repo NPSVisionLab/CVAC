@@ -33,7 +33,7 @@ then
         then
             # pkill seems to work better than killall
             # echo pkill -xf "${PYTHONEXE} $LINE"
-            pkill -xf "/usr/bin/python $LINE"
+            pkill -xf "/usr/bin/python2.6 $LINE"
         else
             # echo killall $LINE
             killall $LINE
