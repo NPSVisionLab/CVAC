@@ -16,10 +16,7 @@ oldstdout = sys.stdout
 # Add demos to sys path so import preqrequistes will work
 scriptfname = inspect.getfile(inspect.currentframe())
 scriptpath  = os.path.dirname(os.path.abspath( scriptfname ))
-if sys.platform=='darwin':
-    installpath = os.path.abspath(scriptpath+'/../Resources')
-elif sys.platform=='win32':
-    installpath = os.path.abspath(scriptpath+'/../..')
+installpath = os.path.abspath(scriptpath+'/../..')
     
 
 sys.path.append(installpath+'/python/easy')
