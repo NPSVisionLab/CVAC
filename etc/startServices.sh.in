@@ -10,7 +10,7 @@ then
 fi
 # Please set JAVAEXE to java executable
 export JAVAEXE=/usr/bin/java
-# Pleas set PYTHONEXE to python 2.6 executable
+# Please set PYTHONEXE to python 2.6 executable
 export PYTHONEXE=/usr/bin/python2.6
 
 export ICEDIR=${INSTALLDIR}/3rdparty/ICE
