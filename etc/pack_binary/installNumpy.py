@@ -1,6 +1,8 @@
 import Tkinter as tk
 import sys
 import os
+import subprocess
+import inspect
 
 class Application(tk.Frame):
     def __init__(self, master=None):
@@ -21,12 +23,23 @@ class Application(tk.Frame):
         quitbutton.grid(row=0, column=1, padx=5, pady=5)
 
     def runOK(self):
-        execfile('sudo installer -package 3rdparty/numpy-1.7.1-py2.6.mpkg')
+        # Determine path to 3rdparty directory
+        scriptfname = inspect.getfile(inspect.currentframe())
+        scriptpath  = os.path.dirname(os.path.abspath( scriptfname ))
+        installpath = os.path.abspath(scriptpath+'/../Resources')
+        subprocess.Popen(['sudo', 'installer', '-pkg', 
+                          installpath + '/3rdparty/numpy-1.7.1-py2.6.mpkg', 
+                          '-target', '/'])
+        self.root.destroy()
 
-root = tk.Tk()
-# window 30x45 10 pixels left and down from corner of the screen
-root.geometry('170x120+10+10')
-root.tk_setPalette(background='light grey')
-app = Application( master=root )
-app.master.title('EasyCV Install Python')
-app.mainloop()
+def doInstall(silent=False):
+    root = tk.Tk()
+    # window 30x45 10 pixels left and down from corner of the screen
+    root.geometry('170x120+20+20')
+    root.tk_setPalette(background='light grey')
+    app = Application( master=root )
+    app.master.title('EasyCV Install Python')
+    if silent == True:
+        app.runOK()
+    else:
+        app.mainloop()
