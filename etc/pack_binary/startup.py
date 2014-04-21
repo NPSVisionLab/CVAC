@@ -39,7 +39,7 @@ if __name__ == '__main__':
         print("Invalid command line option")
         print(sys.argv[0] + ' [-s] [-v <virtualenv dir>] [-p <python.exe>]')
         sys.exit(2)
-    for opt. arg in opts:
+    for opt, arg in opts:
         if opt == '-s':
             silent = True
         elif opt == '-v':
