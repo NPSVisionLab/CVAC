@@ -94,7 +94,11 @@ SET (PYTHON_PACK_NAME "CVAC")
 FILE (GLOB ICE_FILES ${ICE_PYTHON_DIR}/*)
 FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/ice)
 
-CONFIGURE_FILE(setup.py.in "${PYTHON_BUILD_DIR}/setup.py")
+IF (WIN32)
+    CONFIGURE_FILE(setup.py.win.in "${PYTHON_BUILD_DIR}/setup.py")
+ELSE (WIN32)
+    CONFIGURE_FILE(setup.py.win.in "${PYTHON_BUILD_DIR}/setup.py")
+ENDIF (WIN32)
 CONFIGURE_FILE(easy.pth "${PYTHON_BUILD_DIR}/easy.pth")
 CONFIGURE_FILE(ice.pth "${PYTHON_BUILD_DIR}/ice.pth")
 # For unix set the install prefix for the python command to be the
