@@ -41,6 +41,14 @@ FIND_PATH(LIBZIP_BIN_DIR NAMES zlibd.dll
             )
 ENDIF (WIN32)
 
+IF (APPLE)
+FIND_PATH(LIBARCHIVE_LIB_DIR NAMES libarchive.dylib
+             HINTS
+                ${LIBARCHIVE_INCLUDE}/../lib
+             DOC "lib directory for libarchive"
+            )
+ENDIF (APPLE)
+
 # handle the QUIETLY and REQUIRED arguments and set LibArchive_FOUND to TRUE if 
 # all listed variables are TRUE
 INCLUDE(FindPackageHandleStandardArgs)
