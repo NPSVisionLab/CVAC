@@ -21,7 +21,7 @@ set(CPACK_PACKAGE_VERSION_MAJOR ${CVAC_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${CVAC_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${CVAC_VERSION_PATCH})
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CVAC_VERSION_PATCH}")
-set( CVAC_VERSION_DIR CVAC-${CVAC_VERSION} )
+set( CVAC_VERSION_DIR ${CPACK_PACKAGE_NAME}-${CVAC_VERSION} )
 
 # If devel branch, add -devel to version number
 if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" )
@@ -37,6 +37,7 @@ IF ( NOT CVAC_GIT_BRANCH )
 ENDIF()
 IF ( ${CVAC_GIT_BRANCH} STREQUAL "devel" )
   set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION}-devel)
+  set(CVAC_VERSION_DIR ${CVAC_VERSION_DIR}-devel)
 ENDIF()
 
 # If Windows 8 then add -W8 to version
@@ -50,6 +51,9 @@ set(CVAC_VERSION_DIR ${CVAC_VERSION_DIR}-Win7)
 set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION}-Win7)
 ENDIF (WIN32)
 ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+
+#Force the install directory (Required since windows will put spaces in name
+set( CPACK_PACKAGE_INSTALL_DIRECTORY ${CVAC_VERSION_DIR} )
 
 set( CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE.txt )
 set(CPACK_COMPONENTS_ALL Runtime data ThirdParty)
@@ -77,6 +81,10 @@ ELSEIF(APPLE)
     SET( SCRIPT_EXT sh )
     SET(CPACK_GENERATOR "Bundle")
     SET(CPACK_BUNDLE_NAME "EasyComputerVision")
+    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/installNumpy.py ${CMAKE_CURRENT_SOURCE_DIR}/installPython.py
+       DESTINATION ../MacOS
+       COMPONENT Runtime 
+    )
     SET(CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
     # CMake renames the startup command file to ${CPACK_BUNDLE_NAME}
     SET(CPACK_BUNDLE_STARTUP_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/startup.py)
@@ -148,6 +156,11 @@ IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
       )
 ENDIF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
 
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/test/run_demos.py 
+       DESTINATION test
+       COMPONENT Runtime
+      )
+
 # ThirdParty dependencies for building CVAC
 
 IF (WIN32)
@@ -178,7 +191,24 @@ IF (WIN32)
        COMPONENT Runtime 
       )
 
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/python-2.6.6.msi
+       DESTINATION 3rdparty
+       COMPONENT Runtime 
+      )
+
 ELSE (WIN32)
+
+  IF (APPLE)
+      INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1-py2.6.mpkg
+           DESTINATION 3rdparty
+           COMPONENT Runtime 
+      )
+
+      INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/python.mpkg
+           DESTINATION 3rdparty
+           COMPONENT Runtime 
+      )
+  ENDIF (APPLE)
 
   INSTALL(DIRECTORY   ${ICE_ROOT}/lib
         DESTINATION 3rdparty/ICE
@@ -189,18 +219,19 @@ ELSE (WIN32)
 
 ENDIF (WIN32)
 
+#Need ice python for everyone
+INSTALL(DIRECTORY   ${ICE_ROOT}/python
+        DESTINATION 3rdparty/ICE
+        USE_SOURCE_PERMISSIONS
+        COMPONENT ThirdParty
+        PATTERN *.pyc EXCLUDE
+       )
+
 IF (NOT PYTHON_ONLY_CLIENT)
     INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox${CMAKE_EXECUTABLE_SUFFIX}
                  ${ICE_BOX_ADMIN}
         DESTINATION 3rdparty/ICE/bin
         COMPONENT ThirdParty
-       )
-
-    INSTALL(DIRECTORY   ${ICE_ROOT}/python
-        DESTINATION 3rdparty/ICE
-        USE_SOURCE_PERMISSIONS
-        COMPONENT ThirdParty
-        PATTERN *.pyc EXCLUDE
        )
 
     # libarchive is a symlink, but we want the file:

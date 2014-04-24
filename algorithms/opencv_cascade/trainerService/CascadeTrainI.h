@@ -85,8 +85,8 @@ class TrainerPropertiesI : public cvac::TrainerProperties
   float weight_trim_rate;
   int max_depth;
   int weak_count;
-  int width;
-  int height;
+  int rotate_count;
+  
 };
 
 class CascadeTrainI : public cvac::DetectorTrainer, public cvac::StartStop
@@ -113,13 +113,15 @@ class CascadeTrainI : public cvac::DetectorTrainer, public cvac::StartStop
   bool createSamples(cvac::RunSetWrapper& rsw, const SamplesParams& params,
                     const std::string& infoFilename,
                     const std::string& vecFilename, int* pNumPos, std::string datadir,
-                    const cvac::CallbackHandlerPrx &callback);
+                    const cvac::CallbackHandlerPrx &callback,
+                    const std::string &bgFilename, int numNeg);
   bool createClassifier( const std::string& tempDir, 
                          const std::string& vecFname, 
                          const std::string& bgName,
                          int numPos, int numNeg, 
                          const TrainerPropertiesI *trainProps );
   void addDataPath(cvac::RunSet runset, const std::string &CVAC_DataDir);
+  int addRotatedSamples(string tempVecfile, string vecfile, string image, const char *bgInfo, int numPos, int showSamples, int w, int h);
   bool checkPurposedLists(const cvac::PurposedListSequence& purposedLists,
                           cvac::TrainerCallbackHandlerPrx& _callback );
   

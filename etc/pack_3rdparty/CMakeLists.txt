@@ -42,7 +42,25 @@ INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1.win32-py2.6.exe
         DESTINATION 3rdparty
         COMPONENT NumpyExt
        )
+#Windows also needs python install exe
+INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/python-2.6.6.msi
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+       )
 ENDIF(WIN32)
+
+IF(APPLE)
+# OSX also needs numpy package
+INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1-py2.6.mpkg
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+       )
+#Windows also needs python package
+INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/python.mpkg
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+       )
+ENDIF(APPLE)
 
 INSTALL(PROGRAMS ${ICE_SLICE_EXECUTABLE}
                  ${ICE_SLICE2JAVA_EXECUTABLE} 
@@ -121,6 +139,12 @@ cpack_add_component (
   NumpyExt
   DISPLAY_NAME "Numpy"
   DESCRIPTION "Python numeric processing package"
+  GROUP ThirdPartyGrp
+)
+cpack_add_component (
+  PythonExt
+  DISPLAY_NAME "Python"
+  DESCRIPTION "Python package"
   GROUP ThirdPartyGrp
 )
 cpack_add_component (

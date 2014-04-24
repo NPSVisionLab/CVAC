@@ -119,7 +119,7 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 # -O2 or -O3 on OSX causes ice to fail in Purpose list code
 IF (APPLE)
-   SET(CMAKE_CXX_FLAGS_RELEASE "-O1 -NDEBUG")
+   SET(CMAKE_CXX_FLAGS_RELEASE "")
 ENDIF (APPLE)
 
 #
@@ -290,12 +290,13 @@ IF( PYTHONINTERP_FOUND AND WIN32 )
   ENDIF()
 ENDIF()
 
-IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
-  FIND_PACKAGE( OpenCV 2.4 REQUIRED
+#Opencv includes now required for src/util library
+FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv
   )
+IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   #For Python set a variable for cv2 dynamic library
   #
   IF (WIN32)

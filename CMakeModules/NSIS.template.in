@@ -558,6 +558,9 @@ FunctionEnd
 !define env_hkcu 'HKCU "Environment"'
 
 Var LabelPython
+Var CheckboxPython
+Var CheckboxState
+Var InstallPython
 Var Dialog
 Var PythonPathText
 Var LabelJava
@@ -577,6 +580,8 @@ Function customDialog
   ${If} $Dialog == error
     Abort
   ${EndIf}
+  ${NSD_CreateCheckbox} 0 0 100% 12u "Select checkbox to install Python 2.6 or ..."
+  Pop $CheckboxPython
   ${NSD_CreateLabel} 0 0 100% 12u "Enter path to Python 2.6"
   Pop $LabelPython
   ${NSD_CreateText} 0 13u -20u 12u "C:\Python26\python.exe"
@@ -584,7 +589,8 @@ Function customDialog
   ${NSD_CreateBrowseButton} -18u 13u 18u 12u "..."
   Pop $0
   ${NSD_OnClick} $0 BrowsePython
-  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
+
+  StrCmp "@CPACK_PACKAGE_NAME@" "CVAC_binary" 0 nojava
       ${NSD_CreateLabel} 0 35u 100% 12u "Enter path to Java"
       Pop $LabelJava
       ${NSD_CreateText} 0 48u -20u 12u "C:\Windows\system32\java.exe"
@@ -592,7 +598,7 @@ Function customDialog
       ${NSD_CreateBrowseButton} -18u 48u 18u 12u "..."
       Pop $0
       ${NSD_OnClick} $0 BrowseJava
-  ${endif}
+  nojava:
   ${NSD_CreateLabel} 0 70u 100% 12u "Enter path to data directory"
   Pop $LabelData
   ${NSD_CreateText} 0 83u -20u 12u "data"
@@ -600,6 +606,8 @@ Function customDialog
   ${NSD_CreateBrowseButton} -18u 83u 18u 12u "..."
   Pop $0
   ${NSD_OnClick} $0 BrowseData
+      
+nonSilentDialog:
  
   nsDialogs::Show
 
@@ -639,26 +647,34 @@ Function customDialogLeave
   ${NSD_GetText} $PythonPathText $PythonPathValue
   ${NSD_GetText} $JavaPathText $JavaPathValue
   ${NSD_GetText} $DataPathText $DataPathValue
-  #Check if PythonPathValue is a valid file
-  ${ifnot} ${FileExists} "$PythonPathValue"
-    MessageBox MB_OK "Python path incorrect" /SD IDOK
-    Abort
+  ${NSD_GetState} $CheckboxPython $CheckboxState
+  ${if} $CheckboxState == ${BST_UNCHECKED}
+      StrCpy $InstallPython "no"
+      #Check if PythonPathValue is a valid file
+      ${ifnot} ${FileExists} "$PythonPathValue"
+        MessageBox MB_OK "Python path incorrect" /SD IDOK
+        Abort
+      ${endif}
+  ${else}
+      StrCpy $InstallPython "yes"
   ${endif}
 
-  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
+  StrCmp "@CPACK_PACKAGE_NAME@" "CVAC_binary" 0 nojava1
       ${ifnot} ${FileExists} "$JavaPathValue"
         MessageBox MB_OK "Java path incorrect" /SD IDOK
         Abort
       ${endif}
-  ${endif}
+nojava1:
 
   #Set a local EnvirnomentVariable
-  System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("PYTHON_HOME", $PythonPathValue).r0'
-  StrCmp $0 0 error
-  ${if} ${FileExists} "$INSTDIR\bin\*.jar"
-      System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("JAVA_HOME", $JavaPathValue).r0'
+  ${if} $InstallPython == "no"
+      System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("PYTHON_HOME", $PythonPathValue).r0'
       StrCmp $0 0 error
   ${endif}
+  StrCmp "@CPACK_PACKAGE_NAME@" "CVAC_binary" 0 nojava2
+      System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("JAVA_HOME", $JavaPathValue).r0'
+      StrCmp $0 0 error
+nojava2:
   System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("CVAC_DATADIR", $DataPathValue).r0'
   StrCmp $0 0 error
   Goto done
@@ -681,6 +697,18 @@ Function installNumPy
     ${if} ${FileExists} "$INSTDIR\$1" 
         MessageBox MB_YESNO "Install Numpy (for python services)" /SD IDYES IDNO endInstall
         ExecWait "$INSTDIR\$1"
+    ${endif}
+endInstall:
+    Pop $1
+FunctionEnd
+
+Function installPython
+    Push $1
+    StrCpy $1 "3rdparty\python-2.6.6.msi"
+    File /nonfatal $1
+    ${if} ${FileExists} "$INSTDIR\$1"  
+        MessageBox MB_YESNO "Install Python 2.6.6" /SD IDYES IDNO endInstall
+        ExecWait "$SYSDIR\msiExec /i $INSTDIR\$1"
     ${endif}
 endInstall:
     Pop $1
@@ -826,6 +854,7 @@ FunctionEnd
 ; End CVAC changes
 ;--------------------------------
 ;Pages
+
   !insertmacro MUI_PAGE_WELCOME
 
   !insertmacro MUI_PAGE_LICENSE "@CPACK_RESOURCE_FILE_LICENSE@"
@@ -993,6 +1022,7 @@ Section "-Core installation"
       Call AddToPath
       cvacdoNotAddToPath:
  ${endif} 
+  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\gui.lnk" "$PythonPathValue" "$INSTDIR\src\easy\gui.py"
   # CVAC Changes end
 
   ;Read a value from an InstallOptions INI file
@@ -1020,11 +1050,26 @@ Section "-Core installation"
   !insertmacro MUI_STARTMENU_WRITE_END
 
   # CVAC Changes start
+  IfSilent noPythonInstall 0
+      ${if} $InstallPython == "yes"
+          Call installPython
+      ${endif}
+noPythonInstall:
   #NumPyInstall is not silent so skip if in silent mode
   IfSilent noNumPyInstall 0
       Call installNumPy
 noNumPyInstall:
   SetOutPath "$INSTDIR\python"
+  ${if} $PythonPathValue == ""
+      StrCpy $PythonPathValue "c:\Python26\python.exe"
+  ${endif}
+  ${if} $JavaPathValue == ""
+      StrCpy $JavaPathValue "C:\Windows\system32\java.exe"
+  ${endif}
+  ${if} $DataPathValue == ""
+      StrCpy $DataPathValue "data"
+  ${endif}
+silentInstall:
   # install the Python code
   nsExec::ExecToLog '"$PythonPathValue" setup.py install'
   Pop $0
@@ -1180,6 +1225,7 @@ Section "Uninstall"
   # CVAC start modification
   Delete "$SMPROGRAMS\$MUI_TEMP\startServices.lnk"
   Delete "$SMPROGRAMS\$MUI_TEMP\stopServices.lnk"
+  Delete "$SMPROGRAMS\$MUI_TEMP\gui.lnk"
   Push $INSTDIR\3rdparty\ICE\bin
   #StrCmp $DO_NOT_ADD_TO_PATH_ "1" uncvacdoNotRemoveFromPath 0
     Call un.RemoveFromPath

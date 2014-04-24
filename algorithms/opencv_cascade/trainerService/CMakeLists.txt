@@ -39,6 +39,8 @@ TARGET_LINK_LIBRARIES(${the_target}
     utils
     )
 
+ADD_DEPENDENCIES(${the_target} ${SLICE_FILES})
+
 IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
 IF (WIN32)
 INSTALL( TARGETS ${the_target}
