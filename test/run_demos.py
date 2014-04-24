@@ -20,7 +20,7 @@ if __name__ == '__main__' :
         binPath = os.path.abspath(thisPath + "/../bin")
         demoPath = os.path.abspath(thisPath + "/../demo")
         print("Starting " + binPath + "/startServices" + extension)
-        call([binPath + "/startServices" + extension])
+        call([binPath + "/startServices" + extension], shell=True)
         time.sleep(5)
         execfile(demoPath + '/prerequisites.py')
         execfile(demoPath + '/detect.py')
@@ -29,9 +29,9 @@ if __name__ == '__main__' :
         execfile(demoPath + '/full_image_corpus.py')
         execfile(demoPath + '/bootstrapping.py')
         time.sleep(5)
-        call([binPath + "/stopServices" + extension])
+        call([binPath + "/stopServices" + extension], shell=True)
     except:
         # If we get an error or forced quit we still want to stop the services
-        call([binPath + "/stopServices" + extension])
+        call([binPath + "/stopServices" + extension], shell=True)
 
 
