@@ -54,6 +54,48 @@
 
 typedef std::map<cvac::Purpose, std::string> LabelMap;
 
+class TrainerPropertiesI : public cvac::TrainerProperties
+{
+public:
+  /**
+   * Initialize fields for this trainer.
+   */
+  TrainerPropertiesI();
+  /**
+   * Read the string properties and convert them to member data values.
+   */
+  bool readProps();
+  /**
+   * Convert member data values into string properties.
+   */
+  bool writeProps();
+  /**
+   * Load the struct's values into our class ignoring uninitialized values
+   */
+  void load(const TrainerProperties &p);
+public:
+  /**
+   * Detector: SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS, ORB
+   */
+  string	keyptName_Detector;
+  /**
+   * Descriptor: SURF, SIFT, OpponentSIFT, OpponentSURF, ORB, FREAK
+   */
+  string	keyptName_Descriptor;
+  /**
+   * Matcher: BruteForce-L1, BruteForce, FlannBased, BruteForce-Hamming 
+   */
+  string	keyptName_Matcher;
+  /**
+   * The number of visual words (or clusters)
+   */
+  int       countWords;
+  /**
+   * How to handle negative samples: Ignore, Multiclass, FirstStage
+   */
+  string    rejectClassStrategy;
+};
+
 class BowICETrainI : public cvac::DetectorTrainer, public cvac::StartStop, public MsgLogger
 {
 public:
@@ -78,7 +120,7 @@ public:
   int                    m_cvacVerbosity;
   cvac::ServiceManager  *mServiceMan;
   int                    maxClassId;
-  std::string            rejectClassStrategy;
+  TrainerPropertiesI    *mTrainProps;
 
  private:
   bowCV* initialize( cvac::TrainerCallbackHandlerPrx& _callback,

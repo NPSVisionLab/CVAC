@@ -70,14 +70,110 @@ extern "C"
 	}
 }
 
+//----------------------------------------------------------------------------
+TrainerPropertiesI::TrainerPropertiesI()
+{
+  //Detector: SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS, ORB
+  //Descriptor: SURF, SIFT, OpponentSIFT, OpponentSURF, ORB, FREAK
+  //Matcher: BruteForce-L1, BruteForce, FlannBased, BruteForce-Hamming 
+  keyptName_Detector = "SIFT";
+  keyptName_Descriptor = "SIFT";
+  keyptName_Matcher = "BruteForce-L1";
+  countWords = 150;
+  rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_MULTICLASS;
+}
+
+void TrainerPropertiesI::load(const TrainerProperties &p) 
+{
+  canSetWindowSize = true;
+  canSetSensitivity = true;
+  verbosity = p.verbosity;
+  props = p.props;
+  videoFPS = p.videoFPS;
+  //Only load values that are not zero
+  if (p.windowSize.width > 0 && p.windowSize.height > 0)
+    windowSize = p.windowSize;
+  if (p.falseAlarmRate > 0.0)
+    falseAlarmRate = p.falseAlarmRate;
+  if (p.recall > 0.0)
+    recall = p.recall;  
+
+  readProps();
+}
+
+bool TrainerPropertiesI::readProps()
+{
+  bool res = true;
+
+  cvac::Properties::iterator it = props.begin();
+  for(; it != props.end(); it++)
+  {
+    if(it->first.compare(bowCV::BOW_DETECTOR_NAME) == 0)
+    {
+      keyptName_Detector = it->second;
+    }
+    else if(it->first.compare(bowCV::BOW_EXTRACTOR_NAME) == 0)
+    {      
+      keyptName_Descriptor = it->second;
+    }
+    else if(it->first.compare(bowCV::BOW_MATCHER_NAME) == 0)
+    {
+      keyptName_Matcher = it->second;
+    }
+    else if(it->first.compare(bowCV::BOW_NUM_WORDS) == 0)
+    {
+      int tNumWords = atoi(it->second.c_str());
+      if(tNumWords>0 && tNumWords<INT_MAX)
+        countWords = tNumWords;
+    }
+    else if(it->first.compare(bowCV::BOW_REJECT_CLASS_STRATEGY) == 0)
+    {
+      std::string _strategy = it->second;
+      std::string _str = _strategy;      
+      std::transform(_strategy.begin(),_strategy.end(),_str.begin(),::tolower);
+      rejectClassStrategy = _str;
+    }
+  }
+  return res;
+}
+
+bool TrainerPropertiesI::writeProps()
+{
+  bool res = true;
+
+  char buff[128];
+
+  props.insert(std::pair<string, string>(bowCV::BOW_DETECTOR_NAME, 
+    keyptName_Detector));
+
+  props.insert(std::pair<string, string>(bowCV::BOW_EXTRACTOR_NAME,
+    keyptName_Descriptor));
+
+  props.insert(std::pair<string, string>(bowCV::BOW_MATCHER_NAME,
+    keyptName_Matcher));
+
+  sprintf(buff, "%d", countWords);
+  props.insert(std::pair<string, string>(bowCV::BOW_NUM_WORDS,buff));
+
+  props.insert(std::pair<string, string>(bowCV::BOW_REJECT_CLASS_STRATEGY,
+    rejectClassStrategy));
+
+  return res;
+}
+
+//----------------------------------------------------------------------------
+
 BowICETrainI::BowICETrainI()
 :mServiceMan(NULL)
 {    
   callbackPtr = NULL;
+  mTrainProps = new TrainerPropertiesI();
 }
 
 BowICETrainI::~BowICETrainI()
 {
+  if(mTrainProps != NULL)
+    delete mTrainProps;
 }
 
 void BowICETrainI:: setServiceManager(cvac::ServiceManagerI *sman)
@@ -110,91 +206,43 @@ bowCV* BowICETrainI::initialize( TrainerCallbackHandlerPrx& _callback,
     vLogger.setLocalVerbosityLevel( verbStr );
   }
 
-  // defaults
-  //SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS
-  string	_nameFeature("SIFT");
-  //SURF, SIFT, OpponentSIFT, OpponentSURF
-  string	_nameDescriptor("SIFT");
-  //BruteForce-L1, BruteForce, FlannBased  
-  string	_nameMatcher("BruteForce-L1");
-  int		_countWords = 150;	
-
-  // read properties; need to cast const away
-  cvac::Properties& trp = (cvac::Properties&) tprops.props;
-  const string& nf = trp[bowCV::BOW_DETECTOR_NAME];
-  if (!nf.empty())
-  {
-    _nameFeature = nf;
+  //////////////////////////////////////////////////////////////////////////
+  // START: read properties
+  mTrainProps->load(tprops);
+  std::string strategy = mTrainProps->rejectClassStrategy;    
+  if (0==strategy.compare(bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES))
+  { 
     localAndClientMsg(VLogger::DEBUG, _callback,
-                      "Set FeatureType to %s\n", nf.c_str() );
+      "BOW will ignore any samples with Negative purpose\n");
   }
-  const string& nd = trp[bowCV::BOW_EXTRACTOR_NAME];
-  if (!nd.empty())
-  {
-    _nameDescriptor = nd;
+  else if (0==strategy.compare(bowCV::BOW_REJECT_CLASS_AS_MULTICLASS))
+  { 
     localAndClientMsg(VLogger::DEBUG, _callback,
-                      "Set DescriptorType to %s\n", nd.c_str() );
+      "BOW will treat samples with Negative purpose as a separate class\n");
   }
-  const string& nm = trp[bowCV::BOW_MATCHER_NAME];
-  if (!nm.empty())
-  {
-    _nameMatcher = nm;
+  else if (0==strategy.compare(bowCV::BOW_REJECT_CLASS_AS_FIRST_STAGE))
+  { 
     localAndClientMsg(VLogger::DEBUG, _callback,
-                      "Set MatcherType to %s\n", nm.c_str() );
+      "BOW will create a two-stage classifier: reject first, multiclass second\n");
+    localAndClientMsg(VLogger::ERROR, _callback,
+      "BOW two-stage classifier is not implemented yet\n");
+    return NULL;
   }
-  const string& nw = trp["NumWords"];
-  if (!nw.empty())
+  else
   {
-    errno=0;
-    long int cw = (int) strtol( nw.c_str(), (char**) NULL, 10 );
-    if (cw>0 && cw<INT_MAX && errno==0)
-    {
-      // no error, successfully parsed int from NumWords property
-      _countWords = cw;
-      localAndClientMsg(VLogger::DEBUG, _callback,
-                        "Number of words set to %d\n", cw );
-    }
+    localAndClientMsg(VLogger::WARN, _callback,
+      "Incorrect specifier for %s property, using default (%s).\n",
+      bowCV::BOW_REJECT_CLASS_STRATEGY.c_str(), strategy.c_str() );
   }
 
-  // figure out how to handle Negative purpose samples, if any
-  const string& strategy = trp[bowCV::BOW_REJECT_CLASS_STRATEGY];
-  if (!strategy.empty())
-  {
-    std::string strat = strategy;
-    std::transform( strategy.begin(), strategy.end(), strat.begin(), ::tolower );
-    rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_MULTICLASS;
-    if (0==strat.compare(bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES))
-    {
-      rejectClassStrategy = bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES;
-      localAndClientMsg(VLogger::DEBUG, _callback,
-                        "BOW will ignore any samples with Negative purpose\n");
-    }
-    else if (0==strat.compare(bowCV::BOW_REJECT_CLASS_AS_MULTICLASS))
-    {
-      rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_MULTICLASS;
-      localAndClientMsg(VLogger::DEBUG, _callback,
-                        "BOW will treat samples with Negative purpose as a separate class\n");
-    }
-    else if (0==strat.compare(bowCV::BOW_REJECT_CLASS_AS_FIRST_STAGE))
-    {
-      rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_FIRST_STAGE;
-      localAndClientMsg(VLogger::DEBUG, _callback,
-                        "BOW will create a two-stage classifier: reject first, multiclass second\n");
-      localAndClientMsg(VLogger::ERROR, _callback,
-                        "BOW two-stage classifier is not implemented yet\n");
-      return false;
-    }
-    else
-    {
-      localAndClientMsg(VLogger::WARN, _callback,
-                        "Incorrect specifier for %s property, using default (%s).\n",
-                        bowCV::BOW_REJECT_CLASS_STRATEGY.c_str(), rejectClassStrategy.c_str() );
-    }      
-  }
-  
+  //////////////////////////////////////////////////////////////////////////
+  // Initialize  
   bowCV* pBowCV = new bowCV(this);
-  bool fInitialized =
-    pBowCV->train_initialize(_nameFeature,_nameDescriptor,_nameMatcher,_countWords, &dda);
+  bool fInitialized = pBowCV->train_initialize(mTrainProps->keyptName_Detector,
+                                          mTrainProps->keyptName_Descriptor,
+                                          mTrainProps->keyptName_Matcher,
+                                          mTrainProps->countWords,&dda);
+    
   if (fInitialized)
   {
     return pBowCV;
@@ -231,9 +279,8 @@ bool BowICETrainI::cancel(const Identity &client, const Current& current)
 }
 cvac::TrainerProperties BowICETrainI::getTrainerProperties(const Current &current)
 {
-    //TODO get the real trainer properties but for now return an empty one.
-    TrainerProperties tprops;
-    return tprops;
+  mTrainProps->writeProps();
+  return *mTrainProps;
 }
 
 void BowICETrainI::processSingleImg(string _filepath,string _filename,int _classID,
@@ -468,8 +515,9 @@ void BowICETrainI::processPurposedList( PurposedListPtr purList,
                                         LabelMap& labelmap, bool* pLabelsMatch
                                         )
 {
+  std::string _strategy = mTrainProps->rejectClassStrategy;
   if (purList->pur.ptype==cvac::NEGATIVE
-      && 0==rejectClassStrategy.compare(bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES))
+      && 0==_strategy.compare(bowCV::BOW_REJECT_CLASS_IGNORE_SAMPLES))
   {
     // ignore Negative artifacts according to reject class strategy
     return;
