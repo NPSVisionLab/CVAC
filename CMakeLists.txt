@@ -94,7 +94,12 @@ IF (WIN32)
    MARK_AS_ADVANCED(BUILD_WITH_MP)
 
    IF(BUILD_WITH_MP)
-     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+     #Windows 8 messes up multiprocessor compile and slicing
+     IF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP1")
+     ELSE ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+     ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
    ENDIF(BUILD_WITH_MP)
 
    # Platform specific definitions

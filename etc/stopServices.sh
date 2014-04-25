@@ -36,7 +36,7 @@ then
             pkill -xf "${PYTHONEXE} $LINE"
         else
             # echo killall $LINE
-            killall $LINE
+            killall python2.6 $LINE
         fi
     done
 fi

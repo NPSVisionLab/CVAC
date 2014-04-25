@@ -773,11 +773,12 @@ def getProxyString(configString):
       (r"-tp", lambda scanner, token:("PORT", token)),
       (r"-p", lambda scanner, token:("PORT", token)),
       (r":", lambda scanner, token:("COLON", token)),
+      (r"@", lambda scanner, token:("LOC", token)),
       (r"\s+", None), #skip white space
     ])
     parselist, remainder = scanner.scan(configString)
     for entry in parselist:
-        if entry[0] == "PORT" or entry[0] == "COLON":
+        if entry[0] == "PORT" or entry[0] == "COLON" or entry[0] == "LOC":
             return configString
     # We don't have a proxy so lets see if we have a match in client.config
     properties = ic.getProperties()
