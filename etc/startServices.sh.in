@@ -43,7 +43,7 @@ then
 fi
 
 # Python services that are listed in python.config
-if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLLDIR}/python.config" ]
+if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLDIR}/python.config" ]
 then
     export PYTHONPATH="${ICEDIR}/python:${INSTALLDIR}/python:${OPENCVDIR}/lib/python2.6/site-packages"
     grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE

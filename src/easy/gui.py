@@ -16,10 +16,7 @@ oldstdout = sys.stdout
 # Add demos to sys path so import preqrequistes will work
 scriptfname = inspect.getfile(inspect.currentframe())
 scriptpath  = os.path.dirname(os.path.abspath( scriptfname ))
-if sys.platform=='darwin':
-    installpath = os.path.abspath(scriptpath+'/../Resources')
-elif sys.platform=='win32':
-    installpath = os.path.abspath(scriptpath+'/../..')
+installpath = os.path.abspath(scriptpath+'/../..')
     
 
 sys.path.append(installpath+'/python/easy')
@@ -84,7 +81,7 @@ class Application(tk.Frame):
         sys.stdout = self.StdoutRedirector(self.output, self.root)
         self.updateServerStatus()
         if sys.platform=='darwin':
-            self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python:'+installpath+'/python'}
+            self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python:'+installpath+'/python', 'DYLD_LIBRARY_PATH':installpath+'/3rdparty/ICE/lib'}
         elif sys.platform=='win32':
             self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python;'+installpath+'/python',
             'PATH':installpath+'/bin;'+installpath+'/3rdparty/opencv/bin;'+installpath+'/3rdparty/ICE/bin;%PATH%'}
@@ -148,10 +145,10 @@ class Application(tk.Frame):
                                  bg="light blue", width=12,
                                  command=lambda: self.startStopServices(False))
         self.stopButton.grid(row=0, column=1, padx=5)
-        self.stopButton = tk.Button(lf, text='status', 
+        self.statusButton = tk.Button(lf, text='status', 
                                  bg="light blue", width=12,
                                  command=lambda: self.runServerStatus())
-        self.stopButton.grid(row=0, column=2, padx=5, sticky=tk.E)
+        self.statusButton.grid(row=0, column=2, padx=5, sticky=tk.E)
         tk.Label(lf, text="Service Status:").grid(row=2, sticky=tk.W)
         statusLabel = tk.Label(lf, textvariable=self.serverStatus)
         statusLabel.grid(row=3, columnspan=5, sticky=tk.W)
