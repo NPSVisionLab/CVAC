@@ -40,8 +40,15 @@ except:
 args = sys.argv
 args.append('--Ice.MessageSizeMax=100000')
 args.append('--Ice.ACM.Client=0')
+# try to find the config.client that specifies what services
+# might be running, their names, etc.
 if os.path.isfile('config.client'):
     args.append('--Ice.Config=config.client')
+else:
+    modulepath = os.path.dirname(__file__)
+    config_client_path = os.path.abspath(modulepath+'/../../config.client')
+    if os.path.isfile(config_client_path):
+        args.append('--Ice.Config='+config_client_path)
 ic = Ice.initialize(args)
 defaultCS = None
 # IF the environment variable is set, then use that else use data
