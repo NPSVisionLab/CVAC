@@ -285,6 +285,18 @@ FIND_PACKAGE( PythonInterp )
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
+#Opencv includes now required for src/util library
+FIND_PACKAGE( OpenCV 2.4 REQUIRED
+                            core imgproc highgui ml features2d nonfree objdetect calib3d
+             HINTS
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv
+)
+IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+  IF( OpenCV_DIR )
+    MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  ENDIF()
+ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+
 # Make sure packages are compatible
 # ICE 3.4.2 is pre-built against Python 2.6
 IF( PYTHONINTERP_FOUND AND WIN32 )
@@ -293,24 +305,16 @@ IF( PYTHONINTERP_FOUND AND WIN32 )
     MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
     MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
   ENDIF()
-ENDIF()
 
-#Opencv includes now required for src/util library
-FIND_PACKAGE( OpenCV 2.4 REQUIRED
-                            core imgproc highgui ml features2d nonfree objdetect calib3d
-             HINTS
-                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv
-  )
-IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   #For Python set a variable for cv2 dynamic library
   #
   IF (WIN32)
     FIND_FILE(OPENCV_PY_LIB cv2.pyd
-               HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+      HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
   ELSE (WIN32)
     FIND_LIBRARY(OPENCV_PY_LIB cv2.so
-               HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
-                     ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+      HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
+            ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
 
   ENDIF (WIN32)
   # And the directory the cv2 file came from
@@ -320,16 +324,11 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
     MESSAGE( SEND_ERROR "Need cv2.pyd or cv2.so and cv.py from OpenCV" )
   ENDIF()
 
-  IF( OpenCV_DIR )
-    MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
-  ENDIF()
-ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+ENDIF()
 
 ## Setup the config.service and config.icebox files based upon detectors
 ## selected by the user.  These CF_ variables are defined in the config files
 ## and they get turned into comments or not.
-
-
 IF( BUILD_WITH_BOW )
 SET(CF_BOW "" )
 SET( CF_BOW_T "" )

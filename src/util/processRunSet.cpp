@@ -181,10 +181,21 @@ void cvac::processRunSet(DetectorPtr detector,
     localAndClientMsg(VLogger::DEBUG_2, client, "processRunSet-prefix: %s\n", pathPrefix.c_str());
 #ifdef WIN32
     char *tempName = _tempnam(dir.c_str(), NULL);
-#else
-    char *tempName = tempnam(dir.c_str(), NULL);
-#endif /* WIN32 */
     std::string tempString = tempName;
+#else
+    char *tempName = new char[dir.size()+13];
+    sprintf( tempName, "%s/tmpXXXXXXXX", dir.c_str() );
+    char *res = mktemp(tempName);
+    if (res==NULL)
+    {
+      localAndClientMsg(VLogger::WARN, client,
+                        "cannot create temp file name, might fail soon.\n" );
+    } else {
+      assert( tempName==res );
+    }
+    std::string tempString = tempName;
+    delete[] tempName;
+#endif /* WIN32 */
     sman->setStoppable();
 
     // Step through the Runset doing a detect for each item
@@ -280,7 +291,7 @@ void cvac::processRunSet(DetectorPtr detector,
                 dirptr->directory.relativePath[0] == '\\')
             {  // absolute path
                 fname = dirptr->directory.relativePath;
-                localAndClientMsg(VLogger::WARN, NULL,
+                localAndClientMsg(VLogger::WARN, client,
                                   "Labelable using absolute paths; ignoring file: %s\n", fname.c_str());
                 continue;
             } else { // prepend our prefix
