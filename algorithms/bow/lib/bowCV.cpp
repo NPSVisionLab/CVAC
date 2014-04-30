@@ -53,6 +53,7 @@ const string bowCV::BOW_SVM_FILE = "SVM_FILE";
 const string bowCV::BOW_DETECTOR_NAME = "FeatureType";
 const string bowCV::BOW_EXTRACTOR_NAME = "DescriptorType";
 const string bowCV::BOW_MATCHER_NAME = "MatcherType";
+const string bowCV::BOW_NUM_WORDS = "NumWords";
 const string bowCV::BOW_OPENCV_VERSION = "OPENCV_VERSION";
 const string bowCV::BOW_ONECLASS_ID = "ONE-CLASS_ID";
 
@@ -88,7 +89,6 @@ bowCV::~bowCV()
     vBoundY.clear();
     vBoundWidth.clear();
     vBoundHeight.clear();
-    dda = NULL;
 }
 
 bool bowCV::isInitialized()
@@ -110,11 +110,12 @@ bool bowCV::train_initialize(const string& _detectorName,
     dda = _dda;
 
 //debug
-printf ("detect name %s, extractor %s, matcher %s\n",
-        _detectorName.c_str(),
-        _extractorName.c_str(),
-        _matcherName.c_str());
-    fDetector = FeatureDetector::create(_detectorName);
+    printf ("detect name %s, extractor %s, matcher %s, nWords %d\n",
+            _detectorName.c_str(),
+            _extractorName.c_str(),
+            _matcherName.c_str(),
+            _nCluster);
+    fDetector = FeatureDetector::create(_detectorName);    
     dExtractor = DescriptorExtractor::create(_extractorName);
     if( fDetector.empty() || dExtractor.empty() )
     {
@@ -123,8 +124,8 @@ printf ("detect name %s, extractor %s, matcher %s\n",
     }
     else
     {
-        dda->setProperty(BOW_DETECTOR_NAME,_detectorName);
-        dda->setProperty(BOW_EXTRACTOR_NAME,_extractorName);
+      dda->setProperty(BOW_DETECTOR_NAME,_detectorName);
+      dda->setProperty(BOW_EXTRACTOR_NAME,_extractorName);
     }
 
     cntCluster = _nCluster;
@@ -136,9 +137,7 @@ printf ("detect name %s, extractor %s, matcher %s\n",
         return false;
     }
     else
-    {
       dda->setProperty(BOW_MATCHER_NAME,_matcherName);
-    }
 
     bowExtractor = new BOWImgDescriptorExtractor(dExtractor,dMatcher);
 
@@ -356,13 +355,22 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     cout << "Total number of descriptors: " << _descriptorRepository.rows << endl;	fflush(stdout);
 
     cout << "Clustering ... this might take some time..." << std::endl;	fflush(stdout);
+    
+    if(cntCluster > _descriptorRepository.rows)
+    {
+      string outMsg;
+      outMsg = "Error: the number of clusters is smaller than the number of descriptors\n";
+      cout << outMsg;
+      msgLogger->message(MsgLogger::WARN,outMsg);
+      return false;
+    }
     BOWKMeansTrainer bowTrainer(cntCluster); 
-    bowTrainer.add(_descriptorRepository);	
+    bowTrainer.add(_descriptorRepository);
+
     mVocabulary = bowTrainer.cluster();	
 
     if(!train_writeVocabulary(_filepathForSavingResult + "/" + filenameVocabulary,mVocabulary))
-	    return false;
-
+        return false;
     //////////////////////////////////////////////////////////////////////////
     // END - Clustering (Most time-consuming step)
     //////////////////////////////////////////////////////////////////////////
@@ -498,7 +506,6 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     ///////////////////////////////////////////////////////////////////////////
     // END - Train Classifier (SVM)
     //////////////////////////////////////////////////////////////////////////
-
     dda->setProperty(BOW_OPENCV_VERSION,CV_VERSION);    
 
     flagTrain = true;
@@ -714,7 +721,6 @@ bool bowCV::isCompatibleOpenCV(const string& _version)
     else
         return false;
 }
-
 
 //void bowCV::setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses )
 //{
