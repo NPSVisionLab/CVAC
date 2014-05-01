@@ -14,15 +14,9 @@ WRAP_SLICE(SLICE_FILES
 SET (CVAC_APP_SOURCE_FILES 
       main.cpp
       FileUtilsTests.cpp
-      Data.cpp
-      Services.cpp
       ConfusionMatrixTests.cpp
      )
 
-SET(HEADER_FILES
-    Data.h
-    Services.h
-)
 
 INCLUDE_DIRECTORIES( .
                      ${UNITTEST++_INCLUDE_DIR}
@@ -33,6 +27,7 @@ INCLUDE_DIRECTORIES( .
 
 ADD_EXECUTABLE( ${APP_NAME}
                 ${CVAC_APP_SOURCE_FILES}
+                ${SLICE_FILES}
               )
 
 SET(LIBS
