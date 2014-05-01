@@ -70,14 +70,14 @@
 // #pragma comment(lib,"opencv_features2d242.lib")
 // #endif
 
-
 using namespace cv;
 
 class bowCV {
 public:
 
   static const std::string BOW_VOC_FILE, BOW_SVM_FILE, BOW_DETECTOR_NAME,
-    BOW_EXTRACTOR_NAME, BOW_MATCHER_NAME, BOW_OPENCV_VERSION, BOW_ONECLASS_ID,
+    BOW_EXTRACTOR_NAME, BOW_MATCHER_NAME, BOW_NUM_WORDS,
+    BOW_OPENCV_VERSION, BOW_ONECLASS_ID,
     BOW_REJECT_CLASS_STRATEGY, BOW_REJECT_CLASS_AS_MULTICLASS,
     BOW_REJECT_CLASS_IGNORE_SAMPLES, BOW_REJECT_CLASS_AS_FIRST_STAGE;
   
@@ -97,11 +97,9 @@ public:
   bool  train_run(const std::string& _filepathForSavingResult,
                   cvac::ServiceManager *,
                   float _oneclassNu = 0.1);  
-
   bool  detect_initialize( const cvac::DetectorDataArchive* dda);	
   bool  detect_run(const std::string& _fullfilename, int& _bestClass,
                    int _boxX=0,int _boxY=0,int _boxWidth=0,int _boxHeight=0);
-
 
 private:
   bool  isCompatibleOpenCV(const std::string& _version);

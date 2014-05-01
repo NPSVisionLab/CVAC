@@ -33,6 +33,8 @@ TARGET_LINK_LIBRARIES(${APP_NAME}
                       utils
                       ${ICE_LIBRARIES}
                      )
+ADD_DEPENDENCIES(${APP_NAME} ${SLICE_FILES})
+SET_PROPERTY(SOURCE Client.cpp APPEND PROPERTY OBJECT_DEPENDS ${SLICE_FILES})
 
 SET_TARGET_PROPERTIES(${APP_NAME} PROPERTIES DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}")
 # since I can't get CMake RPATH to work, invoke a custom command:
