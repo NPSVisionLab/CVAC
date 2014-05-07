@@ -54,20 +54,40 @@ IF( BUILD_CORPUS_SERVICE_PYTHON)
              REGEX "src/easy/corpus_service.py")
         IF (FILE_STRINGS STREQUAL "")
             FILE(APPEND "${CMAKE_SOURCE_DIR}/python.config" 
-                 "src/easy/corpus_service.py")
+                 "src/easy/corpus_service.py\n")
         ENDIF (FILE_STRINGS STREQUAL "")
     ELSE (EXISTS "${CMAKE_SOURCE_DIR}/python.config")
         FILE(WRITE "${CMAKE_SOURCE_DIR}/python.config" 
-             "src/easy/corpus_service.py")
-        #Since we created it we have to install as well
-        IF (NOT BUILD_3RDPARTY_PACKAGE)
-            INSTALL(FILES ${CMAKE_SOURCE_DIR}/python.config
-               DESTINATION .
-               COMPONENT Runtime
-               )
-        ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
+             "src/easy/corpus_service.py\n")
     ENDIF (EXISTS "${CMAKE_SOURCE_DIR}/python.config")
 ENDIF( BUILD_CORPUS_SERVICE_PYTHON)
+
+IF( BUILD_FILESERVER_PYTHON)
+    # Add to the python config file since the python fileserver requires it.
+    # If it already exists add to the end else create it
+    IF (EXISTS "${CMAKE_SOURCE_DIR}/python.config")
+        #If we don't have the string fileservice add it
+        SET (FILE_STRINGS "")
+        FILE(STRINGS "${CMAKE_SOURCE_DIR}/python.config" FILE_STRINGS  
+             REGEX "src/easy/fileserver.py")
+        IF (FILE_STRINGS STREQUAL "")
+            FILE(APPEND "${CMAKE_SOURCE_DIR}/python.config" 
+                 "src/easy/fileserver.py\n")
+        ENDIF (FILE_STRINGS STREQUAL "")
+    ELSE (EXISTS "${CMAKE_SOURCE_DIR}/python.config")
+        FILE(WRITE "${CMAKE_SOURCE_DIR}/python.config" 
+             "src/easy/fileserver.py\n")
+    ENDIF (EXISTS "${CMAKE_SOURCE_DIR}/python.config")
+ENDIF( BUILD_FILESERVER_PYTHON)
+
+IF( BUILD_FILESERVICE_PYTHON OR BUILD_CORPUS_SERVICE_PYTHON)
+    IF (NOT BUILD_3RDPARTY_PACKAGE)
+        INSTALL(FILES ${CMAKE_SOURCE_DIR}/python.config
+           DESTINATION .
+           COMPONENT Runtime
+           )
+    ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
+ENDIF( BUILD_FILESERVICE_PYTHON OR BUILD_CORPUS_SERVICE_PYTHON)
 
 # We need to copy cvac, Ice, and easy to the build directory for packing
 # python distribution.
