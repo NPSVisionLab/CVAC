@@ -43,7 +43,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
         sys.argv.append('--Ice.Config=config.client')
         self.ic = Ice.initialize(sys.argv)
         properties = self.ic.getProperties()
-        proxyStr = properties.getProperty('CorpusServer.Proxy')
+        proxyStr = properties.getProperty('PythonCorpusService.Proxy')
         base = self.ic.stringToProxy(proxyStr)
         self.cs = cvac.CorpusServicePrx.checkedCast(base)
         if not self.cs:
@@ -197,7 +197,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
         corpus3 = self.cs.createCorpus( corpusTestDir )
         if not corpus3:
             raise RuntimeError("could not create corpus from path '"
-                               +dataRoot.relativePath+"/"+corpusTestDir+"'")
+                               +corpusTestDir.relativePath+"/"+corpusTestDir+"'")
         
 
     def tearDown(self):
