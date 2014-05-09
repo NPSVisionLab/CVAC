@@ -10,6 +10,7 @@ import StringIO
 import Ice, IcePy
 import cvac
 import labelme, vatic, videosegment
+import easy
 
 class LabelableListI:
     def _init__(self, name):
@@ -52,16 +53,18 @@ class CorpusI(cvac.Corpus):
         self.CVAC_DataDir = CVAC_DataDir
         self.dataSetFolder = location
         
+    '''
     def loadImagesFromDir(self, labelName, directory, recurse):
         dirSampleList = LabelableListI(labelName)
         label = cvac.Label(True, labelName, {}, cvac.Semantics(""))
         dirSampleList.addAllSamplesInDir(directory, label, 1.0, directory, 
                                          recurse)
         return dirSampleList
+    '''
         
     def getLabels(self):
         # TODO load images from the directory and return
-        return None
+        return easy.getLabelableList(self.dataSetFolder)
     
 '''
 LabelMeCorpusI is a LabelMe corpus.  This reads the
@@ -339,9 +342,25 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         print( 'addLabelable called' )
     
     def createCorpus( self, cvacdir, current=None ):
+        import pydevd
+        pydevd.connected = True
+        pydevd.settrace(suspend=False)
         if not type(cvacdir) is cvac.DirectoryPath:
             raise RuntimeError("wrong argument type")
-        print( 'createCorpus called' )
+        # use toplevel directory as the name
+        ldir = cvacdir.relativePath
+        if ldir.startswith(self.CVAC_DataDir +'/'):
+            ldir = ldir[len(self.CVAC_DataDir + '/'):]
+        # first directory is the corpus name
+        idx = ldir.rfind("/")
+        if idx > 0:
+            cName = ldir[0:idx]
+        else:
+            cName = ldir
+        corp = CorpusI(cName, "Directory Corpus", "", ldir, self.CVAC_DataDir)
+        self.corpToImp[corp.name] = corp
+        return corp
+        
 
 
 class Server(Ice.Application):

@@ -20,6 +20,7 @@ import Ice
 import Ice
 import IcePy
 import cvac
+from util import misc
 import unittest
 import stat
 import threading
@@ -114,6 +115,21 @@ def getLabelable( filepath, labelText=None ):
     substrate = cvac.Substrate( not isVideo, isVideo, filepath, 0, 0 )
     labelable = cvac.Labelable( 0.0, label, substrate )
     return labelable
+
+def getLabelableList(dirpath, recursive=True, video=True, image=True):
+    '''Return a list of Labelables contained within the directory (optionally recursively)'''
+    if type(dirpath) is str:
+        if dirpath.startswith(CVAC_DataDir +'/'):
+            strpath = dirpath
+        else:
+            strpath = getFSPath(dirpath)
+    elif type(dirpath) is cvac.DirectoryPath:
+        strpath = dirpath.relativePath
+    res = []
+    misc.searchDir(res, strpath, recursive, video, image)
+    return res
+    
+        
 
 def getCorpusServer( configstr ):
     '''Connect to a Corpus server based on the given configuration string'''
@@ -272,19 +288,19 @@ def testRunSetIntegrity(runset, deleteInvalid=False):
                     
                 if lb.sub.height>0:
                     maxY = lb.sub.height
-                
-                for pt in lb.loc.points:
-                    if (pt.x < minX) or (pt.y < minY) \
-                    or (pt.x >= maxX) or (pt.y >= maxY):
-                        print("Warning: label \"" \
+                if isinstance(lb, cvac.LabeledLocation) == True:
+                    for pt in lb.loc.points:
+                        if (pt.x < minX) or (pt.y < minY) \
+                        or (pt.x >= maxX) or (pt.y >= maxY):
+                            print("Warning: label \"" \
                               + labelname + "\" is out of bounds in file \"" \
                               + lb.sub.path.filename + "\"" \
                               + " (X=" + str(pt.x) + ", Y=" + str(pt.y) + ")")
-                        if deleteInvalid == False:
-                            return False
-                        else:
-                            del plist.labeledArtifacts[i]
-                            break
+                            if deleteInvalid == False:
+                                return False
+                            else:
+                                del plist.labeledArtifacts[i]
+                                break
                  
 #                 else:
 #                     print("File= " + lb.sub.path.filename)

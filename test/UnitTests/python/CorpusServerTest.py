@@ -193,11 +193,14 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     #
     def test_createCorpus(self):
         print('createCorpus')
-        corpusTestDir = cvac.DirectoryPath( "corpusTestDir" );
+        corpusTestDir = cvac.DirectoryPath( "easyTestData" );
         corpus3 = self.cs.createCorpus( corpusTestDir )
         if not corpus3:
             raise RuntimeError("could not create corpus from path '"
                                +corpusTestDir.relativePath+"/"+corpusTestDir+"'")
+        labels = self.cs.getDataSet(corpus3)
+        if not labels or len(labels) == 0:
+            raise RuntimeError("no labels back from createCorpus(easyTestData)")
         
 
     def tearDown(self):
