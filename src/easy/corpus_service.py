@@ -342,9 +342,9 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         print( 'addLabelable called' )
     
     def createCorpus( self, cvacdir, current=None ):
-        import pydevd
-        pydevd.connected = True
-        pydevd.settrace(suspend=False)
+        #import pydevd
+        #pydevd.connected = True
+        #pydevd.settrace(suspend=False)
         if not type(cvacdir) is cvac.DirectoryPath:
             raise RuntimeError("wrong argument type")
         # use toplevel directory as the name
@@ -357,7 +357,7 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
             cName = ldir[0:idx]
         else:
             cName = ldir
-        corp = CorpusI(cName, "Directory Corpus", "", ldir, self.CVAC_DataDir)
+        corp = CorpusI(cName, "Corpus created from directory " + cName, "", ldir, self.CVAC_DataDir)
         self.corpToImp[corp.name] = corp
         return corp
         
