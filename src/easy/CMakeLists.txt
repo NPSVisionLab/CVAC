@@ -13,7 +13,7 @@ WRAP_SLICE2PY( SLICE_FILES
 MAKE_DIRECTORY(${SLICE_OUTPUT_PYTHONDIR})
 
 IF (NOT BUILD_3RDPARTY_PACKAGE)
-    INSTALL(FILES corpus_service.py gui.py labelme.py evaluate.py vatic.py videosegment.py
+    INSTALL(FILES corpus_service.py gui.py labelme.py evaluate.py vatic.py videosegment.py fileserver.py
         DESTINATION src/easy
         COMPONENT Runtime
         )

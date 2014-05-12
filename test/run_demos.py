@@ -33,5 +33,6 @@ if __name__ == '__main__' :
     except:
         # If we get an error or forced quit we still want to stop the services
         call([binPath + "/stopServices" + extension], shell=True)
+        sys.exit(1)
 
 
