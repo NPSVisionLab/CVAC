@@ -80,6 +80,8 @@ BowICEI::~BowICEI()
 {
 	delete pBowCV;
 	pBowCV = NULL;
+    //test
+    kdfsksdfksd
 }
 
 void BowICEI::setServiceManager(cvac::ServiceManagerI *sman)
