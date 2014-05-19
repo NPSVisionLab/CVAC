@@ -81,8 +81,6 @@ TrainerPropertiesI::TrainerPropertiesI()
   keyptName_Matcher = "BruteForce-L1";
   countWords = 150;
   rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_MULTICLASS;
-  //debug
-  featureoccludederror
 }
 
 void TrainerPropertiesI::load(const TrainerProperties &p) 
