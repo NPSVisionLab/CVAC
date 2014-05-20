@@ -12,6 +12,7 @@ import os
 import re
 import sys, traceback
 import shutil
+import datetime
 # paths should setup the PYTHONPATH.  If you special requirements
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
@@ -914,6 +915,72 @@ class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
     def foundNewResults(self, r2, current=None):
         # collect all results
         self.allResults.extend( r2.results )
+        
+def getBestDetectorData(dicRocData,dPrec,dRec,saveROC = False):
+    if len(dicRocData)<1 | len(dicRocData[str(0)])!=5:
+        raise RuntimeError("RoC Data must include at least three elements in a row: detectorData, x-axis and y-axis")
+    
+    for nWord,rocValues in dicRocData.items():    
+        tp = float(rocValues[1])
+        fp = float(rocValues[2])
+        tn = float(rocValues[3])
+        fn = float(rocValues[4])
+        xaxis = 0.0
+        if (tp+fp)!=0:
+            xaxis = fp/(tp+fp)
+        else:
+            raise RuntimeError("Invalid RoC data: (tp+fp) = 0")
+        yaxis = 0
+        if (tp+fn)!=0:
+            yaxis = tp/(tp+fn)
+        else:
+            raise RuntimeError("Invalid RoC data: (tp+fn) = 0")       
+        dicRocData[nWord].extend([xaxis,yaxis])       
+      
+    yaxisMax = -0.1
+    bestDetectorData = None
+    for nWord,rocValues in dicRocData.items():        
+        xaxis = rocValues[5]
+        yaxis = rocValues[6]
+        if xaxis <= (1 - dPrec):
+            if yaxisMax < yaxis:
+                yaxisMax = yaxis
+                bestDetectorData = rocValues[0]
+    
+    yaxisMax = -0.1
+    xaxisMin = 1.1     
+    resMsg = None   
+    if bestDetectorData == None:    
+        for nWord,rocValues in dicRocData.items():
+            xaxis = rocValues[5]
+            yaxis = rocValues[6]
+            if xaxis < xaxisMin:
+                xaxisMin= xaxis
+                yaxisMax = yaxis
+                bestDetectorData = rocValues[0]
+            elif xaxis == xaxisMin:
+                if yaxisMax < yaxis:
+                    yaxisMax = yaxis
+                    bestDetectorData = rocValues[0]
+        resMsg = "Most likely detectorData is " + bestDetectorData.filename
+    else:
+        resMsg = "The best detectorData is " + bestDetectorData.filename
+    
+    if saveROC == True: 
+        fpathROC = CVAC_DataDir+"/"\
+        +bestDetectorData.directory.relativePath+"/"\
+        +"RocTable_"\
+        +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S") + ".txt"                 
+        f = open(fpathROC,'w')        
+        for nWord,rocValues in dicRocData.items():
+            f.write(rocValues[0].filename + '\t')
+            f.write(str(rocValues[5]) + '\t')
+            f.write(str(rocValues[6]) + '\n')
+        f.write(resMsg)            
+        f.close()        
+    
+    print(resMsg)
+    return bestDetectorData
 
 def detect( detector, detectorData, runset, detectorProperties=None, callbackRecv=None ):
     '''
@@ -934,8 +1001,22 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
         detectorData = getCvacPath( "" )
     elif type(detectorData) is str:
         detectorData = getCvacPath( detectorData )
+    elif isinstance(detectorData, dict):
+        if detectorProperties == None:
+            raise RuntimeError("For selecting the best detectorData, " + \
+                               "detectorProperties including desired precision " + \
+                               "and recall must be entered")
+        dPre = -1.0
+        dRec = -1.0
+        if detectorProperties.props.get("Desired_Precision") is not None:
+            dPre = float(detectorProperties.props.get("Desired_Precision"))
+        if detectorProperties.props.get("Desired_Recall") is not None:
+            dRec = float(detectorProperties.props.get("Desired_Recall"))
+        if (dPre<0) | (dPre>1.0) | (dRec<0) | (dRec>1.0):
+            raise RuntimeError("Inapporopriate values for desired recall and precision")
+        detectorData = getBestDetectorData(detectorData,dPre,dRec,True)
     elif not type(detectorData) is cvac.FilePath:
-        raise RuntimeError("detectorData must be either filename or cvac.FilePath")
+        raise RuntimeError("detectorData must be filename, cvac.FilePath, or RoC data")
 
     # if not given an actual cvac.RunSet, try to create a RunSet
     if isinstance(runset, cvac.RunSet):
