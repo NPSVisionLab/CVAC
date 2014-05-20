@@ -121,6 +121,10 @@ void CascadeTrainI::initialize()
   mTrainProps->weak_count = 100;
   mTrainProps->windowSize.width = 25;
   mTrainProps->windowSize.height = 25;
+  mTrainProps->sampleSize.width = 25;
+  mTrainProps->sampleSize.height = 25;
+  
+  fInitialized = true;
   
   fInitialized = true;
 }
@@ -614,8 +618,14 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   // set parameters to createsamples
   SamplesParams samplesParams;
   samplesParams.numSamples = 1000;
-  samplesParams.width = mTrainProps->windowSize.width;
-  samplesParams.height = mTrainProps->windowSize.height;
+  if (mTrainProps->sampleSize.width != 0)
+      samplesParams.width = mTrainProps->sampleSize.width;
+  else
+      samplesParams.width = mTrainProps->windowSize.width;
+  if (mTrainProps->sampleSize.height != 0)
+      samplesParams.height = mTrainProps->sampleSize.height;
+  else
+      samplesParams.height = mTrainProps->windowSize.height;
 
   // run createsamples
   std::string vecFname = tempDir + "/cascade_positives.vec";
@@ -674,6 +684,8 @@ TrainerPropertiesI::TrainerPropertiesI()
     videoFPS = 0.0;
     windowSize.width = 0;
     windowSize.height = 0;
+    sampleSize.width = 0;
+    sampleSize.height = 0;
     falseAlarmRate = 0.0;
     recall = 0.0;
     rotate_count = 0;
@@ -748,6 +760,12 @@ bool TrainerPropertiesI::readProps()
         }else if (it->first.compare("rotateSamples") == 0)
         {
             rotate_count = atoi(it->second.c_str());
+        }else if (it->first.compare("sampleImageWidth") == 0)
+        {
+            sampleSize.width = atoi(it->second.c_str());
+        }else if (it->first.compare("sampleImageHeight") == 0)
+        {
+            sampleSize.height = atoi(it->second.c_str());
         }
     }
    
@@ -794,6 +812,10 @@ bool TrainerPropertiesI::writeProps()
     props.insert(std::pair<string, string>("weakCount", buff));
     sprintf(buff, "%d", rotate_count);
     props.insert(std::pair<string, string>("rotateSamples", buff));
+    sprintf(buff, "%d", sampleSize.width);
+    props.insert(std::pair<string, string>("sampleImageWidth", buff));
+    sprintf(buff, "%d", sampleSize.height);
+    props.insert(std::pair<string, string>("sampleImageHeight", buff));
 
     falseAlarmRate = maxFalseAlarm;
     recall = minHitRate;

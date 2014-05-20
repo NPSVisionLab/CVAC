@@ -32,8 +32,7 @@ class FileServerTest(unittest.TestCase):
         sys.argv.append('--Ice.Config=config.client')
         self.ic = Ice.initialize(sys.argv)
         properties = self.ic.getProperties()
-        proxyStr = properties.getProperty('FileService.Proxy')
-        print(proxyStr)
+        proxyStr = properties.getProperty('PythonFileService.Proxy')
         base = self.ic.stringToProxy(proxyStr)
         self.fs = cvac.FileServicePrx.checkedCast(base)
         if not self.fs:
@@ -115,7 +114,7 @@ class FileServerTest(unittest.TestCase):
         except cvac.FileServiceException:
             permitted = False
         if permitted:
-            raise RuntimeException("should not have permission to put this file")
+            raise RuntimeError("should not have permission to put this file")
 
         # delete the "put" file on the server
         print('deleteFile')
@@ -129,20 +128,19 @@ class FileServerTest(unittest.TestCase):
     def test_remotePutGetDelete(self):
         print('putFile remote')
         properties = self.ic.getProperties()
-        proxyStr = properties.getProperty('FileService.Proxy')
+        proxyStr = properties.getProperty('PythonFileService.Proxy')
         #need to get the server host to connect to
         remoteHost = os.getenv('CVAC_REMOTE_TEST_SERVER')
         if remoteHost:
             proxyStr = proxyStr + " -h " + remoteHost
-        print(proxyStr)
         base = self.ic.stringToProxy(proxyStr)
         #configStr = "FileService:default -h vision.nps.edu -p 10110"
         baser = self.ic.stringToProxy(proxyStr)
         if not baser:
-            raise RuntimeError("Unknown service?", configStr)
+            raise RuntimeError("Unknown service?", proxyStr)
         fsr = cvac.FileServicePrx.checkedCast(baser)
         if not fsr:
-            raise RuntimeError("Invalid proxy:", configStr)
+            raise RuntimeError("Invalid proxy:", proxyStr)
 
         # read the bytes from TestUsFlag.jpg
         testDir = cvac.DirectoryPath( "testImg" );
@@ -160,7 +158,7 @@ class FileServerTest(unittest.TestCase):
         if fsr.exists( putFilePath):
             raise RuntimeError("File "+putFilePath.filename + 
                                    " exists on remote host "
-                                   + configStr + " remove and rerun test.")
+                                   + proxyStr + " remove and rerun test.")
                 
         try:
             fsr.putFile( putFilePath, bytes );

@@ -18,6 +18,7 @@ BOW_Detector.Proxy=BOW_Detector:tcp -p         ${BOW_DETECTOR_PORT}
 CorpusServer.Proxy=CorpusServer:tcp ${HOST} -p  ${CORPUS_PORT}      
 PythonCorpusService.Proxy=PythonCorpusService:tcp -p ${PYTHON_CORPUS_PORT}
 FileService.Proxy=FileService:tcp ${HOST} -p ${FILE_SERVER_PORT}
+PythonFileService.Proxy=PythonFileService:tcp ${HOST} -p ${PYTHON_FILE_SERVER_PORT}
 RSItrTest_Detector.Proxy=RSItrTest_Detector:tcp ${HOST} -p ${RSITR_TEST_PORT}
 
 VideoValidatorForOpenCVClient.Proxy = VideoValidatorForOpenCV:tcp -p 10108

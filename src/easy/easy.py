@@ -41,8 +41,15 @@ except:
 args = sys.argv
 args.append('--Ice.MessageSizeMax=100000')
 args.append('--Ice.ACM.Client=0')
+# try to find the config.client that specifies what services
+# might be running, their names, etc.
 if os.path.isfile('config.client'):
     args.append('--Ice.Config=config.client')
+else:
+    modulepath = os.path.dirname(__file__)
+    config_client_path = os.path.abspath(modulepath+'/../../config.client')
+    if os.path.isfile(config_client_path):
+        args.append('--Ice.Config='+config_client_path)
 ic = Ice.initialize(args)
 defaultCS = None
 # IF the environment variable is set, then use that else use data
@@ -231,7 +238,7 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
             categories[lb.lab.name] = [lb]
     return (categories, labelList)
 
-def testRunSetIntegrity(runset):
+def testRunSetIntegrity(runset, deleteInvalid=False):
     if type(runset) is dict and not runset['runset'] is None\
         and isinstance(runset['runset'], cvac.RunSet):
         runset = runset['runset']
@@ -246,7 +253,9 @@ def testRunSetIntegrity(runset):
             print("unexpected plist type "+type(plist))
             return False
         else:
-            for lb in plist.labeledArtifacts:                
+            # process list backwards since we might be removing entries
+            for i in xrange(len(plist.labeledArtifacts)-1, -1, -1):
+                lb = plist.labeledArtifacts[i]               
                 labelname  = 'nolabel'
                 if lb.lab.hasLabel != True:
                     print("Warning: " + lb.sub.path.filename + " has no label.")
@@ -270,7 +279,11 @@ def testRunSetIntegrity(runset):
                               + labelname + "\" is out of bounds in file \"" \
                               + lb.sub.path.filename + "\"" \
                               + " (X=" + str(pt.x) + ", Y=" + str(pt.y) + ")")
-                        return False
+                        if deleteInvalid == False:
+                            return False
+                        else:
+                            del plist.labeledArtifacts[i]
+                            break
                  
 #                 else:
 #                     print("File= " + lb.sub.path.filename)

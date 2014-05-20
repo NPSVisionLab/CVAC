@@ -80,7 +80,9 @@ namespace cvac
    * @param sfunc - The function to call to get the size of the image 
    *                when LabelableList has no size data. This can be null.
    * @param result - vector of rectangles returned by the function.
-   * @param square - If the function should return rectangles that are square.  Default is false.
+   * @param square - If the function should return rectangles that are
+   *                 square. Default is false.
+   * @param cvacDataDir - CVAC data folder root
    * @return the number of added rectangles in the result vector. 
    */
    int processLabelArtifactsToRects( LabelableList* artifacts, GetImageSizeFunction sfunc, 

@@ -11,7 +11,7 @@ import cvac
 # corpus_fname file name is relative to the CVAC_DataDir which
 # is set in config.icebox, config.client, and config.service, and
 # which defaults to your installation directory /data.
-objname = 'apple'
+objname = 'windshield'
 #objname = 'bookshelfFrontal'
 corpus_fname = 'corpus/labelme_'+objname+'.properties'
 
@@ -37,7 +37,7 @@ negPurpose = easy.getPurpose('neg')
 trainset = cvac.RunSet()
 easy.addToRunSet(trainset, categories[objname], posPurpose);
 #trainset = easy.createRunSet( categories, purpose=posPurpose );
-flag = easy.testRunSetIntegrity(trainset)
+flag = easy.testRunSetIntegrity(trainset, deleteInvalid=True)
 if flag == False:
     print("failed Integrity test!!!!")
     exit()
