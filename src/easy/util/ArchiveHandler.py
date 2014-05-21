@@ -89,7 +89,7 @@ class DetectorDataArchive(object):
         self.mArchivePath = ""      
     
     def setArchivePath(self,_dir,_prefix):
-        _postfix = (datetime.datetime.now()).strftime("%m%d%y_%H%M")
+        _postfix = (datetime.datetime.now()).strftime("%m%d%y_%H%M%S")
         if _dir: _dir += "/"
         tArchiveName = _prefix + "_" + _postfix + ".zip"
         self.mArchivePath = _dir + tArchiveName
