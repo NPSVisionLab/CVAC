@@ -37,7 +37,7 @@ if __name__ == '__main__' :
         # If we get an error or forced quit we still want to stop the services
         try:
             call([binPath + "/stopServices" + extension], shell=True)
-        except
+        except:
             pass
 
 
