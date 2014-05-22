@@ -29,7 +29,7 @@ if __name__ == '__main__' :
         execfile(demoPath + '/full_image_corpus.py')
         execfile(demoPath + '/bootstrapping.py')
         time.sleep(5)
-        try"
+        try:
             call([binPath + "/stopServices" + extension], shell=True)
         except:
             pass
