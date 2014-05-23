@@ -21,11 +21,11 @@ then
 fi
 
 # C/C++ and Java services, via icebox admin
-if [ "${START_ICE_SERVICES}" == "1" ]
+if [ "@START_ICE_SERVICES@" == "1" ]
 then
     ${ICEDIR}/bin/iceboxadmin --Ice.Config=config.admin shutdown
 fi
-if [ "${START_JAVA_SERVICES}" == "1" ]
+if [ "@START_JAVA_SERVICES@" == "1" ]
 then
     ${ICEDIR}/bin/iceboxadmin --Ice.Config=config.java_admin shutdown
 fi
