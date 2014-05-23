@@ -318,14 +318,8 @@ IF( PYTHONINTERP_FOUND AND WIN32 )
             ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
 
   ENDIF (WIN32)
-  # And the directory the cv2 file came from
-  GET_FILENAME_COMPONENT( OPENCV_PY_DIR ${OPENCV_PY_LIB} PATH )
-  FIND_FILE( OPENCV_PY_PY cv.py HINTS ${OPENCV_PY_DIR} )
-  IF( NOT OPENCV_PY_LIB OR NOT OPENCV_PY_PY )
-    MESSAGE( SEND_ERROR "Need cv2.pyd or cv2.so and cv.py from OpenCV" )
-  ENDIF()
-
 ENDIF()
+
 
 ## Setup the config.service and config.icebox files based upon detectors
 ## selected by the user.  These CF_ variables are defined in the config files

@@ -34,7 +34,6 @@ CONFIGURE_FILE( stopIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/stopIcebox.
 CONFIGURE_FILE( startServices.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/startServices.${SCRIPT_EXT} @ONLY )
 CONFIGURE_FILE( stopServices.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/stopServices.${SCRIPT_EXT} @ONLY )
 
-INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
         INSTALL(PROGRAMS
@@ -99,6 +98,8 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/cvac")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 
+
+INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 # Next copy over easy. Since these files are not sliced then do it now
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
