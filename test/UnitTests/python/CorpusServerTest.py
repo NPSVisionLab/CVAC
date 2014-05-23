@@ -43,7 +43,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
         sys.argv.append('--Ice.Config=config.client')
         self.ic = Ice.initialize(sys.argv)
         properties = self.ic.getProperties()
-        proxyStr = properties.getProperty('CorpusServer.Proxy')
+        proxyStr = properties.getProperty('PythonCorpusService.Proxy')
         base = self.ic.stringToProxy(proxyStr)
         self.cs = cvac.CorpusServicePrx.checkedCast(base)
         if not self.cs:
@@ -54,7 +54,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # note that this doesn't try to create a local mirror which would download
     # the entire Caltech101 data set
     #
-    def test_openCorpus(self):
+    def xtest_openCorpus(self):
         print('openCorpus')
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "Caltech101.properties" )
@@ -95,7 +95,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # Test obtaining a Labelable set: first, expect a failure because the corpus
     # is not downloaded yet (local mirror)
     #
-    def test_getDataSet(self):
+    def xtest_getDataSet(self):
         print('getDataSet')
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile1 = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
@@ -121,7 +121,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     #
     # Does this corpus need a download to create local metadata?
     #
-    def test_getDataSetRequiresLocalMirror(self):
+    def xtest_getDataSetRequiresLocalMirror(self):
         print('getDataSetRequiresLocalMirror')
         # try with one where we do expect it:
         dataRoot = cvac.DirectoryPath( "corpus" );
@@ -144,7 +144,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     # Has a local mirror already been created?  This will return true only
     # if this corpus requires a download, not for one that is local to begin with.
     #
-    def test_localMirrorExists(self):
+    def xtest_localMirrorExists(self):
         print('localMirrorExists')
         # try with one where we expect the mirror to exist already,
         # mainly because test_createLocalMirror has been called already
@@ -161,7 +161,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     #
     # Obtain a local mirror of the data set.
     #
-    def test_createLocalMirror(self):
+    def xtest_createLocalMirror(self):
         print('createLocalMirror')
         dataRoot = cvac.DirectoryPath( "corpus" );
         corpusConfigFile = cvac.FilePath( dataRoot, "CvacCorpusTest.properties" )
@@ -193,11 +193,14 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     #
     def test_createCorpus(self):
         print('createCorpus')
-        corpusTestDir = cvac.DirectoryPath( "corpusTestDir" );
+        corpusTestDir = cvac.DirectoryPath( "easyTestData" );
         corpus3 = self.cs.createCorpus( corpusTestDir )
         if not corpus3:
             raise RuntimeError("could not create corpus from path '"
-                               +dataRoot.relativePath+"/"+corpusTestDir+"'")
+                               +corpusTestDir.relativePath+"/"+corpusTestDir+"'")
+        labels = self.cs.getDataSet(corpus3)
+        if not labels or len(labels) == 0:
+            raise RuntimeError("no labels back from createCorpus(easyTestData)")
         
 
     def tearDown(self):

@@ -21,6 +21,7 @@ import Ice
 import Ice
 import IcePy
 import cvac
+from util import misc
 import unittest
 import stat
 import threading
@@ -65,10 +66,12 @@ def getFSPath( cvacPath ):
         cvacPath = cvacPath.path
     if isinstance( cvacPath, str ):
         path = CVAC_DataDir+"/"+cvacPath
-    elif not cvacPath.directory.relativePath:
-        path = CVAC_DataDir+"/"+cvacPath.filename
-    else:
+    elif isinstance(cvacPath, cvac.FilePath):
         path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
+    elif isinstance(cvacPath, cvac.DirectoryPath):
+        RuntimeError("Error giving getFSPath with just a directoryPath")
+    else:
+        path = CVAC_DataDir+"/"+cvacPath.filename
     return path
 
 def getCvacPath( fsPath ):
@@ -114,6 +117,21 @@ def getLabelable( filepath, labelText=None ):
     labelable = cvac.Labelable( 0.0, label, substrate )
     return labelable
 
+def getLabelableList(dirpath, recursive=True, video=True, image=True):
+    '''Return a list of Labelables contained within the directory (optionally recursively)'''
+    if type(dirpath) is str:
+        if dirpath.startswith(CVAC_DataDir +'/'):
+            strpath = dirpath
+        else:
+            strpath = getFSPath(dirpath)
+    elif type(dirpath) is cvac.DirectoryPath:
+        strpath = dirpath.relativePath
+    res = []
+    misc.searchDir(res, strpath, recursive, video, image)
+    return res
+    
+        
+
 def getCorpusServer( configstr ):
     '''Connect to a Corpus server based on the given configuration string'''
     proxyStr = getProxyString(configstr)
@@ -130,9 +148,9 @@ def getDefaultCorpusServer():
     global defaultCS
     if not defaultCS:
         #first try configured Corpus Server
-        proxstr = getProxyString("CorpusServer")
+        proxstr = getProxyString("PythonCorpusService")
         if not proxstr:
-            defaultCS = getCorpusServer( "CorpusServer:default -p 10011" )
+            defaultCS = getCorpusServer( "PythonCorpusService:default -p 10011" )
         else:
             defaultCS = getCorpusServer( proxstr)
     return defaultCS
@@ -271,19 +289,19 @@ def testRunSetIntegrity(runset, deleteInvalid=False):
                     
                 if lb.sub.height>0:
                     maxY = lb.sub.height
-                
-                for pt in lb.loc.points:
-                    if (pt.x < minX) or (pt.y < minY) \
-                    or (pt.x >= maxX) or (pt.y >= maxY):
-                        print("Warning: label \"" \
+                if isinstance(lb, cvac.LabeledLocation) == True:
+                    for pt in lb.loc.points:
+                        if (pt.x < minX) or (pt.y < minY) \
+                        or (pt.x >= maxX) or (pt.y >= maxY):
+                            print("Warning: label \"" \
                               + labelname + "\" is out of bounds in file \"" \
                               + lb.sub.path.filename + "\"" \
                               + " (X=" + str(pt.x) + ", Y=" + str(pt.y) + ")")
-                        if deleteInvalid == False:
-                            return False
-                        else:
-                            del plist.labeledArtifacts[i]
-                            break
+                            if deleteInvalid == False:
+                                return False
+                            else:
+                                del plist.labeledArtifacts[i]
+                                break
                  
 #                 else:
 #                     print("File= " + lb.sub.path.filename)
@@ -615,16 +633,16 @@ def getDefaultFileServer( detector ):
     if not host:
         host = "localhost"
 
-    proxyStr = getProxyString('FileService')
+    proxyStr = getProxyString('PythonFileService')
     if not proxyStr:
         # get the FileServer at said host at the default port
-        configString = "FileService:default -h "+host+" -p 10110"
+        configString = "PythonFileService:default -h "+host+" -p 10110"
     else:
         configString = proxyStr
     try:
         fs = getFileServer( configString )
     except RuntimeError:
-        raise RuntimeError( "No default FileServer at the detector's host",
+        raise RuntimeError( "No default Python FileServer at the detector's host",
                             host, "on port 10110" )
     return fs
 

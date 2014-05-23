@@ -454,7 +454,8 @@ bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>&
     }
 
     is.seekg (0, is.end);
-    int tBuffSize = is.tellg();
+    //int tBuffSize = is.tellg();
+    streampos tBuffSize = is.tellg();
     is.seekg (0, is.beg);
     char* tBuff = new char[tBuffSize]; 
     if(tBuff == 0 || tBuff == NULL)

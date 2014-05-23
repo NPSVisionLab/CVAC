@@ -17,10 +17,8 @@ if not exist "%LOCKFILE%" (
     echo "CVAC services supposedly have not been started (there is no file '%LOCKFILE%')."
     echo "Trying to stop them anyway..."
 )
-if "${START_ICE_SERVICES}" == "1" (
-    "%ICEDIR%/bin/iceboxadmin.exe" --Ice.Config=config.admin shutdown
-)
-if "${START_JAVA_SERVICES}" == "1" (
+"%ICEDIR%/bin/iceboxadmin.exe" --Ice.Config=config.admin shutdown
+if "@START_JAVA_SERVICES@" == "1" (
     "%ICEDIR%/bin/iceboxadmin.exe" --Ice.Config=config.java_admin shutdown
 )
 c:\windows\system32\taskkill.exe /FI "WINDOWTITLE eq CVAC Service*"
