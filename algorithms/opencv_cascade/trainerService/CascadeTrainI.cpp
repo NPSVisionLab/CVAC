@@ -94,7 +94,6 @@ CascadeTrainI::CascadeTrainI()
 
 CascadeTrainI::~CascadeTrainI()
 {
-  mAdapter->deactivate();
   delete mTrainProps;
 }
 
