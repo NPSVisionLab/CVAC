@@ -69,7 +69,7 @@ def getFSPath( cvacPath ):
     elif isinstance(cvacPath, cvac.FilePath):
         path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
     elif isinstance(cvacPath, cvac.DirectoryPath):
-        RuntimeError("Error giving getFSPath with just a directoryPath")
+        path = CVAC_DataDir+"/"+cvacPath.relativePath;
     else:
         path = CVAC_DataDir+"/"+cvacPath.filename
     return path
@@ -173,7 +173,7 @@ def openCorpus( corpusPath, corpusServer=None ):
         corpus = corpusServer.createCorpus( cvacPath )
         if not corpus:
             raise RuntimeError("Could not create corpus from directory at '"
-                               + getFSPath( cvacPath ))
+                               + corpusPath)
     else:
         # open an existing corpus
         cvacPath = getCvacPath( corpusPath )
