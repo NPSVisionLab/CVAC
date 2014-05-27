@@ -16,8 +16,9 @@ INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 OPTION(BUILD_WITH_BOW "Build a Bag of Words trainer and detector (requires OpenCV)" ON)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Build the OpenCV Cascade trainer and detector" ON)
-OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" ON) 
-OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" ON) 
+OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" OFF) 
+OPTION(BUILD_FILESERVER_PYTHON "Configure a Python File Server (generally for servers)" ON) 
+OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" OFF) 
 OPTION(BUILD_CORPUS_SERVICE_PYTHON "Configure a Python Corpus Server" ON) 
 OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
 OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" ON)
@@ -317,14 +318,8 @@ IF( PYTHONINTERP_FOUND AND WIN32 )
             ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
 
   ENDIF (WIN32)
-  # And the directory the cv2 file came from
-  GET_FILENAME_COMPONENT( OPENCV_PY_DIR ${OPENCV_PY_LIB} PATH )
-  FIND_FILE( OPENCV_PY_PY cv.py HINTS ${OPENCV_PY_DIR} )
-  IF( NOT OPENCV_PY_LIB OR NOT OPENCV_PY_PY )
-    MESSAGE( SEND_ERROR "Need cv2.pyd or cv2.so and cv.py from OpenCV" )
-  ENDIF()
-
 ENDIF()
+
 
 ## Setup the config.service and config.icebox files based upon detectors
 ## selected by the user.  These CF_ variables are defined in the config files
@@ -400,6 +395,7 @@ MATH(EXPR BOW_DETECTOR_PORT "${CVAC_FIRST_SERVICE_PORT}+104")
 MATH(EXPR CORPUS_PORT "${CVAC_FIRST_SERVICE_PORT}+11")
 MATH(EXPR PYTHON_CORPUS_PORT "${CVAC_FIRST_SERVICE_PORT}+21")
 MATH(EXPR FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+110")
+MATH(EXPR PYTHON_FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+111")
 MATH(EXPR RSITR_TEST_PORT "${CVAC_FIRST_SERVICE_PORT}+109")
 
 # the configuration of config.{icebox,service} must come after including the

@@ -29,9 +29,15 @@ if __name__ == '__main__' :
         execfile(demoPath + '/full_image_corpus.py')
         execfile(demoPath + '/bootstrapping.py')
         time.sleep(5)
-        call([binPath + "/stopServices" + extension], shell=True)
+        try:
+            call([binPath + "/stopServices" + extension], shell=True)
+        except:
+            pass
     except:
         # If we get an error or forced quit we still want to stop the services
-        call([binPath + "/stopServices" + extension], shell=True)
+        try:
+            call([binPath + "/stopServices" + extension], shell=True)
+        except:
+            pass
 
 

@@ -614,7 +614,7 @@ std::string cvac::getDateFilename( const std::string &basedir,
     time(&curtime);
     timeinfo = localtime(&curtime);
     //Format is MMDDYY_HHMM
-    strftime(tempName, 128, "%m%d%y_%H%M", timeinfo);
+    strftime(tempName, 128, "%m%d%y_%H%M%S", timeinfo);
     std::string result;
     std::string filename;
     if (prefix.empty())

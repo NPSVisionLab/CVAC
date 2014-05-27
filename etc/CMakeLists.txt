@@ -32,8 +32,8 @@ ENDIF (WIN32)
 CONFIGURE_FILE( startIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/startIcebox.${SCRIPT_EXT} )
 CONFIGURE_FILE( stopIcebox.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/stopIcebox.${SCRIPT_EXT} )
 CONFIGURE_FILE( startServices.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/startServices.${SCRIPT_EXT} @ONLY )
+CONFIGURE_FILE( stopServices.${SCRIPT_EXT}.in  ${CMAKE_SOURCE_DIR}/bin/stopServices.${SCRIPT_EXT} @ONLY )
 
-INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
         INSTALL(PROGRAMS
@@ -54,20 +54,40 @@ IF( BUILD_CORPUS_SERVICE_PYTHON)
              REGEX "src/easy/corpus_service.py")
         IF (FILE_STRINGS STREQUAL "")
             FILE(APPEND "${CMAKE_SOURCE_DIR}/python.config" 
-                 "src/easy/corpus_service.py")
+                 "src/easy/corpus_service.py\n")
         ENDIF (FILE_STRINGS STREQUAL "")
     ELSE (EXISTS "${CMAKE_SOURCE_DIR}/python.config")
         FILE(WRITE "${CMAKE_SOURCE_DIR}/python.config" 
-             "src/easy/corpus_service.py")
-        #Since we created it we have to install as well
-        IF (NOT BUILD_3RDPARTY_PACKAGE)
-            INSTALL(FILES ${CMAKE_SOURCE_DIR}/python.config
-               DESTINATION .
-               COMPONENT Runtime
-               )
-        ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
+             "src/easy/corpus_service.py\n")
     ENDIF (EXISTS "${CMAKE_SOURCE_DIR}/python.config")
 ENDIF( BUILD_CORPUS_SERVICE_PYTHON)
+
+IF( BUILD_FILESERVER_PYTHON)
+    # Add to the python config file since the python fileserver requires it.
+    # If it already exists add to the end else create it
+    IF (EXISTS "${CMAKE_SOURCE_DIR}/python.config")
+        #If we don't have the string fileservice add it
+        SET (FILE_STRINGS "")
+        FILE(STRINGS "${CMAKE_SOURCE_DIR}/python.config" FILE_STRINGS  
+             REGEX "src/easy/fileserver.py")
+        IF (FILE_STRINGS STREQUAL "")
+            FILE(APPEND "${CMAKE_SOURCE_DIR}/python.config" 
+                 "src/easy/fileserver.py\n")
+        ENDIF (FILE_STRINGS STREQUAL "")
+    ELSE (EXISTS "${CMAKE_SOURCE_DIR}/python.config")
+        FILE(WRITE "${CMAKE_SOURCE_DIR}/python.config" 
+             "src/easy/fileserver.py\n")
+    ENDIF (EXISTS "${CMAKE_SOURCE_DIR}/python.config")
+ENDIF( BUILD_FILESERVER_PYTHON)
+
+IF( BUILD_FILESERVICE_PYTHON OR BUILD_CORPUS_SERVICE_PYTHON)
+    IF (NOT BUILD_3RDPARTY_PACKAGE)
+        INSTALL(FILES ${CMAKE_SOURCE_DIR}/python.config
+           DESTINATION .
+           COMPONENT Runtime
+           )
+    ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
+ENDIF( BUILD_FILESERVICE_PYTHON OR BUILD_CORPUS_SERVICE_PYTHON)
 
 # We need to copy cvac, Ice, and easy to the build directory for packing
 # python distribution.
@@ -78,6 +98,8 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/cvac")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 
+
+INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 # Next copy over easy. Since these files are not sliced then do it now
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
@@ -104,9 +126,9 @@ IF (WIN32)
 ELSE (WIN32)
     SET (PREFIX_CMD "--prefix=${CMAKE_INSTALL_PREFIX}")
 ENDIF (WIN32)
-CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_SOURCE_DIR}/PostInstall.cmake)
+CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/PostInstall.cmake)
 
-INSTALL(SCRIPT "PostInstall.cmake")
+INSTALL(SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/PostInstall.cmake")
 
 IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
 ENDIF ()

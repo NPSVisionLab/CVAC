@@ -12,6 +12,7 @@ import os
 import re
 import sys, traceback
 import shutil
+import datetime
 # paths should setup the PYTHONPATH.  If you special requirements
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
@@ -20,6 +21,7 @@ import Ice
 import Ice
 import IcePy
 import cvac
+from util import misc
 import unittest
 import stat
 import threading
@@ -64,10 +66,12 @@ def getFSPath( cvacPath ):
         cvacPath = cvacPath.path
     if isinstance( cvacPath, str ):
         path = CVAC_DataDir+"/"+cvacPath
-    elif not cvacPath.directory.relativePath:
-        path = CVAC_DataDir+"/"+cvacPath.filename
-    else:
+    elif isinstance(cvacPath, cvac.FilePath):
         path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
+    elif isinstance(cvacPath, cvac.DirectoryPath):
+        path = CVAC_DataDir+"/"+cvacPath.relativePath;
+    else:
+        path = CVAC_DataDir+"/"+cvacPath.filename
     return path
 
 def getCvacPath( fsPath ):
@@ -113,6 +117,21 @@ def getLabelable( filepath, labelText=None ):
     labelable = cvac.Labelable( 0.0, label, substrate )
     return labelable
 
+def getLabelableList(dirpath, recursive=True, video=True, image=True):
+    '''Return a list of Labelables contained within the directory (optionally recursively)'''
+    if type(dirpath) is str:
+        if dirpath.startswith(CVAC_DataDir +'/'):
+            strpath = dirpath
+        else:
+            strpath = getFSPath(dirpath)
+    elif type(dirpath) is cvac.DirectoryPath:
+        strpath = dirpath.relativePath
+    res = []
+    misc.searchDir(res, strpath, recursive, video, image)
+    return res
+    
+        
+
 def getCorpusServer( configstr ):
     '''Connect to a Corpus server based on the given configuration string'''
     proxyStr = getProxyString(configstr)
@@ -129,9 +148,9 @@ def getDefaultCorpusServer():
     global defaultCS
     if not defaultCS:
         #first try configured Corpus Server
-        proxstr = getProxyString("CorpusServer")
+        proxstr = getProxyString("PythonCorpusService")
         if not proxstr:
-            defaultCS = getCorpusServer( "CorpusServer:default -p 10011" )
+            defaultCS = getCorpusServer( "PythonCorpusService:default -p 10011" )
         else:
             defaultCS = getCorpusServer( proxstr)
     return defaultCS
@@ -154,7 +173,7 @@ def openCorpus( corpusPath, corpusServer=None ):
         corpus = corpusServer.createCorpus( cvacPath )
         if not corpus:
             raise RuntimeError("Could not create corpus from directory at '"
-                               + getFSPath( cvacPath ))
+                               + corpusPath)
     else:
         # open an existing corpus
         cvacPath = getCvacPath( corpusPath )
@@ -270,19 +289,19 @@ def testRunSetIntegrity(runset, deleteInvalid=False):
                     
                 if lb.sub.height>0:
                     maxY = lb.sub.height
-                
-                for pt in lb.loc.points:
-                    if (pt.x < minX) or (pt.y < minY) \
-                    or (pt.x >= maxX) or (pt.y >= maxY):
-                        print("Warning: label \"" \
+                if isinstance(lb, cvac.LabeledLocation) == True:
+                    for pt in lb.loc.points:
+                        if (pt.x < minX) or (pt.y < minY) \
+                        or (pt.x >= maxX) or (pt.y >= maxY):
+                            print("Warning: label \"" \
                               + labelname + "\" is out of bounds in file \"" \
                               + lb.sub.path.filename + "\"" \
                               + " (X=" + str(pt.x) + ", Y=" + str(pt.y) + ")")
-                        if deleteInvalid == False:
-                            return False
-                        else:
-                            del plist.labeledArtifacts[i]
-                            break
+                            if deleteInvalid == False:
+                                return False
+                            else:
+                                del plist.labeledArtifacts[i]
+                                break
                  
 #                 else:
 #                     print("File= " + lb.sub.path.filename)
@@ -614,16 +633,16 @@ def getDefaultFileServer( detector ):
     if not host:
         host = "localhost"
 
-    proxyStr = getProxyString('FileService')
+    proxyStr = getProxyString('PythonFileService')
     if not proxyStr:
         # get the FileServer at said host at the default port
-        configString = "FileService:default -h "+host+" -p 10110"
+        configString = "PythonFileService:default -h "+host+" -p 10110"
     else:
         configString = proxyStr
     try:
         fs = getFileServer( configString )
     except RuntimeError:
-        raise RuntimeError( "No default FileServer at the detector's host",
+        raise RuntimeError( "No default Python FileServer at the detector's host",
                             host, "on port 10110" )
     return fs
 
@@ -927,6 +946,72 @@ class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
     def foundNewResults(self, r2, current=None):
         # collect all results
         self.allResults.extend( r2.results )
+        
+def getBestDetectorData(dicRocData,dPrec,dRec,saveROC = False):
+    if len(dicRocData)<1 | len(dicRocData[str(0)])!=5:
+        raise RuntimeError("RoC Data must include at least three elements in a row: detectorData, x-axis and y-axis")
+    
+    for nWord,rocValues in dicRocData.items():    
+        tp = float(rocValues[1])
+        fp = float(rocValues[2])
+        tn = float(rocValues[3])
+        fn = float(rocValues[4])
+        xaxis = 0.0
+        if (tp+fp)!=0:
+            xaxis = fp/(tp+fp)
+        else:
+            raise RuntimeError("Invalid RoC data: (tp+fp) = 0")
+        yaxis = 0
+        if (tp+fn)!=0:
+            yaxis = tp/(tp+fn)
+        else:
+            raise RuntimeError("Invalid RoC data: (tp+fn) = 0")       
+        dicRocData[nWord].extend([xaxis,yaxis])       
+      
+    yaxisMax = -0.1
+    bestDetectorData = None
+    for nWord,rocValues in dicRocData.items():        
+        xaxis = rocValues[5]
+        yaxis = rocValues[6]
+        if xaxis <= (1 - dPrec):
+            if yaxisMax < yaxis:
+                yaxisMax = yaxis
+                bestDetectorData = rocValues[0]
+    
+    yaxisMax = -0.1
+    xaxisMin = 1.1     
+    resMsg = None   
+    if bestDetectorData == None:    
+        for nWord,rocValues in dicRocData.items():
+            xaxis = rocValues[5]
+            yaxis = rocValues[6]
+            if xaxis < xaxisMin:
+                xaxisMin= xaxis
+                yaxisMax = yaxis
+                bestDetectorData = rocValues[0]
+            elif xaxis == xaxisMin:
+                if yaxisMax < yaxis:
+                    yaxisMax = yaxis
+                    bestDetectorData = rocValues[0]
+        resMsg = "Most likely detectorData is " + bestDetectorData.filename
+    else:
+        resMsg = "The best detectorData is " + bestDetectorData.filename
+    
+    if saveROC == True: 
+        fpathROC = CVAC_DataDir+"/"\
+        +bestDetectorData.directory.relativePath+"/"\
+        +"RocTable_"\
+        +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S") + ".txt"                 
+        f = open(fpathROC,'w')        
+        for nWord,rocValues in dicRocData.items():
+            f.write(rocValues[0].filename + '\t')
+            f.write(str(rocValues[5]) + '\t')
+            f.write(str(rocValues[6]) + '\n')
+        f.write(resMsg)            
+        f.close()        
+    
+    print(resMsg)
+    return bestDetectorData
 
 def detect( detector, detectorData, runset, detectorProperties=None, callbackRecv=None ):
     '''
@@ -947,8 +1032,22 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
         detectorData = getCvacPath( "" )
     elif type(detectorData) is str:
         detectorData = getCvacPath( detectorData )
+    elif isinstance(detectorData, dict):
+        if detectorProperties == None:
+            raise RuntimeError("For selecting the best detectorData, " + \
+                               "detectorProperties including desired precision " + \
+                               "and recall must be entered")
+        dPre = -1.0
+        dRec = -1.0
+        if detectorProperties.props.get("Desired_Precision") is not None:
+            dPre = float(detectorProperties.props.get("Desired_Precision"))
+        if detectorProperties.props.get("Desired_Recall") is not None:
+            dRec = float(detectorProperties.props.get("Desired_Recall"))
+        if (dPre<0) | (dPre>1.0) | (dRec<0) | (dRec>1.0):
+            raise RuntimeError("Inapporopriate values for desired recall and precision")
+        detectorData = getBestDetectorData(detectorData,dPre,dRec,True)
     elif not type(detectorData) is cvac.FilePath:
-        raise RuntimeError("detectorData must be either filename or cvac.FilePath")
+        raise RuntimeError("detectorData must be filename, cvac.FilePath, or RoC data")
 
     # if not given an actual cvac.RunSet, try to create a RunSet
     if isinstance(runset, cvac.RunSet):

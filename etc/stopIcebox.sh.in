@@ -14,8 +14,14 @@ export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_ROOT_DIR}/lib"
 cd ${CVAC_ROOT_DIR}
 
 # C/C++ and Java services, via icebox admin
-${ICE_BOX_ADMIN} --Ice.Config=config.admin shutdown
-${ICE_BOX_ADMIN} --Ice.Config=config.java_admin shutdown
+if [ "${START_ICE_SERVICES}" == "1" ]
+then
+    ${ICE_BOX_ADMIN} --Ice.Config=config.admin shutdown
+fi
+if [ "${START_JAVA_SERVICES}" == "1" ]
+then
+    ${ICE_BOX_ADMIN} --Ice.Config=config.java_admin shutdown
+fi
 
 # Python services that are listed in python.config
 if [ "${PYTHON_EXECUTABLE}" != "" ] && [ -f "${CMAKE_SOURCE_DIR}/python.config" ]
