@@ -35,7 +35,9 @@ then
             pkill -f "${PYTHON_EXECUTABLE} $LINE"
         else
             # echo killall $LINE
-            killall $LINE
+            for X in `ps -ef | grep -m 1 -i $LINE | awk {'print $2'}`; do
+                kill $X;
+            done
         fi
     done
 fi
