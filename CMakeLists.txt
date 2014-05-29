@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.6)
+#CPACK_PACKAGE_FILE_NAME requires this
+cmake_minimum_required(VERSION 2.8.6)
 
 cmake_policy( SET CMP0012 NEW)
 
