@@ -947,32 +947,66 @@ class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
         # collect all results
         self.allResults.extend( r2.results )
         
-def getBestDetectorData(dicRocData,dPrec,dRec,saveROC = False):
-    if len(dicRocData)<1 | len(dicRocData[str(0)])!=5:
-        raise RuntimeError("RoC Data must include at least three elements in a row: detectorData, x-axis and y-axis")
-    
-    for nWord,rocValues in dicRocData.items():    
-        tp = float(rocValues[1])
-        fp = float(rocValues[2])
-        tn = float(rocValues[3])
-        fn = float(rocValues[4])
-        xaxis = 0.0
+        
+def discardSuboptimal(perfdata,saveRelativeDir = None):    
+    ptsROC = []    
+    for data in perfdata:
+        tp = float(data.res.tp)
+        fp = float(data.res.fp)
+        tn = float(data.res.tn)
+        fn = float(data.res.fn)
+        xaxis = 1.0
         if (tp+fp)!=0:
             xaxis = fp/(tp+fp)
         else:
-            raise RuntimeError("Invalid RoC data: (tp+fp) = 0")
-        yaxis = 0
+            print("Warning: " + "Invalid RoC data: (tp+fp) = 0")
+            #raise RuntimeError("Invalid RoC data: (tp+fp) = 0")        
+        yaxis = 0.0
         if (tp+fn)!=0:
             yaxis = tp/(tp+fn)
         else:
-            raise RuntimeError("Invalid RoC data: (tp+fn) = 0")       
-        dicRocData[nWord].extend([xaxis,yaxis])       
-      
+            print("Warning: " + "Invalid RoC data: (tp+fn) = 0")
+            #raise RuntimeError("Invalid RoC data: (tp+fn) = 0")
+        ptsROC.append([xaxis,yaxis,tp,fp,tn,fn])
+        
+    index_optimal = []
+    for i in range(0,len(ptsROC)):
+        flagOpt = True
+        for j in range(0,len(ptsROC)):
+            if j==i:
+                continue
+            elif ptsROC[j][1]<ptsROC[i][1]:
+                continue
+            elif ptsROC[j][0]<ptsROC[i][0]:
+                flagOpt = False
+                break
+        
+        if flagOpt==True:
+            index_optimal.append(i)
+            
+    if saveRelativeDir is not None: 
+        fpathROC = CVAC_DataDir+"/"\
+        +saveRelativeDir+"/"\
+        +"RocTable_Full_"\
+        +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S") + ".txt"                 
+        f = open(fpathROC,'w')        
+        for pt in ptsROC:
+            f.write(str(pt[0]) + '\t')
+            f.write(str(pt[1]) + '\n')  
+        f.close() 
+            
+    return ptsROC,index_optimal
+
+        
+def getBestDetectorData(listRocData,dPrec,dRec,saveFlag = False):
+    if len(listRocData)<1 | len(listRocData[0])<3:
+        raise RuntimeError("RoC Data must include at least three elements in a row: detectorData, x-axis and y-axis")
+             
     yaxisMax = -0.1
     bestDetectorData = None
-    for nWord,rocValues in dicRocData.items():        
-        xaxis = rocValues[5]
-        yaxis = rocValues[6]
+    for rocValues in listRocData:        
+        xaxis = rocValues[1]
+        yaxis = rocValues[2]
         if xaxis <= (1 - dPrec):
             if yaxisMax < yaxis:
                 yaxisMax = yaxis
@@ -982,9 +1016,9 @@ def getBestDetectorData(dicRocData,dPrec,dRec,saveROC = False):
     xaxisMin = 1.1     
     resMsg = None   
     if bestDetectorData == None:    
-        for nWord,rocValues in dicRocData.items():
-            xaxis = rocValues[5]
-            yaxis = rocValues[6]
+        for rocValues in listRocData:
+            xaxis = rocValues[1]
+            yaxis = rocValues[2]
             if xaxis < xaxisMin:
                 xaxisMin= xaxis
                 yaxisMax = yaxis
@@ -997,21 +1031,24 @@ def getBestDetectorData(dicRocData,dPrec,dRec,saveROC = False):
     else:
         resMsg = "The best detectorData is " + bestDetectorData.filename
     
-    if saveROC == True: 
+    if saveFlag == True: 
         fpathROC = CVAC_DataDir+"/"\
         +bestDetectorData.directory.relativePath+"/"\
         +"RocTable_"\
-        +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S") + ".txt"                 
+        +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S")\
+        +"_pre=" + str(dPrec)+"_"\
+        +"rec=" + str(dRec)+".txt"                 
         f = open(fpathROC,'w')        
-        for nWord,rocValues in dicRocData.items():
+        for rocValues in listRocData:
             f.write(rocValues[0].filename + '\t')
-            f.write(str(rocValues[5]) + '\t')
-            f.write(str(rocValues[6]) + '\n')
+            f.write(str(rocValues[1]) + '\t')
+            f.write(str(rocValues[2]) + '\n')
         f.write(resMsg)            
         f.close()        
     
     print(resMsg)
     return bestDetectorData
+
 
 def detect( detector, detectorData, runset, detectorProperties=None, callbackRecv=None ):
     '''
@@ -1032,17 +1069,13 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
         detectorData = getCvacPath( "" )
     elif type(detectorData) is str:
         detectorData = getCvacPath( detectorData )
-    elif isinstance(detectorData, dict):
+    elif isinstance(detectorData, list):
         if detectorProperties == None:
             raise RuntimeError("For selecting the best detectorData, " + \
                                "detectorProperties including desired precision " + \
                                "and recall must be entered")
-        dPre = -1.0
-        dRec = -1.0
-        if detectorProperties.props.get("Desired_Precision") is not None:
-            dPre = float(detectorProperties.props.get("Desired_Precision"))
-        if detectorProperties.props.get("Desired_Recall") is not None:
-            dRec = float(detectorProperties.props.get("Desired_Recall"))
+        dPre = detectorProperties.falseAlarmRate
+        dRec = detectorProperties.recall
         if (dPre<0) | (dPre>1.0) | (dRec<0) | (dRec>1.0):
             raise RuntimeError("Inapporopriate values for desired recall and precision")
         detectorData = getBestDetectorData(detectorData,dPre,dRec,True)
