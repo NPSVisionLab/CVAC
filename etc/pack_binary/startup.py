@@ -1,4 +1,3 @@
-#!/usr/bin/python2.6
 import sys
 import inspect
 import os
@@ -44,7 +43,7 @@ if __name__ == '__main__':
             silent = True
         elif opt == '-v':
             virtualDir = arg
-        elif opt == 'p':
+        elif opt == '-p':
             pythonExec = arg
 
     # get this file's path:
@@ -60,7 +59,7 @@ if __name__ == '__main__':
 
     #check if we have the correct python version
     versionNum = sys.hexversion
-    if versionNum < 0x02060000 or versionNum >= 0x02080000:
+    if versionNum < 0x02060800 or versionNum >= 0x02070000:
         # bring up the gui to install python
         import installPython
 
