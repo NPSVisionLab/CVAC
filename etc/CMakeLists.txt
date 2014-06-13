@@ -44,6 +44,10 @@ IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
          )
 ENDIF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
 
+INCLUDE (UserCMakeLists.txt OPTIONAL)
+
+# This code has to be after the UserCMakeLists.txt include as it modifies
+# python.config that the include creates.
 IF( BUILD_CORPUS_SERVICE_PYTHON)
     # Add to the python config file since the python corpus server requires it.
     # If it already exists add to the end else create it
@@ -99,7 +103,6 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/cvac")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
 
 
-INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 # Next copy over easy. Since these files are not sliced then do it now
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
