@@ -33,6 +33,8 @@ TARGET_LINK_LIBRARIES(${APP_NAME}
                       utils
                       ${ICE_LIBRARIES}
                      )
+ADD_DEPENDENCIES(${APP_NAME} ${SLICE_FILES})
+SET_PROPERTY(SOURCE Client.cpp APPEND PROPERTY OBJECT_DEPENDS ${SLICE_FILES})
 
 SET_TARGET_PROPERTIES(${APP_NAME} PROPERTIES DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}")
 # since I can't get CMake RPATH to work, invoke a custom command:
@@ -94,10 +96,12 @@ IF (BUILD_WITH_BOW)
              )
     SET_TESTS_PROPERTIES( detectorClient_BowDetector_Verify
           PROPERTIES ENVIRONMENT "PATH=${ENV_PATH}" )
-    INSTALL( FILES ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT}
+    IF( NOT ${BUILD_3RDPARTY_PACKAGE} )
+        INSTALL( FILES ${CVAC_ROOT_DIR}/bin/runIceTest.${SCRIPT_EXT}
                    DESTINATION bin
                    COMPONENT Runtime
                  )
+    ENDIF( NOT ${BUILD_3RDPARTY_PACKAGE} )
 ENDIF (BUILD_WITH_BOW)
 
 ## Positive-Image Live-Verification for Detectors ###

@@ -35,9 +35,10 @@ EXECUTE_PROCESS( COMMAND git rev-parse --abbrev-ref HEAD
 IF ( NOT CVAC_GIT_BRANCH )
   MESSAGE( SEND_ERROR "Error obtaining git branch name; cannot create package" )
 ENDIF()
+set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
+
 IF ( ${CVAC_GIT_BRANCH} STREQUAL "devel" )
-  set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION}-devel)
-  set(CVAC_VERSION_DIR ${CVAC_VERSION_DIR}-devel)
+  set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}-devel)
 ENDIF()
 
 # If Windows 8 then add -W8 to version
@@ -45,10 +46,12 @@ IF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
 MESSAGE ("windows 8")
 set(CVAC_VERSION_DIR ${CVAC_VERSION_DIR}-Win8)
 set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION}-Win8)
+set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}-Win8)
 ELSE ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
 IF (WIN32)
 set(CVAC_VERSION_DIR ${CVAC_VERSION_DIR}-Win7)
 set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION}-Win7)
+set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}-Win7)
 ENDIF (WIN32)
 ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
 
@@ -60,6 +63,12 @@ set(CPACK_COMPONENTS_ALL Runtime data ThirdParty)
 set(CPACK_COMPONENT_CORE_DISPLAY_NAME "CVAC core runtime components")
 set(CPACK_COMPONENT_3RDPARTY_DISPLAY_NAME "CVAC 3rd Party" )
 set(CPACK_COMPONENT_DATA_DISPLAY_NAME "CVAC sample data" )
+
+IF (WIN32) 
+    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}-win32)
+ELSE (WIN32)
+    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}-${CMAKE_SYSTEM_NAME})
+ENDIF (WIN32)
 
 # change the install prefix to CVAC-version, since CPack will install into a zip-style archive
 # set(CPACK_SET_DESTDIR true)
@@ -81,9 +90,13 @@ ELSEIF(APPLE)
     SET( SCRIPT_EXT sh )
     SET(CPACK_GENERATOR "Bundle")
     SET(CPACK_BUNDLE_NAME "EasyComputerVision")
+    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/installNumpy.py ${CMAKE_CURRENT_SOURCE_DIR}/installPython.py ${CMAKE_CURRENT_SOURCE_DIR}/startup.py
+       DESTINATION ../MacOS
+       COMPONENT Runtime 
+    )
     SET(CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
     # CMake renames the startup command file to ${CPACK_BUNDLE_NAME}
-    SET(CPACK_BUNDLE_STARTUP_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/startup.py)
+    SET(CPACK_BUNDLE_STARTUP_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/startup.sh)
     SET(CPACK_BUNDLE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/EasyComputerVision.icns)
     SET(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/EasyComputerVision.icns)
     CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
@@ -146,7 +159,7 @@ IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
        DESTINATION .
        COMPONENT Runtime
       )
-    INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/bin/startServices.${SCRIPT_EXT} ${CMAKE_SOURCE_DIR}/etc/stopServices.${SCRIPT_EXT}
+    INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/bin/startServices.${SCRIPT_EXT} ${CMAKE_SOURCE_DIR}/bin/stopServices.${SCRIPT_EXT}
        DESTINATION bin
        COMPONENT Runtime
       )
@@ -194,6 +207,18 @@ IF (WIN32)
 
 ELSE (WIN32)
 
+  IF (APPLE)
+      INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1-py2.6.mpkg
+           DESTINATION 3rdparty
+           COMPONENT Runtime 
+      )
+
+      INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/python.mpkg
+           DESTINATION 3rdparty
+           COMPONENT Runtime 
+      )
+  ENDIF (APPLE)
+
   INSTALL(DIRECTORY   ${ICE_ROOT}/lib
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
@@ -232,6 +257,13 @@ IF (NOT PYTHON_ONLY_CLIENT)
        COMPONENT ThirdParty
       )
     ENDIF (WIN32)
+    IF(APPLE)
+    #Copy the complete directory to get all the extra .dylibs
+    INSTALL(DIRECTORY ${LIBARCHIVE_LIB_DIR}
+           DESTINATION 3rdparty/libarchive
+           COMPONENT LibArchiveExt
+           )
+    ENDIF(APPLE)
 
     # OpenCV needs to be isolated in some staging area.  You need
     # to configure this CMake to pull OpenCV from there.

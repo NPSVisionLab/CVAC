@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.6)
+#CPACK_PACKAGE_FILE_NAME requires this
+cmake_minimum_required(VERSION 2.8.6)
 
 cmake_policy( SET CMP0012 NEW)
 
@@ -16,8 +17,9 @@ INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 OPTION(BUILD_WITH_BOW "Build a Bag of Words trainer and detector (requires OpenCV)" ON)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Build the OpenCV Cascade trainer and detector" ON)
-OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" ON) 
-OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" ON) 
+OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" OFF) 
+OPTION(BUILD_FILESERVER_PYTHON "Configure a Python File Server (generally for servers)" ON) 
+OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" OFF) 
 OPTION(BUILD_CORPUS_SERVICE_PYTHON "Configure a Python Corpus Server" ON) 
 OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
 OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" ON)
@@ -94,7 +96,12 @@ IF (WIN32)
    MARK_AS_ADVANCED(BUILD_WITH_MP)
 
    IF(BUILD_WITH_MP)
-     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+     #Windows 8 messes up multiprocessor compile and slicing
+     IF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP1")
+     ELSE ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+     ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
    ENDIF(BUILD_WITH_MP)
 
    # Platform specific definitions
@@ -280,6 +287,18 @@ FIND_PACKAGE( PythonInterp )
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
+#Opencv includes now required for src/util library
+FIND_PACKAGE( OpenCV 2.4 REQUIRED
+                            core imgproc highgui ml features2d nonfree objdetect calib3d
+             HINTS
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv
+)
+IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+  IF( OpenCV_DIR )
+    MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  ENDIF()
+ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+
 # Make sure packages are compatible
 # ICE 3.4.2 is pre-built against Python 2.6
 IF( PYTHONINTERP_FOUND AND WIN32 )
@@ -288,43 +307,24 @@ IF( PYTHONINTERP_FOUND AND WIN32 )
     MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
     MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
   ENDIF()
-ENDIF()
 
-#Opencv includes now required for src/util library
-FIND_PACKAGE( OpenCV 2.4 REQUIRED
-                            core imgproc highgui ml features2d nonfree objdetect calib3d
-             HINTS
-                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv
-  )
-IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   #For Python set a variable for cv2 dynamic library
   #
   IF (WIN32)
     FIND_FILE(OPENCV_PY_LIB cv2.pyd
-               HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+      HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
   ELSE (WIN32)
     FIND_LIBRARY(OPENCV_PY_LIB cv2.so
-               HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
-                     ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+      HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
+            ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
 
   ENDIF (WIN32)
-  # And the directory the cv2 file came from
-  GET_FILENAME_COMPONENT( OPENCV_PY_DIR ${OPENCV_PY_LIB} PATH )
-  FIND_FILE( OPENCV_PY_PY cv.py HINTS ${OPENCV_PY_DIR} )
-  IF( NOT OPENCV_PY_LIB OR NOT OPENCV_PY_PY )
-    MESSAGE( SEND_ERROR "Need cv2.pyd or cv2.so and cv.py from OpenCV" )
-  ENDIF()
+ENDIF()
 
-  IF( OpenCV_DIR )
-    MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
-  ENDIF()
-ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 ## Setup the config.service and config.icebox files based upon detectors
 ## selected by the user.  These CF_ variables are defined in the config files
 ## and they get turned into comments or not.
-
-
 IF( BUILD_WITH_BOW )
 SET(CF_BOW "" )
 SET( CF_BOW_T "" )
@@ -396,6 +396,7 @@ MATH(EXPR BOW_DETECTOR_PORT "${CVAC_FIRST_SERVICE_PORT}+104")
 MATH(EXPR CORPUS_PORT "${CVAC_FIRST_SERVICE_PORT}+11")
 MATH(EXPR PYTHON_CORPUS_PORT "${CVAC_FIRST_SERVICE_PORT}+21")
 MATH(EXPR FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+110")
+MATH(EXPR PYTHON_FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+111")
 MATH(EXPR RSITR_TEST_PORT "${CVAC_FIRST_SERVICE_PORT}+109")
 
 # the configuration of config.{icebox,service} must come after including the

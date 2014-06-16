@@ -49,6 +49,19 @@ INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/python-2.6.6.msi
        )
 ENDIF(WIN32)
 
+IF(APPLE)
+# OSX also needs numpy package
+INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1-py2.6.mpkg
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+       )
+#Windows also needs python package
+INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/python.mpkg
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+       )
+ENDIF(APPLE)
+
 INSTALL(PROGRAMS ${ICE_SLICE_EXECUTABLE}
                  ${ICE_SLICE2JAVA_EXECUTABLE} 
                  ${ICE_SLICE2PY_EXECUTABLE}
@@ -93,6 +106,13 @@ INSTALL(DIRECTORY ${LIBARCHIVE_BIN_DIR}
        COMPONENT LibArchiveExt
       )
 ENDIF( WIN32 )
+IF(APPLE)
+#Copy the complete directory to get all the extra .dylibs
+INSTALL(DIRECTORY ${LIBARCHIVE_LIB_DIR}
+       DESTINATION 3rdparty/libarchive
+       COMPONENT LibArchiveExt
+       )
+ENDIF(APPLE)
 # OpenCV needs to be isolated in some staging area.  You need
 # to configure this CMake to pull OpenCV from there.
 # OpenCV_DIR points to the shared/OpenCV subdirectory.

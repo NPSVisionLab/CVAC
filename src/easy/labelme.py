@@ -18,8 +18,16 @@ def parsePolygon( etelem ):
     polygon = cvac.Silhouette()
     polygon.points = []
     for pt in etelem.findall('pt'):
-        tx = int(pt.find('x').text)
-        ty = int(pt.find('y').text)
+        num = pt.find('x').text.encode('utf-8').strip()
+        if '.' in num: 
+            tx = int(float(num))
+        else:
+            tx = int(num)
+        num = pt.find('y').text.encode('utf-8').strip()
+        if '.' in num:  
+            ty = int(float(num))
+        else:
+            ty = int(num)
         polygon.points = polygon.points \
           + [cvac.Point2D(str(tx-1), str(ty-1))]
     return polygon
@@ -34,26 +42,30 @@ def parseLabeledObjects( root, substrate ):
     if objImgSize != None:
         objH = objImgSize.find('nrows')
         if objH != None:            
-            substrate.height = int(objH.text)
+            substrate.height = int(objH.text.encode('utf-8').strip())
             
         objW = objImgSize.find('ncols')
         if objW != None:
-            substrate.width = int(objW.text)
+            substrate.width = int(objW.text.encode('utf-8').strip())
     
     labels = []
     for lmobj in root.findall('object'):
-        deleted = lmobj.find('deleted').text
+        deleted = lmobj.find('deleted').text.encode('utf-8').strip()
         if deleted=='1':
             continue
         label = cvac.LabeledLocation()
         label.confidence = 1.0
         label.sub = substrate
-        name = lmobj.find('name').text.strip()
+        nameobj = lmobj.find('name')
+        if nameobj.text is None:
+            continue
+        #name = nameobj.text.strip()
+        name = nameobj.text.encode('utf-8').strip()
     
         properties = {}
         for attrib in lmobj.findall('attributes'):
             if not attrib.text: break
-            properties[ attrib.text ] = ''
+            properties[ attrib.text.encode('utf-8').strip() ] = ''
         label.lab = cvac.Label( True, name, properties, cvac.Semantics() )
         label.loc = parsePolygon( lmobj.find('polygon') )
         
@@ -77,15 +89,15 @@ def parseLabeledObjects( root, substrate ):
             pvalue = ''
             for elt in walkAll:
                 if labelName == '' and elt.tag == 'name':
-                    labelName = elt.text
+                    labelName = elt.text.encode('utf-8').strip()
                 else:
                     # If we have a value create a property entry with key as the name
                     # If we only have a name and no value then
                     # ignore the name if not the first.
                     if elt.tag == 'name':
-                        pname = elt.text
+                        pname = elt.text.encode('utf-8').strip()
                     elif elt.tag == 'value':
-                        pvalue = elt.text
+                        pvalue = elt.text.encode('utf-8').strip()
                     if pname != '' and pvalue != '':
                         properties[pname] = pvalue
                         pname = ''
@@ -128,7 +140,7 @@ def parseFolder( localDir, lmAnnotations, lmImages, lmFolder, CVAC_DataDir ):
                   ' does not have filename element')
             continue
         else:
-            imgFname = felem.text.strip() # strip any leading or trailing white space
+            imgFname = felem.text.encode('utf-8').strip() # strip any leading or trailing white space
             
         cvacFp = cvac.FilePath( cvacDir, imgFname )
         substrate = cvac.Substrate( True, False, cvacFp, -1, -1 )

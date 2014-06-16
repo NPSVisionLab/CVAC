@@ -9,7 +9,8 @@ import ConfigParser
 import StringIO
 import Ice, IcePy
 import cvac
-import labelme, vatic
+import labelme, vatic, videosegment
+import easy
 
 class LabelableListI:
     def _init__(self, name):
@@ -52,16 +53,18 @@ class CorpusI(cvac.Corpus):
         self.CVAC_DataDir = CVAC_DataDir
         self.dataSetFolder = location
         
+    '''
     def loadImagesFromDir(self, labelName, directory, recurse):
         dirSampleList = LabelableListI(labelName)
         label = cvac.Label(True, labelName, {}, cvac.Semantics(""))
         dirSampleList.addAllSamplesInDir(directory, label, 1.0, directory, 
                                          recurse)
         return dirSampleList
+    '''
         
     def getLabels(self):
         # TODO load images from the directory and return
-        return None
+        return easy.getLabelableList(self.dataSetFolder)
     
 '''
 LabelMeCorpusI is a LabelMe corpus.  This reads the
@@ -155,6 +158,34 @@ class VaticCorpusI(CorpusI):
             except IOError as exc:
                 print exc
         return labels
+    
+'''
+VideosegmentCorpusI is a Video corpus for Shot Boundary Detection.
+This reads the SBD-style annotation file that includes  
+informaition of all videos.
+'''
+class VideosegmentCorpusI(CorpusI): 
+    def __init__(self, name, description, homepageURL, location, CVAC_DataDir):
+        CorpusI.__init__(self, name, description, homepageURL, location,
+                         CVAC_DataDir)   
+        self.catalogs = []
+        
+    def parseConfigProperties(self, configProps, propFile):
+        prop = configProps.get('videoCatalogName')
+        if prop == None:
+            print('No videoCatalogName property in file ' + propFile)
+            return False 
+        self.catalogs = [x.strip() for x in prop.split(',')]       
+        return True
+    
+    def getLabels(self):
+        localDir = self.dataSetFolder
+        labels = []
+        for catalog in self.catalogs:
+            labels += videosegment.parseCatalog(self.CVAC_DataDir,
+                                                localDir,catalog)
+        return labels
+    
 
 class CorpusServiceI(cvac.CorpusService, threading.Thread):   
 
@@ -245,6 +276,9 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         elif dsTypeProp.lower() == 'vatic':
             corpus = VaticCorpusI(nameProp, descProp, homepage,
                                   locProp, self.CVAC_DataDir )
+        elif dsTypeProp.lower() == 'videosegment':
+            corpus = VideosegmentCorpusI(nameProp, descProp, homepage,
+                                  locProp, self.CVAC_DataDir )
         else:
             print('Python corpus only currently supports labelme type dataset')
             return None
@@ -254,6 +288,9 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
          
         
     def openCorpus( self, cvacPath, current=None):
+        #import pydevd
+        #pydevd.connected = True
+        #pydevd.settrace(suspend=False)
         if not type(cvacPath) is cvac.FilePath:
             raise RuntimeError("wrong argument type")
         print( 'openCorpus called' )
@@ -287,12 +324,6 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         print( 'createLocalMirror called' )
     
     def getDataSet( self, corpus, current=None ):
-        '''
-        if pydevd' in sys.modules:
-            import pydevd
-            pydevd.connected = True
-            pydevd.settrace(suspend=False)
-        '''
         if not type(corpus) is cvac.Corpus:
             raise RuntimeError("wrong argument type")
         print( 'getDataSet called' )
@@ -311,9 +342,25 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         print( 'addLabelable called' )
     
     def createCorpus( self, cvacdir, current=None ):
+        #import pydevd
+        #pydevd.connected = True
+        #pydevd.settrace(suspend=False)
         if not type(cvacdir) is cvac.DirectoryPath:
             raise RuntimeError("wrong argument type")
-        print( 'createCorpus called' )
+        # use toplevel directory as the name
+        ldir = cvacdir.relativePath
+        if ldir.startswith(self.CVAC_DataDir +'/'):
+            ldir = ldir[len(self.CVAC_DataDir + '/'):]
+        # first directory is the corpus name
+        idx = ldir.rfind("/")
+        if idx > 0:
+            cName = ldir[0:idx]
+        else:
+            cName = ldir
+        corp = CorpusI(cName, "Corpus created from directory " + cName, "", ldir, self.CVAC_DataDir)
+        self.corpToImp[corp.name] = corp
+        return corp
+        
 
 
 class Server(Ice.Application):

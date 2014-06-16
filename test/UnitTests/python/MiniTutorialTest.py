@@ -75,7 +75,7 @@ class MiniTutorialTest(unittest.TestCase):
     #
     # Run full_image_corpus.py
     #
-    def test_full_image_corpus(self):
+    def xtest_full_image_corpus(self):
         print("running full_image_corpus.py")
         sys.stdout.flush()
         execfile(self.demoDir + "/full_image_corpus.py");

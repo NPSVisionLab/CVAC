@@ -10,7 +10,7 @@ then
 fi
 # Please set JAVAEXE to java executable
 export JAVAEXE=/usr/bin/java
-# Pleas set PYTHONEXE to python 2.6 executable
+# Please set PYTHONEXE to python 2.6 executable
 export PYTHONEXE=/usr/bin/python2.6
 
 export ICEDIR=${INSTALLDIR}/3rdparty/ICE
@@ -22,7 +22,16 @@ export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${INSTALLDIR}/lib:${OPENCVDIR}/lib:
 
 # C/C++ services, via IceBox
 cd ${INSTALLDIR}
-if [ "${START_ICE_SERVICES}" == "1" ]
+LOCKFILE=.services_started.lock
+if [ -f $LOCKFILE ]
+then
+    echo CVAC services have supposedly been started already.  Either stop them
+    echo first, or if you are sure that they are not running, remove the
+    echo lock file \'$LOCKFILE\'.
+    exit
+fi
+
+if [ "@START_ICE_SERVICES@" == "1" ]
 then
     ${ICEDIR}/bin/icebox --Ice.Config=config.icebox &
 fi
@@ -34,7 +43,7 @@ then
 fi
 
 # Python services that are listed in python.config
-if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLLDIR}/python.config" ]
+if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLDIR}/python.config" ]
 then
     export PYTHONPATH="${ICEDIR}/python:${INSTALLDIR}/python:${OPENCVDIR}/lib/python2.6/site-packages"
     grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE
@@ -43,5 +52,6 @@ then
     done
 fi
 
+touch $LOCKFILE
 echo CVAC services launched
 exit
