@@ -46,6 +46,13 @@ if __name__ == '__main__':
         elif opt == '-p':
             pythonExec = arg
 
+    # If the pythonExec was not passed in then set the python
+    # executing this script as the python to use.
+    if pythonExec == None:
+        pythonExec = sys.executable
+
+
+
     # get this file's path:
     scriptfname = inspect.getfile(inspect.currentframe())
     scriptpath  = os.path.dirname(os.path.abspath( scriptfname ))
@@ -66,10 +73,7 @@ if __name__ == '__main__':
     if virtualDir != None:
         # Create a virtual env at virtualDir and change pythonExec to point
         # to that
-        if pythonExec == None:
-            subprocess.Popen(['/usr/bin/python2.6', '-m virtualenv ' + virtualDir])
-        else:
-            subprocess.Popen([pythonExec,' -m virtualenv ' + virtualDir])
+        subprocess.Popen([pythonExec,' -m virtualenv ' + virtualDir])
         pathenv = os.getenv("PATH")
         os.putenv("PATH", virtualDir+'/bin:$PATH')
         pythonExec = virtualDir+'/bin/python'
@@ -96,9 +100,5 @@ if __name__ == '__main__':
             if pstr != None and pstr != "":
                 envstr = envstr + ':'+ pstr
         env = {'PYTHONPATH':envstr}
-        if pythonExec == None:
-            print('default gui.py')
-            subprocess.Popen(['/usr/bin/python2.6', installpath + '/src/easy/gui.py'], env=env)
-        else:
-            subprocess.Popen([pythonExec, installpath+ '/src/easy/gui.py'], 
+        subprocess.Popen([pythonExec, installpath+ '/src/easy/gui.py'], 
                               env=env)

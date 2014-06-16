@@ -18,6 +18,8 @@ scriptfname = inspect.getfile(inspect.currentframe())
 scriptpath  = os.path.dirname(os.path.abspath( scriptfname ))
 installpath = os.path.abspath(scriptpath+'/../..')
     
+#get path to the python running this script
+pythonExec = sys.executable
 
 sys.path.append(installpath+'/python/easy')
 sys.path.append(installpath+'/demo')
@@ -117,10 +119,10 @@ class Application(tk.Frame):
 
     def runPrerequisites(self):
         if  sys.platform=='darwin':
-            self.doExec("/usr/bin/python2.6", args=installpath + "/demo/prerequisites.py", dopipe=True, 
+            self.doExec(pythonExec, args=installpath + "/demo/prerequisites.py", dopipe=True, 
                     env=self.env)
         elif sys.platform=='win32':
-            self.doExec("/python26/python", args=installpath + "/demo/prerequisites.py", dopipe=True, 
+            self.doExec(pythonExec, args=installpath + "/demo/prerequisites.py", dopipe=True, 
                     env=self.env)
    
     def updateServerStatus(self):
@@ -202,7 +204,7 @@ class Application(tk.Frame):
     def openTerminal(self):
         if sys.platform=='darwin':
             # a lovely command to get a Terminal window with proper PYTHONPATH set
-            shellcmd = "osascript -e 'tell application \"Terminal\" to activate' -e 'tell application \"System Events\" to tell process \"Terminal\" to keystroke \"n\" using command down' -e 'tell application \"Terminal\" to do script \"export PYTHONPATH="+installpath+'/3rdparty/ICE/python:'+installpath+'/python'+"\" in the front window'"
+            shellcmd = "osascript -e 'tell application \"Terminal\" to activate' -e 'tell application \"System Events\" to tell process \"Terminal\" to keystroke \"n\" using command down' -e 'tell application \"Terminal\" to do script \"export PYTHONPATH="+installpath+'/3rdparty/ICE/python:'+installpath+'/python'+ ';' + 'alias python=' + pythonExec +"\" in the front window'"
             os.system( shellcmd )
         elif sys.platform=='win32':
             shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/bin;{0}/3rdparty/ICE/bin;%PATH%"'.format(installpath)
@@ -213,9 +215,9 @@ class Application(tk.Frame):
     def runDemo(self, demo):
         if sys.platform=='darwin':
             # a lovely command to get a Terminal window with proper PYTHONPATH set
-            self.doExec("/usr/bin/python2.6", args=installpath + "/demo/detect.py", dopipe=True, env=self.env)
+            self.doExec(pythonExec, args=installpath + "/demo/detect.py", dopipe=True, env=self.env)
         elif sys.platform=='win32':
-            shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/bin;{0}/3rdparty/ICE/bin;%PATH% && \\python26\\python.exe {1}"'.format(installpath, demo)
+            shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/bin;{0}/3rdparty/ICE/bin;%PATH% && pythonExec {1}"'.format(installpath, demo)
             os.system( shellcmd )
         else:
             print "please define openTerminal command for this OS: "+sys.platform

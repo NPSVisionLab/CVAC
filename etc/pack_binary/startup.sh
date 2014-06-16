@@ -48,7 +48,7 @@ then
     python $Dir/startup.py
 else
     echo "Found python = $MYPYTHON"
-    $MYPYTHON $Dir/startup.py -p $MYPYTHON
+    $MYPYTHON $Dir/startup.py 
 fi
 launchctl load -w /System/Library/LaunchAgents/com.apple.ReportCrash.plist
     
