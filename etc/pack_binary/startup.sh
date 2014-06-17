@@ -8,12 +8,12 @@ launchctl unload -w /System/Library/LaunchAgents/com.apple.ReportCrash.plist
 for p in `which -a python2.6`
 do
     ver=`$p -c "import sys; print hex(sys.hexversion)"`
-    if [[ "$ver" -ge 0x2060800 ]]
+    if [[ "$ver" -ge 0x2060000 ]]
     then
-        if [[ "$ver"  -lt 0x2070000 ]]
+        if [[ "$ver"  -lt 0x2080000 ]]
         then
             # verify that we can load ice with this python
-            (cd $Dir/../Resources/3rdparty/Ice/python; $p -c "import Ice";RES=$?)
+            RES=`(cd $Dir/../Resources/3rdparty/Ice/python; $p -c "import Ice";echo $?)`
             if [ $RES == 0 ]
             then
                 MYPYTHON=$p
@@ -27,9 +27,9 @@ then
     for p in `which -a python`
     do
         ver=`$p -c "import sys; print hex(sys.hexversion)"`
-        if [[ "$ver" -ge 0x2060800 ]]
+        if [[ "$ver" -ge 0x2060000 ]]
         then
-            if [[ "$ver" -lt 0x2070000 ]]
+            if [[ "$ver" -lt 0x2080000 ]]
             then
                 # verify that we can load ice with this python
                 (cd $Dir/../Resources/3rdparty/Ice/python; $p -c "import Ice";RES=$?)
