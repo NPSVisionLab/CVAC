@@ -107,11 +107,12 @@ class DetectorDataArchive(object):
     def addInfo(self,_key,_infoStr):
         self.setProperty(_key, _infoStr)        
     
-    def addFile(self,_key,_filepath):                
+    def addFile(self,_key,_filepath, _value = None):                
         if not _filepath in self.mSrcFiles:            
             self.mSrcFiles.append(_filepath)
-            filename = os.path.basename(_filepath)
-            self.setProperty(_key, filename)        
+            if _value == None:
+                _value = os.path.basename(_filepath)
+            self.setProperty(_key, _value)        
     
     def createArchive(self,_dirForSrcfile):
         filepath = _dirForSrcfile + "/" + self.mPropertyFilename
@@ -145,17 +146,19 @@ class DetectorDataArchive(object):
             fzip.extractall(_dir)
             fzip.close()
         
-        self.mProperty = {}     
-        f = open(_dir + "/" + self.mPropertyFilename,"r")
-        for line in f:
-            if line[0]=='#':
-                continue;                           
-            line = line.rstrip('\r\n')                            
-            temp = line.split('=')
-            if len(temp)>1:
-                self.mProperty[temp[0]] = temp[1]                        
-        f.close()
-        return self.mProperty
+        self.mProperty = {}
+        try:
+            f = open(_dir + "/" + self.mPropertyFilename,"r")
+            for line in f:
+                if line[0]=='#':
+                    continue;                           
+                line = line.rstrip('\r\n')                            
+                temp = line.split('=')
+                if len(temp)>1:
+                    self.mProperty[temp[0]] = temp[1]                        
+            f.close()
+        finally:        
+            return self.mProperty
         
         
 class ArchiveHandler(object):
@@ -178,8 +181,8 @@ class ArchiveHandler(object):
     def setArchivePath(self,_dir,_prefix):
         return self.mDDA.setArchivePath(_dir, _prefix)
         
-    def addFile(self,_key,_filepath):
-        self.mDDA.addFile(_key,_filepath)
+    def addFile(self,_key,_filepath,_value = None):
+        self.mDDA.addFile(_key,_filepath,_value)
         
     def addInfo(self,_key,_infoStr):
         self.mDDA.addInfo(_key,_infoStr)
