@@ -1128,7 +1128,7 @@ def isROCdata(rocZip):
     rocArch.mPropertyFilename = "roc.properties"    
     rocDict = rocArch.unArchive(zipfilepath,tempDir)
     rocData_optimal = []
-    isROC = False 
+    isROC = False
     if len(rocDict) > 0:
         isROC = True
         for filename in rocDict:
@@ -1156,28 +1156,31 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     '''
 
     # create a cvac.DetectorData object out of a filename
+    tempDir = None
     if not detectorData:
         detectorData = getCvacPath( "" )
     elif type(detectorData) is str:
-        detectorData = getCvacPath( detectorData )    
+        detectorData = getCvacPath( detectorData )
+    elif type(detectorData) is cvac.FilePath:
+        fileext = os.path.splitext(detectorData.filename)[1]
+        if fileext.lower()=="zip":
+            #check whether the zip file is roc data or not
+            isROC, rocData_optimal, tempDir = isROCdata(detectorData)
+            if isROC == True:
+                if detectorProperties == None:
+                    raise RuntimeError("For selecting the best detectorData, " + \
+                                       "detectorProperties including desired precision " + \
+                                       "and recall must be entered")
+                dFAR = detectorProperties.falseAlarmRate
+                dRec = detectorProperties.recall
+                if (dFAR<0) & (dRec<0):
+                    raise RuntimeError("Inapporopriate values for desired recall and precision")
+                elif (dFAR>1.0) & (dRec>1.0):
+                    raise RuntimeError("Inapporopriate values for desired recall and precision")            
+                detectorData = getBestDetectorData(rocData_optimal,dFAR,dRec,True)            
     elif not type(detectorData) is cvac.FilePath:
         raise RuntimeError("detectorData must be filename, cvac.FilePath, or RoC data")
     
-    #check whether the zip file is roc data or not
-    isROC, rocData_optimal, tempDir = isROCdata(detectorData)
-    if isROC == True:
-        if detectorProperties == None:
-            raise RuntimeError("For selecting the best detectorData, " + \
-                               "detectorProperties including desired precision " + \
-                               "and recall must be entered")
-        dFAR = detectorProperties.falseAlarmRate
-        dRec = detectorProperties.recall
-        if (dFAR<0) & (dRec<0):
-            raise RuntimeError("Inapporopriate values for desired recall and precision")
-        elif (dFAR>1.0) & (dRec>1.0):
-            raise RuntimeError("Inapporopriate values for desired recall and precision")            
-        detectorData = getBestDetectorData(rocData_optimal,dFAR,dRec,True)
-
     # if not given an actual cvac.RunSet, try to create a RunSet
     if isinstance(runset, cvac.RunSet):
         pass
@@ -1210,8 +1213,9 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
         detectorProperties = cvac.DetectorProperties()
     detector.process( cbID, runset, detectorData, detectorProperties )
     
-    if os.path.isdir(tempDir):
-        shutil.rmtree(tempDir)
+    if tempDir != None:
+        if os.path.isdir(tempDir):
+            shutil.rmtree(tempDir)
 
     if ourRecv:
         return callbackRecv.allResults
