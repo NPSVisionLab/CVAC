@@ -4,11 +4,11 @@ RES=0
 Dir=$(cd "$(dirname "$0")";pwd)
 # turn off error reporting
 launchctl unload -w /System/Library/LaunchAgents/com.apple.ReportCrash.plist
-#First look for python 2.6
-for p in `which -a python2.6`
+#First look for python 2.7
+for p in `which -a python2.7`
 do
     ver=`$p -c "import sys; print hex(sys.hexversion)"`
-    if [[ "$ver" -ge 0x2060000 ]]
+    if [[ "$ver" -ge 0x2070000 ]]
     then
         if [[ "$ver"  -lt 0x2080000 ]]
         then
@@ -27,7 +27,7 @@ then
     for p in `which -a python`
     do
         ver=`$p -c "import sys; print hex(sys.hexversion)"`
-        if [[ "$ver" -ge 0x2060000 ]]
+        if [[ "$ver" -ge 0x2070000 ]]
         then
             if [[ "$ver" -lt 0x2080000 ]]
             then

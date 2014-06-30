@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     #check if we have the correct python version
     versionNum = sys.hexversion
-    if versionNum < 0x02060000 or versionNum >= 0x02080000:
+    if versionNum < 0x02070000 or versionNum >= 0x02080000:
         # bring up the gui to install python
         import installPython
 

@@ -118,6 +118,10 @@ IF (WIN32)
    ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
 ENDIF (WIN32)
 
+IF (APPLE)
+   SET (ICE_ENCODE "")
+ENDIF (APPLE)
+
 # ADD -fPIC to g++ because it's hard for the script to figure out 
 # if you are building a library or not, and -fPIC will work on everything.
 IF(CMAKE_COMPILER_IS_GNUCXX)
@@ -127,6 +131,8 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 # -O2 or -O3 on OSX causes ice to fail in Purpose list code
 IF (APPLE)
    SET(CMAKE_CXX_FLAGS_RELEASE "")
+   #SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -stdlib=libc++")
+   #SET(CMAKE_XCODE_ATTRIBUTE_CLAG_CXX_LIBRARY "libc++")
 ENDIF (APPLE)
 
 #
@@ -301,12 +307,20 @@ ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 # Make sure packages are compatible
 # ICE 3.4.2 is pre-built against Python 2.6
-IF( PYTHONINTERP_FOUND AND WIN32 )
-  # make sure it's version 2.6 or else error
-  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
-    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
-    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
-  ENDIF()
+IF( PYTHONINTERP_FOUND )
+  IF( APPLE)
+      # make sure it's version 2.7 or else error
+      IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 7 )
+        MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+        MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
+      ENDIF()
+  ELSE (APPLE)
+      # make sure it's version 2.6 or else error
+      IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
+        MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+        MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
+      ENDIF()
+  ENDIF (APPLE)
 
   #For Python set a variable for cv2 dynamic library
   #

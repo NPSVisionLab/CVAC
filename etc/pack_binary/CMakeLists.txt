@@ -208,12 +208,12 @@ IF (WIN32)
 ELSE (WIN32)
 
   IF (APPLE)
-      INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1-py2.6.mpkg
+      INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.6.1-py2.7.mpkg
            DESTINATION 3rdparty
            COMPONENT Runtime 
       )
 
-      INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/python.mpkg
+      INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/Python.mpkg
            DESTINATION 3rdparty
            COMPONENT Runtime 
       )
