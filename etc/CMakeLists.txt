@@ -21,10 +21,19 @@ ELSE( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
   SET( START_JAVA_SERVICES 0 )
 ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 
+
 IF (WIN32)
     SET( SCRIPT_EXT bat )
     SET( PYTHON_EXT pyd )
 ELSE (WIN32)
+    IF (APPLE)
+        Set (ICEPLIBS "${ICEDIR}/lib")
+        IF (USE_LEGACY_STDC++LIBS)
+            SET (ICELIBS "${ICEDIR}/lib")
+        ELSE (USE_LEGACY_STDC++LIBS)
+            SET (ICELIBS "${ICEDIR}/lib/c++11")
+        ENDIF (USE_LEGACY_STDC++LIBS)
+    ENDIF (APPLE)
     SET( SCRIPT_EXT sh )
     SET( PYTHON_EXT so )
 ENDIF (WIN32)
@@ -99,28 +108,33 @@ ENDIF( BUILD_FILESERVICE_PYTHON OR BUILD_CORPUS_SERVICE_PYTHON)
 SET (SLICE_OUTPUT_PATH "${SLICE_OUTPUT_PYTHONDIR}")
 SET (PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/python")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}")
-FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/cvac")
-FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/ice")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/icePkg")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg/cvac")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg/easy")
 
 
 
 # Next copy over easy. Since these files are not sliced then do it now
-FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}
+FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}/easyPkg
       PATTERN *.py)
 
 SET (PYTHON_PACK_NAME "CVAC")
+SET (PYTHON_PACK_EASY_NAME "EasyCV")
+SET (PYTHON_PACK_ICE_NAME "EasyCVIce")
 # Next copy over ice. Since we need to change directory name
-# from python to ice copy over the files.  Not sliced so do it now
+# from python to icePkg, copy over the files.  Not sliced so do it now
 FILE (GLOB ICE_FILES ${ICE_PYTHON_DIR}/*)
-FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/ice)
+FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/icePkg)
+# Copy over the opencv files required by easy to the easy package.
+# One day these should be in there own package?  Even those these are
+# only required to python trainer/detectors its easier to always include them
+FILE (COPY ${OPENCV_PY_PY} DESTINATION ${PYTHON_BUILD_DIR}/easyPkg)
+FILE (COPY ${OPENCV_PY_LIB} DESTINATION ${PYTHON_BUILD_DIR}/easyPkg)
 
-IF (WIN32)
-    CONFIGURE_FILE(setup.py.win.in "${PYTHON_BUILD_DIR}/setup.py")
-ELSE (WIN32)
-    CONFIGURE_FILE(setup.py.win.in "${PYTHON_BUILD_DIR}/setup.py")
-ENDIF (WIN32)
-CONFIGURE_FILE(easy.pth "${PYTHON_BUILD_DIR}/easy.pth")
-CONFIGURE_FILE(ice.pth "${PYTHON_BUILD_DIR}/ice.pth")
+CONFIGURE_FILE(setup.easy.py.in "${PYTHON_BUILD_DIR}/easyPkg/setup.py")
+CONFIGURE_FILE(setup.ice.py.in "${PYTHON_BUILD_DIR}/icePkg/setup.py")
+
 # For unix set the install prefix for the python command to be the
 # same as the cmake install prefix.  We do this since installing directly
 # to the python site-packages require root access.

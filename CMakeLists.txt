@@ -30,6 +30,9 @@ OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-pa
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
 OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" OFF)
+IF (APPLE)
+OPTION(USE_LEGACY_STDC++LIB "Don't use the new c++11 stdc++lib" ON)
+ENDIF (APPLE)
 
 IF (PYTHON_ONLY_CLIENT)
     IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
@@ -128,11 +131,17 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-# -O2 or -O3 on OSX causes ice to fail in Purpose list code
+SET(OPENCV_DIR_EXT "")
+SET(UNITTEST_DIR_EXT "")
+SET(ICE_BIN_DIR "/bin")
 IF (APPLE)
-   SET(CMAKE_CXX_FLAGS_RELEASE "")
-   #SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -stdlib=libc++")
-   #SET(CMAKE_XCODE_ATTRIBUTE_CLAG_CXX_LIBRARY "libc++")
+   IF (USE_LEGACY_STDC++LIB)
+       ADD_DEFINITIONS("-std=c++98 -stdlib=libstdc++")
+       SET(OPENCV_DIR_EXT "_stdc")
+       SET(UNITTEST_DIR_EXT "_stdc")
+   ELSE (USE_LEGACY_STDC++LIB)
+       SET(ICE_BIN_DIR "bin/c++11")
+   ENDIF (USE_LEGACY_STDC++LIB)
 ENDIF (APPLE)
 
 #
@@ -297,7 +306,7 @@ FIND_PACKAGE(LibArchive REQUIRED)
 FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
-                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
 )
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   IF( OpenCV_DIR )
@@ -306,7 +315,7 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 # Make sure packages are compatible
-# ICE 3.4.2 is pre-built against Python 2.6
+# ICE 3.5.1 is pre-built against Python 2.7
 IF( PYTHONINTERP_FOUND )
   IF( APPLE)
       # make sure it's version 2.7 or else error

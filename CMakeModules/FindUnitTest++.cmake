@@ -4,7 +4,7 @@
   
 FIND_PATH(UNITTEST++_INCLUDE_DIR UnitTest++.h
           HINTS
-           ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/include
+           ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++${UNITTEST_DIR_EXT}/include
           PATHS
            /usr/include
            /opt/local
@@ -13,7 +13,7 @@ FIND_PATH(UNITTEST++_INCLUDE_DIR UnitTest++.h
 
 FIND_LIBRARY(UNITTEST++_LIBRARY
              HINTS
-                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/lib
+                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++${UNITTEST_DIR_EXT}/lib
              NAMES UnitTest++ UnitTest++.vsnet2005
              PATHS
                 /opt/local/lib
@@ -22,7 +22,7 @@ FIND_LIBRARY(UNITTEST++_LIBRARY
 FIND_LIBRARY(UNITTEST++_LIBRARY_DEBUG
              NAMES UnitTest++D UnitTest++.vsnet2005
              HINTS
-                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++/lib
+                ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++${UNITTEST_DIR_EXT}/lib
              PATHS
                 /opt/local/lib
              )

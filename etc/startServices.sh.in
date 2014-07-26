@@ -10,15 +10,15 @@ then
 fi
 # Please set JAVAEXE to java executable
 export JAVAEXE=/usr/bin/java
-# Please set PYTHONEXE to python 2.6 executable
-export PYTHONEXE=/usr/bin/python2.6
+# Please set PYTHONEXE to python 2.7 executable
+export PYTHONEXE=/usr/bin/python2.7
 
 export ICEDIR=${INSTALLDIR}/3rdparty/ICE
-export OPENCVDIR=${INSTALLDIR}/3rdparty/opencv
+export OPENCVDIR=${INSTALLDIR}/3rdparty/opencv@OPENCV_DIR_EXT@
 export PATH=$PATH:${INSTALLDIR}/bin
 export MATLAB_MCR_DYLD_PATH="/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/runtime/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/sys/os/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/bin/maci64:/System/Library/Frameworks/JavaVM.framework/JavaVM:/System/Library/Frameworks/JavaVM.framework/Libraries"
 export XAPPLRESDIR=/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/X11/app-defaults
-export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${INSTALLDIR}/lib:${OPENCVDIR}/lib:${ICEDIR}/lib:$MATLAB_MCR_DYLD_PATH"
+export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${INSTALLDIR}/lib:${OPENCVDIR}/lib:@ICELIBS@:$MATLAB_MCR_DYLD_PATH"
 
 # C/C++ services, via IceBox
 cd ${INSTALLDIR}
@@ -33,7 +33,7 @@ fi
 
 if [ "@START_ICE_SERVICES@" == "1" ]
 then
-    ${ICEDIR}/bin/icebox --Ice.Config=config.icebox &
+    ${ICEDIR}@ICE_BIN_DIR@/icebox --Ice.Config=config.icebox &
 fi
 # Java services, via Java IceBox
 if [ "@START_JAVA_SERVICES@" == "1" ]
@@ -45,6 +45,8 @@ fi
 # Python services that are listed in python.config
 if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLDIR}/python.config" ]
 then
+    # add in ice's python library path for osx
+    export DYLD_LIBRARY_PATH="@ICEPLIBS@:$DYLD_LIBRARY_PATH"
     export PYTHONPATH="${ICEDIR}/python:${INSTALLDIR}/python:${OPENCVDIR}/lib/python2.6/site-packages"
     grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE
     do
