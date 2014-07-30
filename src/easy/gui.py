@@ -133,6 +133,8 @@ class Application(tk.Frame):
         self.columnconfigure(1, minsize=295)
         self.grid()
         self.stdPollTime = 500  # number of msecs to poll stdout from thead
+        self.checkVar = tk.IntVar() # 1 if checked, 0 otherwise
+        self.checkVar.set(1)
         row = 1
         row = self.uiStartStopServices(row)
         row = self.uiCommands(row)
@@ -227,6 +229,9 @@ class Application(tk.Frame):
         tk.Label(lf, text="Service Status:").grid(row=2, sticky=tk.W)
         statusLabel = tk.Label(lf, textvariable=self.serverStatus)
         statusLabel.grid(row=3, columnspan=5, sticky=tk.W)
+        checkButton = tk.Checkbutton(lf, text= 'Show services output',
+                                          variable=self.checkVar)
+        checkButton.grid(row=4, columnspan=5, sticky=tk.W)
         return row
     
     def uiLastButtons(self, row):
@@ -237,12 +242,17 @@ class Application(tk.Frame):
         quitButton.pack(side=tk.RIGHT)
         return row
 
+
     def startStopServices(self, start):
         print("StartStopServices called start = {0}".format(start))
         if sys.platform=='darwin':
+            if self.checkVar.get() == 1:
+                setdothread = True
+            else:
+                setdothread = False
             if start:
                 try:
-                    self.doExec("/bin/bash", args=installpath + "/bin/startServices.sh", dothread = True, env=self.ccenv) 
+                    self.doExec("/bin/bash", args=installpath + "/bin/startServices.sh", dothread = setdothread, env=self.ccenv) 
                     #self.doExec(installpath+'/bin/startServices.sh', shell=False)
                 except Exception, err:
                     print ("Could not start/stop services")

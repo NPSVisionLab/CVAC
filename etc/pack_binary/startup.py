@@ -58,13 +58,17 @@ if __name__ == '__main__':
     scriptpath  = os.path.dirname(os.path.abspath( scriptfname ))
     installpath = os.path.abspath(scriptpath+'/../Resources')
 
-    print('install path ' + installpath)
-    sys.path.append(installpath+'/python/easy')
-    sys.path.append(installpath+'/demo')
-    sys.path.append(installpath+'/3rdparty/ICE/python')
-    sys.path.append(installpath+'/python')
+    if installpath+'/python/easy' not in sys.path:
+	    sys.path.append(installpath+'/python/easy')
+    if installpath+'/demo' not in sys.path:
+	    sys.path.append(installpath+'/demo')
+    if installpath+'/3rdparty/ICE/python' not in sys.path:
+	    sys.path.append(installpath+'/3rdparty/ICE/python')
+    if installpath+'/python' not in sys.path:
+	    sys.path.append(installpath+'/python')
     # We need python path to point to our virtual site
-    sys.path.append(installpath+'/virt/lib/python2.7/site-packages')
+    if installpath+'/virt/lib/python2.7/site-packages' not in sys.path:
+	    sys.path.append(installpath+'/virt/lib/python2.7/site-packages')
 
     #checking python version should now be handled by setup.py
     # and install_requires.
@@ -127,6 +131,10 @@ if __name__ == '__main__':
     for pstr in sys.path:
         if pstr != None and pstr != "":
             envstr = envstr + ':'+ pstr
+    if "EasyCV-" not in envstr:
+	    envstr = installpath+"/virt/lib/python2.7/site-packages/EasyCV-0.8.0-py2.7.egg:" + envstr
+    if "EasyCVIce-" not in envstr:
+	    envstr = installpath+"/virt/lib/python2.7/site-packages/EasyCVIce-0.8.0-py2.7.egg:" +envstr
     dystr = os.getenv('DYLD_LIBRARY_PATH')
     if dystr == None:
         dystr = ""
