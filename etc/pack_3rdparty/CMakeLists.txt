@@ -59,29 +59,35 @@ INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-cp27-none-any.whl
 INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/virtualenv-1.11.6
         DESTINATION 3rdparty
         COMPONENT NumpyExt
+        USE_SOURCE_PERMISSIONS
        )
 #Need to install the stdc++ binaries if that option gets turned on
 INSTALL(DIRECTORY  ${ICE_ROOT}/bin
         DESTINATION 3rdparty/ICE
         COMPONENT IceExt
+        USE_SOURCE_PERMISSIONS
        )
 # need to install the opencv stdc++ library files
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/opencv_stdc
       DESTINATION 3rdparty
        COMPONENT OpenCVExt
+        USE_SOURCE_PERMISSIONS
       ) 
 # need to install the opencv ++11 library files
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/opencv
       DESTINATION 3rdparty
        COMPONENT OpenCVExt
+        USE_SOURCE_PERMISSIONS
       ) 
 INSTALL(DIRECTORY   ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++
         DESTINATION 3rdparty
         COMPONENT UnitTestPPExt
+        USE_SOURCE_PERMISSIONS
       )
 INSTALL(DIRECTORY   ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++_stdc
         DESTINATION 3rdparty
         COMPONENT UnitTestPPExt
+        USE_SOURCE_PERMISSIONS
       )
 
 ELSE (APPLE)
