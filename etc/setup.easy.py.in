@@ -1,0 +1,17 @@
+from setuptools import setup, find_packages
+
+setup (name = '${PYTHON_PACK_EASY_NAME}',
+       version = '${CVAC_VERSION}',  # configured from CMake
+       description = 'Easy! Computer Vision, a connection to CVAC, the Computer Vision Algorithm Collection. Easy package',
+       url = 'https://github.com/NPSVisionLab/CVAC',
+       author = 'NPS Vision Lab',
+       package_dir = {'':'.'},
+       py_modules = ['cv', ${GOOGLE_MODULE}
+                    ],
+       packages = ['', 'cvac', 'easy', 'easy.util', ${GOOGLE_PACKAGE}
+                  ],
+       package_data = { '':['cv2.${PYTHON_EXT}']},
+       include_package_data = True,
+       install_requires = ['python>=2.7.0,<3.0']
+
+    )
