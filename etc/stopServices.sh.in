@@ -37,6 +37,7 @@ then
     do
         for X in `ps -ef | grep -m 1 -i $LINE | awk {'print $2'}`; do
             kill $X;
+        done
     done
 fi
 
