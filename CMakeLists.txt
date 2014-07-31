@@ -308,6 +308,14 @@ FIND_PACKAGE( OpenCV 2.4 REQUIRED
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
 )
+#If the find package did not set these lib dirs, then set ourselfs
+IF (OpenCV_LIB_DIR_OPT STREQUAL "")
+    SET(OpenCV_LIB_DIR_OPT "${OpenCV_DIR}/../../lib")
+ENDIF (OpenCV_LIB_DIR_OPT STREQUAL "")
+IF (OpenCV_LIB_DIR_DBG STREQUAL "")
+    SET(OpenCV_LIB_DIR_DBG "${OpenCV_DIR}/../../lib")
+ENDIF (OpenCV_LIB_DIR_DBG STREQUAL "")
+
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   IF( OpenCV_DIR )
     MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )

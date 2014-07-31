@@ -35,17 +35,8 @@ if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLDIR}/python.config" ]
 then
     grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE
     do
-        if [ "`which pkill`"  != "" ];
-        then
-            # pkill seems to work better than killall
-            # echo pkill -xf "${PYTHONEXE} $LINE"
-            pkill -xf "${PYTHONEXE} $LINE"
-        else
-            # echo killall $LINE
-            for X in `ps -ef | grep -m 1 -i $LINE | awk {'print $2'}`; do
-                kill $X;
-            done
-        fi
+        for X in `ps -ef | grep -m 1 -i $LINE | awk {'print $2'}`; do
+            kill $X;
     done
 fi
 
