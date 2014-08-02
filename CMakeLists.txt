@@ -30,6 +30,9 @@ OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-pa
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
 OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" OFF)
+IF (APPLE)
+OPTION(USE_LEGACY_STDC++LIB "Don't use the new c++11 stdc++lib" ON)
+ENDIF (APPLE)
 
 IF (PYTHON_ONLY_CLIENT)
     IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
@@ -118,15 +121,27 @@ IF (WIN32)
    ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
 ENDIF (WIN32)
 
+IF (APPLE)
+   SET (ICE_ENCODE "")
+ENDIF (APPLE)
+
 # ADD -fPIC to g++ because it's hard for the script to figure out 
 # if you are building a library or not, and -fPIC will work on everything.
 IF(CMAKE_COMPILER_IS_GNUCXX)
    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-# -O2 or -O3 on OSX causes ice to fail in Purpose list code
+SET(OPENCV_DIR_EXT "")
+SET(UNITTEST_DIR_EXT "")
+SET(ICE_BIN_DIR "/bin")
 IF (APPLE)
-   SET(CMAKE_CXX_FLAGS_RELEASE "")
+   IF (USE_LEGACY_STDC++LIB)
+       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++98 -stdlib=libstdc++")
+       SET(OPENCV_DIR_EXT "_stdc")
+       SET(UNITTEST_DIR_EXT "_stdc")
+   ELSE (USE_LEGACY_STDC++LIB)
+       SET(ICE_BIN_DIR "bin/c++11")
+   ENDIF (USE_LEGACY_STDC++LIB)
 ENDIF (APPLE)
 
 #
@@ -283,7 +298,7 @@ IF( BUILD_DOCUMENTATION )
   ENDIF( DOXYGEN_FOUND )
 ENDIF( BUILD_DOCUMENTATION )
 
-FIND_PACKAGE( PythonInterp )
+FIND_PACKAGE( PythonInterp 2.7)
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
@@ -291,8 +306,16 @@ FIND_PACKAGE(LibArchive REQUIRED)
 FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
-                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
 )
+#If the find package did not set these lib dirs, then set ourselfs
+IF (OpenCV_LIB_DIR_OPT STREQUAL "")
+    SET(OpenCV_LIB_DIR_OPT "${OpenCV_DIR}/../../lib")
+ENDIF (OpenCV_LIB_DIR_OPT STREQUAL "")
+IF (OpenCV_LIB_DIR_DBG STREQUAL "")
+    SET(OpenCV_LIB_DIR_DBG "${OpenCV_DIR}/../../lib")
+ENDIF (OpenCV_LIB_DIR_DBG STREQUAL "")
+
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   IF( OpenCV_DIR )
     MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
@@ -300,13 +323,21 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 # Make sure packages are compatible
-# ICE 3.4.2 is pre-built against Python 2.6
-IF( PYTHONINTERP_FOUND AND WIN32 )
-  # make sure it's version 2.6 or else error
-  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
-    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
-    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
-  ENDIF()
+# ICE 3.5.1 is pre-built against Python 2.7
+IF( PYTHONINTERP_FOUND )
+  IF( APPLE)
+      # make sure it's version 2.7 or else error
+      IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 7 )
+        MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+        MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
+      ENDIF()
+  ELSE (APPLE)
+      # make sure it's version 2.6 or else error
+      IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
+        MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+        MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
+      ENDIF()
+  ENDIF (APPLE)
 
   #For Python set a variable for cv2 dynamic library
   #

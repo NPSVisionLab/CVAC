@@ -548,6 +548,15 @@ std::string cvac::fixupRunSet(RunSet &run, const std::string &CVAC_DataDir)
 std::string cvac::getClientConnectionName(const Ice::Current &cur)
 {
     std::string res = "localhost";
+#ifdef __APPLE__
+    // For some reason with Ice 3.5.1 the cur.con->toString() call
+    // crashes.  So for now always return localhost on OSX
+    return res;
+#endif
+    if (!cur.con)
+        return res;
+    if (cur.con.get() == NULL)
+        return res;
     std::string cstring = cur.con->toString();
     if (cstring.empty())
        return res;
@@ -564,5 +573,5 @@ std::string cvac::getClientConnectionName(const Ice::Current &cur)
             return rstr; 
         }
     }
-     return res;
+    return res;
 }

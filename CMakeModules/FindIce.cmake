@@ -13,9 +13,10 @@ FIND_PATH (ICE_ROOT slice
            ${CVAC_ROOT_DIR}/3rdparty/ICE
            PATHS          
            ${ICE_INSTALLDIR}
-           /opt/Ice-3.4.2
+           /opt/Ice-3.5
            /usr/include
-           /usr/share/Ice-3.4.2
+           /usr/share/Ice-3.5
+           /Library/Developer/Ice-3.5
            DOC "The ICE root folder"
            )
            
@@ -23,16 +24,18 @@ FIND_PATH (ICE_INCLUDE Slice/Util.h
            PATH_SUFFIXES include
            HINTS
            ${ICE_ROOT}
-           ${CVAC_ROOT_DIR}/3rdparty
+           ${CVAC_ROOT_DIR}/3rdparty/ICE
            PATHS
            $ENV{ICE_ROOT}
-           /opt/Ice-3.4
+           /opt/Ice-3.5
+           /Library/Developer/Ice-3.5
            )
 
 FIND_PATH (ICE_PYTHON_DIR Ice.py
            PATH_SUFFIXES python
            HINTS
            ${ICE_ROOT}
+           ${CVAC_ROOT_DIR}/3rdparty/ICE
            PATHS
            $ENV{ICE_ROOT}
            /opt/Ice-3.4
@@ -43,6 +46,11 @@ SET(CDIR "")
 IF (MSVC10)
     SET(CDIR "/vc100")
 ENDIF (MSVC10)
+IF (APPLE)
+    IF (NOT USE_LEGACY_STDC++LIB)
+        SET(CDIR "/c++11")
+    ENDIF (NOT USE_LEGACY_STDC++LIB)
+ENDIF (APPLE)
 # If we are running on Windows 8 the we have ice 3.5 so vc10 is default
 IF (${CMAKE_SYSTEM} STREQUAL "Windows-6.2")
     SET(CDIR "")

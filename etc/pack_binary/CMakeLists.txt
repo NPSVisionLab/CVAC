@@ -90,7 +90,7 @@ ELSEIF(APPLE)
     SET( SCRIPT_EXT sh )
     SET(CPACK_GENERATOR "Bundle")
     SET(CPACK_BUNDLE_NAME "EasyComputerVision")
-    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/installNumpy.py ${CMAKE_CURRENT_SOURCE_DIR}/installPython.py ${CMAKE_CURRENT_SOURCE_DIR}/startup.py
+    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/installNumpy.py  ${CMAKE_CURRENT_SOURCE_DIR}/startup.py
        DESTINATION ../MacOS
        COMPONENT Runtime 
     )
@@ -208,15 +208,16 @@ IF (WIN32)
 ELSE (WIN32)
 
   IF (APPLE)
-      INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1-py2.6.mpkg
+      INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-cp27-none-any.whl
            DESTINATION 3rdparty
            COMPONENT Runtime 
       )
 
-      INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/python.mpkg
+      INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/virtualenv-1.11.6
            DESTINATION 3rdparty
            COMPONENT Runtime 
       )
+
   ENDIF (APPLE)
 
   INSTALL(DIRECTORY   ${ICE_ROOT}/lib
@@ -313,11 +314,11 @@ IF (BUILD_BINARY_PACKAGE)
     )
     SET (SLICE_OUTPUT_PATH "${SLICE_OUTPUT_PYTHONDIR}")
     add_custom_target(copyslice ALL
-        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/cvac"
-        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/cvac"
-        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/cvac"
-        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/cvac"
-        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Corpus_ice.py" "${PYTHON_BUILD_DIR}/easyPkg/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Data_ice.py" "${PYTHON_BUILD_DIR}/easyPkg/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/easyPkg/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/easyPkg/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/easyPkg/cvac"
         DEPENDS ${SLICE_OUTPUT_PATH}/Corpus_ice.py ${SLICE_OUTPUT_PATH}/Data_ice.py ${SLICE_OUTPUT_PATH}/Files_ice.py ${SLICE_OUTPUT_PATH}/Services_ice.py 
     )
 ENDIF (BUILD_BINARY_PACKAGE)

@@ -267,10 +267,23 @@ bool RunSetWrapper::makeBasicList()
     
 	for(out_itr=list_out.begin();out_itr!=list_out.end();out_itr++)
     {
-      cvac::Purpose curPurpose = (*out_itr)->pur;
-      out_seq=PurposedLabelableSeqPtr::dynamicCast(*out_itr);
-      out_dir=PurposedDirectoryPtr::dynamicCast(*out_itr);
+      PurposedListPtr p= (*out_itr);
 
+      cvac::Purpose curPurpose = p->pur;
+      if (p->ice_isA("::cvac::PurposedLabelableSeq"))
+      { // For some reason the dynamicCast is failing on Osx 10.8
+        // We do an isA to confirm what it is and then the static cast is safe
+          //out_seq = IceInternal::Handle<PurposedLabelableSeq>(dynamic_cast<PurposedLabelableSeq*>(p._ptr));
+          out_seq = IceInternal::Handle<PurposedLabelableSeq>(static_cast<PurposedLabelableSeq*>(p._ptr));
+      }
+      //out_seq=PurposedLabelableSeqPtr::dynamicCast(p);
+
+      if (p->ice_isA("::cvac::PurposedDirectory"))
+      { // For some reason the dynamicCast is failing on Osx 10.8
+        // We do an isA to confirm what it is and then the static cast is safe
+          //out_dir=PurposedDirectoryPtr::dynamicCast(p);
+          out_dir = IceInternal::Handle<PurposedDirectory>(static_cast<PurposedDirectory*>(p._ptr));
+      }
       if(out_seq)	//PurposedLabelableSeqPtr
       {
         vector<LabelablePtr> list_in = out_seq->labeledArtifacts;

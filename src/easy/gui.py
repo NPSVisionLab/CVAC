@@ -1,12 +1,16 @@
+
 import sys
 import os
 import inspect
 import subprocess
+import threading
 import time
 from subprocess import PIPE
 from StringIO import StringIO
 import ConfigParser
 import easy
+import contextlib
+import Queue
 
 import Tkinter as tk
 
@@ -25,6 +29,53 @@ sys.path.append(installpath+'/python/easy')
 sys.path.append(installpath+'/demo')
 sys.path.append(installpath+'/3rdparty/ICE/python')
 sys.path.append(installpath+'/python')
+
+'''
+This thead class outputs the commands stdout and stderr to our display.
+This is used to get the output from the servers.
+'''
+class ThreadWait(threading.Thread):
+    def __init__(self, command, args, shell, env):
+        threading.Thread.__init__(self)
+        self.command = command
+        self.args = args
+        self.shell = shell
+        self.env = env
+        self.daemon = True  # Don't wait for this thead to end
+        # Unix, Windows and old Macintosh end-of-line
+        self.newlines = ['\n', '\r\n', '\r']
+
+    def unbuffered(self, proc, stream='stdout'):
+        stream = getattr(proc, stream)
+        with contextlib.closing(stream):
+            while True:
+                out = []
+                last = stream.read(1)
+                # Don't loop forever
+                if last == '' and proc.poll() is not None:
+                    break
+                while last not in self.newlines:
+                    # Don't loop forever
+                    if last == '' and proc.poll() is not None:
+                        break
+                    out.append(last)
+                    last = stream.read(1)
+                out = ''.join(out)
+                yield out
+
+    def run(self):
+        try:
+            p = subprocess.Popen([self.command, self.args], shell=self.shell, 
+                             stdout=PIPE, stderr=subprocess.STDOUT, 
+                             env=self.env)
+            for line in self.unbuffered(p):
+                # We can't use print line since this is a different thread
+                # so we put it in a queue to be read later
+                #print line
+                gui_stdout_queue.put(line)
+        except Exception, err:
+            print("Could not run: {0}".format(self.command))
+            print(err)
 
 
 class Application(tk.Frame):
@@ -45,8 +96,10 @@ class Application(tk.Frame):
     # Use these envirnoment variables
     # set shell = true if a shell script with "#! shell"
     # if dopipe then wait for results and output to our stdout
+    # if dothread then fork a thead that prints stdout/stderr to our window
     # env is dictionary of env vars that need to be set
-    def doExec(self, command, args=None, shell=False, dopipe=False, env=None):
+    def doExec(self, command, args=None, shell=False, dopipe=False, 
+               dothread = False, env=None):
         if args == None:
             try:
                 pipe = subprocess.Popen([command], shell=shell, stdout=PIPE, stderr=PIPE, env=env)
@@ -59,21 +112,29 @@ class Application(tk.Frame):
                 print("Could not run: {0}".format(command))
                 print(err)
         else:
-            try:
-                pipe = subprocess.Popen([command, args], shell=shell, stdout=PIPE, stderr=PIPE, env=env)
-                if dopipe == True:
-                    outstr, errstr = pipe.communicate()
-                    print(outstr)
-                    print(errstr)
-            except Exception, err:
-                print("Could not run: {0}".format(command))
-                print(err)
+            if dothread == True:
+                mythread = ThreadWait(command, args, shell, env)
+                mythread.start()
+            else:
+                try:
+                    pipe = subprocess.Popen([command, args], shell=shell, 
+                                    stdout=PIPE, stderr=PIPE, env=env)
+                    if dopipe == True:
+                        outstr, errstr = pipe.communicate()
+                        print(outstr)
+                        print(errstr)
+                except Exception, err:
+                    print("Could not run: {0}".format(command))
+                    print(err)
       
     def __init__(self, master=None):
         tk.Frame.__init__(self, master)
         self.root = master;
         self.columnconfigure(1, minsize=295)
         self.grid()
+        self.stdPollTime = 500  # number of msecs to poll stdout from thead
+        self.checkVar = tk.IntVar() # 1 if checked, 0 otherwise
+        self.checkVar.set(1)
         row = 1
         row = self.uiStartStopServices(row)
         row = self.uiCommands(row)
@@ -82,11 +143,25 @@ class Application(tk.Frame):
         self.output.grid(row=row, columnspan=2, sticky='NSWE', padx=5, pady=5)
         sys.stdout = self.StdoutRedirector(self.output, self.root)
         self.updateServerStatus()
+        self.after(self.stdPollTime, self.updateGuiStdout)
         if sys.platform=='darwin':
-            self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python:'+installpath+'/python', 'DYLD_LIBRARY_PATH':installpath+'/3rdparty/ICE/lib'}
+            self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python:'+installpath+'/virt/lib/python2.7/site-packages', 'DYLD_LIBRARY_PATH': installpath+'/3rdparty/opencv/lib:'+installpath+'/3rdparty/ICE/lib', 'PATH':installpath+'/virt/bin:' + os.getenv('PATH')}
+            self.ccenv = {'PATH':installpath + '/virt/bin:' + os.getenv('PATH'),
+                          'DYLD_LIBRARY_PATH': installpath+'/3rdparty/opencv/lib:'+installpath+'/3rdparty/ICE/lib'}
         elif sys.platform=='win32':
             self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python;'+installpath+'/python',
-            'PATH':installpath+'/bin;'+installpath+'/3rdparty/opencv/bin;'+installpath+'/3rdparty/ICE/bin;%PATH%'}
+            'PATH':installpath+'/bin;'+installpath+'/3rdparty/opencv/bin;'+installpath+'/3rdparty/ICE/bin;' + os.genenv('PATH')}
+            self.ccenv = self.env
+
+    '''
+    Since the stdout data is in a different thread we write it
+    in a thread safe manner here
+    '''
+    def updateGuiStdout(self):
+        while not gui_stdout_queue.empty():
+            text = gui_stdout_queue.get()
+            print(text)
+        self.after(self.stdPollTime, self.updateGuiStdout)
 
     def uiCommands(self, row):
         lf = tk.LabelFrame(self, text='Commands:')
@@ -154,6 +229,9 @@ class Application(tk.Frame):
         tk.Label(lf, text="Service Status:").grid(row=2, sticky=tk.W)
         statusLabel = tk.Label(lf, textvariable=self.serverStatus)
         statusLabel.grid(row=3, columnspan=5, sticky=tk.W)
+        checkButton = tk.Checkbutton(lf, text= 'Show services output',
+                                          variable=self.checkVar)
+        checkButton.grid(row=4, columnspan=5, sticky=tk.W)
         return row
     
     def uiLastButtons(self, row):
@@ -164,12 +242,17 @@ class Application(tk.Frame):
         quitButton.pack(side=tk.RIGHT)
         return row
 
+
     def startStopServices(self, start):
         print("StartStopServices called start = {0}".format(start))
         if sys.platform=='darwin':
+            if self.checkVar.get() == 1:
+                setdothread = True
+            else:
+                setdothread = False
             if start:
                 try:
-                    self.doExec("/bin/bash", args=installpath + "/bin/startServices.sh") 
+                    self.doExec("/bin/bash", args=installpath + "/bin/startServices.sh", dothread = setdothread, env=self.ccenv) 
                     #self.doExec(installpath+'/bin/startServices.sh', shell=False)
                 except Exception, err:
                     print ("Could not start/stop services")
@@ -204,7 +287,7 @@ class Application(tk.Frame):
     def openTerminal(self):
         if sys.platform=='darwin':
             # a lovely command to get a Terminal window with proper PYTHONPATH set
-            shellcmd = "osascript -e 'tell application \"Terminal\" to activate' -e 'tell application \"System Events\" to tell process \"Terminal\" to keystroke \"n\" using command down' -e 'tell application \"Terminal\" to do script \"export PYTHONPATH="+installpath+'/3rdparty/ICE/python:'+installpath+'/python'+ ';' + 'alias python=' + pythonExec +"\" in the front window'"
+            shellcmd = "osascript -e 'tell application \"Terminal\" to activate' -e 'tell application \"System Events\" to tell process \"Terminal\" to keystroke \"n\" using command down' -e 'tell application \"Terminal\" to do script \"export PYTHONPATH="+installpath+'/3rdparty/ICE/python:'+installpath+'/python'+ ';' + 'export PATH='+installpath+'/virt/bin:$PATH; export DYLD_LIBRARY_PATH='+installpath + '/3rdparty/opencv/lib:'+installpath+'/3rdparty/ICE/lib' +"\" in the front window'"
             os.system( shellcmd )
         elif sys.platform=='win32':
             shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/bin;{0}/3rdparty/ICE/bin;%PATH%"'.format(installpath)
@@ -314,6 +397,7 @@ class Application(tk.Frame):
 root = tk.Tk()
 root.geometry('410x720+10+10')
 root.tk_setPalette(background='light grey')
+gui_stdout_queue = Queue.Queue()
 os.chdir(installpath)
 app = Application( master=root )
 print("Running Prerequisites")
