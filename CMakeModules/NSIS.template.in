@@ -580,11 +580,11 @@ Function customDialog
   ${If} $Dialog == error
     Abort
   ${EndIf}
-  ${NSD_CreateCheckbox} 0 0 100% 12u "Select checkbox to install Python 2.6 or ..."
+  ${NSD_CreateCheckbox} 0 0 100% 12u "Select checkbox to install Python 2.7 or ..."
   Pop $CheckboxPython
-  ${NSD_CreateLabel} 0 0 100% 12u "Enter path to Python 2.6"
+  ${NSD_CreateLabel} 0 0 100% 12u "Enter path to Python 2.7"
   Pop $LabelPython
-  ${NSD_CreateText} 0 13u -20u 12u "C:\Python26\python.exe"
+  ${NSD_CreateText} 0 13u -20u 12u "C:\Python27\python.exe"
   Pop $PythonPathText
   ${NSD_CreateBrowseButton} -18u 13u 18u 12u "..."
   Pop $0
@@ -692,7 +692,7 @@ FunctionEnd
 
 Function installNumPy
     Push $1
-    StrCpy $1 "3rdparty\numpy-1.7.1.win32-py2.6.exe"
+    StrCpy $1 "3rdparty\numpy-1.8.1-win32-superpack-python2.7.exe"
     File /nonfatal $1
     ${if} ${FileExists} "$INSTDIR\$1" 
         MessageBox MB_YESNO "Install Numpy (for python services)" /SD IDYES IDNO endInstall
@@ -704,10 +704,10 @@ FunctionEnd
 
 Function installPython
     Push $1
-    StrCpy $1 "3rdparty\python-2.6.6.msi"
+    StrCpy $1 "3rdparty\python-2.7.8.msi"
     File /nonfatal $1
     ${if} ${FileExists} "$INSTDIR\$1"  
-        MessageBox MB_YESNO "Install Python 2.6.6" /SD IDYES IDNO endInstall
+        MessageBox MB_YESNO "Install Python 2.7.8" /SD IDYES IDNO endInstall
         ExecWait "$SYSDIR\msiExec /i $INSTDIR\$1"
     ${endif}
 endInstall:
@@ -1061,7 +1061,7 @@ noPythonInstall:
 noNumPyInstall:
   SetOutPath "$INSTDIR\python"
   ${if} $PythonPathValue == ""
-      StrCpy $PythonPathValue "c:\Python26\python.exe"
+      StrCpy $PythonPathValue "c:\Python27\python.exe"
   ${endif}
   ${if} $JavaPathValue == ""
       StrCpy $JavaPathValue "C:\Windows\system32\java.exe"

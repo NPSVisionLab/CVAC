@@ -325,19 +325,11 @@ ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 # Make sure packages are compatible
 # ICE 3.5.1 is pre-built against Python 2.7
 IF( PYTHONINTERP_FOUND )
-  IF( APPLE)
-      # make sure it's version 2.7 or else error
-      IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 7 )
-        MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
-        MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
-      ENDIF()
-  ELSE (APPLE)
-      # make sure it's version 2.6 or else error
-      IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
-        MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
-        MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
-      ENDIF()
-  ENDIF (APPLE)
+  # make sure it's version 2.7 or else error
+  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 7 )
+    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
+  ENDIF()
 
   #For Python set a variable for cv2 dynamic library
   #

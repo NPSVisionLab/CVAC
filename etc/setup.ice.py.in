@@ -9,5 +9,4 @@ setup (name = '${PYTHON_PACK_ICE_NAME}',
        packages = ['', 'IceBox', 'IceGrid', 'IceMX', 'IcePatch2', 'IceStorm'],
        package_data = {'':['IcePy.${PYTHON_EXT}']},
        include_package_data = True,
-       install_requires = ['python>=2.7.0,<3.0']
     )

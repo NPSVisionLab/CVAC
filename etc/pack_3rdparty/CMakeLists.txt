@@ -38,12 +38,12 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         PATTERN *.dll
        )
 #Windows also needs numpy install exe
-INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1.win32-py2.6.exe
+INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-win32-superpack-python2.7.exe
         DESTINATION 3rdparty
         COMPONENT NumpyExt
        )
 #Windows also needs python install exe
-INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/python-2.6.6.msi
+INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/python-2.7.8.msi
         DESTINATION 3rdparty
         COMPONENT NumpyExt
        )
