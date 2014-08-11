@@ -205,6 +205,11 @@ IF (WIN32)
        COMPONENT Runtime 
       )
 
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/setuptools-0.6c11.win32-py2.7.exe
+       DESTINATION 3rdparty
+       COMPONENT Runtime 
+      )
+
 ELSE (WIN32)
 
   IF (APPLE)
