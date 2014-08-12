@@ -134,7 +134,10 @@ class Application(tk.Frame):
         self.grid()
         self.stdPollTime = 500  # number of msecs to poll stdout from thead
         self.checkVar = tk.IntVar() # 1 if checked, 0 otherwise
-        self.checkVar.set(1)
+        if sys.platform=='win32':
+            self.checkVar.set(0)
+        else:
+            self.checkVar.set(1)
         row = 1
         row = self.uiStartStopServices(row)
         row = self.uiCommands(row)
@@ -149,8 +152,10 @@ class Application(tk.Frame):
             self.ccenv = {'PATH':installpath + '/virt/bin:' + os.getenv('PATH'),
                           'DYLD_LIBRARY_PATH': installpath+'/3rdparty/opencv/lib:'+installpath+'/3rdparty/ICE/lib'}
         elif sys.platform=='win32':
+            # Added SystemRoot since python 2.7 seems to require it
             self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python;'+installpath+'/python',
-            'PATH':installpath+'/bin;'+installpath+'/3rdparty/opencv/bin;'+installpath+'/3rdparty/ICE/bin;' + os.genenv('PATH')}
+                       'PATH':installpath+'/bin;'+installpath+'/3rdparty/opencv/x86/vc10/bin;'+installpath+'/3rdparty/ICE/bin;'+ os.getenv('PATH'),
+                       'SystemRoot': os.getenv('SystemRoot')}
             self.ccenv = self.env
 
     '''
@@ -229,9 +234,10 @@ class Application(tk.Frame):
         tk.Label(lf, text="Service Status:").grid(row=2, sticky=tk.W)
         statusLabel = tk.Label(lf, textvariable=self.serverStatus)
         statusLabel.grid(row=3, columnspan=5, sticky=tk.W)
-        checkButton = tk.Checkbutton(lf, text= 'Show services output',
+        if sys.platform!='win32':
+            checkButton = tk.Checkbutton(lf, text= 'Show services output',
                                           variable=self.checkVar)
-        checkButton.grid(row=4, columnspan=5, sticky=tk.W)
+            checkButton.grid(row=4, columnspan=5, sticky=tk.W)
         return row
     
     def uiLastButtons(self, row):
@@ -279,7 +285,7 @@ class Application(tk.Frame):
         if sys.platform=='darwin':
             os.system("open "+os.getcwd()+'/python_env.txt')
         elif sys.platform=='win32':
-            shellcmd = 'start cmd /K type {0}\\demo\\python_env.txt'.format(os.getcwd())
+            shellcmd = 'start cmd /K type {0}\\python_env.txt'.format(os.getcwd())
             os.system( shellcmd )
         else:
             print "please define openEnv for this OS: "+sys.platform
@@ -290,7 +296,7 @@ class Application(tk.Frame):
             shellcmd = "osascript -e 'tell application \"Terminal\" to activate' -e 'tell application \"System Events\" to tell process \"Terminal\" to keystroke \"n\" using command down' -e 'tell application \"Terminal\" to do script \"export PYTHONPATH="+installpath+'/3rdparty/ICE/python:'+installpath+'/python'+ ';' + 'export PATH='+installpath+'/virt/bin:$PATH; export DYLD_LIBRARY_PATH='+installpath + '/3rdparty/opencv/lib:'+installpath+'/3rdparty/ICE/lib' +"\" in the front window'"
             os.system( shellcmd )
         elif sys.platform=='win32':
-            shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/bin;{0}/3rdparty/ICE/bin;%PATH%"'.format(installpath)
+            shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/x86/vc10/bin;{0}/3rdparty/ICE/bin;%PATH%"'.format(installpath)
             os.system( shellcmd )
         else:
             print "please define openTerminal command for this OS: "+sys.platform
@@ -300,7 +306,7 @@ class Application(tk.Frame):
             # a lovely command to get a Terminal window with proper PYTHONPATH set
             self.doExec(pythonExec, args=installpath + "/demo/detect.py", dopipe=True, env=self.env)
         elif sys.platform=='win32':
-            shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/bin;{0}/3rdparty/ICE/bin;%PATH% && pythonExec {1}"'.format(installpath, demo)
+            shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/x86/vc10/bin;{0}/3rdparty/ICE/bin;%PATH% && {2} {1}"'.format(installpath, demo, pythonExec)
             os.system( shellcmd )
         else:
             print "please define openTerminal command for this OS: "+sys.platform

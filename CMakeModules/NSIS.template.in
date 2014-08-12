@@ -580,11 +580,11 @@ Function customDialog
   ${If} $Dialog == error
     Abort
   ${EndIf}
-  ${NSD_CreateCheckbox} 0 0 100% 12u "Select checkbox to install Python 2.6 or ..."
+  ${NSD_CreateCheckbox} 0 0 100% 12u "Select checkbox to install Python 2.7 or ..."
   Pop $CheckboxPython
-  ${NSD_CreateLabel} 0 0 100% 12u "Enter path to Python 2.6"
+  ${NSD_CreateLabel} 0 0 100% 12u "Enter path to Python 2.7"
   Pop $LabelPython
-  ${NSD_CreateText} 0 13u -20u 12u "C:\Python26\python.exe"
+  ${NSD_CreateText} 0 13u -20u 12u "C:\Python27\python.exe"
   Pop $PythonPathText
   ${NSD_CreateBrowseButton} -18u 13u 18u 12u "..."
   Pop $0
@@ -692,23 +692,34 @@ FunctionEnd
 
 Function installNumPy
     Push $1
-    StrCpy $1 "3rdparty\numpy-1.7.1.win32-py2.6.exe"
-    File /nonfatal $1
+    StrCpy $1 "3rdparty\numpy-1.8.1-win32-superpack-python2.7.exe"
     ${if} ${FileExists} "$INSTDIR\$1" 
-        MessageBox MB_YESNO "Install Numpy (for python services)" /SD IDYES IDNO endInstall
-        ExecWait "$INSTDIR\$1"
+        MessageBox MB_YESNO "Install Numpy (for python services)" /SD IDYES IDNO endInstallnp
+        DetailPrint "Installing numpy"
+        nsExec::ExecToLog '"$INSTDIR\$1"'
     ${endif}
-endInstall:
+endInstallnp:
+    Pop $1
+FunctionEnd
+
+Function installsetuptools
+    Push $1
+    StrCpy $1 "3rdparty\setuptools-0.6c11.win32-py2.7.exe"
+    ${if} ${FileExists} "$INSTDIR\$1" 
+        MessageBox MB_YESNO "Install setuptools (required for python install)" /SD IDYES IDNO endInstallst
+        DetailPrint "Installing setuptools"
+        nsExec::ExecToLog '"$INSTDIR\$1"'
+    ${endif}
+endInstallst:
     Pop $1
 FunctionEnd
 
 Function installPython
     Push $1
-    StrCpy $1 "3rdparty\python-2.6.6.msi"
-    File /nonfatal $1
+    StrCpy $1 "3rdparty\python-2.7.8.msi"
     ${if} ${FileExists} "$INSTDIR\$1"  
-        MessageBox MB_YESNO "Install Python 2.6.6" /SD IDYES IDNO endInstall
-        ExecWait "$SYSDIR\msiExec /i $INSTDIR\$1"
+        MessageBox MB_YESNO "Install Python 2.7.8" /SD IDYES IDNO endInstall
+        nsExec::ExecToLog '"$SYSDIR\msiExec" /i $INSTDIR\$1'
     ${endif}
 endInstall:
     Pop $1
@@ -1050,6 +1061,7 @@ Section "-Core installation"
   !insertmacro MUI_STARTMENU_WRITE_END
 
   # CVAC Changes start
+  SetOutPath "$INSTDIR"
   IfSilent noPythonInstall 0
       ${if} $InstallPython == "yes"
           Call installPython
@@ -1059,9 +1071,10 @@ noPythonInstall:
   IfSilent noNumPyInstall 0
       Call installNumPy
 noNumPyInstall:
+  Call installsetuptools
   SetOutPath "$INSTDIR\python"
   ${if} $PythonPathValue == ""
-      StrCpy $PythonPathValue "c:\Python26\python.exe"
+      StrCpy $PythonPathValue "c:\Python27\python.exe"
   ${endif}
   ${if} $JavaPathValue == ""
       StrCpy $JavaPathValue "C:\Windows\system32\java.exe"
@@ -1071,10 +1084,18 @@ noNumPyInstall:
   ${endif}
 silentInstall:
   # install the Python code
+  # First we install easy and then  ice
+  SetOutPath "$INSTDIR\python\easyPkg"
   nsExec::ExecToLog '"$PythonPathValue" setup.py install'
   Pop $0
   StrCmp $0 0 +2 0
-      MessageBox MB_OK "Can't install python code" /SD IDOK
+      MessageBox MB_OK "Can't install easy python code" /SD IDOK
+  SetOutPath "$INSTDIR\python\icePkg"
+  nsExec::ExecToLog '"$PythonPathValue" setup.py install'
+  Pop $0
+  StrCmp $0 0 +2 0
+      MessageBox MB_OK "Can't install ice python code" /SD IDOK
+  SetOutPath "$INSTDIR"
   # Fixup paths in start and stopServices files
   !insertmacro _ReplaceInFile $INSTDIR\bin\startServices.bat __PYTHON_PATH__ "$PythonPathValue"
   !insertmacro _ReplaceInFile $INSTDIR\bin\startServices.bat __JAVA_PATH__ "$JavaPathValue"
@@ -1083,15 +1104,19 @@ silentInstall:
   !insertmacro _ReplaceInFile $INSTDIR\bin\stopServices.bat __JAVA_PATH__ "$JavaPathValue"
   !insertmacro _ReplaceInFile $INSTDIR\bin\stopServices.bat __INSTALL_PATH__ "$INSTDIR"
 
-  #make sure DataPathValue exists
-  CreateDirectory $DataPathValue
-  #Copy required files from install to that data path
-  SetOutPath $DataPathValue
-  CopyFiles "$INSTDIR/data" "$DataPathValue" 
-
-  #Replace DataDir entry in config file with new one
-  !insertmacro _ReplaceInFile $INSTDIR\config.service "CVAC.DataDir = data" "CVAC.DataDir = $DataPathValue"
   SetOutPath "$INSTDIR"
+  # If DataPathValue is not "data" then copy data files to it
+  ${ifnot} $DataPathValue == "data"
+      #make sure DataPathValue exists
+      CreateDirectory $DataPathValue
+      #Copy required files from install to that data path
+      SetOutPath $DataPathValue
+      CopyFiles "$INSTDIR/data" "$DataPathValue" 
+
+      #Replace DataDir entry in config file with new one
+      !insertmacro _ReplaceInFile $INSTDIR\config.service "CVAC.DataDir = data" "CVAC.DataDir = $DataPathValue"
+      SetOutPath "$INSTDIR"
+  ${endif}
   # CVAC Changes End
 
 @CPACK_NSIS_EXTRA_INSTALL_COMMANDS@

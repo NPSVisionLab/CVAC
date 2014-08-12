@@ -195,12 +195,17 @@ IF (WIN32)
   ENDIF (NOT PYTHON_ONLY_CLIENT)
 
 
-  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.7.1.win32-py2.6.exe
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-win32-superpack-python2.7.exe
        DESTINATION 3rdparty
        COMPONENT Runtime 
       )
 
-  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/python-2.6.6.msi
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/python-2.7.8.msi
+       DESTINATION 3rdparty
+       COMPONENT Runtime 
+      )
+
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/setuptools-0.6c11.win32-py2.7.exe
        DESTINATION 3rdparty
        COMPONENT Runtime 
       )
@@ -275,18 +280,22 @@ IF (NOT PYTHON_ONLY_CLIENT)
       GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}/../.." REALPATH)
     ENDIF( WIN32 )
     MESSAGE( STATUS "OpenCV will be 3rd-party archived from this path: ${OpenCV_INSTALL_PATH}" )
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
-      DESTINATION 3rdparty/opencv
-       COMPONENT ThirdParty
-      ) 
 
     IF (WIN32)
+    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/x86
+      DESTINATION 3rdparty/opencv
+       COMPONENT ThirdParty
+      )
     INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/python
           DESTINATION 3rdparty/opencv
            COMPONENT ThirdParty
           ) 
 
     ELSE (WIN32)
+    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
+      DESTINATION 3rdparty/opencv
+       COMPONENT ThirdParty
+      )
     #If not windows need the libs for the shared libraries
     INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
           DESTINATION 3rdparty/opencv

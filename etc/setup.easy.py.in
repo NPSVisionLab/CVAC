@@ -12,6 +12,5 @@ setup (name = '${PYTHON_PACK_EASY_NAME}',
                   ],
        package_data = { '':['cv2.${PYTHON_EXT}']},
        include_package_data = True,
-       install_requires = ['python>=2.7.0,<3.0']
 
     )

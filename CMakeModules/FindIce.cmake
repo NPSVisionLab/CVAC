@@ -43,18 +43,13 @@ FIND_PATH (ICE_PYTHON_DIR Ice.py
            )
 
 SET(CDIR "")
-IF (MSVC10)
-    SET(CDIR "/vc100")
-ENDIF (MSVC10)
 IF (APPLE)
     IF (NOT USE_LEGACY_STDC++LIB)
         SET(CDIR "/c++11")
     ENDIF (NOT USE_LEGACY_STDC++LIB)
 ENDIF (APPLE)
-# If we are running on Windows 8 the we have ice 3.5 so vc10 is default
-IF (${CMAKE_SYSTEM} STREQUAL "Windows-6.2")
-    SET(CDIR "")
-ENDIF (${CMAKE_SYSTEM} STREQUAL "Windows-6.2")
+# If we are running on Windows the we have ice 3.5 so vc10 is default
+#IF (${CMAKE_SYSTEM} STREQUAL "Windows-6.2")
 #where to find the ICE lib dir
 SET(ICE_LIB_SEARCH_PATH
          ${ICE_ROOT}/lib${CDIR}
