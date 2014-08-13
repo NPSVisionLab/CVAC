@@ -304,7 +304,7 @@ FIND_PACKAGE(LibArchive REQUIRED)
 
 #Opencv includes now required for src/util library
 FIND_PACKAGE( OpenCV 2.4 REQUIRED
-                            core imgproc highgui ml features2d nonfree objdetect calib3d
+                            opencv_core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv_stdc
