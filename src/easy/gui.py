@@ -154,7 +154,7 @@ class Application(tk.Frame):
         elif sys.platform=='win32':
             # Added SystemRoot since python 2.7 seems to require it
             self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python;'+installpath+'/python',
-                       'PATH':installpath+'/bin;'+installpath+'/3rdparty/opencv/x86/vc10/bin;'+installpath+'/3rdparty/ICE/bin;'+ os.getenv('PATH'),
+                       'PATH':installpath + '/virt/Scripts;' + installpath+'/bin;'+installpath+'/3rdparty/opencv/x86/vc10/bin;'+installpath+'/3rdparty/ICE/bin;'+ os.getenv('PATH'),
                        'SystemRoot': os.getenv('SystemRoot')}
             self.ccenv = self.env
 
@@ -296,7 +296,7 @@ class Application(tk.Frame):
             shellcmd = "osascript -e 'tell application \"Terminal\" to activate' -e 'tell application \"System Events\" to tell process \"Terminal\" to keystroke \"n\" using command down' -e 'tell application \"Terminal\" to do script \"export PYTHONPATH="+installpath+'/3rdparty/ICE/python:'+installpath+'/python'+ ';' + 'export PATH='+installpath+'/virt/bin:$PATH; export DYLD_LIBRARY_PATH='+installpath + '/3rdparty/opencv/lib:'+installpath+'/3rdparty/ICE/lib' +"\" in the front window'"
             os.system( shellcmd )
         elif sys.platform=='win32':
-            shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/x86/vc10/bin;{0}/3rdparty/ICE/bin;%PATH%"'.format(installpath)
+            shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/virt/Scripts;{0}/3rdparty/opencv/x86/vc10/bin;{0}/3rdparty/ICE/bin;%PATH%"'.format(installpath)
             os.system( shellcmd )
         else:
             print "please define openTerminal command for this OS: "+sys.platform
