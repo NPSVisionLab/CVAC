@@ -1067,30 +1067,65 @@ Section "-Core installation"
           Call installPython
       ${endif}
 noPythonInstall:
-  #NumPyInstall is not silent so skip if in silent mode
-  IfSilent noNumPyInstall 0
-      Call installNumPy
-noNumPyInstall:
-  Call installsetuptools
-  SetOutPath "$INSTDIR\python"
+  # Install the virtual env and change the PythonPathValue over to
+  # the virtual env.
   ${if} $PythonPathValue == ""
       StrCpy $PythonPathValue "c:\Python27\python.exe"
   ${endif}
+  DetailPrint "Installing python virtual environment to $INSTDIR\virt"
+  nsExec::ExecToLog '"$PythonPathValue" "$INSTDIR\3rdparty\virtualenv-1.11.6\virtualenv.py" --no-site-packages --never-download $INSTDIR\virt'
+  Pop $0
+  StrCmp $0 0 +2 0
+      MessageBox MB_OK "Can't install virtualenv" /SD IDOK
+  DetailPrint "Virtual environment install complete"
+  # Change our PythonPathValue to point to virtualevn
+  StrCpy $PythonPathValue "$INSTDIR\virt\Scripts\python.exe"
+  # Temporarily set env PATH to put the virtual env first and
+  # also set PYTHONHOME.
+  System::Call 'Kernel32::SetEnvironmentVariable(t, t) i("PYTHONHOME", "$INSTDIR\virt").r0'
+  StrCmp $0 0 errorPH
+  Goto donePH
+errorPH:
+  MessageBox MB_OK "Can't set environment variable PYTHONHOME"
+donePH:
+  #set PYTHONPATH
+  System::Call 'Kernel32::SetEnvironmentVariable(t, t) i("PYTHONPATH", "$INSTDIR\virt\Lib").r0'
+  StrCmp $0 0 errorPP
+  Goto donePP
+errorPP:
+  MessageBox MB_OK "Can't set environment variable PYTHONPATH"
+donePP:
+  # Read PATH 
+  ReadEnvStr $0 PATH
+  StrCpy $1 "$INSTDIR\virt\Scripts;$0"
+  System::Call 'Kernel32::SetEnvironmentVariable(t, t) i("PATH", $1).r0'
+  StrCmp $0 0 errorP
+  Goto doneP
+errorP:
+  MessageBox MB_OK "Can't set environment variable PATH"
+doneP:
+  # Install numpy
+  nsExec::ExecToLog '"$INSTDIR\virt\Scripts\easy_install.exe" $INSTDIR\3rdparty\numpy-1.8.1-sse3.exe'
+  Pop $0
+  StrCmp $0 0 +2 0
+      MessageBox MB_OK "Can't install numpy" /SD IDOK
+
   ${if} $JavaPathValue == ""
       StrCpy $JavaPathValue "C:\Windows\system32\java.exe"
   ${endif}
   ${if} $DataPathValue == ""
       StrCpy $DataPathValue "data"
   ${endif}
-silentInstall:
   # install the Python code
   # First we install easy and then  ice
   SetOutPath "$INSTDIR\python\easyPkg"
+  DetailPrint "Installing easyPkg- $PythonPathValue setup.py install"
   nsExec::ExecToLog '"$PythonPathValue" setup.py install'
   Pop $0
   StrCmp $0 0 +2 0
       MessageBox MB_OK "Can't install easy python code" /SD IDOK
   SetOutPath "$INSTDIR\python\icePkg"
+  DetailPrint "Installing icePkg"
   nsExec::ExecToLog '"$PythonPathValue" setup.py install'
   Pop $0
   StrCmp $0 0 +2 0

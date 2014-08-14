@@ -195,7 +195,7 @@ IF (WIN32)
   ENDIF (NOT PYTHON_ONLY_CLIENT)
 
 
-  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-win32-superpack-python2.7.exe
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-sse3.exe
        DESTINATION 3rdparty
        COMPONENT Runtime 
       )
@@ -205,7 +205,7 @@ IF (WIN32)
        COMPONENT Runtime 
       )
 
-  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/setuptools-0.6c11.win32-py2.7.exe
+  INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/virtualenv-1.11.6
        DESTINATION 3rdparty
        COMPONENT Runtime 
       )

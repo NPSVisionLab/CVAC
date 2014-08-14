@@ -303,7 +303,6 @@ FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
 #Opencv includes now required for src/util library
-message("${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}")
 FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
