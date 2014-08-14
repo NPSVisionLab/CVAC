@@ -257,19 +257,12 @@ IF (NOT PYTHON_ONLY_CLIENT)
        DESTINATION 3rdparty/libarchive
        COMPONENT ThirdParty
       )
-    ELSE (WIN32)
+    ELSEIF (NOT APPLE)
     INSTALL(FILES ${LIBARCHIVE_LIBRARY} ${LIBARCHIVE_LIBRARY_REALPATH}
        DESTINATION 3rdparty/libarchive/lib
        COMPONENT ThirdParty
       )
     ENDIF (WIN32)
-    IF(APPLE)
-    #Copy the complete directory to get all the extra .dylibs
-    INSTALL(DIRECTORY ${LIBARCHIVE_LIB_DIR}
-           DESTINATION 3rdparty/libarchive
-           COMPONENT LibArchiveExt
-           )
-    ENDIF(APPLE)
 
     # OpenCV needs to be isolated in some staging area.  You need
     # to configure this CMake to pull OpenCV from there.
