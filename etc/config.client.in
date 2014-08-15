@@ -3,7 +3,7 @@
 ## of each detector.
 ###################################################################################
 
-#Ice.Default.EncodingVersion=1.0
+${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
 
 ## Disable ACM on the client for bi-directional behavior
 Ice.ACM.Client=0

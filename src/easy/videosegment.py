@@ -43,6 +43,7 @@ class TRECVIDAnnotaitonParser():
             #       + " elements are obtained from " + self.xmlpath)
             #===================================================================
         else:            
+            print("looking for xml file " + self.xmlpath)
             raise RuntimeError("No xml file")
         
     def getCutSoft(self):

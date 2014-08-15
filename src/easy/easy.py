@@ -22,6 +22,7 @@ import Ice
 import IcePy
 import cvac
 from util import misc
+from util.ArchiveHandler import * 
 import unittest
 import stat
 import threading
@@ -967,7 +968,7 @@ def discardSuboptimal(perfdata,saveRelativeDir = None):
         else:
             print("Warning: " + "Invalid RoC data: (tp+fn) = 0")
             #raise RuntimeError("Invalid RoC data: (tp+fn) = 0")
-        ptsROC.append([xaxis,yaxis,tp,fp,tn,fn])
+        ptsROC.append([xaxis,yaxis,(1.0-xaxis)*yaxis,tp,fp,tn,fn])
         
     index_optimal = []
     for i in range(0,len(ptsROC)):
@@ -975,11 +976,23 @@ def discardSuboptimal(perfdata,saveRelativeDir = None):
         for j in range(0,len(ptsROC)):
             if j==i:
                 continue
-            elif ptsROC[j][1]<ptsROC[i][1]:
+            elif ptsROC[j][1]<ptsROC[i][1]:                
                 continue
+            elif ptsROC[j][1]==ptsROC[i][1]:
+                if ptsROC[j][0]<ptsROC[i][0]:
+                    flagOpt = False
+                    break
+                else:
+                    continue                                    
             elif ptsROC[j][0]<ptsROC[i][0]:
                 flagOpt = False
                 break
+            elif ptsROC[j][0]==ptsROC[i][0]:
+                if ptsROC[j][1]>ptsROC[i][1]:
+                    flagOpt = False
+                    break
+                else:
+                    continue                          
         
         if flagOpt==True:
             index_optimal.append(i)
@@ -998,56 +1011,134 @@ def discardSuboptimal(perfdata,saveRelativeDir = None):
     return ptsROC,index_optimal
 
         
-def getBestDetectorData(listRocData,dPrec,dRec,saveFlag = False):
+def getBestDetectorData(listRocData,dFAR,dRec,saveFlag = False):
     if len(listRocData)<1 | len(listRocData[0])<3:
         raise RuntimeError("RoC Data must include at least three elements in a row: detectorData, x-axis and y-axis")
-             
-    yaxisMax = -0.1
+    
+    resMsg = "The best detectorData is "
     bestDetectorData = None
-    for rocValues in listRocData:        
-        xaxis = rocValues[1]
-        yaxis = rocValues[2]
-        if xaxis <= (1 - dPrec):
-            if yaxisMax < yaxis:
-                yaxisMax = yaxis
-                bestDetectorData = rocValues[0]
-    
-    yaxisMax = -0.1
-    xaxisMin = 1.1     
-    resMsg = None   
-    if bestDetectorData == None:    
-        for rocValues in listRocData:
-            xaxis = rocValues[1]
-            yaxis = rocValues[2]
-            if xaxis < xaxisMin:
-                xaxisMin= xaxis
-                yaxisMax = yaxis
-                bestDetectorData = rocValues[0]
-            elif xaxis == xaxisMin:
-                if yaxisMax < yaxis:
-                    yaxisMax = yaxis
-                    bestDetectorData = rocValues[0]
-        resMsg = "Most likely detectorData is " + bestDetectorData.filename
+    if (dFAR<0):
+        valueSmallest = 1.0
+        for elem in listRocData:
+            dist= elem[2]-dRec
+            if (dist>=0) & (dist<valueSmallest):
+                valueSmallest = dist
+                bestDetectorData = elem[0]        
+        if bestDetectorData == None:
+            valueBiggest = -1.0
+            for elem in listRocData:
+                dist= elem[2]-dRec
+                if (dist>valueBiggest):
+                    valueBiggest = dist
+                    bestDetectorData = elem[0]
+            resMsg = "Most likely detectorData is "
+    elif (dRec<0):
+        valueBiggest = -1.0
+        for elem in listRocData:
+            dist= elem[1]-dFAR
+            if (dist<=0) & (dist>valueBiggest):
+                valueBiggest = dist
+                bestDetectorData = elem[0]        
+        if bestDetectorData == None:
+            valueSmallest = 1.0
+            for elem in listRocData:
+                dist= elem[1]-dFAR
+                if (dist<valueSmallest):
+                    valueSmallest = dist
+                    bestDetectorData = elem[0]
+            resMsg = "Most likely detectorData is "
     else:
-        resMsg = "The best detectorData is " + bestDetectorData.filename
+        valueBiggest = -1.0
+        for elem in listRocData:
+            distX = elem[1]-dFAR
+            distY = elem[2]-dRec
+            if (distX<=0) & (distY>=0):
+                fvalue = (1.0-elem[1])*elem[2]
+                if (fvalue>valueBiggest):
+                    valueBiggest = fvalue
+                    bestDetectorData = elem[0]
+        
+        if bestDetectorData == None:
+            valueBiggest = -1.0
+            for elem in listRocData:
+                fvalue = (1.0-elem[1])*elem[2]
+                if (fvalue>valueBiggest):
+                    valueBiggest = fvalue
+                    bestDetectorData = elem[0]
+            resMsg = "Most likely detectorData is "
+            
+    resMsg = resMsg + bestDetectorData.filename
     
-    if saveFlag == True: 
-        fpathROC = CVAC_DataDir+"/"\
-        +bestDetectorData.directory.relativePath+"/"\
-        +"RocTable_"\
-        +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S")\
-        +"_pre=" + str(dPrec)+"_"\
-        +"rec=" + str(dRec)+".txt"                 
-        f = open(fpathROC,'w')        
-        for rocValues in listRocData:
-            f.write(rocValues[0].filename + '\t')
-            f.write(str(rocValues[1]) + '\t')
-            f.write(str(rocValues[2]) + '\n')
-        f.write(resMsg)            
-        f.close()        
+#     if saveFlag == True:
+#         fpathROC = bestDetectorData.directory.relativePath+"/"\
+#         +"RocTable_"\
+#         +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S")\
+#         +"_FalseAlarmRate=" + str(dFAR)+"_"\
+#         +"RecallRate=" + str(dRec)+".txt"
+#         f = open(fpathROC,'w')
+#         for rocValues in listRocData:
+#             f.write(rocValues[0].filename + '\t')
+#             f.write(str(rocValues[1]) + '\t')
+#             f.write(str(rocValues[2]) + '\n')
+#         f.write(resMsg)
+#         f.close()        
     
     print(resMsg)
     return bestDetectorData
+
+#from easy.util.ArchiveHandler import *
+def makeROCdata(rocData_optimal):
+    rocArch = ArchiveHandler(CVAC_DataDir)
+    rocArch.mDDA.mPropertyFilename = "roc.properties"
+    clientName = rocArch.createClientName('ROC', 'TBD')
+    tempDir = rocArch.createTrainingDir(clientName)
+    clientDir,relClientDir = rocArch.createClientDir(clientName)
+    rocZip_fileName = rocArch.setArchivePath(clientDir,"ROCdata")
+    
+    for roc in rocData_optimal:
+        valueStr = str(roc[1]) + ', ' + str(roc[2])
+        rocArch.addFile(roc[0].filename,\
+                        CVAC_DataDir+'/'+roc[0].directory.relativePath+'/'+roc[0].filename,\
+                        valueStr)
+    
+    rocArch.createArchive(tempDir)
+    rocArch.deleteTrainingDir(clientName)
+
+    upperDir = os.path.join(relClientDir, '..')
+    shutil.move(CVAC_DataDir+'/'+relClientDir+'/'+rocZip_fileName,CVAC_DataDir+'/'+upperDir+'/')
+    shutil.rmtree(CVAC_DataDir+'/'+relClientDir)
+            
+    rocZip = cvac.FilePath()
+    rocZip.directory.relativePath = upperDir                      
+    rocZip.filename = rocZip_fileName
+    
+    return rocZip
+
+def isROCdata(rocZip):
+    zipfilepath = CVAC_DataDir+'/'\
+    +rocZip.directory.relativePath+'/'+rocZip.filename
+    relDir = rocZip.directory.relativePath +'/'\
+    +'roc_' + str(random.randint(1,sys.maxint)).zfill(len(str(sys.maxint)))
+    tempDir = CVAC_DataDir+'/'+relDir
+    if os.path.isdir(tempDir):
+        shutil.rmtree(tempDir)
+    os.makedirs(tempDir)
+
+    rocArch = DetectorDataArchive()
+    rocArch.mPropertyFilename = "roc.properties"    
+    rocDict = rocArch.unArchive(zipfilepath,tempDir)
+    rocData_optimal = []
+    isROC = False
+    if len(rocDict) > 0:
+        isROC = True
+        for filename in rocDict:
+            detectorData = cvac.FilePath()
+            detectorData.directory.relativePath = relDir
+            detectorData.filename = filename
+            tperf = rocDict[filename].split(',')
+            rocData_optimal.append([detectorData,\
+                                    float(tperf[0]),float(tperf[1])])
+    return isROC,rocData_optimal,tempDir
 
 
 def detect( detector, detectorData, runset, detectorProperties=None, callbackRecv=None ):
@@ -1065,23 +1156,31 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     '''
 
     # create a cvac.DetectorData object out of a filename
+    tempDir = None
     if not detectorData:
         detectorData = getCvacPath( "" )
     elif type(detectorData) is str:
         detectorData = getCvacPath( detectorData )
-    elif isinstance(detectorData, list):
-        if detectorProperties == None:
-            raise RuntimeError("For selecting the best detectorData, " + \
-                               "detectorProperties including desired precision " + \
-                               "and recall must be entered")
-        dPre = detectorProperties.falseAlarmRate
-        dRec = detectorProperties.recall
-        if (dPre<0) | (dPre>1.0) | (dRec<0) | (dRec>1.0):
-            raise RuntimeError("Inapporopriate values for desired recall and precision")
-        detectorData = getBestDetectorData(detectorData,dPre,dRec,True)
+    elif type(detectorData) is cvac.FilePath:
+        fileext = os.path.splitext(detectorData.filename)[1]
+        if fileext.lower()=="zip":
+            #check whether the zip file is roc data or not
+            isROC, rocData_optimal, tempDir = isROCdata(detectorData)
+            if isROC == True:
+                if detectorProperties == None:
+                    raise RuntimeError("For selecting the best detectorData, " + \
+                                       "detectorProperties including desired precision " + \
+                                       "and recall must be entered")
+                dFAR = detectorProperties.falseAlarmRate
+                dRec = detectorProperties.recall
+                if (dFAR<0) & (dRec<0):
+                    raise RuntimeError("Inapporopriate values for desired recall and precision")
+                elif (dFAR>1.0) & (dRec>1.0):
+                    raise RuntimeError("Inapporopriate values for desired recall and precision")            
+                detectorData = getBestDetectorData(rocData_optimal,dFAR,dRec,True)            
     elif not type(detectorData) is cvac.FilePath:
         raise RuntimeError("detectorData must be filename, cvac.FilePath, or RoC data")
-
+    
     # if not given an actual cvac.RunSet, try to create a RunSet
     if isinstance(runset, cvac.RunSet):
         pass
@@ -1113,6 +1212,10 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     if detectorProperties == None:
         detectorProperties = cvac.DetectorProperties()
     detector.process( cbID, runset, detectorData, detectorProperties )
+    
+    if tempDir != None:
+        if os.path.isdir(tempDir):
+            shutil.rmtree(tempDir)
 
     if ourRecv:
         return callbackRecv.allResults

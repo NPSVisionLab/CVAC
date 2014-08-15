@@ -58,47 +58,97 @@ if __name__ == '__main__':
     scriptpath  = os.path.dirname(os.path.abspath( scriptfname ))
     installpath = os.path.abspath(scriptpath+'/../Resources')
 
-    print('install path ' + installpath)
-    sys.path.append(installpath+'/python/easy')
-    sys.path.append(installpath+'/demo')
-    sys.path.append(installpath+'/3rdparty/ICE/python')
-    sys.path.append(installpath+'/python')
+    if installpath+'/python/easy' not in sys.path:
+	    sys.path.append(installpath+'/python/easy')
+    if installpath+'/demo' not in sys.path:
+	    sys.path.append(installpath+'/demo')
+    if installpath+'/3rdparty/ICE/python' not in sys.path:
+	    sys.path.append(installpath+'/3rdparty/ICE/python')
+    if installpath+'/python' not in sys.path:
+	    sys.path.append(installpath+'/python')
+    # We need python path to point to our virtual site
+    if installpath+'/virt/lib/python2.7/site-packages' not in sys.path:
+	    sys.path.append(installpath+'/virt/lib/python2.7/site-packages')
 
+    #checking python version should now be handled by setup.py
+    # and install_requires.
     #check if we have the correct python version
     versionNum = sys.hexversion
-    if versionNum < 0x02060800 or versionNum >= 0x02070000:
-        # bring up the gui to install python
-        import installPython
+    #if versionNum < 0x02070000 or versionNum >= 0x02080000:
+        # Don't have the correct python version so lets run the 
+        # virtual env
 
-    if virtualDir != None:
-        # Create a virtual env at virtualDir and change pythonExec to point
-        # to that
-        subprocess.Popen([pythonExec,' -m virtualenv ' + virtualDir])
+    virtualDir = installpath + '/virt'
+    activate_this = virtualDir + '/bin/activate_this.py'
+    installVE = True
+    pathenv = os.getenv("PATH")
+    tempPath = virtualDir + '/bin'
+    if tempPath not in pathenv:
+        os.putenv("PATH", tempPath + ':' + pathenv)
         pathenv = os.getenv("PATH")
-        os.putenv("PATH", virtualDir+'/bin:$PATH')
-        pythonExec = virtualDir+'/bin/python'
+    if os.path.isfile(activate_this):
+        # We might have a virtual env lets try to activate it.
+        try:
+            execfile(activate_this, dict(__file__=activate_this))
+            # if the activation worked then we have a sys real_prefix
+            if hasattr(sys, 'real_prefix') == True:
+                print("Using existing virtual env in " + virtualDir)
+                installVE = False
+            else:
+                print("Installing virtual env")
+        except:
+            print("Installing virtual env")
+            pass
+    # Always create a virtual env so we don't need root access to install
+    # easy and ice packages
+    if installVE == True:
+        print(pythonExec + " " +  installpath+'/3rdparty/virtualenv-1.11.6/virtualenv.py ' + virtualDir)
+        subprocess.call([pythonExec, 
+             installpath+'/3rdparty/virtualenv-1.11.6/virtualenv.py', 
+             '--no-site-packages',
+             '--never-download',
+             virtualDir])
+        #activate the virtual env
+        execfile(activate_this, dict(__file__=activate_this))
 
-        
+    pythonExec = virtualDir+'/bin/python'
+    #next we install the ice and easy packages
+    os.chdir(installpath + '/python/easyPkg')
+    print("installing easyPkg")
+    subprocess.call([pythonExec, 'setup.py', 'install'])
+    os.chdir(installpath + '/python/icePkg')
+    print("installing icePkg")
+    subprocess.call([pythonExec, 'setup.py', 'install'])
 
     patchInstallDir( installpath+'/bin/startServices.sh', installpath, 
                      pythonexec=pythonExec)
     patchInstallDir( installpath+'/bin/stopServices.sh', installpath,
                      pythonexec=pythonExec)
 
-    try:
-        import numpy
-    except ImportError as ex:
-        #bring up the gui to install numpy
-        installNumpy.doInstall(silent=silent)
+
+    # Setup our env
+    envstr = ""
+    for pstr in sys.path:
+        if pstr != None and pstr != "":
+            envstr = envstr + ':'+ pstr
+    if "EasyCV-" not in envstr:
+	    envstr = installpath+"/virt/lib/python2.7/site-packages/EasyCV-0.8.0-py2.7.egg:" + envstr
+    if "EasyCVIce-" not in envstr:
+	    envstr = installpath+"/virt/lib/python2.7/site-packages/EasyCVIce-0.8.0-py2.7.egg:" +envstr
+    dystr = os.getenv('DYLD_LIBRARY_PATH')
+    if dystr == None:
+        dystr = ""
+    dystr = installpath + '/3rdparty/ICE/lib:' + dystr
+    env = {'PYTHONPATH':envstr, 'PATH': pathenv, 'DYLD_LIBRARY_PATH':dystr}
+
+    # See if Numpy is installed in our virtual env and install if not
+    # We need execute with pythonExec and not current python
+    subprocess.call([installpath + '/virt/bin/python', installpath+ '/../MacOS/installNumpy.py'], 
+                     env=env)
 
     # open the simple GUI that displays system information
     # and permits startup of the services using the correct python
     print("silent {0}".format(silent))
     if silent == False:
-        envstr = ""
-        for pstr in sys.path:
-            if pstr != None and pstr != "":
-                envstr = envstr + ':'+ pstr
-        env = {'PYTHONPATH':envstr}
         subprocess.Popen([pythonExec, installpath+ '/src/easy/gui.py'], 
                               env=env)
