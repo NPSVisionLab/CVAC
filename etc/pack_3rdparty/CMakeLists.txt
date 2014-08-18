@@ -55,7 +55,6 @@ INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-cp27-none-any.whl
         DESTINATION 3rdparty
         COMPONENT NumpyExt
        )
-#Windows also needs python virtual env package so we don't need root access
 INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/virtualenv-1.11.6
         DESTINATION 3rdparty
         COMPONENT NumpyExt
@@ -135,6 +134,17 @@ INSTALL(DIRECTORY ${LIBARCHIVE_BIN_DIR}
        DESTINATION 3rdparty/libarchive
        COMPONENT LibArchiveExt
       )
+#Windows also needs python virtual env package so we don't need root access
+INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/virtualenv-1.11.6
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+        USE_SOURCE_PERMISSIONS
+       )
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-sse3.exe
+       DESTINATION 3rdparty
+       COMPONENT  NumpyExt
+      )
+
 ENDIF( WIN32 )
 
 

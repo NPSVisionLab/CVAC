@@ -14,7 +14,7 @@ do
         if [[ "$ver"  -lt 0x2080000 ]]
         then
             # verify that we can load ice with this python
-            RES=`(cd $Dir/../Resources/3rdparty/Ice/python; $p -c "import Ice";echo $?)`
+            RES=`(cd $Dir/../Resources/3rdparty/ICE/python; $p -c "import Ice";echo $?)`
             if [ $RES == 0 ]
             then
                 MYPYTHON=$p
@@ -33,7 +33,7 @@ then
             if [[ "$ver" -lt 0x2080000 ]]
             then
                 # verify that we can load ice with this python
-                (cd $Dir/../Resources/3rdparty/Ice/python; $p -c "import Ice";RES=$?)
+                (cd $Dir/../Resources/3rdparty/ICE/python; $p -c "import Ice";RES=$?)
                 if [ $RES == 0 ]
                 then
                     MYPYTHON=$p
@@ -54,7 +54,7 @@ echo "trying /usr/local/bin/python"
             if [[ "$ver" -lt 0x2080000 ]]
             then
                 # verify that we can load ice with this python
-                (cd $Dir/../Resources/3rdparty/Ice/python; $p -c "import Ice";RES=$?)
+                (cd $Dir/../Resources/3rdparty/ICE/python; $p -c "import Ice";RES=$?)
                 if [ $RES == 0 ]
                 then
                     MYPYTHON=$p
