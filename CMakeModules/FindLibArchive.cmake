@@ -16,7 +16,7 @@ FIND_PATH(LIBARCHIVE_INCLUDE archive.h archive_entry.h
 FIND_LIBRARY(LIBARCHIVE_LIBRARY NAMES archive
              HINTS
 #                ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/lib
-                ${LIBARCHIVE_INCLUDE}/../lib
+                /usr/lib
 
              PATHS 
                 "C:/Program Files (x86)/libarchive/lib"
