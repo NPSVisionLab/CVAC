@@ -210,6 +210,13 @@ IF (WIN32)
        COMPONENT Runtime 
       )
 
+  INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libsvm
+       DESTINATION 3rdparty
+       COMPONENT Runtime 
+       PATTERN *.py
+       PATTERN *.${CMAKE_SHARED_LIBRARY_SUFFIX}
+      )
+
 ELSE (WIN32)
 
   IF (APPLE)

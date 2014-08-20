@@ -147,6 +147,15 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-sse3.exe
 
 ENDIF( WIN32 )
 
+# Install libsvm for python
+SET (SVM_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libsvm")
+INSTALL(FILES ${SVM_DIR}/libsvm${CMAKE_SHARED_LIBRARY_SUFFIX}
+              ${SVM_DIR}/setup.py
+              ${SVM_DIR}/svm.py
+              ${SVM_DIR}/svmutil.py
+        DESTINATION 3rdparty/libsvm
+        COMPONENT LibSVMExt
+       )
 
 # OpenCV needs to be isolated in some staging area.  You need
 # to configure this CMake to pull OpenCV from there.
@@ -183,6 +192,12 @@ cpack_add_component (
   NumpyExt
   DISPLAY_NAME "Numpy"
   DESCRIPTION "Python numeric processing package"
+  GROUP ThirdPartyGrp
+)
+cpack_add_component (
+  LibSVMExt
+  DISPLAY_NAME "libsvm"
+  DESCRIPTION "Python libsvm package"
   GROUP ThirdPartyGrp
 )
 cpack_add_component (
