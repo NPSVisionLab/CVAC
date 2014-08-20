@@ -119,6 +119,10 @@ if __name__ == '__main__':
     os.chdir(installpath + '/python/icePkg')
     print("installing icePkg")
     subprocess.call([pythonExec, 'setup.py', 'install'])
+    if os.path.isdir(installpath + '/3rdparty/libsvm'):
+        os.chdir(installpath + '/3rdparty/libsvm'
+        print("installing libsvm")
+        subprocess.call([pythonExec, 'setup.py', 'install'])
 
     patchInstallDir( installpath+'/bin/startServices.sh', installpath, 
                      pythonexec=pythonExec)

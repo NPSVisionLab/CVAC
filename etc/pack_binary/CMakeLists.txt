@@ -210,12 +210,14 @@ IF (WIN32)
        COMPONENT Runtime 
       )
 
+IF (NOT PYTHON_ONLY_CLIENT)
   INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libsvm
        DESTINATION 3rdparty
        COMPONENT Runtime 
        PATTERN *.py
        PATTERN *.${CMAKE_SHARED_LIBRARY_SUFFIX}
       )
+ENDIF (NOT PYTHON_ONLY_CLIENT)
 
 ELSE (WIN32)
 
@@ -229,6 +231,14 @@ ELSE (WIN32)
            DESTINATION 3rdparty
            COMPONENT Runtime 
       )
+      IF (NOT PYTHON_ONLY_CLIENT)
+        INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libsvm
+           DESTINATION 3rdparty
+           COMPONENT Runtime 
+           PATTERN *.py
+           PATTERN *.${CMAKE_SHARED_LIBRARY_SUFFIX}
+        )
+      ENDIF (NOT PYTHON_ONLY_CLIENT)
 
   ENDIF (APPLE)
 
