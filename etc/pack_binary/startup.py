@@ -108,8 +108,6 @@ if __name__ == '__main__':
              '--no-site-packages',
              '--never-download',
              virtualDir])
-        #activate the virtual env
-        execfile(activate_this, dict(__file__=activate_this))
 
         pythonExec = virtualDir+'/bin/python'
         #next we install the ice and easy packages
@@ -128,6 +126,8 @@ if __name__ == '__main__':
                          pythonexec=pythonExec)
         patchInstallDir( installpath+'/bin/stopServices.sh', installpath,
                          pythonexec=pythonExec)
+        #activate the virtual env
+        execfile(activate_this, dict(__file__=activate_this))
 
 
     # Setup our env
@@ -135,6 +135,7 @@ if __name__ == '__main__':
     for pstr in sys.path:
         if pstr != None and pstr != "":
             envstr = envstr + ':'+ pstr
+    #print("envstr " + envstr)
     if "EasyCV-" not in envstr:
 	    envstr = installpath+"/virt/lib/python2.7/site-packages/EasyCV-0.8.0-py2.7.egg:" + envstr
     if "EasyCVIce-" not in envstr:
