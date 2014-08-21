@@ -49,6 +49,7 @@ INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/python-2.7.8.msi
        )
 ENDIF(WIN32)
 
+SET (SVM_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libsvm")
 IF(APPLE)
 # OSX also needs numpy package we will install the whl into the virtual env
 INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-cp27-none-any.whl
@@ -88,6 +89,13 @@ INSTALL(DIRECTORY   ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++_stdc
         COMPONENT UnitTestPPExt
         USE_SOURCE_PERMISSIONS
       )
+INSTALL(FILES ${SVM_DIR}/libsvm.so.2
+              ${SVM_DIR}/setup.py
+              ${SVM_DIR}/svm.py
+              ${SVM_DIR}/svmutil.py
+        DESTINATION 3rdparty/libsvm
+        COMPONENT LibSVMExt
+       )
 
 ELSE (APPLE)
 
@@ -144,9 +152,15 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-sse3.exe
        DESTINATION 3rdparty
        COMPONENT  NumpyExt
       )
+INSTALL(FILES ${SVM_DIR}/libsvm${CMAKE_SHARED_LIBRARY_SUFFIX}
+              ${SVM_DIR}/setup.py
+              ${SVM_DIR}/svm.py
+              ${SVM_DIR}/svmutil.py
+        DESTINATION 3rdparty/libsvm
+        COMPONENT LibSVMExt
+       )
 
 ENDIF( WIN32 )
-
 
 # OpenCV needs to be isolated in some staging area.  You need
 # to configure this CMake to pull OpenCV from there.
@@ -163,6 +177,7 @@ INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}
       ) 
 
 ENDIF(APPLE)
+
 
 include(CPack)
 
@@ -183,6 +198,12 @@ cpack_add_component (
   NumpyExt
   DISPLAY_NAME "Numpy"
   DESCRIPTION "Python numeric processing package"
+  GROUP ThirdPartyGrp
+)
+cpack_add_component (
+  LibSVMExt
+  DISPLAY_NAME "libsvm"
+  DESCRIPTION "Python libsvm package"
   GROUP ThirdPartyGrp
 )
 cpack_add_component (
