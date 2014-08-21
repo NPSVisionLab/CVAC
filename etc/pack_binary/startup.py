@@ -111,23 +111,23 @@ if __name__ == '__main__':
         #activate the virtual env
         execfile(activate_this, dict(__file__=activate_this))
 
-    pythonExec = virtualDir+'/bin/python'
-    #next we install the ice and easy packages
-    os.chdir(installpath + '/python/easyPkg')
-    print("installing easyPkg")
-    subprocess.call([pythonExec, 'setup.py', 'install'])
-    os.chdir(installpath + '/python/icePkg')
-    print("installing icePkg")
-    subprocess.call([pythonExec, 'setup.py', 'install'])
-    if os.path.isdir(installpath + '/3rdparty/libsvm'):
-        os.chdir(installpath + '/3rdparty/libsvm'
-        print("installing libsvm")
+        pythonExec = virtualDir+'/bin/python'
+        #next we install the ice and easy packages
+        os.chdir(installpath + '/python/easyPkg')
+        print("installing easyPkg")
         subprocess.call([pythonExec, 'setup.py', 'install'])
+        os.chdir(installpath + '/python/icePkg')
+        print("installing icePkg")
+        subprocess.call([pythonExec, 'setup.py', 'install'])
+        if os.path.isdir(installpath + '/3rdparty/libsvm'):
+            os.chdir(installpath + '/3rdparty/libsvm')
+            print("installing libsvm")
+            subprocess.call([pythonExec, 'setup.py', 'install'])
 
-    patchInstallDir( installpath+'/bin/startServices.sh', installpath, 
-                     pythonexec=pythonExec)
-    patchInstallDir( installpath+'/bin/stopServices.sh', installpath,
-                     pythonexec=pythonExec)
+        patchInstallDir( installpath+'/bin/startServices.sh', installpath, 
+                         pythonexec=pythonExec)
+        patchInstallDir( installpath+'/bin/stopServices.sh', installpath,
+                         pythonexec=pythonExec)
 
 
     # Setup our env
@@ -145,10 +145,17 @@ if __name__ == '__main__':
     dystr = installpath + '/3rdparty/ICE/lib:' + dystr
     env = {'PYTHONPATH':envstr, 'PATH': pathenv, 'DYLD_LIBRARY_PATH':dystr}
 
-    # See if Numpy is installed in our virtual env and install if not
-    # We need execute with pythonExec and not current python
-    subprocess.call([installpath + '/virt/bin/python', installpath+ '/../MacOS/installNumpy.py'], 
+    if installVE == True:
+        # See if Numpy is installed in our virtual env and install if not
+        # We need execute with pythonExec and not current python
+        subprocess.call([installpath + '/virt/bin/python', 
+                     installpath+ '/../MacOS/installNumpy.py'], 
                      env=env)
+        # For other users to use EasyCV they need permission to write the
+        # lock file so check if this is a /Application install and
+        # if it is then try and change the permissions on the install dir.
+        if installpath.startswith("/Applications") == True:
+            os.chmod(installpath, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
     # open the simple GUI that displays system information
     # and permits startup of the services using the correct python
