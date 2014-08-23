@@ -356,7 +356,7 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
       infoFile.close();
   } else 
   { // We already have an info file so just count the lines
-      ifstream infoFile(infoFilename);
+      ifstream infoFile(infoFilename.c_str());
       cnt = std::count(std::istreambuf_iterator<char>(infoFile),
                        std::istreambuf_iterator<char>(), '\n');
   }
