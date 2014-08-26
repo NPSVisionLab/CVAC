@@ -1130,6 +1130,15 @@ doneP:
   Pop $0
   StrCmp $0 0 +2 0
       MessageBox MB_OK "Can't install ice python code" /SD IDOK
+  #Install libSVM if the directory exists
+  ${if} ${FileExists} "$INSTDIR\3rdparty\libsvm\setup.py" 
+      SetOutPath "$INSTDIR\3rdparty\libsvm"
+      DetailPrint "Installing libsvm- $PythonPathValue setup.py install"
+      nsExec::ExecToLog '"$PythonPathValue" setup.py install'
+      Pop $0
+      StrCmp $0 0 +2 0
+      MessageBox MB_OK "Can't install libsvm python code" /SD IDOK
+  ${endif}
   SetOutPath "$INSTDIR"
   # Fixup paths in start and stopServices files
   !insertmacro _ReplaceInFile $INSTDIR\bin\startServices.bat __PYTHON_PATH__ "$PythonPathValue"

@@ -86,6 +86,8 @@ class TrainerPropertiesI : public cvac::TrainerProperties
   int max_depth;
   int weak_count;
   int rotate_count;
+  bool hasInfoFile;
+  std::string infoFile;
   cvac::Size sampleSize;
   
 };

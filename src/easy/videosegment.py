@@ -94,13 +94,13 @@ def parseSamples( root, CVAC_DataDir ):
             label = cvac.LabeledVideoSegment()
             label.confidence = 1.0
             label.lab = cvac.Label(True,os.path.join(mediaDir,mediaName))        
-            label.sub = cvac.Substrate(False,True,mediaFilepath,-1,-1)
-            label.start = cvac.VideoSeekTime(frm[0],-1)
-            label.last = cvac.VideoSeekTime(frm[1],-1)
-            label.startAfterTx = cvac.VideoSeekTime(-1,-1)
-            label.lastBeforeTx = cvac.VideoSeekTime(-1,-1)
+            label.sub = cvac.Substrate(False,True,mediaFilepath,long(-1),long(-1))
+            label.start = cvac.VideoSeekTime(long(frm[0]),long(-1))
+            label.last = cvac.VideoSeekTime(long(frm[1]),long(-1))
+            label.startAfterTx = cvac.VideoSeekTime(long(-1),long(-1))
+            label.lastBeforeTx = cvac.VideoSeekTime(long(-1),long(-1))
             label.loc = cvac.Location()
-            labels = labels + [label]        
+            labels = labels + [label]
             
     return labels
 

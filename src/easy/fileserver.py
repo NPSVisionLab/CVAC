@@ -22,6 +22,8 @@ class FileServiceI(cvac.FileService, threading.Thread):
 
     def __init__(self, communicator):
         threading.Thread.__init__(self)
+        # Change stdout to automaticly flush output
+        sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
         self._communicator = communicator
         self._destroy = False
         self._clients = []

@@ -401,8 +401,9 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     if verbose:
         print("======== done! ========")
     # sort the results by "score"
-    sortedResults = sorted( results, key=lambda result: result.score, reverse=True ) 
-    return sortedResults
+    originalResults =  results
+    sortedResults = sorted( results, key=lambda result: result.score, reverse=True )
+    return sortedResults,originalResults
 
 def printEvaluationResults(results):
     print('name        ||  score |  recall | precis. ||  tp  |  fp  |  tn  |  fn  | nores')
