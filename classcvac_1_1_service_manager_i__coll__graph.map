@@ -1,0 +1,9 @@
+<map id="cvac::ServiceManagerI" name="cvac::ServiceManagerI">
+<area shape="rect" id="node3" href="$classcvac_1_1_service_manager.html" title="cvac::ServiceManager" alt="" coords="138,512,285,539"/>
+<area shape="rect" id="node4" href="$classcvac_1_1_sandbox_manager.html" title="cvac::SandboxManager" alt="" coords="237,423,396,449"/>
+<area shape="rect" id="node5" title="STL class. " alt="" coords="279,96,354,123"/>
+<area shape="rect" id="node8" href="$classcvac_1_1_client_sandbox.html" title="cvac::ClientSandbox" alt="" coords="367,229,506,256"/>
+<area shape="rect" id="node6" title="STL class. " alt="" coords="257,5,376,47"/>
+<area shape="rect" id="node9" href="$classcvac_1_1_c_v_algorithm_service.html" title="cvac::CVAlgorithmService" alt="" coords="309,512,474,539"/>
+<area shape="rect" id="node10" href="$classcvac_1_1_start_stop.html" title="cvac::StartStop" alt="" coords="499,512,607,539"/>
+</map>

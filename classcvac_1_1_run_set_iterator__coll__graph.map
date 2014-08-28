@@ -1,0 +1,12 @@
+<map id="cvac::RunSetIterator" name="cvac::RunSetIterator">
+<area shape="rect" id="node3" title="STL class. " alt="" coords="173,216,248,243"/>
+<area shape="rect" id="node7" href="$classcvac_1_1_service_manager.html" title="cvac::ServiceManager" alt="" coords="1368,273,1515,300"/>
+<area shape="rect" id="node8" href="$classcvac_1_1_sandbox_manager.html" title="cvac::SandboxManager" alt="" coords="1036,285,1195,312"/>
+<area shape="rect" id="node10" href="$classcvac_1_1_client_sandbox.html" title="cvac::ClientSandbox" alt="" coords="375,291,513,317"/>
+<area shape="rect" id="node4" title="STL class. " alt="" coords="5,209,124,250"/>
+<area shape="rect" id="node6" href="$classcvac_1_1_media_converter.html" title="cvac::MediaConverter" alt="" coords="1644,265,1788,292"/>
+<area shape="rect" id="node12" href="$classcvac_1_1_media_converter__open_c_v__i2i.html" title="cvac::MediaConverter\l_openCV_i2i" alt="" coords="1941,217,2085,258"/>
+<area shape="rect" id="node15" href="$classcvac_1_1_media_converter__open_c_v__v2i.html" title="cvac::MediaConverter\l_openCV_v2i" alt="" coords="1941,513,2085,554"/>
+<area shape="rect" id="node11" href="$structcvac_1_1_purpose.html" title="cvac::Purpose" alt="" coords="1961,283,2064,309"/>
+<area shape="rect" id="node18" href="$structcvac_1_1_result_set.html" title="cvac::ResultSet" alt="" coords="1957,579,2068,605"/>
+</map>

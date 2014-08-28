@@ -1,0 +1,8 @@
+<map id="cvac::Location" name="cvac::Location">
+<area shape="rect" id="node2" href="$classcvac_1_1_b_box.html" title="cvac::BBox" alt="" coords="5,80,92,107"/>
+<area shape="rect" id="node3" href="$classcvac_1_1_point2_d.html" title="cvac::Point2D" alt="" coords="116,80,216,107"/>
+<area shape="rect" id="node4" href="$classcvac_1_1_precise_location.html" title="cvac::PreciseLocation" alt="" coords="240,80,383,107"/>
+<area shape="rect" id="node7" href="$classcvac_1_1_silhouette.html" title="cvac::Silhouette" alt="" coords="407,80,517,107"/>
+<area shape="rect" id="node5" href="$classcvac_1_1_precise_b_box.html" title="cvac::PreciseBBox" alt="" coords="171,155,299,181"/>
+<area shape="rect" id="node6" href="$classcvac_1_1_precise_circle.html" title="cvac::PreciseCircle" alt="" coords="324,155,451,181"/>
+</map>

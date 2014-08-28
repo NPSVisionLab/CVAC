@@ -1,0 +1,11 @@
+<map id="cvac::OutputResults" name="cvac::OutputResults">
+<area shape="rect" id="node2" title="STL class. " alt="" coords="201,96,275,123"/>
+<area shape="rect" id="node7" href="$structcvac_1_1_file_path.html" title="cvac::FilePath" alt="" coords="164,275,264,301"/>
+<area shape="rect" id="node8" href="$structcvac_1_1_directory_path.html" title="cvac::DirectoryPath" alt="" coords="173,185,303,212"/>
+<area shape="rect" id="node9" href="$structcvac_1_1_label.html" title="cvac::Label" alt="" coords="308,275,395,301"/>
+<area shape="rect" id="node10" href="$structcvac_1_1_semantics.html" title="cvac::Semantics" alt="" coords="413,185,527,212"/>
+<area shape="rect" id="node3" title="STL class. " alt="" coords="179,5,297,47"/>
+<area shape="rect" id="node4" href="$structcvac_1_1_result.html" title="cvac::Result" alt="" coords="98,545,189,572"/>
+<area shape="rect" id="node5" href="$classcvac_1_1_labelable.html" title="cvac::Labelable" alt="" coords="158,456,270,483"/>
+<area shape="rect" id="node6" href="$structcvac_1_1_substrate.html" title="cvac::Substrate" alt="" coords="159,365,269,392"/>
+</map>

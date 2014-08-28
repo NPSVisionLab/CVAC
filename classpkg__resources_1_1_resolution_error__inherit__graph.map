@@ -1,0 +1,5 @@
+<map id="pkg_resources.ResolutionError" name="pkg_resources.ResolutionError">
+<area shape="rect" id="node3" href="$classpkg__resources_1_1_distribution_not_found.html" title="pkg_resources.Distribution\lNotFound" alt="" coords="358,5,526,47"/>
+<area shape="rect" id="node4" href="$classpkg__resources_1_1_unknown_extra.html" title="pkg_resources.UnknownExtra" alt="" coords="347,71,537,98"/>
+<area shape="rect" id="node5" href="$classpkg__resources_1_1_version_conflict.html" title="pkg_resources.VersionConflict" alt="" coords="347,122,537,149"/>
+</map>
