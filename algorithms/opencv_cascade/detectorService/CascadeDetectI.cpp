@@ -257,6 +257,7 @@ void CascadeDetectI::process( const Identity &client,
   mRunsetConstraint.addType("png");
   mRunsetConstraint.addType("tif");
   mRunsetConstraint.addType("jpg");
+  mRunsetConstraint.addType("jpeg");
   // End - RunsetConstraints
 
   //////////////////////////////////////////////////////////////////////////

@@ -285,73 +285,81 @@ bool CascadeTrainI::createSamples( RunSetWrapper& rsw,
   constraint.addType("png");
   constraint.addType("tif");
   constraint.addType("jpg");
-
-  imgCnt = cvac::processLabelArtifactsToRects(rsw, constraint, 
-                                       CVAC_DataDir, mServiceMan,
-                                       callback, getImageWidthHeight, 1,
-                                       &posRectlabels, false);
-
-  ofstream infoFile;
- 
-  infoFile.open(infoFilename.c_str());
-
-  // Save stored data from RunSet to OpenCv positive samples .dat file
   int cnt = 0;
-  std::vector<cvac::RectangleLabels>::iterator it;
-  for (it = posRectlabels.begin(); it < posRectlabels.end(); it++)
+  if (mTrainProps->hasInfoFile == false)
   {
-    cvac::RectangleLabels recLabel = *it;
-    bool skipFile = false;
-    if (recLabel.rects.size() <= 0)
-    { // No rectangle so use the whole image
-        int w, h;
-        getImageWidthHeight(recLabel.filename, w, h);
-        infoFile << recLabel.filename << " 1 0 0 " << w << " " << h;
-    }else 
-    {
-       int rectCnt = 0;  // Only add labels that are as large as the window size we are using!
-       std::vector<cvac::BBoxPtr>::iterator rit;
-       // Get count of valid size rectangles.
-       for (rit = recLabel.rects.begin(); rit < recLabel.rects.end(); rit++)
-       {
-           cvac::BBoxPtr rect = *rit;
-           if (rect->width < params.width || rect->height < params.height)
-               continue;  // dont' count this rect.
-           rectCnt++;
-       }
-       if (rectCnt == 0)
-       {
-           int w, h;
-           getImageWidthHeight(recLabel.filename, w, h);
-           if (w >= params.width && h >= params.height)
-               infoFile << recLabel.filename << " 1 0 0 " << w << " " << h;
-           else
-               skipFile = true;
-       } else
-       {
-          // fileName, # of objects, x, y, width, height
-          infoFile << recLabel.filename << " " <<
-                      rectCnt << " ";
+      imgCnt = cvac::processLabelArtifactsToRects(rsw, constraint, 
+                                           CVAC_DataDir, mServiceMan,
+                                           callback, getImageWidthHeight, 1,
+                                           &posRectlabels, false);
 
-          for (rit = recLabel.rects.begin(); rit < recLabel.rects.end(); rit++)
-          {
-              cvac::BBoxPtr rect = *rit;
-              if (rect->width >= params.width && rect->height >= params.height)
-                  infoFile << rect->x << " " << rect->y << " " << rect->width <<
-                          " " << rect->height  << " ";
-          }
-       }   
-    }
-    if (skipFile == false)
-    {
-        cnt++;
-    }
-    // NO EXTRA BLANK LINE after the last sample, or cvhaartraining.cpp can fail on: "CV_Assert(elements_read == 1);"
-    if ((cnt < imgCnt) && skipFile == false)
-        infoFile << endl;
+      ofstream infoFile;
+ 
+      infoFile.open(infoFilename.c_str());
+
+      // Save stored data from RunSet to OpenCv positive samples .dat file
+ 
+      std::vector<cvac::RectangleLabels>::iterator it;
+      for (it = posRectlabels.begin(); it < posRectlabels.end(); it++)
+      {
+        cvac::RectangleLabels recLabel = *it;
+        bool skipFile = false;
+        if (recLabel.rects.size() <= 0)
+        { // No rectangle so use the whole image
+            int w, h;
+            getImageWidthHeight(recLabel.filename, w, h);
+            infoFile << recLabel.filename << " 1 0 0 " << w << " " << h;
+        }else 
+        {
+           int rectCnt = 0;  // Only add labels that are as large as the window size we are using!
+           std::vector<cvac::BBoxPtr>::iterator rit;
+           // Get count of valid size rectangles.
+           for (rit = recLabel.rects.begin(); rit < recLabel.rects.end(); rit++)
+           {
+               cvac::BBoxPtr rect = *rit;
+               if (rect->width < params.width || rect->height < params.height)
+                   continue;  // dont' count this rect.
+               rectCnt++;
+           }
+           if (rectCnt == 0)
+           {
+               int w, h;
+               getImageWidthHeight(recLabel.filename, w, h);
+               if (w >= params.width && h >= params.height)
+                   infoFile << recLabel.filename << " 1 0 0 " << w << " " << h;
+               else
+                   skipFile = true;
+           } else
+           {
+              // fileName, # of objects, x, y, width, height
+              infoFile << recLabel.filename << " " <<
+                          rectCnt << " ";
+
+              for (rit = recLabel.rects.begin(); rit < recLabel.rects.end(); rit++)
+              {
+                  cvac::BBoxPtr rect = *rit;
+                  if (rect->width >= params.width && rect->height >= params.height)
+                      infoFile << rect->x << " " << rect->y << " " << rect->width <<
+                              " " << rect->height  << " ";
+              }
+           }   
+        }
+        if (skipFile == false)
+        {
+            cnt++;
+        }
+        // NO EXTRA BLANK LINE after the last sample, or cvhaartraining.cpp can fail on: "CV_Assert(elements_read == 1);"
+        if ((cnt < imgCnt) && skipFile == false)
+            infoFile << endl;
+      }
+      infoFile.flush();
+      infoFile.close();
+  } else 
+  { // We already have an info file so just count the lines
+      ifstream infoFile(infoFilename.c_str());
+      cnt = std::count(std::istreambuf_iterator<char>(infoFile),
+                       std::istreambuf_iterator<char>(), '\n');
   }
-  infoFile.flush();
-  infoFile.close();
   
   // Save stored data from RunSet to OpenCv negative samples file
   int numPos;
@@ -562,7 +570,9 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
                             const TrainerProperties& trainProps,
                             const Current& current)
 {	
+
   mTrainProps->load(trainProps);
+ 
   // Obtain CVAC verbosity - TODO: this should happen earlier
   PropertiesPtr svcprops = current.adapter->getCommunicator()->getProperties();
   string verbStr = svcprops->getProperty("CVAC.ServicesVerbosity");
@@ -573,15 +583,17 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   
   TrainerCallbackHandlerPrx callback =
     TrainerCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
-
-  // check the validity of the runset.
-  if (!checkPurposedLists( runset.purposedLists, callback ))
-    return;
+  if (mTrainProps->hasInfoFile == false)
+  {
+      // check the validity of the runset.
+      if (!checkPurposedLists( runset.purposedLists, callback ))
+        return;
+  }
   // Get the remote client name to use to save cascade file 
   std::string connectName = cvac::getClientConnectionName(current);
   const std::string CVAC_DataDir = svcprops->getProperty("CVAC.DataDir");
 
-  if(runset.purposedLists.size() == 0)
+  if(runset.purposedLists.size() == 0 && mTrainProps->hasInfoFile == false)
   {
     string _resStr = "Error: no data (runset) for processing\n";
     localAndClientMsg(VLogger::WARN, callback, _resStr.c_str());
@@ -609,6 +621,9 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   //string infoName = tempDir + "/cascade_positives.txt";
   string bgName = "cascade_negatives.txt";
   string infoName = "cascade_positives.txt";
+  if (mTrainProps->hasInfoFile)
+      infoName = mTrainProps->infoFile;
+
   int numNeg = 0;
   
   writeBgFile( rsw, bgName, &numNeg, CVAC_DataDir, callback );
@@ -688,6 +703,7 @@ TrainerPropertiesI::TrainerPropertiesI()
     falseAlarmRate = 0.0;
     recall = 0.0;
     rotate_count = 0;
+    hasInfoFile = false;
 }
 
 void TrainerPropertiesI::load(const TrainerProperties &p) 
@@ -710,6 +726,7 @@ void TrainerPropertiesI::load(const TrainerProperties &p)
 
 bool TrainerPropertiesI::readProps()
 {
+    printf("reading props\n");
     bool res = true;
     cvac::Properties::iterator it;
     for (it = props.begin(); it != props.end(); it++)
@@ -765,6 +782,10 @@ bool TrainerPropertiesI::readProps()
         }else if (it->first.compare("sampleImageHeight") == 0)
         {
             sampleSize.height = atoi(it->second.c_str());
+        }else if (it->first.compare("infoFile") == 0)
+        {     
+             hasInfoFile = true;
+             infoFile = it->second.c_str();
         }
     }
    
@@ -815,6 +836,10 @@ bool TrainerPropertiesI::writeProps()
     props.insert(std::pair<string, string>("sampleImageWidth", buff));
     sprintf(buff, "%d", sampleSize.height);
     props.insert(std::pair<string, string>("sampleImageHeight", buff));
+    if (hasInfoFile)
+    {
+        props.insert(std::pair<string, string>("infoFile", infoFile));
+    }
 
     falseAlarmRate = maxFalseAlarm;
     recall = minHitRate;

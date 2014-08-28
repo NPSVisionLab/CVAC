@@ -106,8 +106,10 @@ class FileServiceI(cvac.FileService, threading.Thread):
                 if owner != endpoint:
                     fse.msg = "Not owner of file " + putFileName + "!"
                     raise fse                 
-        if not os.path.exists(cvacPath.directory.relativePath):
-            os.makedirs(cvacPath.directory.relativePath)
+        dirname = os.path.join(self.CVAC_DataDir, 
+                                cvacPath.directory.relativePath)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
         putFile = open(putFileName, 'wb')
         putFile.write(byteSeq)
         putFile.flush()
