@@ -346,7 +346,7 @@ IF (BUILD_BINARY_PACKAGE)
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/easyPkg/cvac"
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/easyPkg/cvac"
         DEPENDS ${SLICE_OUTPUT_PATH}/Corpus_ice.py ${SLICE_OUTPUT_PATH}/Data_ice.py ${SLICE_OUTPUT_PATH}/Files_ice.py ${SLICE_OUTPUT_PATH}/Services_ice.py 
-        DEPENDS TARGET doc
+        DEPENDS doc
     )
 ENDIF (BUILD_BINARY_PACKAGE)
 
