@@ -59,10 +59,11 @@ ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
 set( CPACK_PACKAGE_INSTALL_DIRECTORY ${CVAC_VERSION_DIR} )
 
 set( CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE.txt )
-set(CPACK_COMPONENTS_ALL Runtime data ThirdParty)
+set(CPACK_COMPONENTS_ALL Runtime data ThirdParty doc)
 set(CPACK_COMPONENT_CORE_DISPLAY_NAME "CVAC core runtime components")
 set(CPACK_COMPONENT_3RDPARTY_DISPLAY_NAME "CVAC 3rd Party" )
 set(CPACK_COMPONENT_DATA_DISPLAY_NAME "CVAC sample data" )
+set(CPACK_COMPONENT_DOC_DISPLAY_NAME "CVAC documentation" )
 
 IF (WIN32) 
     set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}-win32)
@@ -115,6 +116,11 @@ INSTALL(DIRECTORY ${PYTHON_BUILD_DIR}
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/corpus
        DESTINATION data
        COMPONENT data
+      )
+      
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/doc/html
+       DESTINATION doc
+       COMPONENT doc
       )
       
 SET (DDATA ${CMAKE_SOURCE_DIR}/data/detectors )
@@ -338,7 +344,9 @@ IF (BUILD_BINARY_PACKAGE)
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Files_ice.py" "${PYTHON_BUILD_DIR}/easyPkg/cvac"
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/Services_ice.py" "${PYTHON_BUILD_DIR}/easyPkg/cvac"
         COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/easyPkg/cvac"
+        COMMAND ${CMAKE_COMMAND} -E copy "${SLICE_OUTPUT_PATH}/cvac/__init__.py" "${PYTHON_BUILD_DIR}/easyPkg/cvac"
         DEPENDS ${SLICE_OUTPUT_PATH}/Corpus_ice.py ${SLICE_OUTPUT_PATH}/Data_ice.py ${SLICE_OUTPUT_PATH}/Files_ice.py ${SLICE_OUTPUT_PATH}/Services_ice.py 
+        DEPENDS TARGET doc
     )
 ENDIF (BUILD_BINARY_PACKAGE)
 
