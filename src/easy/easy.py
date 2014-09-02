@@ -792,7 +792,7 @@ def deleteAllFiles( fileserver, uploadedFiles ):
     if type(uploadedFiles) is dict and not uploadedFiles['uploaded'] is None:
 	uploadedFiles = uploadedFiles['uploaded']
     if not uploadedFiles:
-        Return
+        return
     for path in uploadedFiles:
         if not isinstance(path, cvac.FilePath):
             raise RuntimeError("Unexpected type found instead of cvac.FilePath:", type(path))
