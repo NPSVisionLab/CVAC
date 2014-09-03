@@ -16,9 +16,9 @@ for another without modifying your code (much).
 
 # Download and Install
 
-Please see the [download page](download.html) for binary installers
-for various operating systems, for installation instructions, as well
-as for source code download instructions.
+Please see the [download and installation page](download.html) for
+binary installers for various operating systems, for installation
+instructions, as well as for source code download instructions.
 
 # Documentation
 
@@ -32,14 +32,15 @@ Several tutorials and API documentation are also available:
 * The [cvac:: namespace](html/namespacecvac.html) for data and service definitions;
 * Documentation for [building from source](building.html) including
   [3rd-party dependencies](dependencies.html);
-* Instructions for [adding your algorithms](integrating.html) to EasyCV and CVAC;
+* Instructions for [adding your algorithms](integrating.html)
+  to EasyCV and CVAC (see also Contributing below);
 * And, last but not least, some [Troubleshooting](troubleshooting.html) help.
 
 # Contributing
 
-More detailed instructions are on the [Wiki](https://github.com/NPSVisionLab/CVAC/wiki).  In summary:
+More detailed instructions are [here](integrating.html).  In summary:
 
-1. Fork it. (See the "Fork" button above.)
+1. Fork it. (Press the ["Fork" button](https://github.com/NPSVisionLab/CVAC))
 2. Create a branch off the devel branch (`git checkout -b my_CVAC devel`)
 3. Commit your changes (`git commit -am "Added parsing for MyAnnotations"`)
 4. Push to the branch (`git push origin my_CVAC`)
