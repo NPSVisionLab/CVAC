@@ -17,15 +17,9 @@ for another without modifying your code (much).
 Download
 ------------
 
-Please see the [Download page](download.html) for binary installers
-for various operating systems as well as complete download
+Please see the [download page](download.html) for binary installers
+for various operating systems as well as for source code download
 instructions.
-
-The source code can be obtained by cloning the repository, either via
-the "Clone" button on the [github
-repository](https://github.com/NPSVisionLab/CVAC/wiki) or via the
-command line git tool (`git clone
-https://github.com/NPSVisionLab/CVAC.git localCvacDirectory`).
 
 Documentation
 ------------
