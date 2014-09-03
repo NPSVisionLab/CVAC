@@ -61,12 +61,21 @@ bool MediaConverter_openCV_i2i::convert(const string& _srcAbsPath,
   _resFilename.clear();
   string tDesPath = _desAbsDir + "/" + _desFilename;
 
-  cv::Mat tImg = cv::imread(_srcAbsPath);
-  if(tImg.empty())
-  {    
-    localAndClientMsg(VLogger::ERROR, NULL,"Conversion error from %s to %s.\n",
-      _srcAbsPath.c_str(),tDesPath.c_str());
-    return false;
+  cv::Mat tImg;
+  try
+  {
+      tImg = cv::imread(_srcAbsPath);
+      if(tImg.empty())
+      {    
+          localAndClientMsg(VLogger::ERROR, NULL,"Conversion error from %s to %s.\n",
+	      _srcAbsPath.c_str(),tDesPath.c_str());
+	    return false;
+      }
+  }catch(...) 
+  {
+      localAndClientMsg(VLogger::ERROR, NULL,"Conversion exception from %s to %s - .\n",
+	      _srcAbsPath.c_str(),tDesPath.c_str()); 
+      return false;
   }
 
   if((mServiceMan != NULL) && (mServiceMan->stopRequested()))
@@ -75,13 +84,23 @@ bool MediaConverter_openCV_i2i::convert(const string& _srcAbsPath,
     return false;
   }
 
-  if(imwrite(tDesPath,tImg))
-  { 
-    _resFilename.push_back(_desFilename);
-    return true;
+  try
+  {
+      if(imwrite(tDesPath,tImg))
+      { 
+        _resFilename.push_back(_desFilename);
+        return true;
+      }
+      else
+      {
+        return false;
+      }
+  }catch(...) 
+  {
+      localAndClientMsg(VLogger::ERROR, NULL,"Conversion exception from %s to %s - %s.\n",
+	      _srcAbsPath.c_str(),tDesPath.c_str());
+      return false;
   }
-  else
-    return false;
     
 }
 
