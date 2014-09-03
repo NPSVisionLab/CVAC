@@ -33,6 +33,12 @@ graphical user interface will pop up.  Congratulations, you have
 successfully installed EasyCV!
 ![EasyCV Control Center](images/ControlCenter.png)
 
-9. Follow the [user documentation](user-documentation.html) on how to
+9. Pressing the "start" button will run a few default CV algorithms
+(services) locally.  The first time you run this you might get
+firewall warnings.  Select "Allow" so the services can accept service
+requests from clients.
+![Select Allow](images/AllowConnection.png)
+
+10. Follow the [user documentation](user-documentation.html) on how to
 get started.  If you have trouble installing EasyCV, please don't
 hesitate to get in touch.

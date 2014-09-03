@@ -6,12 +6,17 @@ title: User Documentation
 Note: this page is heavily under construction as of 3 Sept 2014.
 Check back in a day for updates.
 
+The [online documentation](http://npsvisionlab.github.io/CVAC) refers
+to the master branch.  Documentation for other versions is available
+from EasyCV version 0.8 onwards and included with the binary
+installer.  You can also [build](building.html) the documentation from
+the source distribution.
+
 # EasyCV Control Center
 
 Start up the EasyCV Control Center (see the [installation
 notes](download.html) for instructions on how to do that).  ![EasyCV
 Control Center](images/ControlCenter.png)
-
 
 Take note of the service's "data" directory.  That's where media files
 need to be located in order to be accessible to the services.  If you
@@ -29,7 +34,9 @@ overview of a [Tutorial at CVPR
 Pressing the "start" button will run a few default CV algorithms
 (services) locally.  If you get firewall warnings, select "Allow" so
 the services can accept service requests from clients.
-![Select Allow](images/AllowConnection.png)
+
+![Connections between Local and Remote Services and Client](images/ConnectionsChart.png)
+
 
 Then take a look at the [demo directory](https://github.com/NPSVisionLab/CVAC/tree/devel/demo) which explains most of the features of the high-level Easy! library in simple "mini-tutorials."  You can also see these mini tutorials and their program output [here](http://movesinstitute.org/~kolsch/CVAC/Easy.pdf).  It shows you how to run a detector on files and directories, how to train a detector, how to connect to remote services, and many more things.  Take a look at the underlying `easy.py` library implementation if you want to see the CVAC metadata structure and observe bare-bones interaction between clients and services.
 
