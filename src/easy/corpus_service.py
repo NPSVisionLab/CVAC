@@ -295,7 +295,6 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         #pydevd.settrace(suspend=False)
         if not type(cvacPath) is cvac.FilePath:
             raise RuntimeError("wrong argument type")
-        print( 'openCorpus called' )
         return self.addCorpusFromConfig(cvacPath)
     
     def closeCorpus( self, corp, current=None ):
@@ -328,7 +327,6 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
     def getDataSet( self, corpus, current=None ):
         if not type(corpus) is cvac.Corpus:
             raise RuntimeError("wrong argument type")
-        print( 'getDataSet called' )
         corp = self.corpToImp.get(corpus.name)
         if corp == None:
             return None

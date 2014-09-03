@@ -172,23 +172,31 @@ class Application(tk.Frame):
         lf = tk.LabelFrame(self, text='Commands:')
         lf.grid(row=row, columnspan=5, sticky="ew")
         row = row + 1
-        terminalButton = tk.Button(lf, text='Open Terminal Window', width=20,
-                                        bg="light blue",
-                                        command=self.openTerminal)
-        terminalButton.grid(row=0, padx=5, pady=5, sticky=tk.W)
+        docButton = tk.Button(lf, text="Documentation", width=20,
+                                            bg="light blue",
+                                            command=self.openDoc)
+        docButton.grid(row=0, padx=5, pady=5, sticky=tk.W)
+       
         demoButton = tk.Button(lf, text='Detect Demo', width=20,
                                         bg="light blue",
                                         command=lambda: self.runDemo('demo/detect.py'))
         demoButton.grid(row=0, column=1, padx=5, pady=5)
         
-        prereqButton = tk.Button(lf, text="Prerequistes", width=20,
-                                            bg="light blue",
-                                            command=self.runPrerequisites)
-        prereqButton.grid(row=1, padx=5, pady=5)
+        terminalButton = tk.Button(lf, text='Open Terminal Window', width=20,
+                                        bg="light blue",
+                                        command=self.openTerminal)
+        terminalButton.grid(row=1, padx=5, pady=5)
+        
         envButton = tk.Button(lf, text="Python Env", width=20,
                                             bg="light blue",
                                             command=self.openEnv)
         envButton.grid(row=1, column=1, padx=5, pady=5)
+        
+        prereqButton = tk.Button(lf, text="Prerequistes", width=20,
+                                            bg="light blue",
+                                            command=self.runPrerequisites)
+        prereqButton.grid(row=2, padx=5, pady=5)
+       
         #self.commandStatus = tk.StringVar()
         #tk.Label(lf, text="Command Status:").grid(row=2, sticky=tk.W)
 
@@ -290,6 +298,15 @@ class Application(tk.Frame):
         else:
             print "please define openEnv for this OS: "+sys.platform
 
+    def openDoc(self):
+        if sys.platform=='darwin':
+            os.system("open "+os.getcwd()+'/doc/html/index.html')
+        elif sys.platform=='win32':
+            shellcmd = 'start {0}\\doc\\html\\index.html'.format(os.getcwd())
+            os.system( shellcmd )
+        else:
+            print "please define openDoc for this OS: "+sys.platform
+            
     def openTerminal(self):
         if sys.platform=='darwin':
             # a lovely command to get a Terminal window with proper PYTHONPATH set
