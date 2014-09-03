@@ -1,6 +1,6 @@
 ---
 layout: default
-title: EasyCV - Easy Computer Vision
+title: Easy Computer Vision
 ---
 
 Easy Computer Vision is a library of tools to simplify the high-level

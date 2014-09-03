@@ -1,6 +1,6 @@
 ---
 layout: default
-title: EasyCV User Documentation
+title: User Documentation
 ---
 
 Note: this page is heavily under construction as of 3 Sept 2014.

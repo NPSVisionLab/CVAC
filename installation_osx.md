@@ -1,6 +1,6 @@
 ---
 layout: default
-title: EasyCV Installation on OSX
+title: Installation on OSX
 ---
 
 1. If you haven't yet, download the "master" branch [binary installer for

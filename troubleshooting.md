@@ -1,6 +1,6 @@
 ---
 layout: default
-title: EasyCV Troubleshooting
+title: Troubleshooting
 ---
 
 ### IceBox.jar not found
