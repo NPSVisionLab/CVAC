@@ -14,19 +14,16 @@ program space.  You can obtain and share a "corpus" of labeled objects
 for training or testing.  And you can easily exchange one algorithm
 for another without modifying your code (much).
 
-Download
-------------
+# Download and Install
 
 Please see the [download page](download.html) for binary installers
-for various operating systems as well as for source code download
-instructions.
+for various operating systems, for installation instructions, as well
+as for source code download instructions.
 
-Documentation
-------------
+# Documentation
 
-Take a look at the user documentation [overview and introduction]
-(user-documentation.html) on how to start EasyCV and how to run your
-first examples.
+Take a look at the [user documentation](user-documentation.html) on
+how to start EasyCV and how to run your first examples.
 
 Several tutorials and API documentation are also available:
 
@@ -34,8 +31,8 @@ Several tutorials and API documentation are also available:
 * The Python [EasyCV](html/namespaceeasy.html) library API for high-level functionality; and
 * The [cvac:: namespace](html/namespacecvac.html) for data and service definitions.
 
-Contributing
-------------
+# Contributing
+
 More detailed instructions are on the [Wiki](https://github.com/NPSVisionLab/CVAC/wiki).  In summary:
 
 1. Fork it. (See the "Fork" button above.)
