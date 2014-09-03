@@ -28,8 +28,12 @@ how to start EasyCV and how to run your first examples.
 Several tutorials and API documentation are also available:
 
 * [Mini tutorials](demos.html) to get you started quickly;
-* The Python [EasyCV](html/namespaceeasy.html) library API for high-level functionality; and
-* The [cvac:: namespace](html/namespacecvac.html) for data and service definitions.
+* The Python [EasyCV](html/namespaceeasy.html) library API for high-level functionality;
+* The [cvac:: namespace](html/namespacecvac.html) for data and service definitions;
+* Documentation for [building from source](building.html) including
+  [3rd-party dependencies](dependencies.html);
+* Instructions for [adding your algorithms](integrating.html) to EasyCV and CVAC;
+* And, last but not least, some [Troubleshooting](troubleshooting.html) help.
 
 # Contributing
 

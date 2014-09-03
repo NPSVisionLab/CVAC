@@ -15,6 +15,7 @@ Please note that for many platforms you can automatically download and use a 3rd
 Required only if you would like to create a Corpus from a LabelMe server.  Download the appropriate installer for your platform and follow the instructions.  The MCR is not required for building but only during runtime.
 
 ## Platform-specific instructions (partially complete only)
+
 ### Ubuntu
 `sudo apt-get update`
 `sudo apt-get install make git cmake-curses-gui g++ openjdk-6-jdk libarchive-dev libjavatar-java libcommons-io-java zeroc-ice34 libunittest++`
