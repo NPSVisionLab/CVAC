@@ -272,9 +272,11 @@ ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
 # add a Makefile target "doc" to generate API documentation with Doxygen
 #
 IF( BUILD_DOCUMENTATION )
-  # if the user wants doxygen built, we need doxygen, else complain
+  # if the user wants the documentation built, we need doxygen, else complain
   FIND_PACKAGE( Doxygen REQUIRED )
-  IF( DOXYGEN_FOUND )
+  # if the user wants the documentation built, we need jekyll, else complain
+  FIND_PACKAGE( Jekyll REQUIRED )
+  IF( DOXYGEN_FOUND AND JEKYLL_FOUND )
       # this is the list of directories that doxygen will search for input files;
       # see Doxygen.in for a list of file types (basically, C, Java, and ICE files)
       set( CMAKE_DOXYGEN_INPUT_LIST
@@ -293,9 +295,11 @@ IF( BUILD_DOCUMENTATION )
       # create the Makefile target
       ADD_CUSTOM_TARGET( doc
                          ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-                         COMMENT "Generating API documentation with Doxygen" VERBATIM
+                         COMMAND ${JEKYLL_EXECUTABLE} build -s ${CMAKE_SOURCE_DIR}/doc
+                                              -d ${CMAKE_CURRENT_BINARY_DIR}/doc --safe
+                         COMMENT "Generating HTML docs with Jekyll and API docs with Doxygen" VERBATIM
                         )
-  ENDIF( DOXYGEN_FOUND )
+  ENDIF()
 ENDIF( BUILD_DOCUMENTATION )
 
 FIND_PACKAGE( PythonInterp 2.7)
