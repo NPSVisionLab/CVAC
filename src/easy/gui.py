@@ -222,10 +222,12 @@ class Application(tk.Frame):
             self.serverStatus.set(
                      'services have not been started (no lock file)')
 
+
     def uiStartStopServices(self, row):
         lf = tk.LabelFrame(self, text='Control CVAC Services:')
         lf.grid(row=row, columnspan=5, sticky="ew")
         self.serverStatus = tk.StringVar()
+        self.dataDir = easy.getFSPath("", abspath=True)
         row = row + 1
         self.startButton = tk.Button(lf, text='start services', 
                                  bg="light blue", width=12,
@@ -241,11 +243,16 @@ class Application(tk.Frame):
         self.statusButton.grid(row=0, column=2, padx=5, sticky=tk.E)
         tk.Label(lf, text="Service Status:").grid(row=2, sticky=tk.W)
         statusLabel = tk.Label(lf, textvariable=self.serverStatus)
-        statusLabel.grid(row=3, columnspan=5, sticky=tk.W)
+        statusLabel.grid(row=2, column=1, pady=5, columnspan=4, sticky=tk.W)
+        tk.Label(lf, text="Data Dir:").grid(row=3, sticky=tk.W)
+        dirText = tk.Text(lf, width=28, height=1)
+        dirText.insert(tk.END, self.dataDir)
+        dirText.configure(state=tk.DISABLED)
+        dirText.grid(row=3, column=1, columnspan=4, sticky=tk.W)
         if sys.platform!='win32':
             checkButton = tk.Checkbutton(lf, text= 'Show services output',
                                           variable=self.checkVar)
-            checkButton.grid(row=4, columnspan=5, sticky=tk.W)
+            checkButton.grid(row=5, columnspan=5, sticky=tk.W)
         return row
     
     def uiLastButtons(self, row):
@@ -418,7 +425,7 @@ class Application(tk.Frame):
             
        
 root = tk.Tk()
-root.geometry('410x720+10+10')
+root.geometry('410x755+10+10')
 root.tk_setPalette(background='light grey')
 gui_stdout_queue = Queue.Queue()
 os.chdir(installpath)
