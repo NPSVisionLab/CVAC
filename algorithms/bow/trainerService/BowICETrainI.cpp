@@ -397,6 +397,12 @@ bool BowICETrainI::checkPurposedLists(
         }
         break;
       }
+      case cvac::UNPURPOSED:
+      case cvac::ANY:
+      {
+        // ignore these samples
+        break;
+      }
     }
   }
   if (havemul && havepos)
