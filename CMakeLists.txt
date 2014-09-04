@@ -276,6 +276,7 @@ IF( BUILD_DOCUMENTATION )
   FIND_PACKAGE( Doxygen REQUIRED )
   # if the user wants the documentation built, we need jekyll, else complain
   FIND_PACKAGE( Jekyll REQUIRED )
+  # If we have the tools then build documentation
   IF( DOXYGEN_FOUND AND JEKYLL_FOUND )
       # this is the list of directories that doxygen will search for input files;
       # see Doxygen.in for a list of file types (basically, C, Java, and ICE files)
