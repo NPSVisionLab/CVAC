@@ -526,6 +526,12 @@ bool CascadeTrainI::checkPurposedLists(
         havemul = true;
         break;
       }
+      case cvac::UNPURPOSED:
+      case cvac::ANY:
+      {
+        // ignore these samples
+        break;
+      }
     }
     if ((artifacts.size() < MIN_SAMPLE_SIZE))
     {
