@@ -289,14 +289,14 @@ IF( BUILD_DOCUMENTATION )
       string(REGEX REPLACE ";" " " CMAKE_DOXYGEN_INPUT_LIST "${CMAKE_DOXYGEN_INPUT_LIST}")
 
       # customize the "Doxyfile", the configuration for doxygen
-      set( CMAKE_DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/doc )
+      set( CMAKE_DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc )
       CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
       # create the Makefile target
       ADD_CUSTOM_TARGET( doc
-                         ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-                         COMMAND ${JEKYLL_EXECUTABLE} build -s ${CMAKE_SOURCE_DIR}/doc
+                         ${JEKYLL_EXECUTABLE} build -s ${CMAKE_SOURCE_DIR}/doc
                                               -d ${CMAKE_CURRENT_BINARY_DIR}/doc --safe
+                         COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
                          COMMENT "Generating HTML docs with Jekyll and API docs with Doxygen" VERBATIM
                         )
   ENDIF()
