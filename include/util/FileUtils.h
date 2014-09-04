@@ -54,10 +54,12 @@
   #include <stdlib.h>
 #endif
 
-
 namespace cvac
 { 
-  static VLogger vLogger;  // vLogger object accessed directly as 'cvac::vLogger'
+  
+  /** Get The cvac logger
+    */
+  VLogger& getVLogger();  
 
   /** Echo message both locally ('printv'), and by sending a client message
      * only if there is adequate verbosity level.

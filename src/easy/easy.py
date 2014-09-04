@@ -58,7 +58,7 @@ CVAC_DataDir = os.getenv("CVAC_DATADIR", "data")
 CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
 
 
-def getFSPath( cvacPath ):
+def getFSPath( cvacPath, abspath=False ):
     '''Turn a CVAC path into a file system path'''
     if isinstance(cvacPath, cvac.Labelable):
         cvacPath = cvacPath.sub.path
@@ -72,6 +72,12 @@ def getFSPath( cvacPath ):
         path = CVAC_DataDir+"/"+cvacPath.relativePath;
     else:
         path = CVAC_DataDir+"/"+cvacPath.filename
+    if abspath == True:
+        if os.path.isabs(path) == True:
+            return path
+        else:
+            rootdir = os.getcwd()
+            path = os.path.join(rootdir, path)
     return path
 
 def getCvacPath( fsPath ):

@@ -183,7 +183,7 @@ bool CascadeDetectI::initialize( const DetectorProperties& detprops,
   string verbStr = iceprops->getProperty("CVAC.ServicesVerbosity");
   if (!verbStr.empty())
   {
-    vLogger.setLocalVerbosityLevel( verbStr );
+    getVLogger().setLocalVerbosityLevel( verbStr );
   }
 
   if(model.filename.empty())

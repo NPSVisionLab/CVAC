@@ -117,7 +117,7 @@ void BowICEI::initialize( DetectorDataArchive& dda,
   string verbStr = props->getProperty("CVAC.ServicesVerbosity");
   if (!verbStr.empty())
   {
-    vLogger.setLocalVerbosityLevel( verbStr );
+    getVLogger().setLocalVerbosityLevel( verbStr );
   }
   m_CVAC_DataDir = mServiceMan->getDataDir();
 
