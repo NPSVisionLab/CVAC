@@ -578,7 +578,7 @@ void CascadeTrainI::process(const Identity &client, const RunSet& runset,
   string verbStr = svcprops->getProperty("CVAC.ServicesVerbosity");
   if (!verbStr.empty())
   {
-    vLogger.setLocalVerbosityLevel( verbStr );
+    getVLogger().setLocalVerbosityLevel( verbStr );
   }
   
   TrainerCallbackHandlerPrx callback =

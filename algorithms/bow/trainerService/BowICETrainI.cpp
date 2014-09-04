@@ -203,7 +203,7 @@ bowCV* BowICETrainI::initialize( TrainerCallbackHandlerPrx& _callback,
   string verbStr = iceprops->getProperty("CVAC.ServicesVerbosity");
   if (!verbStr.empty())
   {
-    vLogger.setLocalVerbosityLevel( verbStr );
+    getVLogger().setLocalVerbosityLevel( verbStr );
   }
 
   //////////////////////////////////////////////////////////////////////////

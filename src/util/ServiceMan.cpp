@@ -119,7 +119,7 @@ std::string ServiceManagerI::getDataDir()
 {
 	PropertiesPtr props =
             mAdapter->getCommunicator()->getProperties();
-	vLogger.setLocalVerbosityLevel(props->getProperty("CVAC.ServicesVerbosity"));
+	getVLogger().setLocalVerbosityLevel(props->getProperty("CVAC.ServicesVerbosity"));
 
 	// Load the CVAC property: 'CVAC.DataDir'.  Used for the xml filename path,
         // and to provide a prefix to Runset paths
