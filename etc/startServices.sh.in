@@ -14,7 +14,7 @@ export JAVAEXE=/usr/bin/java
 export PYTHONEXE=/usr/bin/python2.7
 
 export ICEDIR=${INSTALLDIR}/3rdparty/ICE
-export OPENCVDIR=${INSTALLDIR}/3rdparty/opencv@OPENCV_DIR_EXT@
+export OPENCVDIR=${INSTALLDIR}/3rdparty/opencv
 export PATH=$PATH:${INSTALLDIR}/bin
 export MATLAB_MCR_DYLD_PATH="/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/runtime/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/sys/os/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/bin/maci64:/System/Library/Frameworks/JavaVM.framework/JavaVM:/System/Library/Frameworks/JavaVM.framework/Libraries"
 export XAPPLRESDIR=/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/X11/app-defaults

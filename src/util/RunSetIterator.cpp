@@ -113,7 +113,11 @@ bool RunSetIterator::isInConstraintType(const rsMediaType& _type)
   if(mConstraintType.empty())
     return true;
   else
-    return (find(mConstraintType.begin(),mConstraintType.end(),_type)==mConstraintType.end())?false:true;
+  {
+    std::string tRes = (std::string)_type;
+    std::transform( _type.begin(), _type.end(), tRes.begin(), ::tolower );  //for uppercase: toupper
+    return (find(mConstraintType.begin(),mConstraintType.end(),tRes)==mConstraintType.end())?false:true;
+  }
 }
 
 //---------------------------------------------------------------------------

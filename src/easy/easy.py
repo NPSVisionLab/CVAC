@@ -248,12 +248,7 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
                                "(specify createMirror=True to do so)")
 
     labelList = corpusServer.getDataSet( corpus )
-    categories = {}
-    for lb in labelList:
-        if lb.lab.name in categories:
-            categories[lb.lab.name].append( lb )
-        else:
-            categories[lb.lab.name] = [lb]
+    categories = getCategories(labelList)
     return (categories, labelList)
 
 def testRunSetIntegrity(runset, deleteInvalid=False):
@@ -471,6 +466,15 @@ def _determineDefaultPurpose( label, purpose, classmap ):
     if label in classmap:
         return classmap[label]
     return cvac.Purpose( cvac.PurposeType.UNPURPOSED )
+
+def getCategories(lablist):
+    categories = {}
+    for lb in lablist:
+        if lb.lab.name in categories:
+            categories[lb.lab.name].append(lb)
+        else:
+            categories[lb.lab.name] = [lb]
+    return categories
     
 def addToRunSet( runset, samples, purpose=None, classmap=None ):
     '''Add samples to a given RunSet.
@@ -564,10 +568,9 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
 
     elif type(samples) is str and isLikelyDir( samples ):
         # single path to a directory.  Create a corpus, turn into RunSet, close corpus.
-        corpus = openCorpus( samples, corpusServer=getDefaultCorpusServer() )
-        categories, lablist = getDataSet( corpus, corpusServer=getDefaultCorpusServer() )
+        lablist = getLabelableList(samples)
+        categories = getCategories(lablist)
         addToRunSet( runset, categories, purpose=purpose, classmap=classmap )
-        closeCorpus( corpus, corpusServer=getDefaultCorpusServer() )
         
     elif type(samples) is str and not isLikelyDir( samples ):
         # single file, create an unpurposed entry
@@ -785,6 +788,10 @@ def deleteAllFiles( fileserver, uploadedFiles ):
     # try top delete, ignore but log errors
     deletedFiles = []
     notDeletedFiles = []
+    if type(uploadedFiles) is dict and not uploadedFiles['uploaded'] is None:
+	uploadedFiles = uploadedFiles['uploaded']
+    if not uploadedFiles:
+        return
     for path in uploadedFiles:
         if not isinstance(path, cvac.FilePath):
             raise RuntimeError("Unexpected type found instead of cvac.FilePath:", type(path))

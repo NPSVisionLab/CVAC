@@ -19,6 +19,11 @@ if __name__ == '__main__' :
         thisPath = os.path.dirname(os.path.abspath(__file__))
         binPath = os.path.abspath(thisPath + "/../bin")
         demoPath = os.path.abspath(thisPath + "/../demo")
+        pathenv = os.getenv("PATH")
+        if platform == 'Windows':
+            os.putenv("PATH", pathenv + ";" + thisPath + "/../3rdparty/Ice/bin")
+        else:
+            os.putenv("PATH", pathenv + ":" + thisPath + "/../3rdparty/Ice/lib")
         print("Starting " + binPath + "/startServices" + extension)
         call([binPath + "/startServices" + extension], shell=True)
         time.sleep(5)
