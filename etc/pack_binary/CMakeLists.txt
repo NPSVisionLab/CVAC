@@ -118,8 +118,8 @@ INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/corpus
        COMPONENT data
       )
       
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/doc/html
-       DESTINATION doc
+INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../doc
+       DESTINATION .
        COMPONENT doc
       )
       

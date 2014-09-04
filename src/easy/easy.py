@@ -18,7 +18,6 @@ import datetime
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
 sys.path.append('''.''')
 import Ice
-import Ice
 import IcePy
 import cvac
 from util import misc
