@@ -87,6 +87,11 @@ IF(WIN32)
     # Specify the default location to install CVAC.  It will install it
     # in this and a version directory underneath this.
     SET(CPACK_NSIS_INSTALL_ROOT "c:\\\\CVAC")
+    # install gui.py startup script
+    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/winstart.bat
+        DESTINATION bin
+        COMPONENT Runtime
+        )
 ELSEIF(APPLE)
     SET( SCRIPT_EXT sh )
     SET(CPACK_GENERATOR "Bundle")
