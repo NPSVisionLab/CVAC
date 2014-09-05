@@ -340,7 +340,7 @@ class Application(tk.Frame):
                                         command=lambda: self.runDemo('demo/detect.py'))
         demoButton.grid(row=0, column=1, padx=5, pady=5)
         
-        terminalButton = tk.Button(lf, text='Open Terminal Window', width=20,
+        terminalButton = tk.Button(lf, text='Terminal Window', width=20,
                                         bg="light blue",
                                         command=self.openTerminal)
         terminalButton.grid(row=1, padx=5, pady=5)
