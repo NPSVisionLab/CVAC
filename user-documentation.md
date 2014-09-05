@@ -50,7 +50,7 @@ results = easy.detect( detector, modelfile, "testImg/weltmeister.jpg" )
 easy.printResults(results)
 ```
 
-## Apply the detector to some of your own image files
+## Apply the detector to your own image files
 
 The algorithm services can only access images that are at or below the
 "Data Dir" path that's shown in the Control Center (mouse-over and
