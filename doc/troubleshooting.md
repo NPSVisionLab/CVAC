@@ -3,6 +3,16 @@ layout: default
 title: Troubleshooting
 ---
 
+## Nothing works
+
+No control center?
+Prerequisites don't succeed?
+Can't find demo/detect.py?
+Service can't find your image files?
+If you can run the Control Center, click the Python Env button and take a look at the output.  Any obvious issues?
+
+## Specific Issues
+
 ### IceBox.jar not found
 IceBox.jar only exists in ICE 3.5, not in ICE 3.4.2 (currently the default for CVAC).  This should not cause any errors during build or run time.
 
