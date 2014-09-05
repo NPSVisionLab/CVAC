@@ -22,8 +22,9 @@ instructions, as well as for source code download instructions.
 
 # Documentation
 
-Take a look at the [user documentation](user-documentation.html) on
-how to start EasyCV and how to run your first examples.
+Take a look at the [user documentation](user-documentation.html) and,
+in particular, the [Quickstart](user-documentation.html#quickstart)
+guide on how to start EasyCV and how to run your first examples.
 
 Several tutorials and API documentation are also available:
 

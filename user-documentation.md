@@ -3,16 +3,86 @@ layout: default
 title: User Documentation
 ---
 
-Note: this page is heavily under construction as of 3 Sept 2014.
-Check back in a day for updates.
+Contents:
 
-The [online documentation](http://npsvisionlab.github.io/CVAC) refers
-to the master branch.  Documentation for other versions is available
-from EasyCV version 0.8 onwards and included with the binary
-installer.  You can also [build](building.html) the documentation from
-the source distribution.
+* [Quickstart](#quickstart)
+* [Architecture](#architecture)
+* [FileServer](#fileserver)
 
-# EasyCV Control Center
+Documentation version: if you are reading this from a local file, the
+version of the documentation matches your installed EasyCV version.
+Otherwise, the [online documentation](http://npsvisionlab.github.io/CVAC)
+refers to the EasyCV master branch.  Documentation for other versions
+is available from EasyCV version 0.8 onwards and it is included with
+the binary installer.  You can also [build](building.html) the
+documentation from the source distribution.
+
+# <a name="quickstart"></a> Quickstart
+
+1. Double-click the EasyComputerVision application and wait for the
+EasyCV Control Center to appear.  This might take up to a minute the
+first time you start it.
+![EasyCV Control Center](images/ControlCenterTop.png)
+
+1. Click the "start services" button. If you get firewall warnings,
+select "Allow" so the services can accept the client's service
+requests in the next step.
+
+1. Click the "Detect Demo" button.  This will run a standard face
+detector on a sample image and, if you have PIL installed, pop up a
+window showing you the result.  Done!
+
+## Run custom "easy" code in a Python shell
+
+1. Click the "Terminal Window" button.  Once the window has opened,
+change the current directory to the root installation folder, such as
+<br>`cd /Applications/EasyComputerVision.app/Contents/Resources` or
+<br>`cd C:\Program Files\EasyComputerVision`
+
+1. Start an interactive Python shell by typing `python`.  At the \>\>\>
+prompt, enter:
+
+```python
+    import easy
+    detector = easy.getDetector( "OpenCVCascadeDetector" )
+    modelfile = "detectors/haarcascade_frontalface_alt.xml"
+    results = easy.detect( detector, modelfile, "testImg/weltmeister.jpg" )
+    easy.printResults(results)
+```
+
+## Apply the detector to some of your own image files
+
+The algorithm services can only access images that are at or below the
+"Data Dir" path that's shown in the Control Center (mouse-over and
+scroll for the complete path).  You can either manually copy your
+images to that path, or you can use the FileServer service to
+accomplish this task for you.  Again, in the Python shell, execute
+the following code, replacing "testImg" with a path to your images
+or image folder:
+
+```python
+import easy
+rs = easy.createRunSet( "testImg" )
+easy.printRunSetInfo( rs, printLabels=True )
+fileserver = easy.getFileServer( "PythonFileService:default -p 10111 " )
+putResult = easy.putAllFiles( fileserver, rs )
+detector = easy.getDetector( "BOW_Detector" )
+modelfile = "detectors/bowUSKOCA.zip"
+results = easy.detect( detector, modelfile, rs )
+rmResult = easy.deleteAllFiles( fileserver, putResult )
+easy.printResults(results)
+```
+
+## Further Tutorials and Demos
+
+Please refer to the list of [demos](demos.html) for additional tasks
+such as training a detector for your particular objects of interest,
+using LabelMe or VATIC annotations, running against remote services,
+creating ROC curves, or comparing algorithm performance.
+
+# <a name="architecture"></a> Architecture
+
+## EasyCV Control Center
 
 Start up the EasyCV Control Center (see the [installation
 notes](download.html) for instructions on how to do that).  ![EasyCV
