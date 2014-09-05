@@ -14,6 +14,21 @@ program space.  You can obtain and share a "corpus" of labeled objects
 for training or testing.  And you can easily exchange one algorithm
 for another without modifying your code (much).
 
+## Easy! Computer Vision ...
+
+... is a framework for anybody who wants to *tap into the power for
+computer vision quickly and easily:* application developers that would
+like to use computer vision, computer vision algorithm developers,
+contracting officers, and program managers.
+
+... *connects algorithms with data sets,* e.g. from the Computer Vision
+Algorithm Collection (CVAC) or from OpenCV and from the Caltech101
+corpus or LabelMe.
+
+... enables transparent remote service invocation, cross-language
+communication, and a *plug-and-play* approach to model training,
+testing, and deployment.
+
 # Download and Install
 
 Please see the [download and installation page](download.html) for
@@ -22,9 +37,10 @@ instructions, as well as for source code download instructions.
 
 # Documentation
 
-Take a look at the [user documentation](user-documentation.html) and,
-in particular, the [Quickstart](user-documentation.html#quickstart)
-guide on how to start EasyCV and how to run your first examples.
+Start with the [user documentation](user-documentation.html) which
+includes an [EasyCV Quickstart](user-documentation.html#quickstart)
+guide on how to use EasyCV and run your first examples.  Of
+course, there is also a [FAQ](http://movesinstitute.org/~kolsch/CVAC/faq.html).
 
 Several tutorials and API documentation are also available:
 
@@ -35,6 +51,10 @@ Several tutorials and API documentation are also available:
   [3rd-party dependencies](dependencies.html);
 * Instructions for [adding your algorithms](integrating.html)
   to EasyCV and CVAC (see also Contributing below);
+* [Frequently Asked Questions](http://movesinstitute.org/~kolsch/CVAC/faq.html);
+* Overview of a [Tutorial at CVPR 2013](http://movesinstitute.org/~kolsch/CVAC/tutorial.html),
+  including a better-formatted [manual](http://movesinstitute.org/~kolsch/CVAC/Easy.pdf)
+  to an earlier version of EasyCV.
 * And, last but not least, some [Troubleshooting](troubleshooting.html) help.
 
 # Contributing

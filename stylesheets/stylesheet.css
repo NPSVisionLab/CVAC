@@ -221,6 +221,9 @@ form {
   
 }
 
+em {
+  font-weight: bold;
+}
 
 /* GENERAL ELEMENT TYPE STYLES */
 
