@@ -492,6 +492,10 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         }
         for(unsigned int k=0;k<_listClassUnique.size();k++)
             _classWeight[k] = (float)_maxCount/_classWeight[k];		
+        
+        // The order of classWeight is the same with the order of classID. 
+        // If there is a list of classID = {-1,2,1}. 
+        // Then, the order of classWeights becomes {-1,1,2}. 
 
         //param.kernel_type = CvSVM::LINEAR;	//empirically, it should NOT be linear for a better performance.
 

@@ -70,10 +70,10 @@ extern "C"
 ///////////////////////////////////////////////////////////////////////////////
 
 BowICEI::BowICEI()
-: pBowCV(NULL),fInitialized(false)
+: pBowCV(NULL),fInitialized(false),configModelFileName("")
 {
   callbackPtr = NULL;
-    mServiceMan = NULL;
+  mServiceMan = NULL;
 }
 
 BowICEI::~BowICEI()
@@ -89,17 +89,20 @@ void BowICEI::setServiceManager(cvac::ServiceManagerI *sman)
 
 void BowICEI::starting()
 {
+    m_CVAC_DataDir = mServiceMan->getDataDir();  
     // check if the config.service file contains a trained model
     // if so, read it.
     configModelFileName = mServiceMan->getModelFileFromConfig();
     if (configModelFileName.empty())
     {
-        localAndClientMsg(VLogger::DEBUG, NULL, "No trained model file specified in service config.\n" );
+        localAndClientMsg(VLogger::DEBUG, NULL,
+          "No trained model file specified in service config.\n" );
     }
     else
     {
-        localAndClientMsg(VLogger::DEBUG, NULL, "Will read trained model file as specified in service config: %s\n",
-              configModelFileName.c_str()); 
+        localAndClientMsg(VLogger::DEBUG, NULL,
+          "Will read trained model file as specified in service config: %s\n",
+          configModelFileName.c_str()); 
     }
 }
 
@@ -109,75 +112,45 @@ void BowICEI::stopping()
 
 
                           // Client verbosity
-void BowICEI::initialize( DetectorDataArchive& dda,
-                          const ::cvac::FilePath &file, const::Ice::Current &current)
+void BowICEI::initialize( DetectorDataArchive* dda,
+                          const ::cvac::FilePath &file,
+                          const::Ice::Current &current)
 {
   // Set CVAC verbosity according to ICE properties
   Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
   string verbStr = props->getProperty("CVAC.ServicesVerbosity");
   if (!verbStr.empty())
-  {
-    getVLogger().setLocalVerbosityLevel( verbStr );
-  }
-  m_CVAC_DataDir = mServiceMan->getDataDir();
+    getVLogger().setLocalVerbosityLevel( verbStr );  
 
   // Since constructor only called on service start and destroy
   // can be called.  We need to make sure we have it
   if (pBowCV == NULL)
-  {
     pBowCV = new bowCV(this);
-  }
-  cvac::FilePath model;
-  if (configModelFileName.empty())
-  {
-      model = file;
-  }else
-  {
-      model.directory.relativePath = getFileDirectory(configModelFileName);
-      model.filename = getFileName(configModelFileName);
-  }
-	
-  // Get the default CVAC data directory as defined in the config file
-  std::string expandedSubfolder = "";
-  std::string filename = "";
-  std::string _extFile = model.filename.substr( model.filename.rfind(".")+1,
-                                                    model.filename.length());
+
+  // Get the default CVAC data directory as defined in the config file    
   std::string connectName = getClientConnectionName(current);
   std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
-                                                             connectName);                               
+    connectName);                               
   std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
 
-  if (_extFile.compare("txt") == 0)
+  string zipfilepath;
+  if(configModelFileName.empty() || file.filename.empty() == false)  //use default model file only if we did not get one.
+    zipfilepath = getFSPath(file, m_CVAC_DataDir);    
+  else
   {
-    localAndClientMsg(VLogger::ERROR, NULL,
-      "For maintaining consistency, this approach (using txt file as a detectorData) is prohibited.\n");
-    return;
+    if (pathAbsolute(configModelFileName))
+      zipfilepath = configModelFileName;
+    else
+      zipfilepath = m_CVAC_DataDir + "/" + configModelFileName;
   }
-
-  std::string zipfilename;
-  // Only support absolute paths if they are from the config file
-  if (configModelFileName.empty() == false)
-  {
-      if (pathAbsolute(configModelFileName) == false)
-	  zipfilename = m_CVAC_DataDir + "/" + configModelFileName;
-      else
-	  zipfilename = configModelFileName;
-  }else
-  {
-      zipfilename = getFSPath( model, m_CVAC_DataDir );
-  }
-  dda.unarchive(zipfilename, clientDir);
+  dda->unarchive(zipfilepath, clientDir);
 
   // add the CVAC.DataDir root path and initialize from dda  
-  fInitialized = pBowCV->detect_initialize( &dda );
-
+  fInitialized = pBowCV->detect_initialize( dda );
   if (!fInitialized)
-  {
-    localAndClientMsg(VLogger::WARN, NULL, "Failed to run CV detect_initialize\n");
-  }
+    localAndClientMsg(VLogger::WARN, NULL,
+    "Failed to run CV detect_initialize\n");
 }
-
-
 
 bool BowICEI::isInitialized()
 {
@@ -218,49 +191,29 @@ DetectorProperties BowICEI::getDetectorProperties(const ::Ice::Current& current)
 	return props;
 }
 
-ResultSet BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilename)
-{	
-	ResultSet _resSet;	
-	int _bestClass;	
+int BowICEI::detectObjects(const CallbackHandlerPrx& _callback,
+                           const cvac::Labelable& _lbl)
+{ 
+  std::string tfilepath = getFSPath( _lbl.sub.path, m_CVAC_DataDir );
 
-	// Detail the current file being processed (DEBUG_1)
-	std::string _ffullname = std::string(fullfilename);
-	localAndClientMsg(VLogger::DEBUG_1, NULL, "%s is processing.\n", _ffullname.c_str());
-	BowICEI* _bowCV = static_cast<BowICEI*>(detector.get());
-        float confidence = 0.5f; // TODO: obtain some confidence from BOW
-        bool result = _bowCV->pBowCV->detect_run(fullfilename, _bestClass);
+  localAndClientMsg(VLogger::DEBUG, _callback,
+                    "%s is processing.\n",tfilepath.c_str());
+  
+  BowICEI* _bowCV = static_cast<BowICEI*>(this);  
+  int _bestClass;
+  bool _result = _bowCV->pBowCV->detect_run(tfilepath, _bestClass);
 
-    if(true == result) {
-        localAndClientMsg(VLogger::DEBUG_1, NULL, "Detection, %s as Class: %d\n",
-                          _ffullname.c_str(), _bestClass);
-
-        Result _tResult;
-        _tResult.original = NULL;
-
-        // The original field is for the original label and file name.  Results need
-        // to be returned in foundLabels.  If the DetectorDataArchive contains properties
-        // of the sort labelname_0 = 'somelabel', then a detection of classID 0 will be
-        // reported as 'somelabel'
-        LabelablePtr labelable = new Labelable();
-        ostringstream ss;
-        ss << _bestClass;
-        string lname = ss.str();
-        string val = _bowCV->pBowCV->dda->getProperty("labelname_"+lname);
-        if ( val.empty() )
-        {
-          labelable->lab.name = lname;
-        }
-        else
-        {
-          labelable->lab.name = val;
-        }
-        labelable->confidence = confidence;
-        labelable->lab.hasLabel = true;
-        _tResult.foundLabels.push_back(labelable);
-        _resSet.results.push_back(_tResult);
-    }
-	
-	return _resSet;
+  if(true == _result)
+  {
+    localAndClientMsg(VLogger::DEBUG, _callback, "Detection, %s as Class: %d\n",
+                      tfilepath.c_str(), _bestClass);
+  }
+  else
+  {
+    localAndClientMsg(VLogger::WARN, _callback,
+                      "Error while processing %s\n", tfilepath.c_str());
+  }
+  return _bestClass;
 }
 
 void BowICEI::process(const Ice::Identity &client,
@@ -271,26 +224,96 @@ void BowICEI::process(const Ice::Identity &client,
   callbackPtr = 
     DetectorCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
 
-  // this must not go out of scope before processRunSet has completed:
   DetectorDataArchive dda;
+  initialize(&dda, trainedModelFile, current);
 
-  initialize( dda, trainedModelFile, current);
-  if (!fInitialized || NULL==pBowCV || !pBowCV->isInitialized())
+  if (!isInitialized() || NULL==pBowCV || !pBowCV->isInitialized())
   {
-    localAndClientMsg(VLogger::ERROR, callbackPtr, "BowICEI not initialized, aborting.\n");
+    localAndClientMsg(VLogger::ERROR, callbackPtr,
+      "BowICEI not initialized, aborting.\n");
   }
-  DoDetectFunc func = BowICEI::processSingleImg;
 
-  try {
-    processRunSet(this, callbackPtr, func, runset, m_CVAC_DataDir, mServiceMan);
+  //////////////////////////////////////////////////////////////////////////
+  // Setup - RunsetConstraints
+  cvac::RunSetConstraint mRunsetConstraint;  
+  mRunsetConstraint.addType("jpg");
+  mRunsetConstraint.addType("png");
+  mRunsetConstraint.addType("tif");  
+  // End - RunsetConstraints
+
+  //////////////////////////////////////////////////////////////////////////
+  // Start - RunsetWrapper
+  mServiceMan->setStoppable();  
+  cvac::RunSetWrapper mRunsetWrapper(&runset,m_CVAC_DataDir,mServiceMan);
+  mServiceMan->clearStop();
+  if(!mRunsetWrapper.isInitialized())
+  {
+    localAndClientMsg(VLogger::ERROR, callbackPtr,
+      "RunsetWrapper is not initialized, aborting.\n");    
+    return;
   }
-  catch (exception e) {
-    localAndClientMsg(VLogger::ERROR, callbackPtr, "BOW detector could not process given file-path.\n");
-  }
+  // End - RunsetWrapper
+
+  //////////////////////////////////////////////////////////////////////////
+  // Start - RunsetIterator
+  int nSkipFrames = 150;  //the number of skip frames
+  mServiceMan->setStoppable();
+  cvac::RunSetIterator mRunsetIterator(&mRunsetWrapper,mRunsetConstraint,
+                                       mServiceMan,callbackPtr,nSkipFrames);
+  mServiceMan->clearStop();
+  if(!mRunsetIterator.isInitialized())
+  {
+    localAndClientMsg(VLogger::ERROR, callbackPtr,
+      "RunSetIterator is not initialized, aborting.\n");
+    return;
+  } 
+  // End - RunsetIterator
+
+  mServiceMan->setStoppable();
+  while(mRunsetIterator.hasNext())
+  {
+    if((mServiceMan != NULL) && (mServiceMan->stopRequested()))
+    {        
+      mServiceMan->stopCompleted();
+      break;
+    }
+
+    cvac::Labelable& labelable = *(mRunsetIterator.getNext());
+    {
+      int _bestClass = detectObjects( callbackPtr, labelable );
+      addResult(mRunsetIterator.getCurrentResult(),labelable,_bestClass);      
+    }
+  }  
+  callbackPtr->foundNewResults(mRunsetIterator.getResultSet());
+  mServiceMan->clearStop();
+}
+
+void BowICEI::addResult(cvac::Result& _res,
+                        cvac::Labelable& _converted,
+                        int _bestClass)
+{	
+  // The original field is for the original label and file name.  Results need
+  // to be returned in foundLabels.  If the DetectorDataArchive contains properties
+  // of the sort labelname_0 = 'somelabel', then a detection of classID 0 will be
+  // reported as 'somelabel'
+  LabelablePtr labelable = new Labelable();
+  ostringstream ss;
+  ss << _bestClass;
+  string lname = ss.str();
+  BowICEI* _bowCV = static_cast<BowICEI*>(this);
+  string val = _bowCV->pBowCV->dda->getProperty("labelname_"+lname);
+  if ( val.empty() )
+    labelable->lab.name = lname;
+  else
+    labelable->lab.name = val;
+
+  labelable->confidence = 1.0f;//ToBeUpdated
+  labelable->lab.hasLabel = true;
+
+  _res.foundLabels.push_back(labelable);
 }
 
 void BowICEI::message(MsgLogger::Levels msgLevel, const string& _msgStr)
 {  
   localAndClientMsg((VLogger::Levels)msgLevel,callbackPtr,_msgStr.c_str());
 }
-
