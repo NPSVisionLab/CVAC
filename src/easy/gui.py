@@ -29,6 +29,7 @@ sys.path.append(installpath+'/python/easy')
 sys.path.append(installpath+'/demo')
 sys.path.append(installpath+'/3rdparty/ICE/python')
 sys.path.append(installpath+'/python')
+sys.path.append(installpath+'/virt/lib/python2.7/site-packages')
 
 '''Michael Lange <klappnase (at) freakmail (dot) de>
 The ToolTip class provides a flexible tooltip widget for Tkinter; it is based on IDLE's ToolTip
