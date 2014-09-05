@@ -39,9 +39,10 @@ def addFileToLabelableSet(lset, ldir, lfile, video=True, image=True):
         return  # No extension so don't add it
     #see if we have a video or image file if not just skip it
     name, ext = lfile.rsplit('.',1)
-    if ext in getVideoExtensions():
+    extLower = ext.lower()
+    if extLower in getVideoExtensions():
         isVideo = True
-    elif ext in getImageExtensions():
+    elif extLower in getImageExtensions():
         isImage = True
     else:
         return
