@@ -403,11 +403,13 @@ class Application(tk.Frame):
         statusLabel = tk.Label(lf, textvariable=self.serverStatus)
         statusLabel.grid(row=2, column=1, pady=5, columnspan=4, sticky=tk.W)
         tk.Label(lf, text="Data Dir:").grid(row=3, sticky=tk.W)
-        dirText = tk.Text(lf, width=28, height=1)
+        dirText = tk.Text(lf, width=38, height=1)
         dirText.insert(tk.END, self.dataDir)
-        dirText.configure(state=tk.DISABLED)
+        dirText.configure(state=tk.DISABLED, relief='groove', wrap='char',
+                          borderwidth=2)
         dirText.grid(row=3, column=1, columnspan=4, sticky=tk.W)
-        toolTip = ToolTip(dirText, text=self.dataDir, wraplength=600)
+        toolTip = ToolTip(dirText, text=self.dataDir, wraplength=600, 
+                          delay=1000)
         if sys.platform!='win32':
             checkButton = tk.Checkbutton(lf, text= 'Show services output',
                                           variable=self.checkVar)
@@ -466,9 +468,9 @@ class Application(tk.Frame):
 
     def openDoc(self):
         if sys.platform=='darwin':
-            os.system("open "+os.getcwd()+'/doc/html/index.html')
+            os.system("open "+os.getcwd()+'/doc/index.html')
         elif sys.platform=='win32':
-            shellcmd = 'start {0}\\doc\\html\\index.html'.format(os.getcwd())
+            shellcmd = 'start {0}\\doc\\index.html'.format(os.getcwd())
             os.system( shellcmd )
         else:
             print "please define openDoc for this OS: "+sys.platform
@@ -584,7 +586,7 @@ class Application(tk.Frame):
             
        
 root = Tkinter.Tk()
-root.geometry('410x755+10+10')
+root.geometry('420x755+10+10')
 root.tk_setPalette(background='light grey')
 gui_stdout_queue = Queue.Queue()
 os.chdir(installpath)
