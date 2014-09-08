@@ -37,7 +37,8 @@ installed it will also pop up a window showing you the result.
 1. Click the "Terminal Window" button.  Once the window has opened,
 change the current directory to the root installation folder, such as
 <br>`cd /Applications/EasyComputerVision.app/Contents/Resources` or
-<br>`cd C:\Program Files\EasyComputerVision`
+<br>`cd C:\Program Files\EasyComputerVision` or
+<br>`cd C:\CVAC\CVAC_binary-0.8.99-Win7`
 
 1. Start an interactive Python shell by typing `python`.  At the \>\>\>
 prompt, enter:
