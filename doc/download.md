@@ -17,9 +17,9 @@ JRE.)
 
 Binary packages are available for:
 
-* [Windows 7, Windows 8, XP](http://www.movesinstitute.org/~kolsch/CVAC/Download.php):
-see Win files.
-[Windows Installation Instructions](installation_win.html)
+* [Windows](http://www.movesinstitute.org/~kolsch/CVAC/Download.php):
+see Win files and installation instructions for [Windows 8](installation_win.html)
+and [Windows 7, XP](installation_win7.html)
 * [Mac OSX](http://www.movesinstitute.org/~kolsch/CVAC/Download.php):
 see Darwin files.
 [Mac OSX Installation Instructions](installation_osx.html)
