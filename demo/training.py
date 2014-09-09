@@ -29,8 +29,8 @@ trainedModel = easy.train( trainer, trainset )
 zipfname = easy.getFSPath( trainedModel )
 print("{0}".format( zipfname ))
 zipf = zipfile.ZipFile( zipfname )
-print("Training model stored in file {0}; file contents:\n{1}".\
-      format( zipfname, zipf.namelist()))
+print("Training model stored in file {0}".format( zipfname))
+# print("file contents:\n{0}".format(zipf.namelist()))
 
 #
 # test the trained model on a separate set of images
