@@ -25,10 +25,17 @@ installpath = os.path.abspath(scriptpath+'/../..')
 #get path to the python running this script
 pythonExec = sys.executable
 
-sys.path.append(installpath+'/python/easy')
+sys.path.append(installpath+'/virt/lib/python2.7/site-packages')
+sys.path.append(installpath+'/python/easyPkg')
 sys.path.append(installpath+'/demo')
 sys.path.append(installpath+'/3rdparty/ICE/python')
 sys.path.append(installpath+'/python')
+if sys.platform=='darwin':
+    # make sure the env variables are set
+    activate_this=installpath+'/virt/bin/activate_this.py'
+    if os.path.isfile(activate_this):
+        execfile(activate_this, dict(__file__=activate_this))
+
 
 '''Michael Lange <klappnase (at) freakmail (dot) de>
 The ToolTip class provides a flexible tooltip widget for Tkinter; it is based on IDLE's ToolTip
@@ -306,7 +313,7 @@ class Application(tk.Frame):
         self.updateServerStatus()
         self.after(self.stdPollTime, self.updateGuiStdout)
         if sys.platform=='darwin':
-            self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python:'+installpath+'/virt/lib/python2.7/site-packages', 'DYLD_LIBRARY_PATH': installpath+'/3rdparty/opencv/lib:'+installpath+'/3rdparty/ICE/lib', 'PATH':installpath+'/virt/bin:' + os.getenv('PATH')}
+            self.env = {'PYTHONPATH':installpath+'/3rdparty/ICE/python:'+installpath+'/virt/lib/python2.7/site-packages:' + installpath+'/python/easyPkg', 'DYLD_LIBRARY_PATH': installpath+'/3rdparty/opencv/lib:'+installpath+'/3rdparty/ICE/lib', 'PATH':installpath+'/virt/bin:' + os.getenv('PATH')}
             self.ccenv = {'PATH':installpath + '/virt/bin:' + os.getenv('PATH'),
                           'DYLD_LIBRARY_PATH': installpath+'/3rdparty/opencv/lib:'+installpath+'/3rdparty/ICE/lib'}
         elif sys.platform=='win32':
@@ -585,6 +592,7 @@ class Application(tk.Frame):
        
             
        
+
 root = Tkinter.Tk()
 root.geometry('420x755+10+10')
 root.tk_setPalette(background='light grey')
