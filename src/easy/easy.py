@@ -844,7 +844,11 @@ def getTrainer( configString ):
     '''Connect to a trainer service'''
     proxyStr = getProxyString(configString)
     trainer_base = ic.stringToProxy( proxyStr )
-    trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
+    try:
+        trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
+    except Ice.ConnectionRefusedException:
+        raise RuntimeError("Cannot connect to trainer '{0}'"
+                           .format(proxyStr) )
     if not trainer:
         raise RuntimeError("Invalid DetectorTrainer proxy")
     return trainer
@@ -934,7 +938,11 @@ def getDetector( configString ):
     '''Connect to a detector service'''
     proxyStr = getProxyString(configString)
     detector_base = ic.stringToProxy( proxyStr )
-    detector = cvac.DetectorPrx.checkedCast(detector_base)
+    try:
+        detector = cvac.DetectorPrx.checkedCast(detector_base)
+    except Ice.ConnectionRefusedException:
+        raise RuntimeError("Cannot connect to detector '{0}'"
+                           .format(proxyStr) )
     if not detector:
         raise RuntimeError("Invalid Detector service proxy")
     return detector
