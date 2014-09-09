@@ -75,7 +75,7 @@ class MiniTutorialTest(unittest.TestCase):
     #
     # Run full_image_corpus.py
     #
-    def xtest_full_image_corpus(self):
+    def test_full_image_corpus(self):
         print("running full_image_corpus.py")
         sys.stdout.flush()
         execfile(self.demoDir + "/full_image_corpus.py");
@@ -83,7 +83,7 @@ class MiniTutorialTest(unittest.TestCase):
     #
     # Run bootstrapping.py
     #
-    def xtest_bootstrapping(self):
+    def test_bootstrapping(self):
         print("running bootstrapping.py")
         sys.stdout.flush()
         execfile(self.demoDir + "/bootstrapping.py");
