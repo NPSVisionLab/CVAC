@@ -63,26 +63,35 @@
 #endif
 using namespace cvac;
 
-static VLogger vLogger();  // Compile-time default base-level
+static VLogger* vLoggerPtr = NULL;
+
 
 ///////////////////////////////////////////////////////////////////////////////
+VLogger &cvac::getVLogger(){
+    if (vLoggerPtr == NULL)
+      vLoggerPtr = new VLogger();
+    return *vLoggerPtr;
+}
+
+
 void cvac::localAndClientMsg(VLogger::Levels rqLevel, const CallbackHandlerPrx& callbackHandler, const char* fmt, ...) {
 
   va_list args;
   
+  
   // Echo locally according to config.service property 'CVAC.ServicesVerbosity' in CVAC root
-  if(vLogger.getBaseLevel() >= rqLevel)
+  if(getVLogger().getBaseLevel() >= rqLevel)
   {
     va_start(args, fmt);
-    vLogger.printv(rqLevel, fmt, args);
+    getVLogger().printv(rqLevel, fmt, args);
     va_end(args);
   }
 
   // Echo remotely based on client verbosity.
   // commenting out the second if condition means: always echo client messages unless SILENT
   // Otherwise: Early pruning of expensive messages  (will use 'clientVerbosity')
-  if( vLogger.getBaseLevel() > vLogger.getIntLevel(0)
-      && vLogger.getBaseLevel() >= rqLevel
+  if( getVLogger().getBaseLevel() > getVLogger().getIntLevel(0)
+      && getVLogger().getBaseLevel() >= rqLevel
     )  
   {
     // Echo through callbackHandler if available, assemble string for client message from arglist
@@ -90,7 +99,7 @@ void cvac::localAndClientMsg(VLogger::Levels rqLevel, const CallbackHandlerPrx& 
       const unsigned int BUFLEN=1024;
       if (strlen(fmt)>BUFLEN/2)
       {
-        vLogger.printv( VLogger::DEBUG_2, 
+        getVLogger().printv( VLogger::DEBUG_2, 
                         "Really long debug message - might get truncated: %s\n", fmt );
       }
       char buffer[BUFLEN+1];
@@ -217,7 +226,7 @@ bool cvac::makeDirectories(const std::string& dirPath)
     if (idx > 0)
     {
         std::string substr = dirPath.substr(lastIdx, idx - lastIdx);
-        vLogger.printv(VLogger::DEBUG_2,
+        getVLogger().printv(VLogger::DEBUG_2,
                        "makeDirectories: first path substr: %s\n", substr.c_str());
         if (!makeDirectory(substr))
             return false;    
@@ -264,7 +273,7 @@ bool cvac::makeDirectories(const std::string& dirPath)
 ///////////////////////////////////////////////////////////////////////////////
 bool cvac::makeDirectory(const std::string& path)
 {
-   vLogger.printv(VLogger::DEBUG_2,
+   getVLogger().printv(VLogger::DEBUG_2,
                   "makeDirectory called with: %s\n", path.c_str());
    if (path.empty())
    {

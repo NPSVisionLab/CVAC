@@ -13,7 +13,7 @@ WRAP_SLICE2PY( SLICE_FILES
 add_custom_target( demo ALL DEPENDS ${SLICE_FILES} )
 
 IF( BUILD_BINARY_PACKAGE )
-  INSTALL(FILES bootstrapping.py ${CMAKE_SOURCE_DIR}/doc/demos.html detect.py full_image_corpus.py labelme_corpus.py prerequisites.py remote_services.py training.py runset.py
+  INSTALL(FILES bootstrapping.py detect.py full_image_corpus.py labelme_corpus.py prerequisites.py remote_services.py training.py runset.py
     DESTINATION demo
     COMPONENT Runtime
   )

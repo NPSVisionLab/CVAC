@@ -5,6 +5,7 @@ FIND_PROGRAM( JEKYLL_EXECUTABLE jekyll
               $ENV{JEKYLL_ROOT}
               PATHS          
               /usr/bin
+              c:/Ruby200-x64/bin
               DOC "The Jekyll executable"
            )
            

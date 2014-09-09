@@ -464,12 +464,8 @@ if __name__ == '__main__' :
     c4.detectorString = "OpenCVCascadeDetector:default -p 10102"
     c4.foundMap = {'any':easy.getPurpose('pos')}
 
-    runset = easy.createRunSet( "trainImg/kr/Kr001.jpg", "pos" )
-    easy.addToRunSet( runset, "trainImg/kr/Kr002.jpg", "pos" )
-    easy.addToRunSet( runset, "trainImg/kr/Kr003.jpg", "pos" )
-    easy.addToRunSet( runset, "trainImg/ca/ca0003.jpg", "neg" )
-    easy.addToRunSet( runset, "trainImg/ca/ca0004.jpg", "neg" )
-    easy.addToRunSet( runset, "trainImg/ca/ca0005.jpg", "neg" )
+    runset = easy.createRunSet( "trainImg/kr", "pos" )
+    easy.addToRunSet( runset, "trainImg/ca", "neg" )
     easy.printRunSetInfo( runset, printArtifacts=False, printLabels=True )
     
     perfdata = joust( [c1, c2], runset, folds=3 )

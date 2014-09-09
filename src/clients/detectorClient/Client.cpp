@@ -419,7 +419,7 @@ int ClientApp::run(int argc, char* argv[])
   string verbStr = communicator()->getProperties()->getProperty("CVAC.ClientVerbosity");
   if (!verbStr.empty())
   {
-      vLogger.setLocalVerbosityLevel( verbStr );
+      getVLogger().setLocalVerbosityLevel( verbStr );
   }
   localAndClientMsg(VLogger::DEBUG_2, NULL, "App 2nd arg (testFileFolder): %s\n", argv[2]);
   std::string testFileFolder = std::string(argv[2]);
