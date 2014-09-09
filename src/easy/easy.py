@@ -1335,7 +1335,11 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
             numfound, ("s","")[numfound==1], ', '.join(names) ))
         if numfound==1 and origname.lower()==names[0].lower():
             identical += 1
-    print('{0} out of {1} results had identical labels'.format( identical, len( results ) ))
+    if foundMap and origMap:
+        print('{0} out of {1} results had identical purposes'
+              .format( identical, len( results ) ))
+    else:
+        print('(labels had unknown purposes, cannot determine result accuracy)')
 
 def initGraphics():
     try:
