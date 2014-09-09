@@ -24,26 +24,26 @@ Invoke each of the following demos with Python like so:<br>
 
 * Prerequisites: import cv, import easy:
 [prerequisites.py](../demo/prerequisites.py)
-[(online)](https://github.com/NPSVisionLab/CVAC/blob/master/demo/prerequisites.py)
+(see code [online](https://github.com/NPSVisionLab/CVAC/blob/master/demo/prerequisites.py))
 
 * Apply a pre-trained detector:
 [detect.py](../demo/detect.py)
-[(online)](https://github.com/NPSVisionLab/CVAC/blob/master/demo/detect.py)
+(see code [online](https://github.com/NPSVisionLab/CVAC/blob/master/demo/detect.py))
 
 * Train a custom detection model:
 [training.py](../demo/training.py)
-[(online)](https://github.com/NPSVisionLab/CVAC/blob/master/demo/training.py)
+(see code [online](https://github.com/NPSVisionLab/CVAC/blob/master/demo/training.py))
 
 * Test your client against a pre-installed detector service and remotely
 train a detector for your objects:
 [remote_services.py](../demo/remote_services.py)
-[(online)](https://github.com/NPSVisionLab/CVAC/blob/master/demo/remote_services.py)
+(see code [online](https://github.com/NPSVisionLab/CVAC/blob/master/demo/remote_services.py))
 
 * Utilize a ready-made Corpus, learn about Labels vs. Purposes,
      understand result labels:
 [full\_image\_corpus.py](../demo/full_image_corpus.py)
-[(online)](https://github.com/NPSVisionLab/CVAC/blob/master/demo/full_image_corpus.py)
+(see code [online](https://github.com/NPSVisionLab/CVAC/blob/master/demo/full_image_corpus.py))
 
 * Obtain a LabelMe corpus and edit a corpus properties file:
 [labelme_corpus.py](../demo/labelme_corpus.py)
-[(online)](https://github.com/NPSVisionLab/CVAC/blob/master/demo/labelme_corpus.py)
+(see code [online](https://github.com/NPSVisionLab/CVAC/blob/master/demo/labelme_corpus.py))
