@@ -40,11 +40,11 @@ instructions, as well as for source code download instructions.
 Start with the [user documentation](user-documentation.html) which
 includes an [EasyCV Quickstart](user-documentation.html#quickstart)
 guide on how to use EasyCV and run your first examples.  Of
-course, there is also a [FAQ](http://movesinstitute.org/~kolsch/CVAC/faq.html).
+course, there is a [FAQ](faq.html).
 
-Several tutorials and API documentation are also available:
+In addition, there are several tutorials and the API documentation:
 
-* [Mini tutorials](demos.html) to get you started quickly;
+* [Mini tutorials](demos.html) (demos) to get you started quickly;
 * The Python [EasyCV](html/namespaceeasy.html) library API for high-level functionality;
 * The [cvac:: namespace](html/namespacecvac.html) for data and service definitions;
 * Documentation for [building from source](building.html) including

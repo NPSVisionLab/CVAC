@@ -15,7 +15,7 @@ AAA and the algorithm code in a library called libCCC.dylib:
 * config.icebox: `IceBox.Service.AAA=bowCCC:create...`
 * In the client code:
         ```
-        detector = cvac.DetectorPrx.checkedCast(self.communicator().propertyToProxy('AAA.Proxy').ice_twoway())
+        detector = easy.DetectorPrx.checkedCast(self.communicator().propertyToProxy('AAA.Proxy').ice_twoway())
         ```
 * In the server code:
         ```
@@ -40,13 +40,13 @@ your services are up to you.
 * Publish your source code and let others build and install it.
 * If your algorithm utilizes a learned model, you can update and publish the model by itself, without re-distributing the algorithm.  For example, a service for the popular Viola-Jones style "Haar" detector that is part of OpenCV remains the same but it can be run with a model for detecting faces or with a model for detecting pedestrians.
 
-## Contributing back your CVAC and _Easy!_ framework changes
+## Contributing back your _EasyCV!_ framework changes
 
 After you have a new feature working and you want to contribute it
-back to CVAC you need to follow these steps:
+back to EasyCV you need to follow these steps:
 
 *   Create an account on [www.github.com](http://www.github.com) and log in.
-*   Find the [NPSVisionLab/CVAC](https://github.com/NPSVisionLab/CVAC) repository by searching and then selecting that repository.
+*   Browse to the [NPSVisionLab/CVAC](https://github.com/NPSVisionLab/CVAC) repository and select it.
 *   Select the "Fork" button to create a fork of the CVAC project to your account.
 *   On your local system,  clone the fork with a "git clone https://github.com/<YOURUSER>/CVAC.git"
 *   To be able to update this clone to changes from CVAC you need to add CVAC as a remote using "git remote add CVACorig git://github.com/NPSVisionLab/CVAC.git"
