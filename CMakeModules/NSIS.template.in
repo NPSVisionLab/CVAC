@@ -579,9 +579,9 @@ Var LabelData
 Var DataPathValue
 Var SilentInstall
 
-!define MUI_FINISHPAGE_RUN "$SilentInstall"
-!define MUI_FINISHPAGE_RUN_FUNCTION "LaunchApplication"
-!define MUI_PAGE_CUSTOMFUNCTION_SHOW showFinishPageFunc
+#!define MUI_FINISHPAGE_RUN "$SilentInstall"
+#!define MUI_FINISHPAGE_RUN_FUNCTION "LaunchApplication"
+#!define MUI_PAGE_CUSTOMFUNCTION_SHOW showFinishPageFunc
 
 
 Function finishpageaction
