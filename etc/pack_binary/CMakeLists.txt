@@ -88,7 +88,7 @@ IF(WIN32)
     # in this and a version directory underneath this.
     SET(CPACK_NSIS_INSTALL_ROOT "c:\\\\EasyCV")
     # install gui.py startup script
-    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/winstart.bat
+    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/winstart.bat ${CMAKE_CURRENT_SOURCE_DIR}/EasyComputerVision.ico
         DESTINATION bin
         COMPONENT Runtime
         )

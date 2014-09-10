@@ -558,6 +558,9 @@ FunctionEnd
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Create Desktop Shortcut"
 !define MUI_FINISHPAGE_SHOWREADME_FUNCTION finishpageaction
 !define MUI_FINISHPAGE_NOAUTOCLOSE
+!define MUI_FINISHPAGE_LINK "EasyCV Docs"
+!define MUI_FINISHPAGE_LINK_LOCATION "http://npsvisionlab.github.io/CVAC/"
+
 !define env_hklm 'HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"'
 !define env_hkcu 'HKCU "Environment"'
 
@@ -574,11 +577,28 @@ Var PythonPathValue
 Var DataPathText
 Var LabelData
 Var DataPathValue
+Var SilentInstall
+
+#!define MUI_FINISHPAGE_RUN "$SilentInstall"
+#!define MUI_FINISHPAGE_RUN_FUNCTION "LaunchApplication"
+#!define MUI_PAGE_CUSTOMFUNCTION_SHOW showFinishPageFunc
 
 
 Function finishpageaction
-    CreateShortCut "$desktop\gui.lnk" "$INSTDIR\bin\winstart.bat" "$INSTDIR\src\easy\gui.py"
+    CreateShortCut "$desktop\EasyCV Control Center.lnk" "$INSTDIR\bin\winstart.bat" "$INSTDIR\src\easy\gui.py" "$INSTDIR\bin\EasyComputerVision.ico" 0 SW_SHOWMINIMIZED
 FunctionEnd
+
+Function showFinishPageFunc
+    ${If} $SilentInstall == "True"
+        ${NSD_Uncheck} $mui.FinishPage.Run
+        ShowWindow $mui.FinishPage.Run $(SW_HIDE}
+    ${EndIf}
+FunctionEnd
+
+Function LaunchApplication
+    ExecShell "" "$SMPROGRAMS\$STARTMENU_FOLDER\EasyCV Control Center.lnk"
+FunctionEnd
+
 
 Function customDialog
   !insertmacro MUI_HEADER_TEXT "Directory Options" "Choose directories needed for installing @CPACK_NSIS_PACKAGE_NAME@"
@@ -1037,6 +1057,9 @@ Section "-Core installation"
   #For AddToPath to add path to current user
   StrCpy $ADD_TO_PATH_ALL_USERS "2"
   SetOutPath "$INSTDIR"
+  IfSilent 0 finishInstall
+      StrCpy $SilentInstall "True"
+finishInstall:
   ${if} ${FileExists} "$INSTDIR\bin\startServices.bat"
       CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\startServices.lnk" "$INSTDIR\bin\startServices.bat"
       CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\stopServices.lnk" "$INSTDIR\bin\stopServices.bat"
@@ -1049,7 +1072,7 @@ Section "-Core installation"
  ${endif} 
   # Can't use PythonPathValue since it is not set to final value so
   # instead user virtual path by hand
-  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\gui.lnk" "$INSTDIR\bin\winstart.bat" "$INSTDIR\src\easy\gui.py"
+  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\EasyCV Control Center.lnk" "$INSTDIR\bin\winstart.bat" "$INSTDIR\src\easy\gui.py" 
   # CVAC Changes end
 
   ;Read a value from an InstallOptions INI file
