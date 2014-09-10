@@ -201,7 +201,7 @@ if( INCREASE_VERSION_PATCH )
   CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
     ${CMAKE_SOURCE_DIR}/include/version.h)
   # don't store this variable in the cache or else the version will be increased
-  # open every invocation of CMake in the same build directory
+  # upon every invocation of CMake in the same build directory
   UNSET( INCREASE_VERSION_PATCH CACHE )
 endif( INCREASE_VERSION_PATCH )
 

@@ -1271,7 +1271,7 @@ def getLabelText( label, classmap=None, guess=False ):
         if type(mapped) is cvac.Purpose:
             text = getPurposeName( mapped )
             if type(text) is int:
-                if guess and text.isdigit():
+                if guess:
                     text = 'class {0}'.format( text )
                 else:
                     text = '{0}'.format( text )
