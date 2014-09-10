@@ -311,6 +311,14 @@ FIND_PACKAGE(LibArchive REQUIRED)
 FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv
+)
+IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+  IF( OpenCV_DIR )
+    MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  ENDIF()
+ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv_stdc
 )
@@ -322,7 +330,6 @@ IF (OpenCV_LIB_DIR_DBG STREQUAL "")
     SET(OpenCV_LIB_DIR_DBG "${OpenCV_DIR}/../../lib")
 ENDIF (OpenCV_LIB_DIR_DBG STREQUAL "")
 
-IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   IF( OpenCV_DIR )
     MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
   ENDIF()
