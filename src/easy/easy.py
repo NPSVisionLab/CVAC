@@ -1181,9 +1181,10 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
         detectorData = getCvacPath( "" )
     elif type(detectorData) is str:
         detectorData = getCvacPath( detectorData )
-    elif type(detectorData) is cvac.FilePath:
+        
+    if type(detectorData) is cvac.FilePath:
         fileext = os.path.splitext(detectorData.filename)[1]
-        if fileext.lower()=="zip":
+        if fileext.lower()==".zip":
             #check whether the zip file is roc data or not
             isROC, rocData_optimal, tempDir = isROCdata(detectorData)
             if isROC == True:
@@ -1197,7 +1198,7 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
                     raise RuntimeError("Inapporopriate values for desired recall and precision")
                 elif (dFAR>1.0) & (dRec>1.0):
                     raise RuntimeError("Inapporopriate values for desired recall and precision")            
-                detectorData = getBestDetectorData(rocData_optimal,dFAR,dRec,True)            
+                detectorData = getBestDetectorData(rocData_optimal,dFAR,dRec,True)
     elif not type(detectorData) is cvac.FilePath:
         raise RuntimeError("detectorData must be filename, cvac.FilePath, or RoC data")
     
