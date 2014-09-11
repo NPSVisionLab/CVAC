@@ -55,8 +55,8 @@ VLogger::VLogger() {
 // that at least one of them sets the verbosity level
 void VLogger::setLocalVerbosityLevel(Levels localLevel) {
 
-  baseLevel = localLevel;
-  localAndClientMsg(VLogger::DEBUG_1, NULL, "Set local verbosity to: %d\n", (int)baseLevel);
+  this->baseLevel = localLevel;
+  //localAndClientMsg(VLogger::DEBUG_1, NULL, "Set local verbosity to: %d\n", (int)this->baseLevel);
 }
 
 void VLogger::setLocalVerbosityLevel(std::string verbosityStr) {
@@ -82,7 +82,7 @@ void VLogger::setLocalVerbosityLevel(std::string verbosityStr) {
 }
 
 VLogger::Levels VLogger::getBaseLevel() {
-  return(baseLevel);
+  return(this->baseLevel);
 }
 
 VLogger::Levels VLogger::getIntLevel(int intLevel) {
@@ -128,7 +128,7 @@ void VLogger::setUpMsgStrings() {
 
 void VLogger::printv(Levels msgLevel, const char* fmt, ...)
 {
-  if ((baseLevel != SILENT) && (baseLevel >= msgLevel)) {
+  if ((this->baseLevel != SILENT) && (this->baseLevel >= msgLevel)) {
 
       va_list args;
       va_start(args, fmt);
@@ -142,7 +142,7 @@ void VLogger::printv(Levels msgLevel, const char* fmt, ...)
 
 void VLogger::printv(Levels msgLevel, const char *fmt, va_list args)
 {
-  if ((baseLevel != SILENT) && (baseLevel >= msgLevel)) {
+  if ((this->baseLevel != SILENT) && (this->baseLevel >= msgLevel)) {
     
       fprintf(g_ostream, "%s: ", (levelText->at(msgLevel)).c_str());
       vfprintf(g_ostream, fmt, args);

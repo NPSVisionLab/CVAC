@@ -51,20 +51,36 @@ class CorpusI(cvac.Corpus):
     def __init__(self, name, description, homepageURL, location, CVAC_DataDir):
         cvac.Corpus.__init__(self, name, description, homepageURL, True)
         self.CVAC_DataDir = CVAC_DataDir
-        self.dataSetFolder = location
+        self.main_location = location
         
-    '''
-    def loadImagesFromDir(self, labelName, directory, recurse):
-        dirSampleList = LabelableListI(labelName)
-        label = cvac.Label(True, labelName, {}, cvac.Semantics(""))
-        dirSampleList.addAllSamplesInDir(directory, label, 1.0, directory, 
-                                         recurse)
-        return dirSampleList
-    '''
-        
+    def parseConfigProperties(self, configProps, propFile):
+        prop = configProps.get('main_locationType')
+        if prop == None:
+            print('no main_locationType specified in ' + propFile)
+            return False
+        if prop != 'url':
+            print("main_locationType can currently only be 'url' in " + propFile)
+            return False
+        self.locationType = prop
+        return True
+    
     def getLabels(self):
-        # TODO load images from the directory and return
-        return easy.getLabelableList(self.dataSetFolder)
+        # todo: this is a very preliminary implementation that
+        # doesn't do any error checking or create proper temp directories;
+        # it mainly just works with a remote tar.gz type corpus file
+        import urllib
+        import tarfile
+        urlfile = urllib.URLopener()
+        urlfile.retrieve( self.main_location, "deleteme.tar.gz" )
+        # extract the tar into a hardcoded dir path
+        extractinto = easy.getFSPath( "deleteme_tmpdir" )
+        if not os.path.exists(extractinto):
+            os.makedirs(extractinto)
+        tar = tarfile.open("deleteme.tar.gz")
+        tar.extractall(path=extractinto)
+        tar.close()
+        # obtain labelables from extracted tar directory
+        return easy.getLabelableList(extractinto)
     
 '''
 LabelMeCorpusI is a LabelMe corpus.  This reads the
@@ -219,9 +235,7 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         self.join()
         
     def addCorpusFromConfig(self, cvacPath):
-        propFile = os.path.join(self.CVAC_DataDir, 
-                                cvacPath.directory.relativePath,
-                                cvacPath.filename)
+        propFile = easy.getFSPath( cvacPath )
         # since our config file does not have sections and we need one so we
         # create a string with the required header and file contents
         # and pass that to the parser
@@ -272,7 +286,11 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
                   'with main_location')
             return None
         dsTypeProp = configProps.get('datasetType')
-        if dsTypeProp.lower() == 'labelme':
+        corpus = None
+        if dsTypeProp.lower() == 'common':
+            corpus = CorpusI(nameProp, descProp, homepage,
+                             locProp, self.CVAC_DataDir )
+        elif dsTypeProp.lower() == 'labelme':
             corpus = LabelMeCorpusI(nameProp, descProp, homepage, 
                                     locProp, self.CVAC_DataDir )
         elif dsTypeProp.lower() == 'vatic':
@@ -282,10 +300,11 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
             corpus = VideosegmentCorpusI(nameProp, descProp, homepage,
                                   locProp, self.CVAC_DataDir )
         else:
-            print('Python corpus only currently supports labelme type dataset')
+            print('Python corpus currently only supports labelme type dataset')
             return None
-        if corpus.parseConfigProperties(configProps, propFile) == True:
-            return corpus
+        if corpus.parseConfigProperties(configProps, propFile) != True:
+            return None
+        return corpus
             
          
         

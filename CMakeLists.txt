@@ -272,9 +272,12 @@ ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
 # add a Makefile target "doc" to generate API documentation with Doxygen
 #
 IF( BUILD_DOCUMENTATION )
-  # if the user wants doxygen built, we need doxygen, else complain
+  # if the user wants the documentation built, we need doxygen, else complain
   FIND_PACKAGE( Doxygen REQUIRED )
-  IF( DOXYGEN_FOUND )
+  # if the user wants the documentation built, we need jekyll, else complain
+  FIND_PACKAGE( Jekyll REQUIRED )
+  # If we have the tools then build documentation
+  IF( DOXYGEN_FOUND AND JEKYLL_FOUND )
       # this is the list of directories that doxygen will search for input files;
       # see Doxygen.in for a list of file types (basically, C, Java, and ICE files)
       set( CMAKE_DOXYGEN_INPUT_LIST
@@ -287,15 +290,17 @@ IF( BUILD_DOCUMENTATION )
       string(REGEX REPLACE ";" " " CMAKE_DOXYGEN_INPUT_LIST "${CMAKE_DOXYGEN_INPUT_LIST}")
 
       # customize the "Doxyfile", the configuration for doxygen
-      set( CMAKE_DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/doc )
+      set( CMAKE_DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc )
       CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
       # create the Makefile target
-      ADD_CUSTOM_TARGET( doc 
-                         ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-                         COMMENT "Generating API documentation with Doxygen" VERBATIM
+      ADD_CUSTOM_TARGET( doc
+                         ${JEKYLL_EXECUTABLE} build -s ${CMAKE_SOURCE_DIR}/doc
+                                              -d ${CMAKE_CURRENT_BINARY_DIR}/doc --safe
+                         COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+                         COMMENT "Generating HTML docs with Jekyll and API docs with Doxygen" VERBATIM
                         )
-  ENDIF( DOXYGEN_FOUND )
+  ENDIF()
 ENDIF( BUILD_DOCUMENTATION )
 
 FIND_PACKAGE( PythonInterp 2.7)
@@ -307,8 +312,8 @@ FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
-                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv_stdc
 )
+
 #If the find package did not set these lib dirs, then set ourselfs
 IF (OpenCV_LIB_DIR_OPT STREQUAL "")
     SET(OpenCV_LIB_DIR_OPT "${OpenCV_DIR}/../../lib")

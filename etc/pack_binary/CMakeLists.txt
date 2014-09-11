@@ -86,7 +86,12 @@ IF(WIN32)
     SET(CPACK_GENERATOR "NSIS")
     # Specify the default location to install CVAC.  It will install it
     # in this and a version directory underneath this.
-    SET(CPACK_NSIS_INSTALL_ROOT "c:\\\\CVAC")
+    SET(CPACK_NSIS_INSTALL_ROOT "c:\\\\EasyCV")
+    # install gui.py startup script
+    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/winstart.bat ${CMAKE_CURRENT_SOURCE_DIR}/EasyComputerVision.ico
+        DESTINATION bin
+        COMPONENT Runtime
+        )
 ELSEIF(APPLE)
     SET( SCRIPT_EXT sh )
     SET(CPACK_GENERATOR "Bundle")
@@ -118,8 +123,8 @@ INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/data/corpus
        COMPONENT data
       )
       
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/doc/html
-       DESTINATION doc
+INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../doc
+       DESTINATION .
        COMPONENT doc
       )
       

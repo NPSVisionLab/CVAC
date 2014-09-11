@@ -191,7 +191,7 @@ class CorpusServerTest(unittest.TestCase,cvac.CorpusCallback):
     #
     # Create a Corpus from a directory of labeled data
     #
-    def test_createCorpus(self):
+    def xtest_createCorpus(self):
         print('createCorpus')
         corpusTestDir = cvac.DirectoryPath( "easyTestData" );
         corpus3 = self.cs.createCorpus( corpusTestDir )

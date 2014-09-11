@@ -49,6 +49,7 @@
 #include <util/ServiceMan.h>
 #include <util/ServiceManI.h>
 #include <util/MsgLogger.h>
+#include <util/RunSetIterator.h>
 
 class BowICEI : public cvac::Detector, public cvac::StartStop, public MsgLogger
 {
@@ -74,8 +75,9 @@ public:
     virtual void stopping();
     
 protected:
-    void initialize( cvac::DetectorDataArchive& dda, const ::cvac::FilePath &file,
-                     const::Ice::Current &current);
+    void initialize(cvac::DetectorDataArchive* dda,
+                    const ::cvac::FilePath &file,
+                    const::Ice::Current &current);
     bool isInitialized();
     virtual void destroy(const ::Ice::Current& current);
 
@@ -87,7 +89,13 @@ private:
     static cvac::ResultSet processSingleImg(cvac::DetectorPtr detector,const char* fullfilename);
 
 private:
-  cvac::DetectorCallbackHandlerPrx callbackPtr; 
+  int detectObjects(const cvac::CallbackHandlerPrx& _callback,
+                    const cvac::Labelable& _lbl);
+  void addResult(cvac::Result& _res,
+                 cvac::Labelable& _converted,
+                 int _bestClass);
+private:
+  cvac::DetectorCallbackHandlerPrx callbackPtr;
   virtual void message(MsgLogger::Levels msgLevel, const string& _msgStr);
 };
 

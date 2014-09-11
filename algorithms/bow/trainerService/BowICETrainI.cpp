@@ -203,7 +203,7 @@ bowCV* BowICETrainI::initialize( TrainerCallbackHandlerPrx& _callback,
   string verbStr = iceprops->getProperty("CVAC.ServicesVerbosity");
   if (!verbStr.empty())
   {
-    vLogger.setLocalVerbosityLevel( verbStr );
+    getVLogger().setLocalVerbosityLevel( verbStr );
   }
 
   //////////////////////////////////////////////////////////////////////////
@@ -395,6 +395,12 @@ bool BowICETrainI::checkPurposedLists(
         {
           maxClassId = pur.classID;
         }
+        break;
+      }
+      case cvac::UNPURPOSED:
+      case cvac::ANY:
+      {
+        // ignore these samples
         break;
       }
     }

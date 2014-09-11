@@ -18,7 +18,6 @@ import datetime
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
 sys.path.append('''.''')
 import Ice
-import Ice
 import IcePy
 import cvac
 from util import misc
@@ -59,7 +58,7 @@ CVAC_DataDir = os.getenv("CVAC_DATADIR", "data")
 CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
 
 
-def getFSPath( cvacPath ):
+def getFSPath( cvacPath, abspath=False ):
     '''Turn a CVAC path into a file system path'''
     if isinstance(cvacPath, cvac.Labelable):
         cvacPath = cvacPath.sub.path
@@ -73,6 +72,12 @@ def getFSPath( cvacPath ):
         path = CVAC_DataDir+"/"+cvacPath.relativePath;
     else:
         path = CVAC_DataDir+"/"+cvacPath.filename
+    if abspath == True:
+        if os.path.isabs(path) == True:
+            return path
+        else:
+            rootdir = os.getcwd()
+            path = os.path.join(rootdir, path)
     return path
 
 def getCvacPath( fsPath ):
@@ -839,7 +844,11 @@ def getTrainer( configString ):
     '''Connect to a trainer service'''
     proxyStr = getProxyString(configString)
     trainer_base = ic.stringToProxy( proxyStr )
-    trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
+    try:
+        trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
+    except Ice.ConnectionRefusedException:
+        raise RuntimeError("Cannot connect to trainer '{0}'"
+                           .format(proxyStr) )
     if not trainer:
         raise RuntimeError("Invalid DetectorTrainer proxy")
     return trainer
@@ -929,7 +938,11 @@ def getDetector( configString ):
     '''Connect to a detector service'''
     proxyStr = getProxyString(configString)
     detector_base = ic.stringToProxy( proxyStr )
-    detector = cvac.DetectorPrx.checkedCast(detector_base)
+    try:
+        detector = cvac.DetectorPrx.checkedCast(detector_base)
+    except Ice.ConnectionRefusedException:
+        raise RuntimeError("Cannot connect to detector '{0}'"
+                           .format(proxyStr) )
     if not detector:
         raise RuntimeError("Invalid Detector service proxy")
     return detector
@@ -1168,9 +1181,10 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
         detectorData = getCvacPath( "" )
     elif type(detectorData) is str:
         detectorData = getCvacPath( detectorData )
-    elif type(detectorData) is cvac.FilePath:
+        
+    if type(detectorData) is cvac.FilePath:
         fileext = os.path.splitext(detectorData.filename)[1]
-        if fileext.lower()=="zip":
+        if fileext.lower()==".zip":
             #check whether the zip file is roc data or not
             isROC, rocData_optimal, tempDir = isROCdata(detectorData)
             if isROC == True:
@@ -1184,7 +1198,7 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
                     raise RuntimeError("Inapporopriate values for desired recall and precision")
                 elif (dFAR>1.0) & (dRec>1.0):
                     raise RuntimeError("Inapporopriate values for desired recall and precision")            
-                detectorData = getBestDetectorData(rocData_optimal,dFAR,dRec,True)            
+                detectorData = getBestDetectorData(rocData_optimal,dFAR,dRec,True)
     elif not type(detectorData) is cvac.FilePath:
         raise RuntimeError("detectorData must be filename, cvac.FilePath, or RoC data")
     
@@ -1322,7 +1336,11 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
             numfound, ("s","")[numfound==1], ', '.join(names) ))
         if numfound==1 and origname.lower()==names[0].lower():
             identical += 1
-    print('{0} out of {1} results had identical labels'.format( identical, len( results ) ))
+    if foundMap and origMap:
+        print('{0} out of {1} results had identical purposes'
+              .format( identical, len( results ) ))
+    else:
+        print('(labels had unknown purposes, cannot determine result accuracy)')
 
 def initGraphics():
     try:
