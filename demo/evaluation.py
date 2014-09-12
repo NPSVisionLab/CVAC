@@ -14,7 +14,9 @@ negPurpose = easy.getPurpose('neg')
 contenders = []
 
 # Bag of Words
-if (easy.getTrainer("BOW_Trainer")!=None):
+if (easy.getTrainer("BOW_Trainer")==None):
+    print("BOW service(s) are insufficiently configured, skipping.")
+else:
     c = ev.Contender("BOW")
     c.trainerString = "BOW_Trainer"
     c.detectorString = "BOW_Detector"
@@ -22,7 +24,9 @@ if (easy.getTrainer("BOW_Trainer")!=None):
     contenders.append( c );
 
 # Histogram of Oriented Gradients
-if (easy.getTrainer("HOG_Trainer")!=None):
+if (easy.getTrainer("HOG_Trainer")==None):
+    print("HOG service(s) are insufficiently configured, skipping.")
+else:
     c = ev.Contender("HOG")
     c.trainerString = "HOG_Trainer"
     c.detectorString = "HOGTest"
@@ -31,26 +35,23 @@ if (easy.getTrainer("HOG_Trainer")!=None):
 
 # Deformable Parts Model;
 # currently, no trainer interface is available
-if (easy.getTrainer("DPM_Detector")!=None):
+if (easy.getTrainer("DPM_Detector")==None):
+    print("DPM service(s) are insufficiently configured, skipping.")
+else:
     c = ev.Contender("DPM")
     c.detectorString = "DPM_Detector:default -p 10116"
     c.detectorData = "detectors/dpmStarbucksLogo.zip"
     c.foundMap = {'Positive':easy.getPurpose('pos'), 'Negative':easy.getPurpose('neg')}
     contenders.append( c );
 
-# OpenCVCascade
-if (easy.getTrainer("OpenCVCascadeTrainer")!=None):
+# OpenCVCascade, with special settings for anticipated poor performance
+if (easy.getTrainer("OpenCVCascadeTrainer")==None):
+    print("Cascade service(s) are insufficiently configured, skipping.")
+else:
     c = ev.Contender("cascade")
     c.trainerString = "OpenCVCascadeTrainer:default -p 10107"
     c.detectorString = "OpenCVCascadeDetector:default -p 10102"
-    c.foundMap = {'any':easy.getPurpose('pos')}
-    contenders.append( c );
-
-# OpenCVCascade again, with special settings
-if (easy.getTrainer("OpenCVCascadeTrainer")!=None):
-    c = ev.Contender("cascade")
-    c.trainerString = "OpenCVCascadeTrainer:default -p 10107"
-    c.detectorString = "OpenCVCascadeDetector:default -p 10102"
+    # c.foundMap = {'any':easy.getPurpose('pos')}
     c.foundMap = {'positive':posPurpose, 'negative':negPurpose}
     detector = easy.getDetector(c.detectorString)
     detectorProps = easy.getDetectorProperties(detector)
