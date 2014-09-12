@@ -631,6 +631,7 @@ Function customDialog
   nojava:
   ${NSD_CreateLabel} 0 70u 100% 12u "Enter path to data directory"
   Pop $LabelData
+  IfSilent SilentDialog 0 
   StrCpy  $1 "\data"
   ${NSD_CreateText} 0 83u -20u 12u $INSTDIR$1
   Pop $DataPathText
@@ -641,6 +642,7 @@ Function customDialog
 nonSilentDialog:
  
   nsDialogs::Show
+SilentDialog:
 
 FunctionEnd
 
