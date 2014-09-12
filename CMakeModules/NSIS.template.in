@@ -557,7 +557,8 @@ FunctionEnd
 !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Create Desktop Shortcut"
 !define MUI_FINISHPAGE_SHOWREADME_FUNCTION finishpageaction
-!define MUI_FINISHPAGE_NOAUTOCLOSE
+#Silent mode does not work with NOAUTOCLOSE
+#!define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_FINISHPAGE_LINK "EasyCV Docs"
 !define MUI_FINISHPAGE_LINK_LOCATION "http://npsvisionlab.github.io/CVAC/"
 
