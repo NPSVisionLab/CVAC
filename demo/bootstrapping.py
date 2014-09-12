@@ -17,7 +17,7 @@ trainer = easy.getTrainer( "BOW_Trainer")
 model1 = easy.train( trainer, trainset1 )
 
 # evaluate the model on a separate test set, images and videos
-# in DataDir/testdata1
+# in DataDir/testImg
 testset1 = easy.createRunSet( "testImg", "UNPURPOSED" )
 easy.printRunSetInfo( testset1 )
 detector = easy.getDetector( "BOW_Detector" )
@@ -38,6 +38,7 @@ easy.sortIntoFolders( result1, outfolder="testresults1", multi="highest")
 #
 # We simulate this manual process here.  Note that the new folder needs to be
 # accessible from the CorpusServer, hence located under the CVAC.DataDir.
+print("Manual sorting will be simulated. Please read the file comments.")
 reject_folder = easy.CVAC_DataDir + "/corporate_logos_round2/reject"
 if not os.path.isdir( reject_folder ):
     os.makedirs( reject_folder )

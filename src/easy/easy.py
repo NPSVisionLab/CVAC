@@ -827,11 +827,8 @@ def getProxyString(configString):
             return configString
     # We don't have a proxy so lets see if we have a match in client.config
     properties = ic.getProperties()
-    prop = properties.getProperty(configString + ".Proxy")   
+    prop = properties.getProperty(configString + ".Proxy")
     return prop
-
-
-
 
 def getTrainerProperties(trainer):
     ''' Get the trainer properties for this trainer'''
@@ -843,6 +840,8 @@ def getTrainerProperties(trainer):
 def getTrainer( configString ):
     '''Connect to a trainer service'''
     proxyStr = getProxyString(configString)
+    if not proxyStr:
+        return None
     trainer_base = ic.stringToProxy( proxyStr )
     try:
         trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
@@ -937,6 +936,8 @@ def getDetectorProperties(detector):
 def getDetector( configString ):
     '''Connect to a detector service'''
     proxyStr = getProxyString(configString)
+    if not proxyStr:
+        return None
     detector_base = ic.stringToProxy( proxyStr )
     try:
         detector = cvac.DetectorPrx.checkedCast(detector_base)
