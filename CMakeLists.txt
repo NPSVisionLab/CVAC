@@ -205,6 +205,10 @@ if( INCREASE_VERSION_PATCH )
   UNSET( INCREASE_VERSION_PATCH CACHE )
 endif( INCREASE_VERSION_PATCH )
 
+# write a Python file with the CVAC version information
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/easy/version.py.in
+  ${CMAKE_SOURCE_DIR}/src/easy/version.py)
+
 
 # offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
 #
