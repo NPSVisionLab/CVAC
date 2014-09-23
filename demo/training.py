@@ -18,6 +18,7 @@ easy.printRunSetInfo( trainset, printLabels=True )
 # Connect to the trainer for a Bag of Words algorithm, then
 # train with the given runset
 #
+print("starting training, this might take a few minutes...")
 trainer = easy.getTrainer( "BOW_Trainer")
 trainedModel = easy.train( trainer, trainset )
 

@@ -1136,8 +1136,7 @@ def makeROCdata(rocData_optimal):
     return rocZip
 
 def isROCdata(rocZip):
-    zipfilepath = CVAC_DataDir+'/'\
-    +rocZip.directory.relativePath+'/'+rocZip.filename
+    zipfilepath = easy.getFSPath(rocZip)
     relDir = rocZip.directory.relativePath +'/'\
     +'roc_' + str(random.randint(1,sys.maxint)).zfill(len(str(sys.maxint)))
     tempDir = CVAC_DataDir+'/'+relDir
