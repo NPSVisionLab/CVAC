@@ -39,10 +39,23 @@ train a detector for your objects:
 [remote_services.py](../demo/remote_services.py)
 (see code [online](https://github.com/NPSVisionLab/CVAC/blob/master/demo/remote_services.py))
 
+* Understand what a RunSet is and how to construct it:
+[runset.py](../demo/runset.py)
+(see code [online](https://github.com/NPSVisionLab/CVAC/blob/master/demo/runset.py))
+
 * Utilize a ready-made Corpus, learn about Labels vs. Purposes,
      understand result labels:
 [full\_image\_corpus.py](../demo/full_image_corpus.py)
 (see code [online](https://github.com/NPSVisionLab/CVAC/blob/master/demo/full_image_corpus.py))
+
+* Bootstrap a multi-class detector, that is, train it repeatedly on
+  on more and more labeled data:
+[bootstrapping.py](../demo/bootstrapping.py)
+(see code [online](https://github.com/NPSVisionLab/CVAC/blob/master/demo/bootstrapping.py))
+
+* K-fold cross-validation, detector comparisons:
+[evaluation.py](../demo/evaluation.py)
+(see code [online](https://github.com/NPSVisionLab/CVAC/blob/master/demo/evaluation.py))
 
 * Obtain a LabelMe corpus and edit a corpus properties file:
 [labelme_corpus.py](../demo/labelme_corpus.py)
