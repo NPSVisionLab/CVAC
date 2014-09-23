@@ -1160,6 +1160,22 @@ def isROCdata(rocZip):
                                     float(tperf[0]),float(tperf[1])])
     return isROC,rocData_optimal,tempDir
 
+def getSensitivityOptions(detectorData):
+    '''
+    Return any False Alarm, and Recall rate options available
+    in the model file.  This will return a list of False Alarm, Recall pairs that
+    have been trained into the model or None if they are not any.
+    detectorData is the model file that that might contain the different model files and sensitivity options.
+    '''
+    isRoc, rockList, tempDir = isROCData(detectorData)
+    if isRoc == False:
+        return None
+    else:
+        if tempDir != None:
+            if os.path.isdir(tempDir):
+               shutil.rmtree(tempDir)
+        return rockList
+    
 
 def detect( detector, detectorData, runset, detectorProperties=None, callbackRecv=None ):
     '''
@@ -1342,10 +1358,10 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
     else:
         print('(labels had unknown purposes, cannot determine result accuracy)')
 
-def initGraphics():
+def initGraphics(title = "results"):
     try:
         wnd = tk.Tk()
-        wnd.title('results')
+        wnd.title(title)
     except:
         wnd = None
         raise RuntimeError("cannot display images - do you have PIL installed?")
@@ -1373,6 +1389,46 @@ def showImage( img ):
     # start the event loop
     wnd.mainloop()
     wnd = None
+    
+def showROCPlot(ptList):
+    '''
+    Plot image is 300x200 with 10 pixel space around the plot so the
+    plot area is 280x180. So each 1/10th is 18 pixels in height and 28 pixels in width.
+    Plot 0,0 is pixel 10, 190
+    '''
+    xoffset = 10
+    yoffset = 10
+    
+    wnd = initGraphics(title="ROC Curve Plot")
+    if wnd == None:
+        return
+    try:
+        im = Image.open(getFSPath('plot.jpg'))
+    except:
+        raise RuntimeError("Cannot open ROC plot background image plot.jpg")
+        return
+    width, height = im.size
+    ImbImage = tk.Canvas(wnd, highlightthickness=0, bd=0, bg='red', width=width, height=height)
+    ImbImage.pack()
+    draw = ImageDraw.Draw(im)
+    for pt in ptList:
+        # Scale over plot region assume plot is all but offset above and below
+        x = int(pt.precision*(width - (2 * xoffset)))
+        y = int(pt.recall*(height - (2 * yoffset)))
+        x = x + xoffset
+        y = y + yoffset
+        #convert to origin in upper left
+        y = height - y -1
+        draw.ellipse((x-2, y-2, x+2, y+2), fill="black")
+
+        
+    del draw
+
+    plot = ImageTk.PhotoImage(im)
+    ImbImage.create_image(width/2, height/2, image=plot)
+    wnd.mainloop()
+    wnd = None
+    
 
 def drawResults( results ):
     if not results:

@@ -114,9 +114,11 @@ if __name__ == '__main__':
         os.chdir(installpath + '/python/easyPkg')
         print("installing easyPkg")
         subprocess.call([pythonExec, 'setup.py', 'install'])
+        subprocess.call([pythonExec, 'setup.py', 'clean --all'])
         os.chdir(installpath + '/python/icePkg')
         print("installing icePkg")
         subprocess.call([pythonExec, 'setup.py', 'install'])
+        subprocess.call([pythonExec, 'setup.py', 'clean --all'])
         if os.path.isdir(installpath + '/3rdparty/libsvm'):
             os.chdir(installpath + '/3rdparty/libsvm')
             print("installing libsvm")
