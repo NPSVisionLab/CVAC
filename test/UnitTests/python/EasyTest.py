@@ -67,7 +67,7 @@ class EasyTest(unittest.TestCase):
         runset = cvac.RunSet()
         posPurpose = easy.getPurpose('pos')
         easy.addToRunSet(runset, labelList, posPurpose)
-        if easy.testRunSetIntegrity(runset) == False:
+        if not easy.isProperRunSet(runset):
             raise RuntimeError("test getLabelableList failed with an invalid runset")
         labelList = easy.getLabelableList("easyTestData", recursive=False)
         ''' should only have one label "easyTestData"
@@ -78,7 +78,7 @@ class EasyTest(unittest.TestCase):
             if len(entry.lab.properties) > 0:
                 raise RuntimeError("labelable should not have any properties")
                 
-        if easy.testRunSetIntegrity(runset) == False:
+        if note easy.isProperRunSet(runset):
             raise RuntimeError("test getLabelableList failed with an invalid runset with non-recursive call")
 
     def tearDown(self):

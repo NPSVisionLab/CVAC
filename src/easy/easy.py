@@ -257,7 +257,59 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
     categories = getCategories(labelList)
     return (categories, labelList)
 
-def testRunSetIntegrity(runset, deleteInvalid=False):
+def isInBounds( labelable ):
+    '''Return True if the LabeledLocation is within image bounds.
+    '''
+    minX = 0
+    minY = 0
+    maxX = sys.maxint 
+    maxY = sys.maxint                
+    if labelable.sub.width>0:
+        maxX = labelable.sub.width
+    if labelable.sub.height>0:
+        maxY = labelable.sub.height
+
+    if isinstance(labelable, cvac.LabeledLocation):
+        for pt in labelable.loc.points:
+            if (pt.x < minX) or (pt.y < minY) \
+                or (pt.x >= maxX) or (pt.y >= maxY):
+                print("Warning: label \"" \
+                      + labelname + "\" is out of bounds in file \"" \
+                      + labelable.sub.path.filename + "\"" \
+                    + " (X=" + str(pt.x) + ", Y=" + str(pt.y) + ")")
+                return False
+#     else:
+#         print("File= " + labelable.sub.path.filename)
+#         print("Label= " + labelable.lab.name)
+#         if labelable.lab.name in categories:
+#             categories[labelable.lab.name].append(labelable)
+#         else:       
+#             categories[labelable.lab.name] = [labelable]
+# 
+#         if isinstance(labelable, cvac.LabeledTrack):
+#             framestart = -1
+#             curFrame = -1
+#             for frame in labelable.keyframesLocations:
+#                 frameNo = frame.frame.framecnt
+#                 if framestart == -1:
+#                     framestart = frameNo
+#                     curFrame = frameNo
+#                     if frameNo == curFrame:
+#                         curFrame = curFrame + 1
+#                     else:
+#                         print ("Track frames {0} to {1}".format(framestart, curFrame))
+#                         framestart = frameNo
+#                         curFrame = frameNo + 1  
+#                     if framestart != curFrame:   
+#                         print ("Track frames {0} to {1}".format(framestart, curFrame))
+    return True
+
+def isProperRunSet(runset, deleteInvalid=False):
+    '''Return True if the RunSet has proper syntax, False otherwise.
+    If deleteInvalid==True, labeled artifacts with bounding boxes out
+    of image bounds will be removed from the RunSet. 
+    '''
+
     if type(runset) is dict and not runset['runset'] is None\
         and isinstance(runset['runset'], cvac.RunSet):
         runset = runset['runset']
@@ -281,53 +333,13 @@ def testRunSetIntegrity(runset, deleteInvalid=False):
                 else:
                     labelname = lb.lab.name
 
-                minX = 0
-                minY = 0
-                maxX = sys.maxint 
-                maxY = sys.maxint                
-                if lb.sub.width>0:
-                    maxX = lb.sub.width
-                    
-                if lb.sub.height>0:
-                    maxY = lb.sub.height
-                if isinstance(lb, cvac.LabeledLocation) == True:
-                    for pt in lb.loc.points:
-                        if (pt.x < minX) or (pt.y < minY) \
-                        or (pt.x >= maxX) or (pt.y >= maxY):
-                            print("Warning: label \"" \
-                              + labelname + "\" is out of bounds in file \"" \
-                              + lb.sub.path.filename + "\"" \
-                              + " (X=" + str(pt.x) + ", Y=" + str(pt.y) + ")")
-                            if deleteInvalid == False:
-                                return False
-                            else:
-                                del plist.labeledArtifacts[i]
-                                break
-                 
-#                 else:
-#                     print("File= " + lb.sub.path.filename)
-#                     print("Label= " + lb.lab.name)
-#                     if lb.lab.name in categories:
-#                         categories[lb.lab.name].append(lb)
-#                     else:       
-#                         categories[lb.lab.name] = [lb]
-#                         
-#                     if isinstance(lb, cvac.LabeledTrack):                        
-#                         framestart = -1
-#                         curFrame = -1
-#                         for frame in lb.keyframesLocations:
-#                             frameNo = frame.frame.framecnt
-#                             if framestart == -1:
-#                                 framestart = frameNo
-#                                 curFrame = frameNo
-#                             if frameNo == curFrame:
-#                                 curFrame = curFrame + 1
-#                             else:
-#                                 print ("Track frames {0} to {1}".format(framestart, curFrame))
-#                                 framestart = frameNo
-#                                 curFrame = frameNo + 1  
-#                         if framestart != curFrame:   
-#                             print ("Track frames {0} to {1}".format(framestart, curFrame))
+                inBounds = isInBounds( lb )
+                if not inBounds:
+                    if deleteInvalid == False:
+                        return False
+                    else:
+                        del plist.labeledArtifacts[i]
+                        
     return True    
 
 def printCategoryInfo( categories ):
@@ -947,6 +959,9 @@ def getDetector( configString ):
     if not detector:
         raise RuntimeError("Invalid Detector service proxy")
     return detector
+
+def isProperDetector( configString ):
+    
 
 # a default implementation for a DetectorCallbackHandler, in case
 # the easy user doesn't specify one;
