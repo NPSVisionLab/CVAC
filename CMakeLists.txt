@@ -5,7 +5,7 @@ cmake_policy( SET CMP0012 NEW)
 
 IF(WIN32)
     # don't want the four default configuration types with MS Visual Studio
-    SET (CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "")
+    SET (CMAKE_CONFIGURATION_TYPES "Release;DEBUG" CACHE STRING "")
 ENDIF(WIN32)
 
 PROJECT(CVAC)
