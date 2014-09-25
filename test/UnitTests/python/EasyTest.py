@@ -78,7 +78,7 @@ class EasyTest(unittest.TestCase):
             if len(entry.lab.properties) > 0:
                 raise RuntimeError("labelable should not have any properties")
                 
-        if note easy.isProperRunSet(runset):
+        if not easy.isProperRunSet(runset):
             raise RuntimeError("test getLabelableList failed with an invalid runset with non-recursive call")
 
     def tearDown(self):

@@ -36,7 +36,7 @@ class FileServiceI(cvac.FileService, threading.Thread):
         self.ServiceName = ""
         self.corpToImp = {}
         self.fileToOwner = {}
-        print("info: started service: FileService (Python)")
+        print("info: service started: FileService (Python)")
 
     def destroy(self):
         #print("debug: stopping service: FileService (Python)")
