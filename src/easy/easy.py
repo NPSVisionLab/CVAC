@@ -960,9 +960,6 @@ def getDetector( configString ):
         raise RuntimeError("Invalid Detector service proxy")
     return detector
 
-def isProperDetector( configString ):
-    
-
 # a default implementation for a DetectorCallbackHandler, in case
 # the easy user doesn't specify one;
 # this will get called when results have been found;
