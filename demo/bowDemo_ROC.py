@@ -34,7 +34,7 @@ easy.printRunSetInfo( runset, printLabels=True, )
 strTrainer = "BOW_Trainer"
 strDetector = "BOW_Detector"
 
-list_nWord = [5,10,15,20,50,100,200]
+list_nWord = [5,10,15,20]
 
 
 doWithNegativeSample = True

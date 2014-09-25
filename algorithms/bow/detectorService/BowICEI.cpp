@@ -238,7 +238,7 @@ void BowICEI::process(const Ice::Identity &client,
   cvac::RunSetConstraint mRunsetConstraint;  
   mRunsetConstraint.addType("jpg");
   mRunsetConstraint.addType("png");
-  mRunsetConstraint.addType("tif");  
+  mRunsetConstraint.addType("tif");
   // End - RunsetConstraints
 
   //////////////////////////////////////////////////////////////////////////
