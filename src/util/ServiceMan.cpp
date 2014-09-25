@@ -70,7 +70,7 @@ void ServiceManagerI::start(const ::std::string& name,
                            const StringSeq&)
 {
   mServiceName = name;
-  localAndClientMsg(VLogger::INFO, NULL, "starting service: %s\n", mServiceName.c_str());
+  localAndClientMsg(VLogger::DEBUG, NULL, "starting service: %s\n", mServiceName.c_str());
   mAdapter = communicator->createObjectAdapter(mServiceName);
   clearStop();
   assert( mService );
@@ -86,12 +86,12 @@ void ServiceManagerI::start(const ::std::string& name,
  */
 void ServiceManagerI::stop()
 {
-  localAndClientMsg(VLogger::INFO, NULL, "Stopping Service: %s\n", 
+  localAndClientMsg(VLogger::DEBUG, NULL, "stopping service: %s\n", 
                     mServiceName.c_str());
   if (NULL!=mSS) mSS->stopping();
   mAdapter->deactivate();
   waitForStopService();
-  localAndClientMsg(VLogger::INFO, NULL, "Service stopped: %s\n",
+  localAndClientMsg(VLogger::INFO, NULL, "service stopped: %s\n",
                     mServiceName.c_str());
 }
 

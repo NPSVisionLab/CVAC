@@ -48,7 +48,7 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None,
     origMap maps the relative file path of every label to the assigned purpose.
     The origMap can be constructed from the original RunSet if it
     contained purposes.
-    Returns TestReult, nores'''
+    Returns TestResult, nores'''
 
     if not origMap and not origSet:
         raise RuntimeError("need either origMap or origSet")
@@ -274,7 +274,7 @@ def crossValidate( contender, runset, folds=10, printVerbose=False ):
         confusionTables.append( \
             getConfusionTable( detections, origSet=evalset, foundMap=contender.foundMap ))
 
-    # calculate statistics of our tuble TestResult,nores
+    # calculate statistics of our tuple TestResult,nores
     
     sumTestResult = TestResult()
     sumNoRes = 0;
