@@ -268,6 +268,14 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
     SET( DOWNLOAD_3RDPARTY_PACKAGE OFF CACHE BOOL "Download 3rd-party package had download or unpack errors, please obtain manually" FORCE )
 ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
 
+#Opencv includes now required for src/util library
+FIND_PACKAGE( OpenCV 2.4 REQUIRED
+                            core imgproc highgui ml features2d nonfree objdetect calib3d
+             HINTS
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
+)
+
 #
 # add a Makefile target "doc" to generate API documentation with Doxygen
 #
@@ -306,13 +314,6 @@ ENDIF( BUILD_DOCUMENTATION )
 FIND_PACKAGE( PythonInterp 2.7)
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
-
-#Opencv includes now required for src/util library
-FIND_PACKAGE( OpenCV 2.4 REQUIRED
-                            core imgproc highgui ml features2d nonfree objdetect calib3d
-             HINTS
-                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
-)
 
 #If the find package did not set these lib dirs, then set ourselfs
 IF (OpenCV_LIB_DIR_OPT STREQUAL "")
