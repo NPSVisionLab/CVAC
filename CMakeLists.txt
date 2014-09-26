@@ -3,10 +3,9 @@ cmake_minimum_required(VERSION 2.8.6)
 
 cmake_policy( SET CMP0012 NEW)
 
-IF(WIN32)
-    # don't want the four default configuration types with MS Visual Studio
-    SET (CMAKE_CONFIGURATION_TYPES "Release;DEBUG" CACHE STRING "")
-ENDIF(WIN32)
+#Define the configuration types.  If this is not done OpenCV cmake
+#find_package fails!
+SET (CMAKE_CONFIGURATION_TYPES "Release;DEBUG" CACHE STRING "")
 
 PROJECT(CVAC)
 
