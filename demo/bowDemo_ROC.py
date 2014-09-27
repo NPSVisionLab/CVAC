@@ -57,8 +57,7 @@ if doWithNegativeSample:
         c1.foundMap = {'1':easy.getPurpose('pos'), '0':easy.getPurpose('neg')}
         contenders.append(c1)
         
-    sortedperfdata,perfdata = evaluate.joust( contenders, runset, folds=3 )
-    
+    sortedperfdata, perfdata = evaluate.joust( contenders, runset, folds=3 )
     easy.showROCPlot(perfdata)
     '''
     Extract only optimal ROC points
