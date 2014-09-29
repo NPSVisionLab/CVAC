@@ -233,10 +233,10 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
                )
         list(GET DOWNLOAD_RESULT 0 DOWNLOAD_CODE) 
         list(GET DOWNLOAD_RESULT 1 DOWNLOAD_STRING) 
-        IF( NOT ${DOWNLOAD_CODE} EQUAL 0)
+        IF( NOT DOWNLOAD_CODE EQUAL 0)
             FILE( REMOVE ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )  # this doesn't seem to work.
             MESSAGE( SEND_ERROR "Could not download 3rd-party software package: ${DOWNLOAD_STRING}" )
-        ENDIF( NOT ${DOWNLOAD_CODE} EQUAL 0) 
+        ENDIF()
     ENDIF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
 
     # untar or unzip the file;
