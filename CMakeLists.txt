@@ -12,6 +12,8 @@ PROJECT(CVAC)
 SET (PYTHON_ONLY_CLIENT true)
 SET(CVAC_FIRST_SERVICE_PORT "10000" CACHE STRING "First socket port to use")
 
+INCLUDE (UserCMakeLists.txt OPTIONAL)
+
 OPTION(BUILD_WITH_BOW "Build a Bag of Words trainer and detector (requires OpenCV)" ON)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Build the OpenCV Cascade trainer and detector" ON)
 OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" OFF) 
@@ -272,7 +274,6 @@ FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
 )
 
-INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 #
 # add a Makefile target "doc" to generate API documentation with Doxygen
