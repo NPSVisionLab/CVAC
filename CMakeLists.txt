@@ -12,8 +12,6 @@ PROJECT(CVAC)
 SET (PYTHON_ONLY_CLIENT true)
 SET(CVAC_FIRST_SERVICE_PORT "10000" CACHE STRING "First socket port to use")
 
-INCLUDE (UserCMakeLists.txt OPTIONAL)
-
 OPTION(BUILD_WITH_BOW "Build a Bag of Words trainer and detector (requires OpenCV)" ON)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Build the OpenCV Cascade trainer and detector" ON)
 OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" OFF) 
@@ -232,8 +230,8 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
                 SHOW_PROGRESS
 #                EXPECTED_MD5;aaaab03d4f38d7fe0525c994e52c3aaa
                )
-        list(GET ${DOWNLOAD_RESULT} 0 ${DOWNLOAD_CODE}) 
-        list(GET ${DOWNLOAD_RESULT} 1 ${DOWNLOAD_STRING}) 
+        list(GET DOWNLOAD_RESULT 0 DOWNLOAD_CODE) 
+        list(GET DOWNLOAD_RESULT 1 DOWNLOAD_STRING) 
         IF( NOT ${DOWNLOAD_CODE} EQUAL 0)
             FILE( REMOVE ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )  # this doesn't seem to work.
             MESSAGE( SEND_ERROR "Could not download 3rd-party software package: ${DOWNLOAD_STRING}" )
@@ -269,11 +267,13 @@ ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
 
 #Opencv includes now required for src/util library
 FIND_PACKAGE( OpenCV 2.4 REQUIRED
-#                            opencv_core opencv_imgproc opencv_highgui opencv_ml opencv_features2d opencv_nonfree opencv_objdetect opencv_calib3d
+                            opencv_core opencv_imgproc opencv_highgui opencv_ml opencv_features2d opencv_nonfree opencv_objdetect opencv_calib3d
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
 )
+
+INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 #
 # add a Makefile target "doc" to generate API documentation with Doxygen
