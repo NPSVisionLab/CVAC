@@ -47,8 +47,7 @@ ENDIF (PYTHON_ONLY_CLIENT)
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
 
 # where the Find*.cmake files are
-SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules
-                      ${CMAKE_MODULE_PATH})
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
 SET(PROJECT_BINARY_DIR ${CMAKE_SOURCE_DIR})
 
@@ -267,7 +266,7 @@ ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
 
 #Opencv includes now required for src/util library
 FIND_PACKAGE( OpenCV 2.4 REQUIRED
-                            opencv_core opencv_imgproc opencv_highgui opencv_ml opencv_features2d opencv_nonfree opencv_objdetect opencv_calib3d
+                            core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
