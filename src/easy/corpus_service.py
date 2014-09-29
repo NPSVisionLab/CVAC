@@ -210,6 +210,7 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         threading.Thread.__init__(self)
         # Change stdout to automaticly flush output
         sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+        #print("debug: starting service: CorpusService (Python)")
         self._communicator = communicator
         self._destroy = False
         self._clients = []
@@ -220,12 +221,12 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         self.ConnectionName = "localhost"
         self.ServiceName = ""
         self.corpToImp = {}
-        print("info: starting service: CorpusService (Python)")
+        print("info: service started: CorpusService (Python)")
 
     def destroy(self):
+        #print("debug: stopping service: CorpusService (Python)")
         self._cond.acquire()
 
-        print("info: stopping service: CorpusService (Python)")
         self._destroy = True
 
         try:
@@ -234,6 +235,7 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
             self._cond.release()
 
         self.join()
+        print("info: service stopped: CorpusService (Python)")
         
     def addCorpusFromConfig(self, cvacPath):
         propFile = easy.getFSPath( cvacPath )

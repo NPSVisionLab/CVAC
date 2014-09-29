@@ -314,7 +314,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         {
           string outMsg;
           outMsg = "There is no file " + _fullFilePathImg + 
-                   ". This file will be skipped for the processing.\n";
+                   ". This file will not be processed.\n";
           msgLogger->message(MsgLogger::WARN,outMsg);          
           continue;
         }
@@ -331,7 +331,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         {
           string outMsg;
           outMsg = "Out of boundary in file " + _fullFilePathImg + 
-                   ". This file will be skipped for the processing.\n";
+                   ". This file will not be processed.\n";
           msgLogger->message(MsgLogger::WARN,outMsg);
           continue;
         }

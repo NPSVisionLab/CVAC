@@ -24,6 +24,7 @@ class FileServiceI(cvac.FileService, threading.Thread):
         threading.Thread.__init__(self)
         # Change stdout to automaticly flush output
         sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+        #print("debug: starting service: FileService (Python)")
         self._communicator = communicator
         self._destroy = False
         self._clients = []
@@ -35,12 +36,12 @@ class FileServiceI(cvac.FileService, threading.Thread):
         self.ServiceName = ""
         self.corpToImp = {}
         self.fileToOwner = {}
-        print("info: starting service: FileService (Python)")
+        print("info: service started: FileService (Python)")
 
     def destroy(self):
+        #print("debug: stopping service: FileService (Python)")
         self._cond.acquire()
 
-        print("info: stopping service: FileService (Python)")
         self._destroy = True
 
         try:
@@ -49,6 +50,7 @@ class FileServiceI(cvac.FileService, threading.Thread):
             self._cond.release()
 
         self.join()
+        print("info: service stopped: FileService (Python)")
         
 
     '''

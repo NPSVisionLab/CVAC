@@ -49,6 +49,8 @@ try:
 except:
     print("DPM detector not installed: if desired, please obtain it via\n"\
           "https://github.com/NPSVisionLab/PartsBasedDetector")
+    import sys
+    print("(error:{0})".format(sys.exc_info()[0]))
     
 # yet another detector type
 print("------- Viola-Jones cascades for face detection: -------")
