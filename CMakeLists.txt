@@ -312,10 +312,10 @@ FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
 )
 #If the find package did not set these lib dirs, then set ourselfs
-IF (OpenCV_LIB_DIR_OPT STREQUAL "")
+IF ("${OpenCV_LIB_DIR_OPT}" STREQUAL "")
     SET(OpenCV_LIB_DIR_OPT "${OpenCV_DIR}/../../lib")
-ENDIF (OpenCV_LIB_DIR_OPT STREQUAL "")
-IF (OpenCV_LIB_DIR_DBG STREQUAL "")
+ENDIF ()
+IF ("${OpenCV_LIB_DIR_DBG}" STREQUAL "")
     SET(OpenCV_LIB_DIR_DBG "${OpenCV_DIR}/../../lib")
 ENDIF (OpenCV_LIB_DIR_DBG STREQUAL "")
 
