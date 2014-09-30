@@ -10,8 +10,8 @@ then
 fi
 # Please set JAVAEXE to java executable
 export JAVAEXE=/usr/bin/java
-# Please set PYTHONEXE to python 2.7 executable
-export PYTHONEXE=/usr/bin/python2.7
+# Please set PYTHONEXE to python ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR} executable
+export PYTHONEXE=/usr/bin/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}
 
 export ICEDIR=${INSTALLDIR}/3rdparty/ICE
 export OPENCVDIR=${INSTALLDIR}/3rdparty/opencv
@@ -47,7 +47,7 @@ if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLDIR}/python.config" ]
 then
     # add in ice's python library path for osx
     export DYLD_LIBRARY_PATH="@ICEPLIBS@:$DYLD_LIBRARY_PATH"
-    export PYTHONPATH="${ICEDIR}/python:${INSTALLDIR}/python:${OPENCVDIR}/lib/python2.6/site-packages"
+    export PYTHONPATH="${ICEDIR}/python:${INSTALLDIR}/python:${OPENCVDIR}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages"
     grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE
     do
         ${PYTHONEXE} $LINE &
