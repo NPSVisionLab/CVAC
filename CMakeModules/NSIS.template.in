@@ -557,7 +557,8 @@ FunctionEnd
 !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Create Desktop Shortcut"
 !define MUI_FINISHPAGE_SHOWREADME_FUNCTION finishpageaction
-!define MUI_FINISHPAGE_NOAUTOCLOSE
+#Silent mode does not work with NOAUTOCLOSE
+#!define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_FINISHPAGE_LINK "EasyCV Docs"
 !define MUI_FINISHPAGE_LINK_LOCATION "http://npsvisionlab.github.io/CVAC/"
 
@@ -630,6 +631,7 @@ Function customDialog
   nojava:
   ${NSD_CreateLabel} 0 70u 100% 12u "Enter path to data directory"
   Pop $LabelData
+  IfSilent SilentDialog 0 
   StrCpy  $1 "\data"
   ${NSD_CreateText} 0 83u -20u 12u $INSTDIR$1
   Pop $DataPathText
@@ -640,6 +642,7 @@ Function customDialog
 nonSilentDialog:
  
   nsDialogs::Show
+SilentDialog:
 
 FunctionEnd
 

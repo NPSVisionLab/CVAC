@@ -8,8 +8,8 @@ ${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
 Ice.ACM.Server=0
 
 ##############################################################################
-# 0: silent, 1: warnings, 2: info, 3: debug, 4: debug_1, 5: debug_2 6: debug_3
-CVAC.ServicesVerbosity = 2
+# 0: silent, 1: error, 2: warnings, 3: info, 4: debug, 5: debug_1, 6: debug_2 7: debug_3
+CVAC.ServicesVerbosity = 3
 
 #Directory to prepend file names with if the file names are not absolute
 CVAC.DataDir = data

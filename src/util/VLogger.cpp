@@ -47,7 +47,7 @@ VLogger::VLogger(Levels baseLevel) {
 
 VLogger::VLogger() {
 
-  this->baseLevel = DEBUG_1;  // Give a chance for local msgs before sets
+  this->baseLevel = INFO;  // Give a chance for local msgs before sets
   setUpMsgStrings();
 }
 

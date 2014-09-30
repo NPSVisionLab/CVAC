@@ -37,8 +37,8 @@ negPurpose = easy.getPurpose('neg')
 trainset = cvac.RunSet()
 easy.addToRunSet(trainset, categories[objname], posPurpose);
 #trainset = easy.createRunSet( categories, purpose=posPurpose );
-flag = easy.testRunSetIntegrity(trainset, deleteInvalid=True)
-if flag == False:
+correct = easy.isProperRunSet(trainset, deleteInvalid=True)
+if not correct:
     print("failed Integrity test!!!!")
     exit()
 #trainset = easy.createRunSet( categories, purpose=posPurpose );
