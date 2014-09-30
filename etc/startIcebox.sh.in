@@ -38,7 +38,7 @@ if [ "${PYTHON_EXECUTABLE}" != "" ] && [ -f "${CMAKE_SOURCE_DIR}/python.config" 
 then
     # add in ice's python library path for osx
     export DYLD_LIBRARY_PATH="${ICE_PYTHON_DIR}/../pythonlib:$DYLD_LIBRARY_PATH"
-    export PYTHONPATH="${ICE_PYTHON_DIR}:${SLICE_OUTPUT_PYTHONDIR}:3rdparty/opencv/lib/python2.6/site-packages:$PYTHONPATH"
+    export PYTHONPATH="${ICE_PYTHON_DIR}:${SLICE_OUTPUT_PYTHONDIR}:3rdparty/opencv/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages:$PYTHONPATH"
     grep -v -e ^# ${CMAKE_SOURCE_DIR}/python.config | while read LINE
     do
         ${PYTHON_EXECUTABLE} $LINE &
