@@ -337,8 +337,8 @@ IF( PYTHONINTERP_FOUND )
   #For Python set a variable for cv2 dynamic library
   #
   IF (WIN32)
-    FIND_FILE(OPENCV_PY_LIB cv2.pyd
-      HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+    FIND_FILE(OPENCV_PY_LIB cv2.pyd 
+             HINTS "${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
   ELSE (WIN32)
     FIND_LIBRARY(OPENCV_PY_LIB cv2.so
       HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
