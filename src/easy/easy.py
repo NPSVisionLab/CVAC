@@ -927,7 +927,7 @@ def train( trainer, runset, callbackRecv=None, trainerProperties=None ):
     # connect to trainer, initialize with a verbosity value, and train
     if not trainerProperties:
         trainerProperties = cvac.TrainerProperties()
-        trainerProperties.verbosity = 3
+        trainerProperties.verbosity = getVerbosityNumber( CVAC_ClientVerbosity )
     if type(runset) is dict:
         runset = runset['runset']
     trainer.process( cbID, runset, trainerProperties )
@@ -1244,6 +1244,7 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     # and the trained model, and run the detection on the runset
     if detectorProperties == None:
         detectorProperties = cvac.DetectorProperties()
+        detectorProperties.verbosity = getVerbosityNumber( CVAC_ClientVerbosity )
     detector.process( cbID, runset, detectorData, detectorProperties )
     
     if tempDir != None:
