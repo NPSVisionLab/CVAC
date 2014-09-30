@@ -46,7 +46,7 @@ fi
 if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLDIR}/python.config" ]
 then
     # add in ice's python library path for osx
-    export DYLD_LIBRARY_PATH="@ICEPLIBS@:$DYLD_LIBRARY_PATH"
+    export DYLD_LIBRARY_PATH="${INSTALLDIR}/3rdparty/opencv/lib:@ICEPLIBS@:$DYLD_LIBRARY_PATH"
     export PYTHONPATH="${ICEDIR}/python:${INSTALLDIR}/python:${OPENCVDIR}/lib/python2.6/site-packages"
     grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE
     do
