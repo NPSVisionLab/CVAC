@@ -11,6 +11,7 @@ import shutil
 import zipfile
 import datetime
 import re
+import tempfile
 
 DEF_TRAIN_PREFIX = "train_"
 DEF_SANDBOX = "sboxes"
@@ -35,17 +36,18 @@ class ClientSandbox(object):
                 os.makedirs(self.mClientDir)
         return self.mClientDir,relativeClientDir
         
-    def getTempDirname(self,_prefix):
-        fstr = str(random.randint(1,sys.maxint)).zfill(len(str(sys.maxint)))
-        return _prefix + fstr 
+#     def getTempDirname(self,_prefix):
+#         fstr = str(random.randint(1,sys.maxint)).zfill(len(str(sys.maxint)))
+#         return _prefix + fstr 
     
     def createTrainingDir(self):
         self.deleteTrainingDir()
         self.getClientDir()
-        self.mTrainDir = self.getTempDirname(self.mClientDir + "/" + DEF_TRAIN_PREFIX)
-        if os.path.isdir(self.mTrainDir):
-            shutil.rmtree(self.mTrainDir)            
-        os.makedirs(self.mTrainDir)
+        self.mTrainDir = tempfile.mkdtemp(dir = self.mClientDir, prefix = DEF_TRAIN_PREFIX )
+#         self.mTrainDir = self.getTempDirname(self.mClientDir + "/" + DEF_TRAIN_PREFIX)
+#         if os.path.isdir(self.mTrainDir):
+#             shutil.rmtree(self.mTrainDir)            
+#         os.makedirs(self.mTrainDir)
         return self.mTrainDir
         
 class SandboxManager(object):
