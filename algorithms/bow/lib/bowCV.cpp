@@ -336,7 +336,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         _fullFilePathImg = vFilenameTrain[k];
 
         _img = imread(_fullFilePathImg,CV_LOAD_IMAGE_GRAYSCALE);
-        if(_img.empty())  //no file
+        if(_img.empty())//no file or not supported format
         {
           msgout = "The file \"" + _fullFilePathImg + 
             "\" has a problem (no file or not supported format). "+
@@ -606,7 +606,7 @@ std::string bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _
     }
 
     _img = imread(_fullfilename,CV_LOAD_IMAGE_GRAYSCALE);
-    if(_img.empty())
+    if(_img.empty())//no file or not supported format
     {
       msgout = "The file \"" + _fullfilename + 
         "\" has a problem (no file or not supported format). "+
