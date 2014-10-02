@@ -51,6 +51,7 @@ class CorpusI(cvac.Corpus):
     def __init__(self, name, description, homepageURL, location, CVAC_DataDir):
         cvac.Corpus.__init__(self, name, description, homepageURL, True)
         self.CVAC_DataDir = CVAC_DataDir
+        self.dataSetFolder = location
         self.main_location = location
         
     def parseConfigProperties(self, configProps, propFile):
@@ -73,14 +74,14 @@ class CorpusI(cvac.Corpus):
         urlfile = urllib.URLopener()
         urlfile.retrieve( self.main_location, "deleteme.tar.gz" )
         # extract the tar into a hardcoded dir path
-        extractinto = easy.getFSPath( "deleteme_tmpdir" )
-        if not os.path.exists(extractinto):
-            os.makedirs(extractinto)
+        self.dataSetFolder = easy.getFSPath( "deleteme_tmpdir" )
+        if not os.path.exists(self.dataSetFolder):
+            os.makedirs(self.dataSetFolder)
         tar = tarfile.open("deleteme.tar.gz")
-        tar.extractall(path=extractinto)
+        tar.extractall(path=self.dataSetFolder)
         tar.close()
         # obtain labelables from extracted tar directory
-        return easy.getLabelableList(extractinto)
+        return easy.getLabelableList(self.dataSetFolder)
     
 '''
 LabelMeCorpusI is a LabelMe corpus.  This reads the
@@ -209,6 +210,7 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         threading.Thread.__init__(self)
         # Change stdout to automaticly flush output
         sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+        #print("debug: starting service: CorpusService (Python)")
         self._communicator = communicator
         self._destroy = False
         self._clients = []
@@ -219,12 +221,12 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         self.ConnectionName = "localhost"
         self.ServiceName = ""
         self.corpToImp = {}
-        print("Service started: Python CorpusService.")
+        print("info: service started: CorpusService (Python)")
 
     def destroy(self):
+        #print("debug: stopping service: CorpusService (Python)")
         self._cond.acquire()
 
-        print("Exiting Python CorpusService")
         self._destroy = True
 
         try:
@@ -233,6 +235,7 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
             self._cond.release()
 
         self.join()
+        print("info: service stopped: CorpusService (Python)")
         
     def addCorpusFromConfig(self, cvacPath):
         propFile = easy.getFSPath( cvacPath )

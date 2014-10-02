@@ -3,10 +3,9 @@ cmake_minimum_required(VERSION 2.8.6)
 
 cmake_policy( SET CMP0012 NEW)
 
-IF(WIN32)
-    # don't want the four default configuration types with MS Visual Studio
-    SET (CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "")
-ENDIF(WIN32)
+#Define the configuration types.  If this is not done OpenCV cmake
+#find_package fails!
+SET (CMAKE_CONFIGURATION_TYPES "Release;DEBUG" CACHE STRING "")
 
 PROJECT(CVAC)
 
@@ -50,8 +49,7 @@ ENDIF (PYTHON_ONLY_CLIENT)
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
 
 # where the Find*.cmake files are
-SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules
-                      ${CMAKE_MODULE_PATH})
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
 SET(PROJECT_BINARY_DIR ${CMAKE_SOURCE_DIR})
 
@@ -201,7 +199,7 @@ if( INCREASE_VERSION_PATCH )
   CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
     ${CMAKE_SOURCE_DIR}/include/version.h)
   # don't store this variable in the cache or else the version will be increased
-  # open every invocation of CMake in the same build directory
+  # upon every invocation of CMake in the same build directory
   UNSET( INCREASE_VERSION_PATCH CACHE )
 endif( INCREASE_VERSION_PATCH )
 
@@ -233,12 +231,12 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
                 SHOW_PROGRESS
 #                EXPECTED_MD5;aaaab03d4f38d7fe0525c994e52c3aaa
                )
-        list(GET ${DOWNLOAD_RESULT} 0 ${DOWNLOAD_CODE}) 
-        list(GET ${DOWNLOAD_RESULT} 1 ${DOWNLOAD_STRING}) 
-        IF( NOT ${DOWNLOAD_CODE} EQUAL 0)
+        list(GET DOWNLOAD_RESULT 0 DOWNLOAD_CODE) 
+        list(GET DOWNLOAD_RESULT 1 DOWNLOAD_STRING) 
+        IF( NOT DOWNLOAD_CODE EQUAL 0)
             FILE( REMOVE ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )  # this doesn't seem to work.
             MESSAGE( SEND_ERROR "Could not download 3rd-party software package: ${DOWNLOAD_STRING}" )
-        ENDIF( NOT ${DOWNLOAD_CODE} EQUAL 0) 
+        ENDIF()
     ENDIF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
 
     # untar or unzip the file;
@@ -307,20 +305,19 @@ FIND_PACKAGE( PythonInterp 2.7)
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
-#Opencv includes now required for src/util library
 FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
 )
-
 #If the find package did not set these lib dirs, then set ourselfs
-IF (OpenCV_LIB_DIR_OPT STREQUAL "")
+IF ("${OpenCV_LIB_DIR_OPT}" STREQUAL "")
     SET(OpenCV_LIB_DIR_OPT "${OpenCV_DIR}/../../lib")
-ENDIF (OpenCV_LIB_DIR_OPT STREQUAL "")
-IF (OpenCV_LIB_DIR_DBG STREQUAL "")
+ENDIF ()
+IF ("${OpenCV_LIB_DIR_DBG}" STREQUAL "")
     SET(OpenCV_LIB_DIR_DBG "${OpenCV_DIR}/../../lib")
-ENDIF (OpenCV_LIB_DIR_DBG STREQUAL "")
+ENDIF ()
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   IF( OpenCV_DIR )
@@ -340,8 +337,8 @@ IF( PYTHONINTERP_FOUND )
   #For Python set a variable for cv2 dynamic library
   #
   IF (WIN32)
-    FIND_FILE(OPENCV_PY_LIB cv2.pyd
-      HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+    FIND_FILE(OPENCV_PY_LIB cv2.pyd 
+             HINTS "${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
   ELSE (WIN32)
     FIND_LIBRARY(OPENCV_PY_LIB cv2.so
       HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
