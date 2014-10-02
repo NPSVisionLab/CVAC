@@ -336,11 +336,11 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         _fullFilePathImg = vFilenameTrain[k];
 
         _img = imread(_fullFilePathImg,CV_LOAD_IMAGE_GRAYSCALE);
-        if(_img.empty())
+        if(_img.empty())  //no file
         {
           msgout = "The file \"" + _fullFilePathImg + 
-            "\" has a problem (it may not exist). "+
-            "So, it will be skipped for the training.\n";
+            "\" has a problem (no file or not supported format). "+
+            "So, it will not be processed in the training.\n";
           message(msgout,MsgLogger::WARN);
           continue;
         }
@@ -357,7 +357,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         {
           msgout = "The file \"" + _fullFilePathImg + 
             "\" has a problem (out of boundary). " +
-            "So, it will be skipped for the training.\n";
+            "So, it will not be processed in the training.\n";
           message(msgout,MsgLogger::WARN);
           continue;
         }
@@ -379,7 +379,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
           
           msgout = "The file \"" + _fullFilePathImg + 
             "\" has a problem (OpenCV Error). " + 
-            "So, it will be skipped for the training. Details: " + 
+            "So, it will not be processed in the training. Details: " + 
             err_str;
           message(msgout,MsgLogger::WARN);          
           continue;
@@ -389,7 +389,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         { 
           msgout = "The file \"" + _fullFilePathImg + 
             "\" has a problem (no feature). " + 
-            "So, it will be skipped for the training.\n";
+            "So, it will not be processed in the training.\n";
           message(msgout,MsgLogger::WARN);
           continue;
         }
@@ -609,10 +609,10 @@ std::string bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _
     if(_img.empty())
     {
       msgout = "The file \"" + _fullfilename + 
-        "\" has a problem (it may not exist). "+
+        "\" has a problem (no file or not supported format). "+
         "So, it will not be processed.\n";
       message(msgout,MsgLogger::WARN);
-      msgReturn = "Error: no file";
+      msgReturn = "Error: no file or not supported format";
       return msgReturn;
     }
     else
