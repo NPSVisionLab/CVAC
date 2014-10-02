@@ -40,15 +40,20 @@ easy.printResults( results )
 # Example 2:
 # Train on a remote machine, obtain the model file, and test locally.
 # Assume the files are on the remote machine, or transfer with putAllFiles.
+# If no local services are installed, this will be skipped.
 #
 print("------- Remote training, local detection: -------")
-trainer = easy.getTrainer( "BOW_Trainer:default -p 10103 "+ host) # remote
-trainset = easy.createRunSet( "trainImg" );
-trainedModel = easy.train( trainer, trainset )
-easy.getFile( fileserver, trainedModel )  # downloads the model from remote
-print("obtained trained detector, stored in file {0}"
-      .format(easy.getFSPath(trainedModel)))
-detector = easy.getDetector( "BOW_Detector:default -p 10104" ) # local service
-testset = easy.createRunSet("testImg","UNPURPOSED"  )
-results = easy.detect( detector, trainedModel, testset )
-easy.printResults( results )
+try:
+    detector = easy.getDetector( "BOW_Detector:default -p 10104" ) # local service
+    trainer = easy.getTrainer( "BOW_Trainer:default -p 10103 "+ host) # remote
+    trainset = easy.createRunSet( "trainImg" );
+    trainedModel = easy.train( trainer, trainset )
+    easy.getFile( fileserver, trainedModel )  # downloads the model from remote
+    print("obtained trained detector, stored in file {0}"
+          .format(easy.getFSPath(trainedModel)))
+    testset = easy.createRunSet("testImg","UNPURPOSED"  )
+    results = easy.detect( detector, trainedModel, testset )
+    easy.printResults( results )
+except:
+    print("Cannot connect to local detector.  Have you started the services?\n"\
+          "This part of the demo does not work with the client-only distribution.")
