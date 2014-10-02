@@ -192,7 +192,9 @@ DetectorProperties BowICEI::getDetectorProperties(const ::Ice::Current& current)
 }
 
 int BowICEI::detectObjects(const CallbackHandlerPrx& _callback,
-                           const cvac::Labelable& _lbl)
+                           const cvac::Labelable& _lbl,
+                           bool& _resFlag,
+                           std::string& _resStr)
 { 
   std::string tfilepath = getFSPath( _lbl.sub.path, m_CVAC_DataDir );
 
@@ -201,18 +203,20 @@ int BowICEI::detectObjects(const CallbackHandlerPrx& _callback,
   
   BowICEI* _bowCV = static_cast<BowICEI*>(this);  
   int _bestClass;
-  bool _result = _bowCV->pBowCV->detect_run(tfilepath, _bestClass);
+  _resStr = _bowCV->pBowCV->detect_run(tfilepath, _bestClass);
+  _resFlag = _resStr.empty();
 
-  if(true == _result)
+  if(true == _resFlag)
   {
     localAndClientMsg(VLogger::DEBUG, _callback, "Detection, %s as Class: %d\n",
                       tfilepath.c_str(), _bestClass);
   }
-  else
-  {
-    localAndClientMsg(VLogger::WARN, _callback,
-                      "Error while processing %s\n", tfilepath.c_str());
-  }
+  // the following message is already shown in the algorithm.
+//   else
+//   {
+//     localAndClientMsg(VLogger::WARN, _callback,
+//                       "Error while processing %s\n", tfilepath.c_str());
+//   }
   return _bestClass;
 }
 
@@ -280,8 +284,11 @@ void BowICEI::process(const Ice::Identity &client,
 
     cvac::Labelable& labelable = *(mRunsetIterator.getNext());
     {
-      int _bestClass = detectObjects( callbackPtr, labelable );
-      addResult(mRunsetIterator.getCurrentResult(),labelable,_bestClass);      
+      bool _resFlag(false);
+      std::string _resString;
+      int _bestClass = detectObjects( callbackPtr, labelable, _resFlag,_resString);      
+      addResult(mRunsetIterator.getCurrentResult(),labelable,_bestClass,
+                _resFlag,_resString);
     }
   }  
   callbackPtr->foundNewResults(mRunsetIterator.getResultSet());
@@ -290,26 +297,35 @@ void BowICEI::process(const Ice::Identity &client,
 
 void BowICEI::addResult(cvac::Result& _res,
                         cvac::Labelable& _converted,
-                        int _bestClass)
-{	
+                        int _bestClass,
+                        bool _resFlag,
+                        std::string _resString)
+{ 
   // The original field is for the original label and file name.  Results need
   // to be returned in foundLabels.  If the DetectorDataArchive contains properties
   // of the sort labelname_0 = 'somelabel', then a detection of classID 0 will be
   // reported as 'somelabel'
   LabelablePtr labelable = new Labelable();
-  ostringstream ss;
-  ss << _bestClass;
-  string lname = ss.str();
-  BowICEI* _bowCV = static_cast<BowICEI*>(this);
-  string val = _bowCV->pBowCV->dda->getProperty("labelname_"+lname);
-  if ( val.empty() )
-    labelable->lab.name = lname;
+  if(_resFlag)
+  {
+    ostringstream ss;
+    ss << _bestClass;
+    string lname = ss.str();
+    BowICEI* _bowCV = static_cast<BowICEI*>(this);
+    string val = _bowCV->pBowCV->dda->getProperty("labelname_"+lname);
+    if ( val.empty() )
+      labelable->lab.name = lname;
+    else
+      labelable->lab.name = val;
+    labelable->confidence = 1.0f;//ToBeUpdated
+    labelable->lab.hasLabel = true;
+  }
   else
-    labelable->lab.name = val;
-
-  labelable->confidence = 1.0f;//ToBeUpdated
-  labelable->lab.hasLabel = true;
-
+  {
+    labelable->lab.name = _resString;
+    labelable->confidence = 1.0f;
+    labelable->lab.hasLabel = false;
+  }
   _res.foundLabels.push_back(labelable);
 }
 
