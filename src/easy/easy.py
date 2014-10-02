@@ -1351,8 +1351,9 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
     if foundMap and origMap:
         print('{0} out of {1} results had identical purposes'
               .format( identical, len( results ) ))
-    else:
-        print('(labels had unknown purposes, cannot determine result accuracy)')
+    else: 
+        #print('(labels had unknown purposes, cannot determine result accuracy)')
+        pass
 
 def initGraphics():
     try:
