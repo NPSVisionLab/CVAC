@@ -12,7 +12,7 @@ Ice.ACM.Server=0
 CVAC.ServicesVerbosity = 3
 
 #Directory to prepend file names with if the file names are not absolute
-CVAC.DataDir = data
+CVAC.DataDir = ${CVAC_DATA_DIR}
 
 #
 # Warn about connection exceptions

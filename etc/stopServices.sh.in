@@ -2,7 +2,7 @@
 # stopServices.sh  Script to stop CVAC services for binary distribution
 #
 # Please set INSTALLDIR to install directory
-export INSTALLDIR=
+export INSTALLDIR=@INSTALL_PATH@
 if [ "${INSTALLDIR}" == "" ]
 then
     echo "INSTALLDIR needs to be defined! Please set INSTALLDIR to binary distribution install directory"
