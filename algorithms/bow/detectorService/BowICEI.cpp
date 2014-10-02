@@ -167,7 +167,7 @@ void BowICEI::destroy(const ::Ice::Current& current)
 }
 std::string BowICEI::getName(const ::Ice::Current& current)
 {
-	return "bowTest";
+	return mServiceMan->getServiceName();
 }
 std::string BowICEI::getDescription(const ::Ice::Current& current)
 {
