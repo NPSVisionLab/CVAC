@@ -204,7 +204,7 @@ ELSE(WIN32)
             DESTINATION 3rdparty/ICE
             USE_SOURCE_PERMISSIONS
             COMPONENT IceExt
-            FILE_MATCHING PATTERN "*.dylib"
+            PATTERN "*.dylib" INCLUDE
            )
     ELSE (APPLE)
         INSTALL(DIRECTORY  ${ICE_ROOT}/lib
