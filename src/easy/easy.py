@@ -54,8 +54,12 @@ else:
         args.append('--Ice.Config='+config_client_path)
 ic = Ice.initialize(args)
 defaultCS = None
+# Parse the client.config for CVAC_DataDir
+CVAC_DataDir = ic.getProperties().getProperty("CVAC.DataDir")
+if CVAC_DataDir == None:
+    CVAC_DataDir = "data"
 # IF the environment variable is set, then use that else use data
-CVAC_DataDir = os.getenv("CVAC_DATADIR", "data")
+CVAC_DataDir = os.getenv("CVAC_DATADIR", CVAC_DataDir)
 CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
 
 

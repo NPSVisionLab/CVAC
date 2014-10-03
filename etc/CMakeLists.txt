@@ -156,7 +156,7 @@ IF (WIN32)
 ELSE (WIN32)
     SET (PREFIX_CMD "--prefix=${CMAKE_INSTALL_PREFIX}")
 ENDIF (WIN32)
-CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/PostInstall.cmake)
+CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/PostInstall.cmake @ONLY)
 
 IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
     INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_BINARY_DIR}/config.java_admin ${CMAKE_BINARY_DIR}/config.java_icebox ${CMAKE_BINARY_DIR}/config.client 
@@ -175,7 +175,7 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/test/run_demos.py
       )
 
 # 3rdparty dependencies for building CVAC
-INSTALL(DIRECTORY   ${ICE_ROOT}/include ${ICE_ROOT}/lib ${ICE_ROOT}/slice
+INSTALL(DIRECTORY   ${ICE_ROOT}/include  ${ICE_ROOT}/slice
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT IceExt
@@ -194,7 +194,26 @@ IF(WIN32)
         USE_SOURCE_PERMISSIONS
         COMPONENT IceExt
         PATTERN *.dll
+        PATTERN vc110 EXCLUDE
+        PATTERN vc120 EXCLUDE
+        PATTERN x64 EXCLUDE
        )
+ELSE(WIN32)
+    IF (APPLE)
+        INSTALL(DIRECTORY  ${ICE_ROOT}/lib
+            DESTINATION 3rdparty/ICE
+            USE_SOURCE_PERMISSIONS
+            COMPONENT IceExt
+            FILE_MATCHING PATTERN "*.dylib"
+           )
+    ELSE (APPLE)
+        INSTALL(DIRECTORY  ${ICE_ROOT}/lib
+            DESTINATION 3rdparty/ICE
+            USE_SOURCE_PERMISSIONS
+            COMPONENT IceExt
+            FILES_MATCHING PATTERN "*.so"
+           )
+    ENDIF (APPLE)
 ENDIF(WIN32)
 
 SET (SVM_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libsvm")

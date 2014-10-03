@@ -3,8 +3,8 @@
 set _3rdPARTYDIR=${CMAKE_SOURCE_DIR}/3rdparty/lib
 set JARDIR=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
 set ICEBOXJAR=${IceBox.jar} 
-set PATH=bin;${ICE_ROOT}/bin;${OpenCV_LIB_DIR_OPT}/../bin;${LIBARCHIVE_BIN_DIR};${LIBZIP_BIN_DIR};${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR};%PATH%
-chdir "${CVAC_ROOT_DIR}"
+set PATH=${CMAKE_BINARY_DIR}/bin;${ICE_ROOT}/bin;${OpenCV_LIB_DIR_OPT}/../bin;${LIBARCHIVE_BIN_DIR};${LIBZIP_BIN_DIR};${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR};%PATH%
+chdir "${CVAC_BINARY_DIR}"
 
 set LOCKFILE=.services_started.lock
 if exist %LOCKFILE% (
@@ -28,7 +28,8 @@ REM Python services that are listed in python.config
 if "${PYTHON_EXECUTABLE}" neq "" (if exist "${CMAKE_SOURCE_DIR}/python.config" goto startpython)
 goto next2
 :startpython
-    for /F "usebackq eol=# tokens=*" %%A in ("${CMAKE_SOURCE_DIR}/python.config") do start "CVAC Service (Python)" "cmd /K ""${PYTHON_EXECUTABLE}" %%A"
+    set PYTHONPATH=${CMAKE_BINARY_DIR}/etc/python/easyPkg;${CMAKE_BINARY_DIR}/etc/python/IcePkg
+    for /F "usebackq eol=# tokens=*" %%A in ("${CMAKE_BINARY_DIR}/python.config") do start "CVAC Service (Python)" "cmd /K ""${PYTHON_EXECUTABLE}" ${CMAKE_SOURCE_DIR}/%%A"
 :next2
 echo CVAC services launched
 REM Lets do a window equivalent of touch

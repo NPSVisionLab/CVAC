@@ -395,7 +395,7 @@ ENDIF( BUILD_WITH_RSI )
 IF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
     SET( CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/installed" CACHE PATH "default install path" FORCE )
 ELSE( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
-    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cvac" )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/EasyCV" )
 ENDIF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
 
 #Need to have this at top level since multiple directories need it
@@ -475,32 +475,3 @@ ENDIF( BUILD_3RDPARTY_PACKAGE )
 IF ( BUILD_BINARY_PACKAGE )
     ADD_SUBDIRECTORY( etc/pack_binary )
 ENDIF ( BUILD_BINARY_PACKAGE )
-
-#
-# Display a message that details what the user has to do in order
-# to start services and run clients.
-#
-# This is currently printed rather early in the "make install" output
-# instead of at the end where it should be.
-# But since CMake doesn't make any guarantees on the order of subdirectories
-# getting installed, I don't see a way to put it at the end.
-#
-GET_FILENAME_COMPONENT(OPENCV_SITE_PACKAGES ${OpenCV_LIB_DIR_OPT}/python2.7/site-packages ABSOLUTE)
-GET_FILENAME_COMPONENT(OPENCV_LIB_DIR ${OpenCV_LIB_DIR_OPT} ABSOLUTE)
-GET_FILENAME_COMPONENT(ICE_LIB_DIR ${ICE_LIBRARY} PATH)
-SET(LIBSVM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libsvm)
-SET(PPATH ${ICE_PYTHON_DIR}:${OPENCV_SITE_PACKAGES}:${LIBSVM_DIR} )
-SET(DPATH ${ICE_LIB_DIR}:${OPENCV_LIB_DIR} )
-INSTALL(CODE "MESSAGE(\"==============================================\")")
-INSTALL(CODE "MESSAGE(\"Run EasyCV services after installation as:\")")
-INSTALL(CODE "MESSAGE(\"export PYTHONPATH=${PPATH}\")")
-INSTALL(CODE "MESSAGE(\"export DYLD_LIBRARY_PATH=${DPATH}\")")
-INSTALL(CODE "MESSAGE(\"cd ${CMAKE_INSTALL_PREFIX}; bin/startIcebox.sh\")")
-
-SET(PPATH ${CMAKE_CURRENT_BINARY_DIR}/etc/python/easyPkg:${ICE_PYTHON_DIR}:${OPENCV_SITE_PACKAGES} )
-SET(DPATH ${ICE_LIB_DIR} )
-INSTALL(CODE "MESSAGE(\"Run EasyCV clients as:\")")
-INSTALL(CODE "MESSAGE(\"export PYTHONPATH=${PPATH}\")")
-INSTALL(CODE "MESSAGE(\"export DYLD_LIBRARY_PATH=${DPATH}\")")
-INSTALL(CODE "MESSAGE(\"cd ${CMAKE_CURRENT_SOURCE_DIR}; ${PYTHON_EXECUTABLE} demo/prerequisites.py\")")
-INSTALL(CODE "MESSAGE(\"==============================================\")")
