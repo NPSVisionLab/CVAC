@@ -14,7 +14,7 @@ CTEST_ARGS=$3
 export CVAC_REMOTE_TEST_SERVER=$4
 
 # start up services
-cd ${ROOT_DIR}
+cd ${BUILD_DIR}
 bin/startIcebox.sh
 sleep 10
 
@@ -25,6 +25,6 @@ EXIT_STATUS=$?
 
 # irrespective of exit status: shut down services
 # then return exit status
-cd ${ROOT_DIR}
+cd ${BUILD_DIR}
 bin/stopIcebox.sh
 exit ${EXIT_STATUS}
