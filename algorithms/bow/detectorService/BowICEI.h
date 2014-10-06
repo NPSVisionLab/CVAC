@@ -86,14 +86,18 @@ private:
     bowCV* pBowCV;
     bool   fInitialized;    
     std::string configModelFileName;
-    static cvac::ResultSet processSingleImg(cvac::DetectorPtr detector,const char* fullfilename);
+    //static cvac::ResultSet processSingleImg(cvac::DetectorPtr detector,const char* fullfilename);
 
 private:
   int detectObjects(const cvac::CallbackHandlerPrx& _callback,
-                    const cvac::Labelable& _lbl);
+                    const cvac::Labelable& _lbl,
+                    bool& _resFlag,
+                    std::string& _resString);
   void addResult(cvac::Result& _res,
                  cvac::Labelable& _converted,
-                 int _bestClass);
+                 int _bestClass,
+                 bool _resFlag,
+                 std::string _resString);
 private:
   cvac::DetectorCallbackHandlerPrx callbackPtr;
   virtual void message(MsgLogger::Levels msgLevel, const string& _msgStr);

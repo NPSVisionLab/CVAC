@@ -482,6 +482,9 @@ void BowICETrainI::process(const Identity &client,const ::RunSet& runset,
     deleteDirectory(tTempDir);
     localAndClientMsg(VLogger::ERROR, callbackPtr,
                       "Error during the training of BoW.\n");
+
+    delete pBowCV;
+    pBowCV = NULL;
     return;
   }
 

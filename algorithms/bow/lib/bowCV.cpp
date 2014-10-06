@@ -109,18 +109,23 @@ bool bowCV::train_initialize(const string& _detectorName,
     flagName = false;
     dda = _dda;
 
-//debug
-    printf ("detect name %s, extractor %s, matcher %s, nWords %d\n",
-            _detectorName.c_str(),
-            _extractorName.c_str(),
-            _matcherName.c_str(),
-            _nCluster);
+    std::string msgout;
+    std::stringstream val2str;    
+    val2str << _nCluster;
+    
+    msgout = "Info: Detector: " + _detectorName
+      + ", Extractor: " + _extractorName
+      + ", Matcher: " + _matcherName
+      + ", nWords: " + val2str.str() + ".\n";
+    message(msgout,MsgLogger::DEBUG);
+
     fDetector = FeatureDetector::create(_detectorName);    
     dExtractor = DescriptorExtractor::create(_extractorName);
     if( fDetector.empty() || dExtractor.empty() )
     {
-        cout << "Error - featureDetector or descExtractor was not created" << endl;	fflush(stdout);
-        return false;
+      msgout = "Error: featureDetector or descExtractor was not created.\n";
+      message(msgout,MsgLogger::WARN);
+      return false;
     }
     else
     {
@@ -132,9 +137,10 @@ bool bowCV::train_initialize(const string& _detectorName,
 
     dMatcher = DescriptorMatcher::create(_matcherName);
     if (dMatcher.empty())
-    {
-        cout << "Error - descMatcher was not created" << endl;	fflush(stdout);
-        return false;
+    { 
+      msgout = "Error: descMatcher was not created.\n";
+      message(msgout,MsgLogger::WARN);
+      return false;
     }
     else
       dda->setProperty(BOW_MATCHER_NAME,_matcherName);
@@ -163,19 +169,23 @@ bool bowCV::detect_setParameter(const string& _detectorName,const string& _extra
 {
     flagName = false;
 
+    std::string msgout;    
+
     fDetector = FeatureDetector::create(_detectorName);
     dExtractor = DescriptorExtractor::create(_extractorName);
     if( fDetector.empty() || dExtractor.empty() )
     {
-	    cout << "Error - featureDetector or descExtractor was not created" << endl;	fflush(stdout);
-	    return false;
+      msgout = "Error: featureDetector or descExtractor was not created.\n";
+      message(msgout,MsgLogger::WARN);
+	  return false;
     }	
 
     dMatcher = DescriptorMatcher::create(_matcherName);
     if (dMatcher.empty())
     {
-	    cout << "Error - descMatcher was not created" << endl;	fflush(stdout);
-	    return false;
+      msgout = "Error: descMatcher was not created.\n";
+      message(msgout,MsgLogger::WARN);
+      return false;
     }
 
     bowExtractor = new BOWImgDescriptorExtractor(dExtractor,dMatcher);
@@ -194,17 +204,20 @@ bool bowCV::detect_setParameter(const string& _detectorName,const string& _extra
 
 bool bowCV::train_parseTrainList(const string& _filepathTrain,const string& _filenameTrainList)
 {
+    std::string msgout;    
+
     _fullFilePathList = _filepathTrain + "/" + _filenameTrainList;
     ifstream ifList(_fullFilePathList.c_str());
     if(!ifList.is_open())
     {
-        cout << "Error - can't parse train list from path list file: "
-             << _fullFilePathList <<endl; 
-        fflush(stdout);
-	    return false;
+      msgout = "Error: can't parse a train list from the file \"" 
+        + _fullFilePathList + "\"\n";
+      message(msgout,MsgLogger::WARN);
+	  return false;
     }
-
-    cout << "Checking training files..." << '\xd'; fflush(stdout);
+    
+    msgout = "Checking training files...";
+    message(msgout,MsgLogger::DEBUG);
     do
     {
         ifList.getline(_buf, 255);
@@ -243,23 +256,31 @@ bool bowCV::train_parseTrainList(const string& _filepathTrain,const string& _fil
                          atoi(boxStr_height.c_str()));
         }
 
-        _img = imread(_fullFilePathImg);
+        _img = imread(_fullFilePathImg,CV_LOAD_IMAGE_GRAYSCALE);
         if(_img.empty())
         {
-	        ifList.close();
-	        cout<<"Error - cannot read image from file: "
-                << _fullFilePathImg << endl;	
-            fflush(stdout);
-	        return false;
-        }	
-
+	      //ifList.close();
+          msgout = "Error: can't read this image file \"" 
+            + _fullFilePathImg + "\".\n";
+          message(msgout,MsgLogger::WARN);
+          continue;
+	      //return false;
+        }
         train_stackTrainImage(_fullFilePathImg,_classID,_rect.x,_rect.y,_rect.width,_rect.height);
 
     } while (!ifList.eof());
     ifList.close();	
 
-    cout<< "Total number of images for training: " << vFilenameTrain.size() << endl;	fflush(stdout);
-    return true;
+    std::stringstream val2str;
+    val2str << vFilenameTrain.size();
+
+    msgout = "The number of images for training is " + val2str.str() + ".\n";
+    message(msgout,MsgLogger::DEBUG);
+
+    if(vFilenameTrain.size()<1)
+      return false;
+    else
+      return true;
 }
 
 void bowCV::train_stackTrainImage(const string& _fullpath,const int& _classID)
@@ -282,21 +303,26 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
                       cvac::ServiceManager *sman,
                       float _oneclassNu)
 {
+    std::string msgout;
+
     if(!flagName)
     {
-        cout << "Need to initialize detector, extractor, matcher, " 
-             << "and so on with the function train_initialize()." << endl;	fflush(stdout);
-        return false;
+      msgout = "Error: need to initialize detector, extractor, matcher," 
+        "and so on with the function train_initialize()";
+      message(msgout,MsgLogger::WARN);
+      return false;
     }
 
     if(vFilenameTrain.size() < 1)
     {
-        cout << "There is no training images." << endl;	fflush(stdout);
-        return false;
+      msgout = "There is no training images.\n";
+      message(msgout,MsgLogger::WARN);
+      return false;
     }
     else
     {
-	    cout<< "Training is started. " << endl; fflush(stdout);
+      msgout = "Training is started.\n";
+      message(msgout,MsgLogger::DEBUG);
     }
     //////////////////////////////////////////////////////////////////////////
     // START - Clustering (Most time-consuming step)
@@ -309,13 +335,13 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     {
         _fullFilePathImg = vFilenameTrain[k];
 
-        _img = imread(_fullFilePathImg);
-        if(_img.empty())
+        _img = imread(_fullFilePathImg,CV_LOAD_IMAGE_GRAYSCALE);
+        if(_img.empty())//no file or not supported format
         {
-          string outMsg;
-          outMsg = "There is no file " + _fullFilePathImg + 
-                   ". This file will not be processed.\n";
-          msgLogger->message(MsgLogger::WARN,outMsg);          
+          msgout = "The file \"" + _fullFilePathImg + 
+            "\" has a problem (no file or not supported format). "+
+            "So, it will not be processed in the training.\n";
+          message(msgout,MsgLogger::WARN);
           continue;
         }
 
@@ -329,39 +355,68 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
           ((vBoundX[k]+vBoundWidth[k])>_img.cols) || 
           ((vBoundY[k]+vBoundHeight[k])>_img.rows))
         {
-          string outMsg;
-          outMsg = "Out of boundary in file " + _fullFilePathImg + 
-                   ". This file will not be processed.\n";
-          msgLogger->message(MsgLogger::WARN,outMsg);
+          msgout = "The file \"" + _fullFilePathImg + 
+            "\" has a problem (out of boundary). " +
+            "So, it will not be processed in the training.\n";
+          message(msgout,MsgLogger::WARN);
           continue;
         }
       	
         _rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
         if((_rect.width != 0) && (_rect.height != 0))
 	        _img = _img(_rect);
+        
+        // Sometimes, opencv returns an memory-related error 
+        // because of the large number of extracted features
+        try
+        {
+          fDetector->detect(_img, _keypoints);          
+        }
+        catch(cv::Exception& e)
+        { 
+          // limitImageSize(_img);
+          std::string err_str = std::string(e.what());
+          
+          msgout = "The file \"" + _fullFilePathImg + 
+            "\" has a problem (OpenCV Error). " + 
+            "So, it will not be processed in the training. Details: " + 
+            err_str;
+          message(msgout,MsgLogger::WARN);          
+          continue;
+        }       
 
-        fDetector->detect(_img, _keypoints);
         if(_keypoints.size()<1) //According to the version of openCV, it may cause an exceptional error.
-            continue;
+        { 
+          msgout = "The file \"" + _fullFilePathImg + 
+            "\" has a problem (no feature). " + 
+            "So, it will not be processed in the training.\n";
+          message(msgout,MsgLogger::WARN);
+          continue;
+        }
 
-        dExtractor->compute(_img, _keypoints, _descriptors);
-
+        dExtractor->compute(_img, _keypoints, _descriptors);          
         _descriptorRepository.push_back(_descriptors);
 
-        cout<< "Progress of Feature Extraction: " << k+1 << "/" << vFilenameTrain.size() << '\xd';	fflush(stdout);
-    }	
-    cout << endl;	fflush(stdout);
+        std::stringstream val2str1,val2str2;
+        val2str1 << k+1;
+        val2str2 << vFilenameTrain.size();
 
-    cout << "Total number of descriptors: " << _descriptorRepository.rows << endl;	fflush(stdout);
+        msgout = "Progress of Feature Extraction: " 
+          + val2str1.str() + "/" + val2str2.str();
+        messageInSameline(msgout);
+    }
+    std::stringstream val2str;
+    val2str << _descriptorRepository.rows;
 
-    cout << "Clustering ... this might take some time..." << std::endl;	fflush(stdout);
-    
+    msgout = "\nTotal number of descriptors: " + val2str.str() 
+      + ".\nStarting clustering. This may take a long time ...\n";
+    message(msgout,MsgLogger::DEBUG);
+
     if(cntCluster > _descriptorRepository.rows)
     {
-      string outMsg;
-      outMsg = "Error: the number of clusters is smaller than the number of descriptors\n";
-      cout << outMsg;
-      msgLogger->message(MsgLogger::WARN,outMsg);
+      msgout = "Error: the number of clusters is smaller "
+               "than the number of descriptors\n";
+      message(msgout,MsgLogger::WARN);
       return false;
     }
     BOWKMeansTrainer bowTrainer(cntCluster); 
@@ -379,7 +434,9 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     //////////////////////////////////////////////////////////////////////////
     // START - Setup Vocabulary
     //////////////////////////////////////////////////////////////////////////
-    cout << "Setting Vocabulary ... " << endl;	fflush(stdout);			
+    msgout = "Starting vocabulary setup.\n";
+    message(msgout,MsgLogger::DEBUG);
+
     bowExtractor->setVocabulary(mVocabulary);
     //////////////////////////////////////////////////////////////////////////
     // END - Setup Vocabulary
@@ -389,7 +446,8 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     ///////////////////////////////////////////////////////////////////////////
     // START - Train Classifier (SVM)
     //////////////////////////////////////////////////////////////////////////
-    cout << "Training Classifier ... " << endl;	fflush(stdout);
+    msgout = "Starting training the classifier.\n";
+    message(msgout,MsgLogger::DEBUG);
 
     Mat trainDescriptors;	trainDescriptors.create(0,bowExtractor->descriptorSize(),bowExtractor->descriptorType());
     Mat trainClass;	trainClass.create(0,1,CV_32FC1);
@@ -407,7 +465,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
             sman->stopCompleted();
             return false;
         }
-        _img = imread(_fullFilePathImg);
+        _img = imread(_fullFilePathImg,CV_LOAD_IMAGE_GRAYSCALE);
         if(_img.empty())
           continue;
 
@@ -419,22 +477,25 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         _rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
         if((_rect.width != 0) && (_rect.height != 0))
 	        _img = _img(_rect);
-      	
-        fDetector->detect(_img, _keypoints);
-        bowExtractor->compute(_img, _keypoints, _descriptors);
-        //cout << "n_pts of " << vFilenameTrain[k]  << ": " << _keypoints.size() << "\n"; fflush(stdout);
-        if(_keypoints.size() > 1)
-        {           
-            trainDescriptors.push_back(_descriptors);
-            trainClass.push_back(_classID);
-            _listClassAll.push_back(_classID);
-        }
-        else
+                
+        try
         {
-            cout << "The file: " << vFilenameTrain[k] << "has no keypoints and will not be used for training!" << endl;
-            fflush(stdout);
+          fDetector->detect(_img, _keypoints);          
         }
-        
+        catch(cv::Exception& e)
+        {
+          //limitImageSize(_img);
+          //std::string err_str = std::string(e.what());
+          continue;
+        }
+        //cout << "n_pts of " << vFilenameTrain[k]  << ": " << _keypoints.size() << "\n"; fflush(stdout);
+        if(_keypoints.size() >= 1)
+        {   
+          bowExtractor->compute(_img, _keypoints, _descriptors);          
+          trainDescriptors.push_back(_descriptors);
+          trainClass.push_back(_classID);
+          _listClassAll.push_back(_classID);
+        }
     }
     _listClassUnique = _listClassAll;
     _listClassUnique.sort();
@@ -469,7 +530,8 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         stringstream oneclassIDstream;
         oneclassIDstream << mInclassIDforOneClass;
         dda->setProperty(BOW_ONECLASS_ID,oneclassIDstream.str());
-        cout << "BoW - One Class Classification \n"; fflush(stdout);
+        msgout = "BoW - One Class Classification. \n";
+        message(msgout,MsgLogger::DEBUG);
 
         param.svm_type = CvSVM::ONE_CLASS;
         param.nu = _oneclassNu;	//empirically, this value doesn't have the effect on performance.        
@@ -479,7 +541,8 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     else
     {
         flagOneClass = false;
-        cout << "BoW - Multiple Classes Classification \n"; fflush(stdout);
+        msgout = "BoW - Multiple Classes Classification. \n";
+        message(msgout,MsgLogger::DEBUG);
 
         float* _classWeight = new float[_listClassUnique.size()];
         int _idx = 0;
@@ -518,52 +581,85 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
 }
 
 
-bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,int _boxY,int _boxWidth,int _boxHeight)
+std::string bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,int _boxY,int _boxWidth,int _boxHeight)
 {	
     _bestClass = -1;	
+    std::string msgout;
+    std::string msgReturn;
 
     if(!flagName)
     {
-        cout << "Need to initialize detector, extractor, and matcher with the function detect_initialize()." << endl;
-        fflush(stdout);
-        return false;
+      msgout = "Error: Need to initialize detector, extractor, and matcher "
+               "with the function detect_initialize().\n";
+      message(msgout,MsgLogger::WARN);
+      msgReturn = "Error: need appropriate initialization";
+      return msgReturn;
     }
 
     if(!flagTrain)
     {
-        cout << "Error - No training flag found.  Before testing, training is necessary .. " << endl;
-        fflush(stdout);
-        return false;
+      msgout = "Error: No training flag found. "
+               "Before testing, training is necessary.\n";
+      message(msgout,MsgLogger::WARN);
+      msgReturn = "Error: need appropriate initialization";
+      return msgReturn;
     }
 
-    _img = imread(_fullfilename);
-    if(_img.empty())
+    _img = imread(_fullfilename,CV_LOAD_IMAGE_GRAYSCALE);
+    if(_img.empty())//no file or not supported format
     {
-      string outMsg;
-      outMsg = "There is no file " + _fullfilename + ".\n";
-      msgLogger->message(MsgLogger::WARN,outMsg);
-      return false;
+      msgout = "The file \"" + _fullfilename + 
+        "\" has a problem (no file or not supported format). "+
+        "So, it will not be processed.\n";
+      message(msgout,MsgLogger::WARN);
+      msgReturn = "Error: no file or not supported format";
+      return msgReturn;
     }
     else
     {
       if((_boxX<0) || (_boxY<0) || 
         ((_boxX+_boxWidth)>_img.cols) || ((_boxY+_boxHeight)>_img.rows))
       {
-        string outMsg;
-        outMsg = "Out of boundary in file " + _fullfilename + ".\n";
-        msgLogger->message(MsgLogger::WARN,outMsg);
-        return false;
+        msgout = "The file \"" + _fullfilename + 
+          "\" has a problem (out of boundary). "+
+          "So, it will not be processed.\n";
+        message(msgout,MsgLogger::WARN);
+        msgReturn = "Error: invalid boundary info";
+        return msgReturn;
       }
         Rect tRect = Rect(_boxX,_boxY,_boxWidth,_boxHeight);
         if((tRect.width != 0) && (tRect.height != 0))
             _img = _img(tRect);
     }
 
-    fDetector->detect(_img, _keypoints);
+    // Sometimes, opencv returns an memory-related error 
+    // while processing an image because of the large number of 
+    // extracted features
+    try
+    {
+      fDetector->detect(_img, _keypoints);
+    }
+    catch(cv::Exception& e)
+    {
+      //limitImageSize(_img);
+      std::string err_str = std::string(e.what());
+      msgout = "The file \"" + _fullfilename + 
+        "\" has a problem (OpenCV Error). "+
+        "So, it will not be processed. Details: "+
+        err_str;
+      message(msgout,MsgLogger::WARN);
+      msgReturn = "Error: opencv error";
+      return msgReturn;
+    }
+    
     if(_keypoints.size()<1) //According to the version of openCV, it may cause an exceptional error.
     {
-        cout << "Error - no feature: " << _fullfilename <<endl;	fflush(stdout);
-        return false;
+      msgout = "The file \"" + _fullfilename + 
+        "\" has a problem (no feature). "+
+        "So, it will not be processed.\n";
+      message(msgout,MsgLogger::WARN);
+      msgReturn = "Error: no feature";
+      return msgReturn;
     }
     bowExtractor->compute(_img, _keypoints, _descriptors);
     // In the manual from OpenCV, it is written as follows:
@@ -580,7 +676,8 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
 
     if(!flagOneClass) //For Multi-class problem
     {
-        return true;
+       msgReturn = "";
+       return msgReturn;
         //if (-1 == _bestClass) // no class found
         //    return false;
         //else
@@ -593,19 +690,22 @@ bool bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _boxX,in
         else //outlier
             _bestClass = mOutclassIDforOneClass;
 
-        return true;
+        msgReturn = "";
+        return msgReturn;
     }	
 }
 
 
 bool bowCV::detect_readTrainResult()
-{	
+{
+  std::string msgout;
   string _fullpath, _inputString;
 
 #ifdef __APPLE__
     if (dda->getProperty(BOW_DETECTOR_NAME).compare("SURF") == 0)
     {
-        cout << "WARNING!!! SURF detector may not run well on OSX" << endl;
+      msgout = "WARNING!!! SURF detector may not run well on OSX.\n";
+      message(msgout,MsgLogger::WARN);      
     }
 #endif // __APPLE__   
 
@@ -613,8 +713,10 @@ bool bowCV::detect_readTrainResult()
        dda->getProperty(BOW_EXTRACTOR_NAME),
        dda->getProperty(BOW_MATCHER_NAME)))
     {
-        cout << "Need to names of detector, extractor, and matcher with the function detect_initialize()" << endl; 
-        return false;
+      msgout = "Error: need to initialize detector, extractor, matcher, "
+               "and so on with the function detect_initialize().\n";
+      message(msgout,MsgLogger::WARN);
+      return false;
     }
 
     // Read VOC file
@@ -633,10 +735,11 @@ bool bowCV::detect_readTrainResult()
     // Read OpenCV Version    
     _inputString = dda->getProperty(BOW_OPENCV_VERSION);
     if(!isCompatibleOpenCV(_inputString))
-    {       
-        cout << "For the training, OpenCV " << _inputString
-             << " was used. But, now you are using OpenCV "
-             << CV_VERSION << ". It may cause an exceptional error." << endl; 
+    {
+      msgout = "For the training, OpenCV " + _inputString 
+        + " was used. But, now you are using OpenCV "
+        + CV_VERSION + ". It may cause an exceptional error.\n";
+      message(msgout,MsgLogger::WARN);
         //return false;
     }
 
@@ -644,7 +747,8 @@ bool bowCV::detect_readTrainResult()
     if(tParam.svm_type == CvSVM::ONE_CLASS)
     {
         flagOneClass = true;
-        cout << "BoW - One Class Classification \n"; fflush(stdout);
+        msgout = "BoW - One Class Classification. \n";
+        message(msgout,MsgLogger::DEBUG);
         
         _inputString = dda->getProperty(BOW_ONECLASS_ID);
         if(_inputString.empty())
@@ -653,13 +757,20 @@ bool bowCV::detect_readTrainResult()
             mInclassIDforOneClass = atoi(_inputString.c_str());  
         
         mOutclassIDforOneClass = (mInclassIDforOneClass==0)?1:0;
-        cout << "In-class data will be represented by " << mInclassIDforOneClass << endl;
-        cout << "Out-class data will be represented by " << mOutclassIDforOneClass << endl;
+
+        std::stringstream val2str1,val2str2;    
+        val2str1 << mInclassIDforOneClass;
+        val2str2 << mOutclassIDforOneClass;
+
+        msgout = "In-class data will be represented by "+val2str1.str()+
+          ", and Out-class data will be represented by "+val2str2.str()+".\n";
+        message(msgout,MsgLogger::DEBUG);
     }
     else
     {
-        flagOneClass = false;
-        cout << "BoW - Multiple Classes Classification \n"; fflush(stdout);
+      flagOneClass = false;
+      msgout = "BoW - Multiple Classes Classification. \n";
+      message(msgout,MsgLogger::DEBUG);
     }
 
     flagTrain = true;
@@ -670,7 +781,10 @@ bool bowCV::detect_readTrainResult()
 
 bool bowCV::train_writeVocabulary(const string& _filename,const Mat& _vocabulary)
 {
-    cout << "Saving vocabulary..." << endl;	fflush(stdout);
+    std::string msgout;
+    msgout = "Saving vocabulary.\n";
+    message(msgout,MsgLogger::DEBUG);
+    
     FileStorage fs( _filename, FileStorage::WRITE );
     if( fs.isOpened() )
     {
@@ -679,23 +793,29 @@ bool bowCV::train_writeVocabulary(const string& _filename,const Mat& _vocabulary
         return true;
     }
     fs.release();
-    cout << "Error - in Saving vocabulary...";	fflush(stdout);
+
+    msgout = "Error: in Saving vocabulary.\n";
+    message(msgout,MsgLogger::WARN);
     return false;
 }
 
 bool bowCV::detect_readVocabulary( const string& _filename, Mat& _vocabulary )
 {
-    cout << "Reading vocabulary...";	fflush(stdout);
+    std::string msgout;
+    msgout = "Reading vocabulary.\n";
+    message(msgout,MsgLogger::DEBUG);
+    
     FileStorage fs( _filename, FileStorage::READ );
     if( fs.isOpened() )
     {
         fs["vocabulary"] >> _vocabulary;
-        cout << "done" << endl;
+        //cout << "done" << endl;
         fs.release();
         return true;
     }
-    fs.release();
-    cout << "error" << endl;	fflush(stdout);
+    fs.release();    
+    msgout = "Error: in Reading vocabulary.\n";
+    message(msgout,MsgLogger::WARN);
     return false;
 }
 
@@ -704,10 +824,12 @@ bool bowCV::isCompatibleOpenCV(const string& _version)
 {
     if(_version.empty())
     {
-        cout << "Because this training data is old version, it doesn't include version "
-             << "information. Therefore, it may cause an exceptional error while processing "
-             << "images." << endl;
-        return true;
+      std::string msgout = "Because this training data is old version, "
+                           "it doesn't include version information. "
+                           "Therefore, it may cause an exceptional error "
+                           "while processing images.\n";
+      message(msgout,MsgLogger::WARN);
+      return true;
     }
 
     string tVersionCurrent(CV_VERSION);
@@ -725,6 +847,45 @@ bool bowCV::isCompatibleOpenCV(const string& _version)
     else
         return false;
 }
+
+void bowCV::message(const string& _msg,
+                    MsgLogger::Levels _levelClient)
+{
+  //cout << _msg; fflush(stdout);
+
+  if(MsgLogger::SILENT != _levelClient)
+  {
+    msgLogger->message(_levelClient,_msg);
+  }
+}
+
+void bowCV::messageInSameline(const string& _msg)
+{
+  cout << _msg << '\xd'; fflush(stdout);
+}
+
+// void bowCV::limitImageSize(Mat& _image)
+// {
+//   return;
+// 
+//   int _row = _image.rows;
+//   int _col = _image.cols;
+// 
+//   int maxSizeImg = 1000;
+//   if(_row*_col > maxSizeImg*maxSizeImg)
+//   {
+//     double _rowRatio = (double)maxSizeImg/(double)_row;
+//     double _colRatio = (double)maxSizeImg/(double)_col;
+// 
+//     int _newRow = (_rowRatio<_colRatio)?(_rowRatio*_row):(_colRatio*_row);
+//     int _newCol = (_rowRatio<_colRatio)?(_rowRatio*_col):(_colRatio*_col);
+// 
+//     Mat imgOri = _image.clone();
+//     resize( imgOri, _image, Size(_newCol,_newRow),0,0,INTER_LANCZOS4);
+//     cout << "Iamge is resized to (" << _newCol << ", " << _newRow << ")\n";
+//     fflush(stdout);
+//   }
+// }
 
 //void bowCV::setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses )
 //{

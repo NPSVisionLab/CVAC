@@ -224,6 +224,13 @@ bool RunSetIterator::makeList(ResultSet& _resultSet,
         localAndClientMsg(VLogger::WARN, mCallback2Client,
           "No conversion for %s because of no proper converter\n",
           (_resultSet.results[k].original)->sub.path.filename.c_str());
+
+        // setup for a foundLabel when there is no proper converter.
+        LabelablePtr labelable = new Labelable();
+        labelable->lab.name = "Error: no converter available";
+        labelable->confidence = 1.0f;
+        labelable->lab.hasLabel = false;
+        _resultSet.results[k].foundLabels.push_back(labelable);
       }
     }
   } 
