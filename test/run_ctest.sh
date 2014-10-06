@@ -20,6 +20,7 @@ sleep 10
 
 # run the tests, capture exit status
 cd ${BUILD_DIR}
+export PYTHONPATH=${BUILD_DIR}/etc/python/easyPkg:${BUILD_DIR}/etc/python/icePkg
 ctest ${CTEST_ARGS}
 EXIT_STATUS=$?
 

@@ -28,7 +28,7 @@ REM Python services that are listed in python.config
 if "${PYTHON_EXECUTABLE}" neq "" (if exist "${CMAKE_SOURCE_DIR}/python.config" goto startpython)
 goto next2
 :startpython
-    set PYTHONPATH=${CMAKE_BINARY_DIR}/etc/python/easyPkg;${CMAKE_BINARY_DIR}/etc/python/IcePkg
+    set PYTHONPATH=${CMAKE_BINARY_DIR}/etc/python/easyPkg;${CMAKE_BINARY_DIR}/etc/python/icePkg
     for /F "usebackq eol=# tokens=*" %%A in ("${CMAKE_BINARY_DIR}/python.config") do start "CVAC Service (Python)" "cmd /K ""${PYTHON_EXECUTABLE}" ${CMAKE_SOURCE_DIR}/%%A"
 :next2
 echo CVAC services launched
