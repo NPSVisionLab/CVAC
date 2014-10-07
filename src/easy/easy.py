@@ -1127,6 +1127,10 @@ def getBestDetectorData(listRocData,dFAR,dRec):
     resMsg = resMsg + bestDetectorData.filename
     
     print(resMsg)
+    #strip off any leading CVAC_DataDir in the detector data
+    dlen = len(CVAC_DataDir) + 1
+    if bestDetectorData.directory.relativePath[:dlen] == CVAC_DataDir + "/":
+        bestDetectorData.directory.relativePath = bestDetectorData.directory.relativePath[dlen:]
     return bestDetectorData
 
 #from easy.util.ArchiveHandler import *
@@ -1185,7 +1189,12 @@ def isROCdata(rocZip):
     Return 3) a temp folder including model files (if it is a ROC zip file).     
     '''
     zipfilepath = getFSPath(rocZip)
-    tempDir = tempfile.mkdtemp()
+    # Make a temp directory under the data directory in a directory
+    # called "clientTemp"
+    tempdirloc = CVAC_DataDir + "/clientTemp"
+    if os.path.isdir(tempdirloc) == False:
+        os.makedirs(tempdirloc)
+    tempDir = tempfile.mkdtemp(dir=tempdirloc)
 
     rocArch = DetectorDataArchive()
     rocArch.mPropertyFilename = "roc.properties"    
@@ -1196,7 +1205,7 @@ def isROCdata(rocZip):
         isROC = True
         for filename in rocDict:
             detectorData = cvac.FilePath()
-            detectorData.directory.relativePath = tempDir#relDir
+            detectorData.directory.relativePath = tempDir #relDir
             detectorData.filename = filename
             tperf = rocDict[filename].split(',')
             rocData_optimal.append([detectorData,\
