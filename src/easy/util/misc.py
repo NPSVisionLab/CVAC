@@ -27,6 +27,31 @@ def getVideoExtensions():
             "amr","nsv","dpg","m2ts","m2t","mts", \
             "k3g","skm","evo","nsr","amv","divx","webm"];
 
+'''
+Return the directory name with the CVAC_DataDir stripped off
+if its appended to the front of the directory.
+'''
+def stripCVAC_DataDir(mydir):
+    # make both CVAC_DataDir and mydir absolute and then strip off
+    absCVAC = os.path.abspath(easy.CVAC_DataDir)
+    absdir = os.path.abspath(mydir)
+    if absdir.startswith(absCVAC):
+        absdir = absdir[len(absCVAC + '/'):]
+        return absdir
+    return mydir   # Noth9ing to strip so return original
+
+'''
+Return the FilePath with the CVAC_DataDir stripped off
+if its appended to the front of the directory.
+'''
+def stripCVAC_DataDir_from_FilePath(mypath):
+    mydir = mypath.directory.relativePath + '/' + mypath.filename;
+    resdir = stripCVAC_DataDir(mydir)
+    if resdir != mydir:
+        # We got stripped so now we have a relative directory without data
+        resdirOnly = resdir.rsplit('/',2)
+        mypath.directory.relativePath = resdirOnly[0]
+    return mypath
 
 '''
   Add a labelable to the set for the given file.  Use the last directory as
@@ -51,8 +76,8 @@ def addFileToLabelableSet(lset, ldir, lfile, video=True, image=True):
     if isImage and image == False:
         return
     # strip off cvac data dir
-    if ldir.startswith(easy.CVAC_DataDir +'/'):
-        ldir = ldir[len(easy.CVAC_DataDir + '/'):]
+    ldir = stripCVAC_DataDir(ldir)
+    
     props = {}
     # last directory is the label name
     idx = ldir.rfind("/")

@@ -14,6 +14,7 @@ import sys, traceback
 import shutil
 import tempfile
 import datetime
+from util import misc
 # paths should setup the PYTHONPATH.  If you special requirements
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
@@ -1128,9 +1129,7 @@ def getBestDetectorData(listRocData,dFAR,dRec):
     
     print(resMsg)
     #strip off any leading CVAC_DataDir in the detector data
-    dlen = len(CVAC_DataDir) + 1
-    if bestDetectorData.directory.relativePath[:dlen] == CVAC_DataDir + "/":
-        bestDetectorData.directory.relativePath = bestDetectorData.directory.relativePath[dlen:]
+    bestDetectorData = util.misc.stripCVAC_DataDir_from_FilePath(bestDetectorData)
     return bestDetectorData
 
 #from easy.util.ArchiveHandler import *
