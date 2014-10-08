@@ -2,7 +2,7 @@
 # stopIcebox.sh script generated for CVAC version ${CVAC_VERSION}
 #
 
-LOCKFILE=${CMAKE_SOURCE_DIR}/.services_started.lock
+LOCKFILE=${CMAKE_BINARY_DIR}/.services_started.lock
 if [ ! -f $LOCKFILE ]
 then
     echo CVAC services supposedly have not been started \(there is no file \'$LOCKFILE\'\).
@@ -11,7 +11,7 @@ fi
 
 export PATH=$PATH:/opt/local/bin
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_ROOT_DIR}/lib"
-cd ${CVAC_ROOT_DIR}
+cd ${CVAC_BINARY_DIR}
 
 # C/C++ and Java services, via icebox admin
 if [ "${START_ICE_SERVICES}" == "1" ]
@@ -24,9 +24,9 @@ then
 fi
 
 # Python services that are listed in python.config
-if [ "${PYTHON_EXECUTABLE}" != "" ] && [ -f "${CMAKE_SOURCE_DIR}/python.config" ]
+if [ "${PYTHON_EXECUTABLE}" != "" ] && [ -f "${CMAKE_BINARY_DIR}/python.config" ]
 then
-    grep -v -e ^# ${CMAKE_SOURCE_DIR}/python.config | while read LINE
+    grep -v -e ^# ${CMAKE_BINARY_DIR}/python.config | while read LINE
     do
         for X in `ps -f | grep -m 1 -i $LINE | awk {'print $2'}`; do
             kill $X;
