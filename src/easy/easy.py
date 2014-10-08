@@ -1129,7 +1129,7 @@ def getBestDetectorData(listRocData,dFAR,dRec):
     
     print(resMsg)
     #strip off any leading CVAC_DataDir in the detector data
-    bestDetectorData = util.misc.stripCVAC_DataDir_from_FilePath(bestDetectorData)
+    bestDetectorData = misc.stripCVAC_DataDir_from_FilePath(bestDetectorData)
     return bestDetectorData
 
 #from easy.util.ArchiveHandler import *
