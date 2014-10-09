@@ -338,7 +338,11 @@ IF( PYTHONINTERP_FOUND )
   IF (WIN32)
     FIND_FILE(OPENCV_PY_LIB cv2.pyd 
              HINTS "${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
-  ELSE (WIN32)
+  ELSEIF (APPLE)
+    FIND_LIBRARY(OPENCV_PY_LIB cv2.so
+      HINTS ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
+            ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+  ELSE ()
     FIND_LIBRARY(OPENCV_PY_LIB cv2.so
       HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
             ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
