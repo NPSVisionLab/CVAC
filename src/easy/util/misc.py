@@ -45,12 +45,10 @@ Return the FilePath with the CVAC_DataDir stripped off
 if its appended to the front of the directory.
 '''
 def stripCVAC_DataDir_from_FilePath(mypath):
-    mydir = mypath.directory.relativePath + '/' + mypath.filename;
+    mydir = os.path.join(mypath.directory.relativePath,mypath.filename);
     resdir = stripCVAC_DataDir(mydir)
     if resdir != mydir:
-        # We got stripped so now we have a relative directory without data
-        resdirOnly = resdir.rsplit('/',2)
-        mypath.directory.relativePath = resdirOnly[0]
+        mypath.directory.relativePath = os.path.dirname(resdir)
     return mypath
 
 '''
