@@ -135,8 +135,9 @@ void BowICEI::initialize( DetectorDataArchive* dda,
 
   string zipfilepath;
   if(configModelFileName.empty() || file.filename.empty() == false)  //use default model file only if we did not get one.
+  {
     zipfilepath = getFSPath(file, m_CVAC_DataDir);    
-  else
+  }else
   {
     if (pathAbsolute(configModelFileName))
       zipfilepath = configModelFileName;

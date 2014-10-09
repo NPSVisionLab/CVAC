@@ -14,17 +14,18 @@ CTEST_ARGS=$3
 export CVAC_REMOTE_TEST_SERVER=$4
 
 # start up services
-cd ${ROOT_DIR}
+cd ${BUILD_DIR}
 bin/startIcebox.sh
 sleep 10
 
 # run the tests, capture exit status
 cd ${BUILD_DIR}
+export PYTHONPATH=${BUILD_DIR}/etc/python/easyPkg:${BUILD_DIR}/etc/python/icePkg
 ctest ${CTEST_ARGS}
 EXIT_STATUS=$?
 
 # irrespective of exit status: shut down services
 # then return exit status
-cd ${ROOT_DIR}
+cd ${BUILD_DIR}
 bin/stopIcebox.sh
 exit ${EXIT_STATUS}

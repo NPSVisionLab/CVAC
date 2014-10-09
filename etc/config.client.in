@@ -9,7 +9,7 @@ ${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
 Ice.ACM.Client=0
 
 ## CVAC Services Config:
-CVAC.DataDir = data
+CVAC.DataDir = ${CVAC_DATA_DIR}
 
 OpenCVCascadeDetector.Proxy=OpenCVCascadeDetector:tcp -p ${OPENCV_CASCADE_DETECTOR_PORT}
 OpenCVCascadeTrainer.Proxy=OpenCVCascadeTrainer:tcp -p  ${OPENCV_CASCADE_TRAINER_PORT}

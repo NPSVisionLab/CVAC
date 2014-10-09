@@ -211,6 +211,8 @@ bool cvac::makeDirectories(const std::string& dirPath)
     }
     if (dirPath[lastIdx] == '\\')
          lastIdx++;   // ignore a first backslash
+    else if (dirPath[lastIdx] == '/')
+         lastIdx++; // ignore a first forward slash
     idx = dirPath.find('\\', lastIdx);
     if (idx == -1)
          idx = dirPath.find('/', lastIdx); // try forward slash

@@ -1,6 +1,6 @@
 @echo off
 @setlocal
-set INSTALLDIR=__INSTALL_PATH__
+set INSTALLDIR=@INSTALL_PATH@
 if "%INSTALLDIR" neq "" goto continue
 echo "Install Directory must be set for startServices script to work!"
 exit /b 1

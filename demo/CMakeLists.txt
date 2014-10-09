@@ -12,11 +12,11 @@ WRAP_SLICE2PY( SLICE_FILES
 
 add_custom_target( demo ALL DEPENDS ${SLICE_FILES} )
 
-IF( BUILD_BINARY_PACKAGE )
+IF( NOT BUILD_3RDPARTY_PACKAGE )
   INSTALL(FILES bootstrapping.py detect.py full_image_corpus.py labelme_corpus.py prerequisites.py remote_services.py training.py runset.py
     DESTINATION demo
     COMPONENT Runtime
   )
-ENDIF( BUILD_BINARY_PACKAGE )
+ENDIF( NOT BUILD_3RDPARTY_PACKAGE )
 
 INCLUDE (UserCMakeLists.txt OPTIONAL)
