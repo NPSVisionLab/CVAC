@@ -28,7 +28,7 @@ if [ "${PYTHON_EXECUTABLE}" != "" ] && [ -f "${CMAKE_SOURCE_DIR}/python.config" 
 then
     grep -v -e ^# ${CMAKE_SOURCE_DIR}/python.config | while read LINE
     do
-        for X in `ps -f | grep -m 1 -i $LINE | awk {'print $2'}`; do
+        for X in `ps -f | grep -m 1 -i "$LINE" | awk {'print $2'}`; do
             kill $X;
         done
     done
