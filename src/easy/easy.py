@@ -61,6 +61,8 @@ if CVAC_DataDir == None:
     CVAC_DataDir = "data"
 # IF the environment variable is set, then use that else use data
 CVAC_DataDir = os.getenv("CVAC_DATADIR", CVAC_DataDir)
+if CVAC_DataDir == None or CVAC_DataDir == "":
+    CVAC_DataDir = "data"
 CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
 
 
