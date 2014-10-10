@@ -831,13 +831,19 @@ int cvCreateTrainingSamplesFromInfo( const char* infoname, const char* vecfilena
         }
         //trbatcha addition
         else
+		{
            if (num <= 0) break;
+		}
 
         //for( i = 0; (i < count) && (total < num); i++, total++ )
         for (i = 0; i < count; i++, total++)
         {
             error = ( fscanf( info, "%d %d %d %d", &x, &y, &width, &height ) != 4 );
-            if( error ) break;
+            if( error )
+			{
+				fprintf(stderr, "could not read entry for filename %s\n", filename);
+				break;
+			}
             cvSetImageROI( src, cvRect( x, y, width, height ) );
             cvResize( src, sample, width >= sample->width &&
                       height >= sample->height ? CV_INTER_AREA : CV_INTER_LINEAR );

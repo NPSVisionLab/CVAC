@@ -1,0 +1,50 @@
+#
+# stopServices.sh  Script to stop CVAC services for binary distribution
+#
+# Please set INSTALLDIR to install directory
+export INSTALLDIR=@INSTALL_PATH@
+if [ "${INSTALLDIR}" == "" ]
+then
+    echo "INSTALLDIR needs to be defined! Please set INSTALLDIR to binary distribution install directory"
+    exit
+fi
+export PYTHONEXE=/usr/bin/python@PYTHON_VERSION_MAJOR@.@PYTHON_VERSION_MINOR@
+export PATH=$PATH:${INSTALLDIR}/bin
+export ICEDIR=${INSTALLDIR}/3rdparty/ICE
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${INSTALLDIR}/lib"
+cd ${INSTALLDIR}
+LOCKFILE=.services_started.lock
+if [ ! -f $LOCKFILE ]
+then
+    echo CVAC services supposedly have not been started \(there is no file \'$LOCKFILE\'\).
+    echo Trying to stop them anyway ...
+fi
+
+# C/C++ and Java services, via icebox admin
+if [ "@START_ICE_SERVICES@" == "1" ]
+then
+    ${ICEDIR}/bin/iceboxadmin --Ice.Config=config.admin shutdown
+fi
+if [ "@START_JAVA_SERVICES@" == "1" ]
+then
+    ${ICEDIR}/bin/iceboxadmin --Ice.Config=config.java_admin shutdown
+fi
+
+# Python services that are listed in python.config
+if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLDIR}/python.config" ]
+then
+    grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE
+    do
+        for X in `ps -f | grep -m 1 -i "$LINE" | awk {'print $2'}`; do
+            kill $X;
+        done
+    done
+fi
+
+if [ -f $LOCKFILE ]
+then
+    rm -f $LOCKFILE
+fi
+
+echo CVAC services stopped
+exit

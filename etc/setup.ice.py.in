@@ -1,0 +1,12 @@
+from setuptools import setup, find_packages
+
+setup (name = '${PYTHON_PACK_ICE_NAME}',
+       version = '${CVAC_VERSION}',  # configured from CMake
+       description = 'Easy! Computer Vision, a connection to CVAC, the Computer Vision Algorithm Collection, Ice Package',
+       url = 'https://github.com/NPSVisionLab/CVAC',
+       author = 'NPS Vision Lab',
+       package_dir = {'':'.'},
+       packages = ['', 'IceBox', 'IceGrid', 'IceMX', 'IcePatch2', 'IceStorm'],
+       package_data = {'':['IcePy.${PYTHON_EXT}']},
+       include_package_data = True,
+    )

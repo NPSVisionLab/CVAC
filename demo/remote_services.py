@@ -22,7 +22,8 @@ rs1 = easy.createRunSet( "testImg/italia.jpg" )
 # it is the client's responsibility to upload them if not.
 # The putResult contains information about which files were actually transferred.
 #
-fileserver = easy.getFileServer( "FileService:default -p 10110 " + host )
+print("------- Remote detection, local result display: -------")
+fileserver = easy.getFileServer( "PythonFileService:default -p 10111 " + host )
 putResult = easy.putAllFiles( fileserver, rs1 )
 modelfile = "detectors/haarcascade_frontalface_alt.xml"
 if not fileserver.exists( easy.getCvacPath(modelfile) ):
@@ -31,7 +32,6 @@ if not fileserver.exists( easy.getCvacPath(modelfile) ):
 #
 # detect remotely: note the host specification
 #
-print("------- Remote detection, local result display: -------")
 detector = easy.getDetector( "OpenCVCascadeDetector:default -p 10102 "+host )
 results = easy.detect( detector, modelfile, rs1 )
 easy.printResults( results )
@@ -41,11 +41,14 @@ easy.printResults( results )
 # Train on a remote machine, obtain the model file, and test locally.
 # Assume the files are on the remote machine, or transfer with putAllFiles.
 #
-trainer = easy.getTrainer( "bowTrain:default -p 10103 "+ host) # remote
+print("------- Remote training, local detection: -------")
+trainer = easy.getTrainer( "BOW_Trainer:default -p 10103 "+ host) # remote
 trainset = easy.createRunSet( "trainImg" );
 trainedModel = easy.train( trainer, trainset )
-easy.getFile( fileserver, trainedModel.file )  # downloads the model from remote
-print("{0}".format(trainedModel))
-detector = easy.getDetector( "bowTest:default -p 10104" ) # local service
+easy.getFile( fileserver, trainedModel )  # downloads the model from remote
+print("obtained trained detector, stored in file {0}"
+      .format(easy.getFSPath(trainedModel)))
+detector = easy.getDetector( "BOW_Detector:default -p 10104" ) # local service
 testset = easy.createRunSet("testImg","UNPURPOSED"  )
 results = easy.detect( detector, trainedModel, testset )
+easy.printResults( results )

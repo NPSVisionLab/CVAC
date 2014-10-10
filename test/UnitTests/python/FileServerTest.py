@@ -29,8 +29,11 @@ class FileServerTest(unittest.TestCase):
             raise RuntimeError("cvac module not loaded correctly (from file "+cvac.__file__+")")
         if not inspect.ismodule( cvac ) or not inspect.isclass( cvac.FileServicePrx ):
             raise RuntimeError("cvac module not loaded")
+        sys.argv.append('--Ice.Config=config.client')
         self.ic = Ice.initialize(sys.argv)
-        base = self.ic.stringToProxy("FileService:default -p 10110")
+        properties = self.ic.getProperties()
+        proxyStr = properties.getProperty('PythonFileService.Proxy')
+        base = self.ic.stringToProxy(proxyStr)
         self.fs = cvac.FileServicePrx.checkedCast(base)
         if not self.fs:
             raise RuntimeError("Invalid proxy")
@@ -111,7 +114,7 @@ class FileServerTest(unittest.TestCase):
         except cvac.FileServiceException:
             permitted = False
         if permitted:
-            raise RuntimeException("should not have permission to put this file")
+            raise RuntimeError("should not have permission to put this file")
 
         # delete the "put" file on the server
         print('deleteFile')
@@ -124,13 +127,20 @@ class FileServerTest(unittest.TestCase):
     #
     def test_remotePutGetDelete(self):
         print('putFile remote')
-        configStr = "FileService:default -h vision.nps.edu -p 10110"
-        baser = self.ic.stringToProxy( configStr )
+        properties = self.ic.getProperties()
+        proxyStr = properties.getProperty('PythonFileService.Proxy')
+        #need to get the server host to connect to
+        remoteHost = os.getenv('CVAC_REMOTE_TEST_SERVER')
+        if remoteHost:
+            proxyStr = proxyStr + " -h " + remoteHost
+        base = self.ic.stringToProxy(proxyStr)
+        #configStr = "FileService:default -h vision.nps.edu -p 10110"
+        baser = self.ic.stringToProxy(proxyStr)
         if not baser:
-            raise RuntimeError("Unknown service?", configStr)
+            raise RuntimeError("Unknown service?", proxyStr)
         fsr = cvac.FileServicePrx.checkedCast(baser)
         if not fsr:
-            raise RuntimeError("Invalid proxy:", configStr)
+            raise RuntimeError("Invalid proxy:", proxyStr)
 
         # read the bytes from TestUsFlag.jpg
         testDir = cvac.DirectoryPath( "testImg" );
@@ -148,7 +158,7 @@ class FileServerTest(unittest.TestCase):
         if fsr.exists( putFilePath):
             raise RuntimeError("File "+putFilePath.filename + 
                                    " exists on remote host "
-                                   + configStr + " remove and rerun test.")
+                                   + proxyStr + " remove and rerun test.")
                 
         try:
             fsr.putFile( putFilePath, bytes );

@@ -42,7 +42,6 @@ ENDMACRO(WRAP_SLICE)
 
 MACRO(WRAP_SLICE2PY outfiles)
     EXTRACT_OPTIONS(slice_files options ${ARGN})
-    
     FOREACH(it ${slice_files})
         GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
         GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)

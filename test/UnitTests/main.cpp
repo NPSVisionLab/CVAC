@@ -44,7 +44,7 @@ char *CVAC_DataDir = NULL;
 
 int main(int argc, char **argv)
 {
-   cvac::vLogger.setLocalVerbosityLevel( VLogger::INFO );
+   cvac::getVLogger().setLocalVerbosityLevel( VLogger::INFO );
    if (argc == 2)
        CVAC_DataDir = argv[1];
    int allTests_rtn = UnitTest::RunAllTests();

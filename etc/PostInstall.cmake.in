@@ -1,4 +1,66 @@
-message("Running python install script ${PYTHON_EXECUTABLE} setup.py install")
-execute_process(COMMAND ${PYTHON_EXECUTABLE} setup.py install
-              WORKING_DIRECTORY "${PYTHON_BUILD_DIR}"
-            )
+
+message("Copying python ice files")
+message("from @SLICE_OUTPUT_PATH@")
+message("to @PYTHON_BUILD_DIR@")
+execute_process(
+        COMMAND "@CMAKE_COMMAND@" -E copy "@SLICE_OUTPUT_PATH@/Corpus_ice.py" "@PYTHON_BUILD_DIR@/easyPkg/cvac"
+        COMMAND "@CMAKE_COMMAND@" -E copy "@SLICE_OUTPUT_PATH@/Data_ice.py" "@PYTHON_BUILD_DIR@/easyPkg/cvac"
+        COMMAND "@CMAKE_COMMAND@" -E copy "@SLICE_OUTPUT_PATH@/Files_ice.py" "@PYTHON_BUILD_DIR@/easyPkg/cvac"
+        COMMAND "@CMAKE_COMMAND@" -E copy "@SLICE_OUTPUT_PATH@/Services_ice.py" "@PYTHON_BUILD_DIR@/easyPkg/cvac"
+        COMMAND "@CMAKE_COMMAND@" -E copy "@SLICE_OUTPUT_PATH@/cvac/__init__.py" "@PYTHON_BUILD_DIR@/easyPkg/cvac"
+)
+# We don't want to install the python packages during the make install.
+# The reason is this requires root access.  So instead we print the PYTHONPATH
+# env variable and point it to these directories so the user can just point
+# 
+#message("Running python install script ${PYTHON_EXECUTABLE} setup.py install ${PREFIX_CMD} for easy package")
+#execute_process(
+#        COMMAND ${PYTHON_EXECUTABLE} setup.py install ${PREFIX_CMD} 
+#        WORKING_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg"
+#)
+#message("Running python install script ${PYTHON_EXECUTABLE} setup.py install ${PREFIX_CMD} for ice package")
+#execute_process(
+#        COMMAND ${PYTHON_EXECUTABLE} setup.py install ${PREFIX_CMD} 
+#        WORKING_DIRECTORY "${PYTHON_BUILD_DIR}/icePkg"
+#)
+
+message("Copying python files to install directory")
+#We will just copy to the install directory
+execute_process(
+        COMMAND "@CMAKE_COMMAND@" -E copy_directory "@PYTHON_BUILD_DIR@" "@CMAKE_INSTALL_PREFIX@/python"
+)
+
+#
+# Display a message that details what the user has to do in order
+# to start services and run clients.
+#
+# This is currently printed rather early in the "make install" output
+# instead of at the end where it should be.
+# But since CMake doesn't make any guarantees on the order of subdirectories
+# getting installed, I don't see a way to put it at the end.
+#
+GET_FILENAME_COMPONENT(ICE_LIB_DIR @ICE_LIBRARY@ PATH)
+SET(LIBSVM_DIR "@CMAKE_SOURCE_DIR@/3rdparty/libsvm")
+
+IF (WIN32)
+    SET(DPATH ${ICE_LIB_DIR}/../bin )
+    SET(PPATH @ICE_PYTHON_DIR@;${LIBSVM_DIR};@CMAKE_INSTALL_PREFIX@/python/easyPkg;@CMAKE_INSTALL_PREFIX@/python/icePkg )
+ELSE (WIN32)
+    SET(DPATH ${ICE_LIB_DIR} )
+    SET(PPATH @ICE_PYTHON_DIR@:${LIBSVM_DIR}:@CMAKE_INSTALL_PREFIX@/python/easyPkg:@CMAKE_INSTALL_PREFIX@/python/icePkg )
+ENDIF (WIN32)
+
+MESSAGE("==============================================")
+MESSAGE("Run EasyCV clients as:")
+IF (WIN32)
+    MESSAGE("set PATH=${DPATH}")
+    MESSAGE("set PYTHONPATH=${PPATH}")
+ELSEIF (APPLE)
+    MESSAGE("export DYLD_LIBRARY_PATH=${DPATH}")
+    MESSAGE("export PYTHONPATH=${PPATH}")
+ELSE ()
+    MESSAGE("export LD_LIBRARY_PATH=${DPATH}")
+    MESSAGE("export PYTHONPATH=${PPATH}")
+ENDIF()
+MESSAGE("cd @CMAKE_INSTALL_PREFIX@; ${PYTHON_EXECUTABLE} demo/prerequisites.py")
+MESSAGE("==============================================")

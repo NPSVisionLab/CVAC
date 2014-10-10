@@ -1,36 +1,56 @@
-cmake_minimum_required(VERSION 2.6)
+#CPACK_PACKAGE_FILE_NAME requires this
+cmake_minimum_required(VERSION 2.8.6)
 
 cmake_policy( SET CMP0012 NEW)
 
-IF(WIN32)
-    # don't want the four default configuration types with MS Visual Studio
-    SET (CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "")
-ENDIF(WIN32)
+#Define the configuration types.  If this is not done OpenCV cmake
+#find_package fails!
+SET (CMAKE_CONFIGURATION_TYPES "Release;DEBUG" CACHE STRING "")
 
 PROJECT(CVAC)
+
+SET (PYTHON_ONLY_CLIENT true)
+SET(CVAC_FIRST_SERVICE_PORT "10000" CACHE STRING "First socket port to use")
 
 INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 OPTION(BUILD_WITH_BOW "Build a Bag of Words trainer and detector (requires OpenCV)" ON)
 OPTION(BUILD_WITH_OPENCVPERFORMANCE "Build the OpenCV Cascade trainer and detector" ON)
-OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" ON) 
-OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" ON) 
+OPTION(BUILD_FILESERVER "Build a File server (generally for servers), requires Java" OFF) 
+OPTION(BUILD_FILESERVER_PYTHON "Configure a Python File Server (generally for servers)" ON) 
+OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" OFF) 
+OPTION(BUILD_CORPUS_SERVICE_PYTHON "Configure a Python Corpus Server" ON) 
 OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
+OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" ON)
+OPTION(BUILD_CPP_TRAINER_CLIENT "Build a C++ client for trainers" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
 OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" OFF)
 OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
-OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" ON)
+OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" OFF)
+IF (APPLE)
+OPTION(USE_LEGACY_STDC++LIB "Don't use the new c++11 stdc++lib" ON)
+ENDIF (APPLE)
 
+IF (PYTHON_ONLY_CLIENT)
+    IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
+        SET (PYTHON_ONLY_CLIENT false)
+    ENDIF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
+ENDIF (PYTHON_ONLY_CLIENT)
+
+IF (PYTHON_ONLY_CLIENT)
+    SET (START_ICE_SERVICES 0)
+ELSE (PYTHON_ONLY_CLIENT)
+    SET (START_ICE_SERVICES 1)
+ENDIF (PYTHON_ONLY_CLIENT)
 
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
 
 # where the Find*.cmake files are
-SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules
-                      ${CMAKE_MODULE_PATH})
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
-SET(PROJECT_BINARY_DIR ${CMAKE_SOURCE_DIR})
+#SET(PROJECT_BINARY_DIR ${CMAKE_SOURCE_DIR})
 
 SET(OUTPUT_BINDIR ${PROJECT_BINARY_DIR}/bin)
 MAKE_DIRECTORY(${OUTPUT_BINDIR})
@@ -76,7 +96,12 @@ IF (WIN32)
    MARK_AS_ADVANCED(BUILD_WITH_MP)
 
    IF(BUILD_WITH_MP)
-     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+     #Windows 8 messes up multiprocessor compile and slicing
+     IF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP1")
+     ELSE ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+     ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
    ENDIF(BUILD_WITH_MP)
 
    # Platform specific definitions
@@ -93,76 +118,89 @@ IF (WIN32)
    ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
 ENDIF (WIN32)
 
+IF (APPLE)
+   SET (ICE_ENCODE "")
+ENDIF (APPLE)
+
 # ADD -fPIC to g++ because it's hard for the script to figure out 
 # if you are building a library or not, and -fPIC will work on everything.
 IF(CMAKE_COMPILER_IS_GNUCXX)
    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-# -O2 or -O3 on OSX causes ice to fail in Purpose list code
+SET(OPENCV_DIR_EXT "")
+SET(UNITTEST_DIR_EXT "")
+SET(ICE_BIN_DIR "/bin")
 IF (APPLE)
-   SET(CMAKE_CXX_FLAGS_RELEASE "-O1 -NDEBUG")
+   IF (USE_LEGACY_STDC++LIB)
+       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++98 -stdlib=libstdc++")
+       SET(OPENCV_DIR_EXT "_stdc")
+       SET(UNITTEST_DIR_EXT "_stdc")
+   ELSE (USE_LEGACY_STDC++LIB)
+       SET(ICE_BIN_DIR "bin/c++11")
+   ENDIF (USE_LEGACY_STDC++LIB)
 ENDIF (APPLE)
 
 #
 # What version of CVAC?
 #
-# Try to create the include/version.h file that specifies the CVAC version,
-# as obtained from the version-control tag (major.minor) and the
-# number of commits since that tag (patch)
-if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
-    EXECUTE_PROCESS( COMMAND git describe --long --match "v[0-9]*.[0-9]*"
-              OUTPUT_VARIABLE CVAC_VERSION_GIT
-              OUTPUT_STRIP_TRAILING_WHITESPACE
-              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    )
-    IF ( CVAC_VERSION_GIT )
-        # parse this kind of string v1.2-3-gkd3kdj4:
-	# CVAC_VERSION_MAJMIN is 1.2
-    	# CVAC_VERSION_MAJOR is 1
-    	# CVAC_VERSION_MINOR is 2
-    	# CVAC_VERSION_PATCH is 3
-    	# CVAC_VERSION is 1.2.3
-     	STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
-     	STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
-     	STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
-     	STRING( REGEX REPLACE "^v.*-(.*)-.*" "\\1" CVAC_VERSION_PATCH ${CVAC_VERSION_GIT} )
-     	SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
-        MESSAGE( STATUS "successfully parsed version from git: CVAC-${CVAC_VERSION}" )
-     	CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
-                                   ${CMAKE_SOURCE_DIR}/include/version.h)
-        # Need to update the version.h.repo file so it will be up to date
-        # for later distribution of the source without git (like a zip file);
-        # see below.
-        CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h
-                       ${CMAKE_SOURCE_DIR}/include/version.h.repo)
-    ENDIF( CVAC_VERSION_GIT )
-endif( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
-
-if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
-    # .git directory doesn't exist: now make sure that
-    # files are a complete download, not a fragmented collection.
-    # In other words, there must be a include/version.h.repo file.
-    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.repo
-          ${CMAKE_SOURCE_DIR}/include/version.h)
-    FILE( STRINGS ${CMAKE_SOURCE_DIR}/include/version.h
-          versionfile_contents
-          REGEX "#define CVAC_VERSION*" )
-    STRING( REGEX REPLACE ".*MAJOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MAJOR ${versionfile_contents} )
-    STRING( REGEX REPLACE ".*MINOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MINOR ${versionfile_contents} )
-    STRING( REGEX REPLACE ".*PATCH ([^ ]+).*" "\\1" CVAC_VERSION_PATCH ${versionfile_contents} )
-    SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
-    SET( CVAC_VERSION_MAJMIN ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR} )
-    MESSAGE( STATUS "successfully parsed version from version.h: CVAC-${CVAC_VERSION}" )
-endif( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" OR NOT CVAC_VERSION_GIT )
+# Parse the include/version.h file for the current CVAC version.
+FILE( STRINGS ${CMAKE_SOURCE_DIR}/include/version.h
+  versionfile_contents
+  REGEX "#define CVAC_VERSION*" )
+STRING( REGEX REPLACE ".*MAJOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MAJOR ${versionfile_contents} )
+STRING( REGEX REPLACE ".*MINOR ([^ ]+)#.*" "\\1" CVAC_VERSION_MINOR ${versionfile_contents} )
+STRING( REGEX REPLACE ".*PATCH ([^ ]+).*" "\\1" CVAC_VERSION_PATCH ${versionfile_contents} )
+SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+SET( CVAC_VERSION_MAJMIN ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR} )
+MESSAGE( STATUS "successfully parsed version from version.h: CVAC-${CVAC_VERSION}" )
 
 IF( "x${CVAC_VERSION}x" STREQUAL "xx"
     OR "x${CVAC_VERSION_MAJOR}x" STREQUAL "xx"
-    OR "x${CVAC_VERSION_MINOR}x" STREQUAL "xx" )
+    OR "x${CVAC_VERSION_MINOR}x" STREQUAL "xx"
+    OR "x${CVAC_VERSION_PATCH}x" STREQUAL "xx" )
     # need version string to continue for many tasks
     MESSAGE( SEND_ERROR "Could not obtain CVAC version from git or include/version.h:" )
     MESSAGE( SEND_ERROR "all:${CVAC_VERSION} major:${CVAC_VERSION_MAJOR} minor:${CVAC_VERSION_MINOR}" )
 ENDIF()
+
+# Try to re-create the include/version.h file that specifies the CVAC version,
+# as obtained from the version-control tag (major.minor) and the
+# number of completed builds in the devel branch since that tag (patch).
+# Note that the number of builds is set on the build server.
+# The build process increases the PATCH number found in the
+# version.h file by one before building, and it commits it back into
+# the repository.
+if( INCREASE_VERSION_PATCH )
+  if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+    MESSAGE( SEND_ERROR "Cannot INCREASE_VERSION_PATCH without git repository" )
+  endif()
+  EXECUTE_PROCESS( COMMAND git describe --long --match "v[0-9]*.[0-9]*"
+    OUTPUT_VARIABLE CVAC_VERSION_GIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+  IF ( NOT CVAC_VERSION_GIT )
+    MESSAGE( SEND_ERROR "Error obtaining git version; cannot INCREASE_VERSION_PATCH" )
+  ENDIF()
+  # parse this kind of string v1.2-3-gkd3kdj4:
+  # CVAC_VERSION_MAJMIN is 1.2
+  # CVAC_VERSION_MAJOR is 1
+  # CVAC_VERSION_MINOR is 2
+  # CVAC_VERSION_PATCH is obtained from the previous version file.
+  # CVAC_VERSION is 1.2.x
+  STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
+  STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
+  STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
+  MATH( EXPR CVAC_VERSION_PATCH "${CVAC_VERSION_PATCH}+1" )
+  SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
+  MESSAGE( STATUS "successfully did INCREASE_VERSION_PATCH via git: CVAC-${CVAC_VERSION}" )
+  CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
+    ${CMAKE_SOURCE_DIR}/include/version.h)
+  # don't store this variable in the cache or else the version will be increased
+  # upon every invocation of CMake in the same build directory
+  UNSET( INCREASE_VERSION_PATCH CACHE )
+endif( INCREASE_VERSION_PATCH )
 
 
 # offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
@@ -183,7 +221,7 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
     IF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
         MESSAGE( STATUS "3rd-party archive exists already, won't download again (${3RDPARTY_FILENAME})" )
     ELSE( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
-        SET( 3RDPARTY_SERVER http://www.movesinstitute.org/~kolsch/CVAC )
+        SET( 3RDPARTY_SERVER http://www.movesinstitute.org/~kolsch/CVAC/downloads )
         SET( 3RDPARTY_URL ${3RDPARTY_SERVER}/${3RDPARTY_FILENAME} )
         MESSAGE( STATUS "Trying to download 3rd-party archive from ${3RDPARTY_URL}" )
         FILE( DOWNLOAD ${3RDPARTY_URL} ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME}
@@ -192,12 +230,12 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
                 SHOW_PROGRESS
 #                EXPECTED_MD5;aaaab03d4f38d7fe0525c994e52c3aaa
                )
-        list(GET ${DOWNLOAD_RESULT} 0 ${DOWNLOAD_CODE}) 
-        list(GET ${DOWNLOAD_RESULT} 1 ${DOWNLOAD_STRING}) 
-        IF( NOT ${DOWNLOAD_CODE} EQUAL 0)
+        list(GET DOWNLOAD_RESULT 0 DOWNLOAD_CODE) 
+        list(GET DOWNLOAD_RESULT 1 DOWNLOAD_STRING) 
+        IF( NOT DOWNLOAD_CODE EQUAL 0)
             FILE( REMOVE ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )  # this doesn't seem to work.
             MESSAGE( SEND_ERROR "Could not download 3rd-party software package: ${DOWNLOAD_STRING}" )
-        ENDIF( NOT ${DOWNLOAD_CODE} EQUAL 0) 
+        ENDIF()
     ENDIF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
 
     # untar or unzip the file;
@@ -231,8 +269,12 @@ ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
 # add a Makefile target "doc" to generate API documentation with Doxygen
 #
 IF( BUILD_DOCUMENTATION )
-  FIND_PACKAGE( Doxygen )
-  IF( DOXYGEN_FOUND )
+  # if the user wants the documentation built, we need doxygen, else complain
+  FIND_PACKAGE( Doxygen REQUIRED )
+  # if the user wants the documentation built, we need jekyll, else complain
+  FIND_PACKAGE( Jekyll REQUIRED )
+  # If we have the tools then build documentation
+  IF( DOXYGEN_FOUND AND JEKYLL_FOUND )
       # this is the list of directories that doxygen will search for input files;
       # see Doxygen.in for a list of file types (basically, C, Java, and ICE files)
       set( CMAKE_DOXYGEN_INPUT_LIST
@@ -245,44 +287,78 @@ IF( BUILD_DOCUMENTATION )
       string(REGEX REPLACE ";" " " CMAKE_DOXYGEN_INPUT_LIST "${CMAKE_DOXYGEN_INPUT_LIST}")
 
       # customize the "Doxyfile", the configuration for doxygen
-      set( CMAKE_DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/doc )
+      set( CMAKE_DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc )
       CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
       # create the Makefile target
       ADD_CUSTOM_TARGET( doc
-                         ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-                         COMMENT "Generating API documentation with Doxygen" VERBATIM
+                         ${JEKYLL_EXECUTABLE} build -s ${CMAKE_SOURCE_DIR}/doc
+                                              -d ${CMAKE_CURRENT_BINARY_DIR}/doc --safe
+                         COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+                         COMMENT "Generating HTML docs with Jekyll and API docs with Doxygen" VERBATIM
                         )
-  ENDIF( DOXYGEN_FOUND )
+  ENDIF()
 ENDIF( BUILD_DOCUMENTATION )
 
-FIND_PACKAGE( PythonInterp )
+FIND_PACKAGE( PythonInterp 2.7)
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
-# Make sure packages are compatible
-# ICE 3.4.2 is pre-built against Python 2.6
-IF( PYTHONINTERP_FOUND )
-  # make sure it's version 2.6 or else error
-  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 6 )
-    MESSAGE( SEND_ERROR "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
-    MESSAGE( SEND_ERROR "Please specify PYTHON_EXECUTABLE manually." )
-  ENDIF()
-ENDIF( PYTHONINTERP_FOUND )
-
-IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
-  FIND_PACKAGE( OpenCV 2.4 REQUIRED
+FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
-                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv
-  )
-  MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
+                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
+)
+#If the find package did not set these lib dirs, then set ourselfs
+IF ("${OpenCV_LIB_DIR_OPT}" STREQUAL "")
+    SET(OpenCV_LIB_DIR_OPT "${OpenCV_DIR}/../../lib")
+ENDIF ()
+IF ("${OpenCV_LIB_DIR_DBG}" STREQUAL "")
+    SET(OpenCV_LIB_DIR_DBG "${OpenCV_DIR}/../../lib")
+ENDIF ()
+
+IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+  IF( OpenCV_DIR )
+    MESSAGE( STATUS "Found OpenCV ${OpenCV_VERSION} configuration at ${OpenCV_CONFIG_PATH}" )
+  ENDIF()
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+
+# Make sure packages are compatible
+# ICE 3.5.1 is pre-built against Python 2.7
+IF( PYTHONINTERP_FOUND )
+  # make sure it's version 2.7 or else error
+  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 7 )
+    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+    MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
+  ENDIF()
+
+  #For Python set a variable for cv2 dynamic library
+  #
+  IF (WIN32)
+    FIND_FILE(OPENCV_PY_LIB cv2.pyd 
+             HINTS "${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
+  ELSEIF (APPLE)
+    FIND_LIBRARY(OPENCV_PY_LIB cv2.so
+      HINTS ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
+            ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+  ELSE ()
+    FIND_LIBRARY(OPENCV_PY_LIB cv2.so
+      HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
+            ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+
+  ENDIF (WIN32)
+  GET_FILENAME_COMPONENT( OPENCV_PY_DIR ${OPENCV_PY_LIB} PATH )
+  FIND_FILE( OPENCV_PY_PY cv.py HINTS ${OPENCV_PY_DIR} )
+  IF( NOT OPENCV_PY_LIB OR NOT OPENCV_PY_PY )
+      MESSAGE( SEND_ERROR "Need cv2.pyd or cv2.so and cv.py from OpenCV" )
+  ENDIF()
+ENDIF()
+
 
 ## Setup the config.service and config.icebox files based upon detectors
 ## selected by the user.  These CF_ variables are defined in the config files
 ## and they get turned into comments or not.
-
 IF( BUILD_WITH_BOW )
 SET(CF_BOW "" )
 SET( CF_BOW_T "" )
@@ -317,35 +393,71 @@ ELSE( BUILD_WITH_RSI )
 SET( CF_RSI "#" )
 ENDIF( BUILD_WITH_RSI )
 
-CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
-CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.service" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
-
 # if cmake install prefix not set the set it to default else add 
 # cvac to the end
 IF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
     SET( CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/installed" CACHE PATH "default install path" FORCE )
 ELSE( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
-    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cvac" )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/EasyCV" )
 ENDIF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
 
+#Need to have this at top level since multiple directories need it
+#SET( SLICE_FILES
+#    ${CVAC_ROOT_DIR}/src/Files.ice
+#    ${CVAC_ROOT_DIR}/src/Data.ice
+#    ${CVAC_ROOT_DIR}/src/Services.ice
+#    ${CVAC_ROOT_DIR}/src/Corpus.ice
+#)
 IF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
     # This requires CMake 2.8 for Java support
     ADD_SUBDIRECTORY( src )
 ENDIF( BUILD_CORPUS_SERVER OR BUILD_FILESERVER )
 
 ADD_SUBDIRECTORY(src/util)
-ADD_SUBDIRECTORY(src/easy)
+ADD_SUBDIRECTORY(src/easy) 
+ADD_SUBDIRECTORY(src/clients) 
 ADD_SUBDIRECTORY(algorithms)
 ADD_SUBDIRECTORY(demo)
 ADD_SUBDIRECTORY( etc )
+
+#Get all the port numbers based upon the CVAC_FIRST_SERVICE_PORT
+MATH(EXPR ADMIN_PORT "${CVAC_FIRST_SERVICE_PORT}-3")
+MATH(EXPR JAVA_ADMIN_PORT "${CVAC_FIRST_SERVICE_PORT}-5")
+MATH(EXPR OPENCV_CASCADE_DETECTOR_PORT "${CVAC_FIRST_SERVICE_PORT}+102")
+MATH(EXPR OPENCV_CASCADE_TRAINER_PORT "${CVAC_FIRST_SERVICE_PORT}+107")
+MATH(EXPR BOW_TRAINER_PORT "${CVAC_FIRST_SERVICE_PORT}+103")
+MATH(EXPR BOW_DETECTOR_PORT "${CVAC_FIRST_SERVICE_PORT}+104")
+MATH(EXPR CORPUS_PORT "${CVAC_FIRST_SERVICE_PORT}+11")
+MATH(EXPR PYTHON_CORPUS_PORT "${CVAC_FIRST_SERVICE_PORT}+21")
+MATH(EXPR FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+110")
+MATH(EXPR PYTHON_FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+111")
+MATH(EXPR RSITR_TEST_PORT "${CVAC_FIRST_SERVICE_PORT}+109")
+
+IF (BUILD_BINARY_PACKAGE)
+   SET(CVAC_DATA_DIR "data")
+ELSE (BUILD_BINARY_PACKAGE)
+   SET(CVAC_DATA_DIR "${CMAKE_SOURCE_DIR}/data")
+ENDIF (BUILD_BINARY_PACKAGE)
+# the configuration of config.{icebox,service} must come after including the
+# etc directory, because that's where the user.config.{..} get configured.
+CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_BINARY_DIR}/config.icebox")
+CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_BINARY_DIR}/config.service")
+CONFIGURE_FILE("etc/config.client.in" "${CMAKE_CURRENT_BINARY_DIR}/config.client")
+CONFIGURE_FILE("etc/config.admin.in" "${CMAKE_CURRENT_BINARY_DIR}/config.admin")
+CONFIGURE_FILE("etc/config.java_admin.in" "${CMAKE_CURRENT_BINARY_DIR}/config.java_admin")
+CONFIGURE_FILE("etc/config.java_icebox.in" "${CMAKE_CURRENT_BINARY_DIR}/config.java_icebox")
+IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.service")
+    FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.service" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.service" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.service")
+IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.client")
+    FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.client" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.client" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.client")
+IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.icebox")
+    FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.icebox" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.icebox" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.icebox")
 
 IF( BUILD_WITH_TESTS)
   ENABLE_TESTING()
@@ -366,4 +478,3 @@ ENDIF( BUILD_3RDPARTY_PACKAGE )
 IF ( BUILD_BINARY_PACKAGE )
     ADD_SUBDIRECTORY( etc/pack_binary )
 ENDIF ( BUILD_BINARY_PACKAGE )
-

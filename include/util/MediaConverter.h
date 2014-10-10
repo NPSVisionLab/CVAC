@@ -58,7 +58,8 @@ namespace cvac
     virtual bool convert(const string& _srcAbsPath,
                          const string& _desAbsDir,
                          const string& _desFilename,
-                         vector<string>& _resFilename) = 0;
+                         vector<string>& _resFilename,
+                         vector<string>& _resAuxInfo) = 0;
   };
 
 
@@ -71,7 +72,8 @@ namespace cvac
     bool convert(const string& _srcAbsPath,
                  const string& _desAbsDir,
                  const string& _desFilename,
-                 vector<string>& _resFilename);
+                 vector<string>& _resFilename,
+                 vector<string>& _resAuxInfo);
   };
 
   class MediaConverter_openCV_v2i : public MediaConverter
@@ -82,13 +84,22 @@ namespace cvac
     ~MediaConverter_openCV_v2i();
 
   private:
+    bool checkDuplicateConversion(const string& _srcAbsPath,
+                                  const int& _perfrm,
+                                  vector<string>& _resFilename,
+                                  vector<string>& _resFrameInfo);
     cv::VideoCapture mVideoFile;	
     int PerFrame;
+    vector< vector<string> > dupli_Filename;
+    vector< vector<string> > dupli_FrameInfo;
+    vector<string> dupli_srcPath;
+    vector<int> dupli_perFrame;
 
   public:
     bool convert(const string& _srcAbsPath,
                  const string& _desAbsDir,
                  const string& _desFilename,
-                 vector<string>& _resFilename);
+                 vector<string>& _resFilename,
+                 vector<string>& _resFrameInfo);
   };
 }

@@ -38,6 +38,9 @@
  **************************************************************************/
 #define _BowICETrainI_H__
 
+#include <map>
+#include <string>
+
 #include <Data.h>
 #include <Services.h>
 #include <bowCV.h>
@@ -46,36 +49,106 @@
 #include <IceBox/IceBox.h>
 #include <IceUtil/UUID.h>
 #include <util/processRunSet.h>
-#include <util/ServiceMan.h>
+#include <util/ServiceManI.h>
+#include <util/MsgLogger.h>
 
-#define logfile_BowTrainResult    "logTrain_Table.txt"	//This file includes the list of result files
+typedef std::map<cvac::Purpose, std::string> LabelMap;
 
-class BowICETrainI : public cvac::DetectorTrainer
+class TrainerPropertiesI : public cvac::TrainerProperties
 {
 public:
-    BowICETrainI(cvac::ServiceManager *serv);
-    ~BowICETrainI();
-	
-
+  /**
+   * Initialize fields for this trainer.
+   */
+  TrainerPropertiesI();
+  /**
+   * Read the string properties and convert them to member data values.
+   */
+  bool readProps();
+  /**
+   * Convert member data values into string properties.
+   */
+  bool writeProps();
+  /**
+   * Load the struct's values into our class ignoring uninitialized values
+   */
+  void load(const TrainerProperties &p);
 public:
-    virtual void initialize(::Ice::Int, const ::Ice::Current& = ::Ice::Current() );
-    virtual void process(const Ice::Identity &client, const ::cvac::RunSet&, const ::Ice::Current& = ::Ice::Current() );
-    virtual bool isInitialized(const ::Ice::Current& = ::Ice::Current() );
-	virtual void destroy(const ::Ice::Current& = ::Ice::Current() );
-	virtual ::std::string getName(const ::Ice::Current& = ::Ice::Current() );
-	virtual ::std::string getDescription(const ::Ice::Current& = ::Ice::Current() );
-	virtual void setVerbosity(::Ice::Int, const ::Ice::Current& = ::Ice::Current() );
-   virtual ::cvac::TrainerPropertiesPrx getTrainerProperties(
-                                    const ::Ice::Current& = ::Ice::Current());
+  /**
+   * Detector: SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS, ORB
+   */
+  string	keyptName_Detector;
+  /**
+   * Descriptor: SURF, SIFT, OpponentSIFT, OpponentSURF, ORB, FREAK
+   */
+  string	keyptName_Descriptor;
+  /**
+   * Matcher: BruteForce-L1, BruteForce, FlannBased, BruteForce-Hamming 
+   */
+  string	keyptName_Matcher;
+  /**
+   * The number of visual words (or clusters)
+   */
+  int       countWords;
+  /**
+   * How to handle negative samples: Ignore, Multiclass, FirstStage
+   */
+  string    rejectClassStrategy;
+};
 
+class BowICETrainI : public cvac::DetectorTrainer, public cvac::StartStop, public MsgLogger
+{
+public:
+  BowICETrainI();
+  ~BowICETrainI();
+	
+  virtual void process(const Ice::Identity &client, const ::cvac::RunSet&, 
+                       const ::cvac::TrainerProperties &props,
+                       const ::Ice::Current& = ::Ice::Current() );
+  virtual void destroy(const ::Ice::Current& = ::Ice::Current() );
+  virtual bool cancel( const Ice::Identity &client,
+                       const ::Ice::Current& = ::Ice::Current() );
+  virtual ::std::string getName(const ::Ice::Current& = ::Ice::Current() );
+  virtual ::std::string getDescription(const ::Ice::Current& = ::Ice::Current() );
+  virtual void starting();
+  virtual void stopping();
+  void setServiceManager(cvac::ServiceManagerI *sman);
+  virtual ::cvac::TrainerProperties
+    getTrainerProperties(const ::Ice::Current& = ::Ice::Current());
+  
+ private:  
+  int                    m_cvacVerbosity;
+  cvac::ServiceManager  *mServiceMan;
+  int                    maxClassId;
+  TrainerPropertiesI    *mTrainProps;
+
+ private:
+  bowCV* initialize( cvac::TrainerCallbackHandlerPrx& _callback,
+                     const ::cvac::TrainerProperties &props,
+                     ::cvac::DetectorDataArchive& dda,
+                     const ::Ice::Current& = ::Ice::Current() );
+  void processSingleImg(std::string _filepath, std::string _filename,int _classID,
+                        const ::cvac::LocationPtr& _ploc, 
+                        bowCV* pBowCV,
+                        cvac::TrainerCallbackHandlerPrx& _callback);
+  void processPurposedList( ::cvac::PurposedListPtr purList,
+                            bowCV* pBowCV,
+                            ::cvac::TrainerCallbackHandlerPrx& _callback,
+                            const std::string& CVAC_DataDir,
+                            LabelMap& labelmap, bool* labelsMatch);
+  ::cvac::FilePath createArchive( ::cvac::DetectorDataArchive& dda,
+                                  bowCV* pBowCV,
+                                  const LabelMap& labelmap,
+                                  const std::string& clientName,
+                                  const std::string& CVAC_DataDir,
+                                  const std::string& tempDir );
+  int getPurposeId( const cvac::Purpose& pur,
+                    cvac::TrainerCallbackHandlerPrx& _callback );
+  bool checkPurposedLists( const cvac::PurposedListSequence& purposedLists,
+                           cvac::TrainerCallbackHandlerPrx& _callback );
 private:
-    bowCV*	pBowCV;
-    bool	fInitialized;    	
-    int		m_cvacVerbosity;
-    cvac::ServiceManager *mServiceMan;
-    void processSingleImg(string _filepath, string _filename,int _classID,
-                          const ::cvac::LocationPtr& _ploc, 
-                          cvac::TrainerCallbackHandlerPrx& _callback);
+  cvac::TrainerCallbackHandlerPrx callbackPtr;
+  virtual void message(MsgLogger::Levels msgLevel, const string& _msgStr);
 };
 
 #endif //_BowICETrainI_H__

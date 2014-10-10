@@ -1,32 +1,51 @@
+#!/bin/bash
+
 #
-# startIceBox.sh script generated for CVAC version ${CVAC_VERSION}
+# startIcebox.sh script generated for CVAC version ${CVAC_VERSION}
 #
+
+LOCKFILE=${CMAKE_BINARY_DIR}/.services_started.lock
+if [ -f $LOCKFILE ]
+then
+    echo CVAC services have supposedly been started already.  Either stop them
+    echo first, or if you are sure that they are not running, remove the
+    echo lock file \'$LOCKFILE\'.
+    exit
+fi
+
 export PATH=$PATH:/opt/local/bin
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_ROOT_DIR}/lib:${OpenCV_LIB_DIR_OPT}"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_BINARY_DIR}/lib:${OpenCV_LIB_DIR_OPT}"
 export MATLAB_MCR_DYLD_PATH="/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/runtime/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/sys/os/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/bin/maci64:/System/Library/Frameworks/JavaVM.framework/JavaVM:/System/Library/Frameworks/JavaVM.framework/Libraries"
 export XAPPLRESDIR=/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/X11/app-defaults
 export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${OpenCV_LIB_DIR_OPT}:$MATLAB_MCR_DYLD_PATH"
 
 # C/C++ services, via IceBox
-cd ${CVAC_ROOT_DIR}
-${ICE_BOX_EXECUTABLE} --Ice.Config=config.icebox &
+cd ${CVAC_BINARY_DIR}
+if [ "${START_ICE_SERVICES}" == "1" ]
+then
+    ${ICE_BOX_EXECUTABLE} --Ice.Config=config.icebox &
+fi
 
 # Java services, via Java IceBox
 if [ "${START_JAVA_SERVICES}" == "1" ]
 then
-    ${Java_JAVA_EXECUTABLE} -cp "${Ice.jar}:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar:${CMAKE_SOURCE_DIR}/3rdparty/lib/labelme.jar:${CMAKE_SOURCE_DIR}/3rdparty/lib/javabuilder.jar:${CMAKE_SOURCE_DIR}/3rdparty/lib/commons-io-2.4.jar:${CMAKE_SOURCE_DIR}/3rdparty/lib/javatar-2.5.jar" \
+    ${Java_JAVA_EXECUTABLE} -cp "${Ice.jar}:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/FileServer.jar:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Corpus.jar:${CMAKE_SOURCE_DIR}/3rdparty/lib/labelme.jar:${javabuilder.jar}:${IO.jar}:${javatar.jar}" \
         IceBox.Server --Ice.Config=config.java_icebox &
 fi
 
 # Python services that are listed in python.config
-if [ "${PYTHON_EXECUTABLE}" != "" ] && [ -f "${CMAKE_SOURCE_DIR}/python.config" ]
+if [ "${PYTHON_EXECUTABLE}" != "" ] && [ -f "${CMAKE_BINARY_DIR}/python.config" ]
 then
-    export PYTHONPATH="${ICE_PYTHON_DIR}:${SLICE_OUTPUT_PYTHONDIR}:3rdparty/opencv/lib/python2.6/site-packages"
-    grep -v -e ^# ${CMAKE_SOURCE_DIR}/python.config | while read LINE
+    # add in ice's python library and the non-stdlib opencv path for osx
+    export DYLD_LIBRARY_PATH="${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib:${ICE_PYTHON_DIR}/../pythonlib:$DYLD_LIBRARY_PATH"
+    export PYTHONPATH="${ICE_PYTHON_DIR}:${CMAKE_BINARY_DIR}/etc/python/easyPkg:${CMAKE_BINARY_DIR}/etc/python/icePkg:${PYTHONPATH}"
+    grep -v -e ^# ${CMAKE_BINARY_DIR}/python.config | while read LINE
     do
-        ${PYTHON_EXECUTABLE} $LINE &
+        ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/$LINE &
     done
 fi
+
+touch $LOCKFILE
 
 echo CVAC services launched
 exit

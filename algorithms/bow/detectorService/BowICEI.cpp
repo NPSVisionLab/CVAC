@@ -45,6 +45,7 @@
 #include <util/processRunSet.h>
 #include <util/FileUtils.h>
 #include <util/DetectorDataArchive.h>
+#include <util/ServiceManI.h>
 using namespace cvac;
 
 
@@ -52,26 +53,27 @@ using namespace cvac;
 // This is called by IceBox to get the service to communicate with.
 extern "C"
 {
-	//
-	// ServiceManager handles all the icebox interactions so we construct
-    // it and set a pointer to our detector.
-	//
-	ICE_DECLSPEC_EXPORT IceBox::Service* create(Ice::CommunicatorPtr communicator)
-	{
-        ServiceManager *sMan = new ServiceManager();
-        BowICEI *bow = new BowICEI(sMan);
-        sMan->setService(bow, "bowTest");
-        return (::IceBox::Service*) sMan->getIceService();
-	}
+  //
+  // ServiceManager handles all the icebox interactions so we construct
+  // it and set a pointer to our detector.
+  //
+  ICE_DECLSPEC_EXPORT IceBox::Service* create(Ice::CommunicatorPtr communicator)
+  {
+    BowICEI *bow = new BowICEI();
+    ServiceManagerI *sMan = new ServiceManagerI( bow, bow );
+    bow->setServiceManager( sMan );
+    return sMan;
+  }
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BowICEI::BowICEI(ServiceManager *sman)
-: pBowCV(NULL),fInitialized(false)
+BowICEI::BowICEI()
+: pBowCV(NULL),fInitialized(false),configModelFileName("")
 {
-    mServiceMan = sman;
+  callbackPtr = NULL;
+  mServiceMan = NULL;
 }
 
 BowICEI::~BowICEI()
@@ -80,76 +82,78 @@ BowICEI::~BowICEI()
 	pBowCV = NULL;
 }
 
+void BowICEI::setServiceManager(cvac::ServiceManagerI *sman)
+{
+    mServiceMan = sman;
+}
+
+void BowICEI::starting()
+{
+    m_CVAC_DataDir = mServiceMan->getDataDir();  
+    // check if the config.service file contains a trained model
+    // if so, read it.
+    configModelFileName = mServiceMan->getModelFileFromConfig();
+    if (configModelFileName.empty())
+    {
+        localAndClientMsg(VLogger::DEBUG, NULL,
+          "No trained model file specified in service config.\n" );
+    }
+    else
+    {
+        localAndClientMsg(VLogger::DEBUG, NULL,
+          "Will read trained model file as specified in service config: %s\n",
+          configModelFileName.c_str()); 
+    }
+}
+
+void BowICEI::stopping()
+{
+}
+
+
                           // Client verbosity
-void BowICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const ::Ice::Current& current)
+void BowICEI::initialize( DetectorDataArchive* dda,
+                          const ::cvac::FilePath &file,
+                          const::Ice::Current &current)
 {
   // Set CVAC verbosity according to ICE properties
   Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
   string verbStr = props->getProperty("CVAC.ServicesVerbosity");
   if (!verbStr.empty())
-  {
-    vLogger.setLocalVerbosityLevel( verbStr );
-  }
-  m_CVAC_DataDir = mServiceMan->getDataDir();
+    getVLogger().setLocalVerbosityLevel( verbStr );  
 
   // Since constructor only called on service start and destroy
   // can be called.  We need to make sure we have it
   if (pBowCV == NULL)
-  {
-    pBowCV = new bowCV();
-  }
-	
-  // Get the default CVAC data directory as defined in the config file
-  std::string expandedSubfolder = "";
-  std::string filename = "";
-  std::string _extFile = data.file.filename.substr( data.file.filename.rfind(".")+1,
-                                                    data.file.filename.length());
+    pBowCV = new bowCV(this);
+
+  // Get the default CVAC data directory as defined in the config file    
   std::string connectName = getClientConnectionName(current);
-  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getIceName(),
-                                                             connectName);                               
+  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
+    connectName);                               
   std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
 
-  if (_extFile.compare("txt") == 0)
+  string zipfilepath;
+  if(configModelFileName.empty() || file.filename.empty() == false)  //use default model file only if we did not get one.
   {
-    localAndClientMsg(VLogger::ERROR, NULL,
-      "For maintaining consistency, this approach (using txt file as a detectorData) is prohibited.\n");
-    return;
-//     localAndClientMsg(VLogger::DEBUG, NULL, "Initializing bag_of_words.\n");
-//     localAndClientMsg(VLogger::DEBUG_1, NULL, "Initializing bag_of_words with %s/%s\n", 
-//                       data.file.directory.relativePath.c_str(), data.file.filename.c_str());
-//     expandedSubfolder = m_CVAC_DataDir + "/" + data.file.directory.relativePath;
-//     filename = data.file.filename;
+    zipfilepath = getFSPath(file, m_CVAC_DataDir);    
+  }else
+  {
+    if (pathAbsolute(configModelFileName))
+      zipfilepath = configModelFileName;
+    else
+      zipfilepath = m_CVAC_DataDir + "/" + configModelFileName;
   }
-  else	//for a zip file	//if (cvac::FILE == data.type && size == 0)
-  { 
-   
-     std::string zipfilename = getFSPath( data.file, m_CVAC_DataDir );
-     
-     DetectorDataArchive dda;
-     dda.unarchive(zipfilename, clientDir);
-     // This detector only needs an XML file
-     filename = dda.getFile(RESID);
-     if (filename.empty())
-     {
-        localAndClientMsg(VLogger::ERROR, NULL,
-          "Could not find result file in zip file.\n");
-        return;
-     }
-     // Get only the filename part
-     filename = getFileName(filename);
-  }
-  // add the CVAC.DataDir root path and initialize from txt file  
-  fInitialized = pBowCV->detect_initialize( clientDir, filename );
+  dda->unarchive(zipfilepath, clientDir);
 
+  // add the CVAC.DataDir root path and initialize from dda  
+  fInitialized = pBowCV->detect_initialize( dda );
   if (!fInitialized)
-  {
-    localAndClientMsg(VLogger::WARN, NULL, "Failed to run CV detect_initialize\n");
-  }
+    localAndClientMsg(VLogger::WARN, NULL,
+    "Failed to run CV detect_initialize\n");
 }
 
-
-
-bool BowICEI::isInitialized(const ::Ice::Current& current)
+bool BowICEI::isInitialized()
 {
 	return fInitialized;
 }
@@ -164,77 +168,169 @@ void BowICEI::destroy(const ::Ice::Current& current)
 }
 std::string BowICEI::getName(const ::Ice::Current& current)
 {
-	return "bowTest";
+	return mServiceMan->getServiceName();
 }
 std::string BowICEI::getDescription(const ::Ice::Current& current)
 {
 	return "Bag of Words-type detector";
 }
 
-void BowICEI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current)
+bool BowICEI::cancel(const Ice::Identity &client, const ::Ice::Current& current)
 {
-
+    stopping();
+    mServiceMan->waitForStopService();
+    if (mServiceMan->isStopCompleted())
+        return true;
+    else 
+        return false;
 }
 
-DetectorData BowICEI::createCopyOfDetectorData(const ::Ice::Current& current)
+DetectorProperties BowICEI::getDetectorProperties(const ::Ice::Current& current)
 {	
-	DetectorData data;
-	return data;
+    //TODO get the real detector properties but for now return an empty one.
+    DetectorProperties props;
+	return props;
 }
 
-DetectorPropertiesPrx BowICEI::getDetectorProperties(const ::Ice::Current& current)
-{	
-	return NULL;
-}
+int BowICEI::detectObjects(const CallbackHandlerPrx& _callback,
+                           const cvac::Labelable& _lbl,
+                           bool& _resFlag,
+                           std::string& _resStr)
+{ 
+  std::string tfilepath = getFSPath( _lbl.sub.path, m_CVAC_DataDir );
 
-ResultSetV2 BowICEI::processSingleImg(DetectorPtr detector,const char* fullfilename)
-{	
-	ResultSetV2 _resSet;	
-	int _bestClass;	
+  localAndClientMsg(VLogger::DEBUG, _callback,
+                    "%s is processing.\n",tfilepath.c_str());
+  
+  BowICEI* _bowCV = static_cast<BowICEI*>(this);  
+  int _bestClass;
+  _resStr = _bowCV->pBowCV->detect_run(tfilepath, _bestClass);
+  _resFlag = _resStr.empty();
 
-	// Detail the current file being processed (DEBUG_1)
-	std::string _ffullname = std::string(fullfilename);
-	localAndClientMsg(VLogger::DEBUG_1, NULL, "%s is processing.\n", _ffullname.c_str());
-	BowICEI* _bowCV = static_cast<BowICEI*>(detector.get());
-        float confidence = 0.5f; // TODO: obtain some confidence from BOW
-        bool result = _bowCV->pBowCV->detect_run(fullfilename, _bestClass);
-
-    if(true == result) {
-        localAndClientMsg(VLogger::DEBUG_1, NULL, "Detection, %s as Class: %d\n", _ffullname.c_str(), _bestClass);
-
-        Result _tResult;
-        _tResult.original = NULL;
-
-        // The original field is for the original label and file name.  Results need
-        // to be returned in foundLabels.
-        LabelablePtr labelable = new Labelable();
-        char buff[32];
-        sprintf(buff, "%d", _bestClass);
-        labelable->confidence = confidence;
-        labelable->lab.hasLabel = true;
-        labelable->lab.name = buff;
-        _tResult.foundLabels.push_back(labelable);
-        _resSet.results.push_back(_tResult);
-    }
-	
-	return _resSet;
-}
-
-//void BowICEI::process(const ::DetectorCallbackHandlerPrx& callbackHandler,const ::RunSet& runset,const ::Ice::Current& current)
-void BowICEI::process(const Ice::Identity &client,const ::RunSet& runset,const ::Ice::Current& current)
-{
-  DetectorCallbackHandlerPrx _callback = 
-    DetectorCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
-  if (!fInitialized || NULL==pBowCV || !pBowCV->isInitialized())
+  if(true == _resFlag)
   {
-    localAndClientMsg(VLogger::ERROR, _callback, "BowICEI not initialized, aborting.\n");
+    localAndClientMsg(VLogger::DEBUG, _callback, "Detection, %s as Class: %d\n",
+                      tfilepath.c_str(), _bestClass);
   }
-  DoDetectFunc func = BowICEI::processSingleImg;
+  // the following message is already shown in the algorithm.
+//   else
+//   {
+//     localAndClientMsg(VLogger::WARN, _callback,
+//                       "Error while processing %s\n", tfilepath.c_str());
+//   }
+  return _bestClass;
+}
 
-  try {
-    processRunSet(this, _callback, func, runset, m_CVAC_DataDir, mServiceMan);
+void BowICEI::process(const Ice::Identity &client,
+                      const ::RunSet& runset, const ::cvac::FilePath &trainedModelFile,  
+                      const::cvac::DetectorProperties &props,
+                      const ::Ice::Current& current)
+{
+  callbackPtr = 
+    DetectorCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
+
+  DetectorDataArchive dda;
+  initialize(&dda, trainedModelFile, current);
+
+  if (!isInitialized() || NULL==pBowCV || !pBowCV->isInitialized())
+  {
+    localAndClientMsg(VLogger::ERROR, callbackPtr,
+      "BowICEI not initialized, aborting.\n");
   }
-  catch (exception e) {
-    localAndClientMsg(VLogger::ERROR, _callback, "BOW detector could not process given file-path.\n");
+
+  //////////////////////////////////////////////////////////////////////////
+  // Setup - RunsetConstraints
+  cvac::RunSetConstraint mRunsetConstraint;  
+  mRunsetConstraint.addType("jpg");
+  mRunsetConstraint.addType("png");
+  mRunsetConstraint.addType("tif");
+  // End - RunsetConstraints
+
+  //////////////////////////////////////////////////////////////////////////
+  // Start - RunsetWrapper
+  mServiceMan->setStoppable();  
+  cvac::RunSetWrapper mRunsetWrapper(&runset,m_CVAC_DataDir,mServiceMan);
+  mServiceMan->clearStop();
+  if(!mRunsetWrapper.isInitialized())
+  {
+    localAndClientMsg(VLogger::ERROR, callbackPtr,
+      "RunsetWrapper is not initialized, aborting.\n");    
+    return;
   }
+  // End - RunsetWrapper
+
+  //////////////////////////////////////////////////////////////////////////
+  // Start - RunsetIterator
+  int nSkipFrames = 150;  //the number of skip frames
+  mServiceMan->setStoppable();
+  cvac::RunSetIterator mRunsetIterator(&mRunsetWrapper,mRunsetConstraint,
+                                       mServiceMan,callbackPtr,nSkipFrames);
+  mServiceMan->clearStop();
+  if(!mRunsetIterator.isInitialized())
+  {
+    localAndClientMsg(VLogger::ERROR, callbackPtr,
+      "RunSetIterator is not initialized, aborting.\n");
+    return;
+  } 
+  // End - RunsetIterator
+
+  mServiceMan->setStoppable();
+  while(mRunsetIterator.hasNext())
+  {
+    if((mServiceMan != NULL) && (mServiceMan->stopRequested()))
+    {        
+      mServiceMan->stopCompleted();
+      break;
+    }
+
+    cvac::Labelable& labelable = *(mRunsetIterator.getNext());
+    {
+      bool _resFlag(false);
+      std::string _resString;
+      int _bestClass = detectObjects( callbackPtr, labelable, _resFlag,_resString);      
+      addResult(mRunsetIterator.getCurrentResult(),labelable,_bestClass,
+                _resFlag,_resString);
+    }
+  }  
+  callbackPtr->foundNewResults(mRunsetIterator.getResultSet());
+  mServiceMan->clearStop();
+}
+
+void BowICEI::addResult(cvac::Result& _res,
+                        cvac::Labelable& _converted,
+                        int _bestClass,
+                        bool _resFlag,
+                        std::string _resString)
+{ 
+  // The original field is for the original label and file name.  Results need
+  // to be returned in foundLabels.  If the DetectorDataArchive contains properties
+  // of the sort labelname_0 = 'somelabel', then a detection of classID 0 will be
+  // reported as 'somelabel'
+  LabelablePtr labelable = new Labelable();
+  if(_resFlag)
+  {
+    ostringstream ss;
+    ss << _bestClass;
+    string lname = ss.str();
+    BowICEI* _bowCV = static_cast<BowICEI*>(this);
+    string val = _bowCV->pBowCV->dda->getProperty("labelname_"+lname);
+    if ( val.empty() )
+      labelable->lab.name = lname;
+    else
+      labelable->lab.name = val;
+    labelable->confidence = 1.0f;//ToBeUpdated
+    labelable->lab.hasLabel = true;
+  }
+  else
+  {
+    labelable->lab.name = _resString;
+    labelable->confidence = 1.0f;
+    labelable->lab.hasLabel = false;
+  }
+  _res.foundLabels.push_back(labelable);
+}
+
+void BowICEI::message(MsgLogger::Levels msgLevel, const string& _msgStr)
+{  
+  localAndClientMsg((VLogger::Levels)msgLevel,callbackPtr,_msgStr.c_str());
 }

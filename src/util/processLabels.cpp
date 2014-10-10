@@ -38,56 +38,29 @@
 #include <Data.h>
 #include <Services.h>
 #include <util/processLabels.h>
+#include <util/RunSetWrapper.h>
+#include <util/RunSetIterator.h>
 
 using namespace Ice;
 using namespace cvac;
 
-//===========================================================================
-/**
- * Return the width and height in pixels of the image or zero if not found.
- */
-
-//===========================================================================
-/**
- * Return the filenames and rectangles listed in artifacts.  If no artifacts
- * listed then have a single rectangle of the size of the image file.
- */
-int cvac::processLabelArtifactsToRects(LabelableList *artifacts, GetImageSizeFunction sfunc, 
-                                        std::vector<RectangleLabels> *result, bool square)
-{
-    int count = 0;
-    if (NULL == artifacts)
-        return count;
-    std::vector<LabelablePtr>::iterator it;
-    RectangleLabels rlabels;
-    std::string lastFile;
-    bool newData = false;
-    for (it = artifacts->begin(); it < artifacts->end(); it++)
-    {
-        LabelablePtr lptr = (*it);
-        
-        
+static std::string processLabelable(string CVAC_DataDir,
+                                    LabelablePtr lptr, RectangleLabels *rlabels, bool square, 
+                                    GetImageSizeFunction sfunc)
+{    
+  
         Substrate sub = lptr->sub;
         FilePath  filePath = sub.path;
-        std::string fname = filePath.directory.relativePath;
+        std::string fname = CVAC_DataDir + "/" + filePath.directory.relativePath;
         fname += std::string("/");
         fname += filePath.filename;
        
-        if (lastFile.size() == 0 || lastFile.compare(fname) != 0)
-        { // new file
-            if (newData)
-                result->push_back(rlabels); // Save the old rlabels
-            rlabels.rects = std::vector<BBoxPtr>();
-            rlabels.filename = std::string(fname);
-            lastFile = fname;
-            count++;
-            newData = true;
-        }
         LabeledLocationPtr locptr =
                  LabeledLocationPtr::dynamicCast(lptr);
         if (locptr.get() != NULL)
         {
             SilhouettePtr sptr = SilhouettePtr::dynamicCast(locptr->loc);
+            BBoxPtr bptr = BBoxPtr::dynamicCast(locptr->loc);
             if (sptr.get() != NULL)
             {
                 BBoxPtr lrect = new BBox();
@@ -141,12 +114,13 @@ int cvac::processLabelArtifactsToRects(LabelableList *artifacts, GetImageSizeFun
                     }
 
                 }
-                rlabels.rects.push_back(lrect);  
-                continue;
-            } 
+                rlabels->rects.push_back(lrect);  
+            } else if (bptr.get() != NULL)
+            {
+                rlabels->rects.push_back(bptr);
+            }
             
-        }
-        if (sfunc != NULL) {
+        }else if (sfunc != NULL) {
             // Assume no location so return with and height of the image
             int w;
             int h;
@@ -163,14 +137,138 @@ int cvac::processLabelArtifactsToRects(LabelableList *artifacts, GetImageSizeFun
                 lrect->width = 0;
                 lrect->height = 0;
             }
-            rlabels.rects.push_back(lrect);
+            rlabels->rects.push_back(lrect);
         }
    
+   
+        return fname;
+}
+
+//===========================================================================
+/**
+ * Return the filenames and rectangles listed in artifacts.  If no artifacts
+ * listed then have a single rectangle of the size of the image file.
+ */
+int cvac::processLabelArtifactsToRects(cvac::RunSetWrapper &wrapper, cvac::RunSetConstraint &constraint, 
+                                       std::string cvacDataDir, cvac::ServiceManager *serviceMan,
+                                       const CallbackHandlerPrx & callback,
+                                       GetImageSizeFunction sfunc, int skipFrames,
+                                       std::vector<RectangleLabels> *result, bool square)
+{
+    int count = 0;
+   
+    if (!wrapper.isInitialized())
+    {
+        localAndClientMsg(VLogger::ERROR, callback, "process labeled artifacts could not initialize RunsetWrapper\n");
+        return 0;
     }
-    if (newData)
-    { // write out the last record
-        result->push_back(rlabels);
+    serviceMan->setStoppable();
+    cvac::RunSetIterator it(&wrapper, constraint, serviceMan, callback, skipFrames);
+    serviceMan->clearStop();
+    if (!it.isInitialized())
+    {
+        localAndClientMsg(VLogger::ERROR, callback, "process labeled artifacts could not initialize RunsetIterator\n");
+        return 0;
     }
+    serviceMan->setStoppable();
+    RectangleLabels rlabels;
+    std::string lastFile;
+    rlabels.rects = std::vector<BBoxPtr>();
+    std::string fname;
+    while (it.hasNext())
+    {
+        if (serviceMan->stopRequested())
+        {
+            serviceMan->stopCompleted();
+            break;
+        }
+        cvac::LabelablePtr labelable = it.getNext();
+        RectangleLabels tempLabels;
+        tempLabels.rects = std::vector<BBoxPtr>();
+        
+        // Get the filename and the rectangles for this labelable
+        fname = processLabelable(cvacDataDir, labelable, &tempLabels, square, sfunc);
+        if (lastFile.size() == 0)
+            lastFile = fname;
+        if (lastFile.compare(fname) != 0)
+        { // IF we have a new file name write out the old data
+            rlabels.filename = std::string(lastFile);
+            result->push_back(rlabels); // Save the old rlabels
+            // Now set the rects to include this new data
+            rlabels.rects = tempLabels.rects;
+            // Set the filename to this new file
+            lastFile = fname;
+            // Increments the count in the results
+            count++;
+        }else
+        {// Copy the tempLabel rectanges to the results
+            std::vector<BBoxPtr>::iterator iter;
+            for (iter = tempLabels.rects.begin(); iter < tempLabels.rects.end(); iter++)
+            {
+                rlabels.rects.push_back(*iter);
+            }
+        }
+    }
+    if (lastFile.size() != 0 && lastFile.compare(fname) != 0)
+    { // new file
+        rlabels.filename = std::string(lastFile);
+        result->push_back(rlabels); // Save the old rlabels
+        count++;
+    } 
+    serviceMan->clearStop();
+    return count;
+
+}
+//===========================================================================
+/**
+ * Return the filenames and rectangles listed in artifacts.  If no artifacts
+ * listed then have a single rectangle of the size of the image file.
+ */
+int cvac::processLabelArtifactsToRects(LabelableList *artifacts, GetImageSizeFunction sfunc, 
+                                        std::vector<RectangleLabels> *result, bool square, string cvacDataDir)
+{
+    int count = 0;
+    if (NULL == artifacts)
+        return count;
+    std::vector<LabelablePtr>::iterator it;
+    
+    RectangleLabels rlabels;
+    std::string lastFile;
+    std::string fname;
+    rlabels.rects = std::vector<BBoxPtr>();
+    for (it = artifacts->begin(); it < artifacts->end(); it++)
+    {
+        RectangleLabels tempLabels;
+        tempLabels.rects = std::vector<BBoxPtr>();
+        LabelablePtr lptr = (*it);
+        // Get the filename and the rectangles for this labelable
+        fname = processLabelable(cvacDataDir, lptr, &tempLabels, square, sfunc);
+        
+        if (lastFile.size() != 0 && lastFile.compare(fname) != 0)
+        { // IF we have a new file name write out the old data
+            rlabels.filename = std::string(lastFile);
+            result->push_back(rlabels); // Save the old rlabels
+            // Now set the rects to include this new data
+            rlabels.rects = tempLabels.rects;
+            // Set the filename to this new file
+            lastFile = fname;
+            // Increments the count in the results
+            count++;
+        }else
+        {// Copy the tempLabel rectanges to the results
+            std::vector<BBoxPtr>::iterator iter;
+            for (iter = tempLabels.rects.begin(); iter < tempLabels.rects.end(); iter++)
+            {
+                rlabels.rects.push_back(*iter);
+            }
+        }
+    }
+    if (lastFile.size() != 0 && lastFile.compare(fname) != 0)
+    { // new file
+            rlabels.filename = std::string(lastFile);
+            result->push_back(rlabels); // Save the old rlabels
+            count++;
+    } 
     return count;
 }
 

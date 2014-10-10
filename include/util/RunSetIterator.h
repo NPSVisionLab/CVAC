@@ -59,8 +59,10 @@ namespace cvac
 //---------------------------------------------------------------------------
   struct RunSetConstraint
   {
-    string compatiblePurpose;
+    cvac::Purpose compatiblePurpose;
     string substrateType ;
+    bool excludeLostFrames;
+    bool excludeOccludedFrames;
     vector<rsMediaType> mimeTypes;  //new string[3] { "hi", "there"};
     bool spacesInFilenamesPermitted;
     void addType(rsMediaType _type)  //how to handle duplication
@@ -79,18 +81,27 @@ namespace cvac
   public:
     RunSetIterator(RunSetWrapper* _rsw,RunSetConstraint& _cons,
                    ServiceManager *_sman,
+                   const CallbackHandlerPrx& _callback,
                    int _nSkipFrames = 100);
     ~RunSetIterator();		
 
   private:
+    CallbackHandlerPrx mCallback2Client;
     bool mFlagInitialize;
+    bool mLost;
+    bool mOccluded;
     ServiceManager* mServiceMan;
     string mMediaRootDirectory;
     string mMediaTempDirectory;
-    vector<LabelablePtr> mSrcList;
-    vector<rsMediaType>  mSrcListType;
+    ResultSet mResultSet;
+    cvac::Purpose mConstraintPurpose;
+	bool mNoSpaces;
+	string mTempDir;
+    vector<rsMediaType>  mResultSetType;
+    vector<int>          mListOrginalIdx;
     vector<LabelablePtr> mList;    
     vector<LabelablePtr>::iterator mListItr;    
+    vector<int>::iterator mListOrginalIdxItr;
     vector<rsMediaType> mConstraintType;
     vector<rsMediaType>::iterator mConstraintTypeItr;    
     map< string,MediaConverter* > mConvertible; //a list of pairs to be convertible, the sequence may indicate priority
@@ -104,21 +115,25 @@ namespace cvac
   private:
     bool convert();
     void clear();
-    void initIterator(){  mListItr = mList.begin(); };
-    void initIterator(vector<LabelablePtr>& _list);
-    bool makeList(vector<LabelablePtr>& _list,vector<rsMediaType>& _listType);    
+    void initIterator(){  mListItr = mList.begin(); mListOrginalIdxItr = mListOrginalIdx.begin(); };    
+    bool makeList(ResultSet& _resultSet,vector<rsMediaType>& _resultSetType);    
+    bool makeList(ResultSet& _resultSet);
     bool isInConstraintType(const rsMediaType& _type);
-    void addToList(const LabelablePtr _pla);
+    void addToList(const LabelablePtr _pla,int _originalIdx);
     bool convertAndAddToList(const LabelablePtr& _pla,
                              const rsMediaType& _targerType,
                              MediaConverter* _pConv,
-                             const string& _rDirTemp);
-    rsMediaType getType(const LabelablePtr _pla);
+                             const string& _rDirTemp,int _originalIdx);
+    bool matchPurpose(int origIdx);
+    LabelablePtr cloneLabelablePtr(const LabelablePtr _pla, int frameNum);
+    bool isConstrained(int origIdx, LabelablePtr lptr);  // True if the index is contrained by constraint restrictions
 
   public:    
     bool hasNext();
     LabelablePtr getNext();
     bool isInitialized(){ return mFlagInitialize; };
+    Result& getCurrentResult();
+    ResultSet& getResultSet();
     void showList();
   };
 }

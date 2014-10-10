@@ -1,0 +1,88 @@
+## C#-Client Config:  Active Detector and Trainer instances read at initialization.
+## Names should be unique in the list, and reference capability and type
+## of each detector.
+###################################################################################
+
+${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
+
+## Disable ACM on the client for bi-directional behavior
+Ice.ACM.Client=0
+
+## CVAC Services Config:
+CVAC.DataDir = ${CVAC_DATA_DIR}
+
+OpenCVCascadeDetector.Proxy=OpenCVCascadeDetector:tcp -p ${OPENCV_CASCADE_DETECTOR_PORT}
+OpenCVCascadeTrainer.Proxy=OpenCVCascadeTrainer:tcp -p  ${OPENCV_CASCADE_TRAINER_PORT}
+BOW_Trainer.Proxy=BOW_Trainer:tcp -p          ${BOW_TRAINER_PORT}
+BOW_Detector.Proxy=BOW_Detector:tcp -p         ${BOW_DETECTOR_PORT}
+CorpusServer.Proxy=CorpusServer:tcp ${HOST} -p  ${CORPUS_PORT}      
+PythonCorpusService.Proxy=PythonCorpusService:tcp -p ${PYTHON_CORPUS_PORT}
+FileService.Proxy=FileService:tcp ${HOST} -p ${FILE_SERVER_PORT}
+PythonFileService.Proxy=PythonFileService:tcp ${HOST} -p ${PYTHON_FILE_SERVER_PORT}
+RSItrTest_Detector.Proxy=RSItrTest_Detector:tcp ${HOST} -p ${RSITR_TEST_PORT}
+
+VideoValidatorForOpenCVClient.Proxy = VideoValidatorForOpenCV:tcp -p 10108
+
+# CVPerf Detector CvFaces
+CvFaces.Proxy = OpenCVCascadeDetector:tcp -p ${OPENCV_CASCADE_DETECTOR_PORT}
+CvFaces.DetectorFilename = OpencvFaces.zip
+
+# BOW Detector flags
+BagOfWordsUSKOCA.Proxy=BOW_Detector:tcp -p ${BOW_DETECTOR_PORT}
+BagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
+
+# same on vision.nps.edu:
+NpsBagOfWordsUSKOCA.Proxy=BOW_Detector:tcp -h vision.nps.edu -p ${BOW_DETECTOR_PORT}
+NpsBagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
+
+#Trainers
+BOWTrainer.Proxy = BOW_Trainer:tcp -p ${BOW_TRAINER_PORT}
+
+DetectorCallback.Client.Endpoints=default
+TrainerCallback.Client.Endpoints=default
+
+## Ice Config:
+# Warn about connection exceptions
+#
+#Ice.Warn.Connections=1
+#Ice.Warn.Dispatch=2
+
+#
+# CVAC Tracing
+#
+CVAC.ClientVerbosity = info
+
+#
+# Network Tracing
+#
+# 0 = no network tracing
+# 1 = trace connection establishment and closure
+# 2 = like 1, but more detailed
+# 3 = like 2, but also trace data transfer
+#
+#Ice.Trace.Network=1
+
+#
+# Protocol Tracing
+#
+# 0 = no protocol tracing
+# 1 = trace protocol messages
+#
+#Ice.Trace.Protocol=1
+
+#
+# Security Tracing
+#
+# 0 = no security tracing
+# 1 = trace messages
+#
+#IceSSL.Trace.Security=1
+
+#
+# SSL Configuration
+#
+#Ice.Plugin.IceSSL=IceSSL:createIceSSL
+#IceSSL.DefaultDir=../../../certs
+#IceSSL.CertAuthFile=cacert.pem
+#IceSSL.CertFile=c_rsa1024_pub.pem
+#IceSSL.KeyFile=c_rsa1024_priv.pem

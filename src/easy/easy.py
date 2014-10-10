@@ -9,19 +9,26 @@ and to provide, uhm, easy access functions to its functionality.
 
 from __future__ import print_function
 import os
+import re
 import sys, traceback
 import shutil
+import tempfile
+import datetime
+from util import misc
 # paths should setup the PYTHONPATH.  If you special requirements
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
 sys.path.append('''.''')
 import Ice
-import Ice
 import IcePy
 import cvac
+from util import misc
+from util.ArchiveHandler import * 
 import unittest
 import stat
 import threading
+
+import os
 
 # for drawing only:
 try:
@@ -34,25 +41,49 @@ except:
 #
 # one-time initialization code, upon loading the module
 #
-ic = Ice.initialize(sys.argv)
+args = sys.argv
+args.append('--Ice.MessageSizeMax=100000')
+args.append('--Ice.ACM.Client=0')
+# try to find the config.client that specifies what services
+# might be running, their names, etc.
+if os.path.isfile('config.client'):
+    args.append('--Ice.Config=config.client')
+else:
+    modulepath = os.path.dirname(__file__)
+    config_client_path = os.path.abspath(modulepath+'/../../config.client')
+    if os.path.isfile(config_client_path):
+        args.append('--Ice.Config='+config_client_path)
+ic = Ice.initialize(args)
 defaultCS = None
+# Parse the client.config for CVAC_DataDir
+CVAC_DataDir = ic.getProperties().getProperty("CVAC.DataDir")
+if CVAC_DataDir == None:
+    CVAC_DataDir = "data"
 # IF the environment variable is set, then use that else use data
-CVAC_DataDir = os.getenv("CVAC_DATADIR", "data")
+CVAC_DataDir = os.getenv("CVAC_DATADIR", CVAC_DataDir)
+CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
 
-def getFSPath( cvacPath ):
+
+def getFSPath( cvacPath, abspath=False ):
     '''Turn a CVAC path into a file system path'''
     if isinstance(cvacPath, cvac.Labelable):
         cvacPath = cvacPath.sub.path
     elif isinstance(cvacPath, cvac.Substrate):
         cvacPath = cvacPath.path
-    elif isinstance(cvacPath, cvac.DetectorData):
-        cvacPath = cvacPath.file
     if isinstance( cvacPath, str ):
         path = CVAC_DataDir+"/"+cvacPath
-    elif not cvacPath.directory.relativePath:
-        path = CVAC_DataDir+"/"+cvacPath.filename
-    else:
+    elif isinstance(cvacPath, cvac.FilePath):
         path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
+    elif isinstance(cvacPath, cvac.DirectoryPath):
+        path = CVAC_DataDir+"/"+cvacPath.relativePath;
+    else:
+        path = CVAC_DataDir+"/"+cvacPath.filename
+    if abspath == True:
+        if os.path.isabs(path) == True:
+            return path
+        else:
+            rootdir = os.getcwd()
+            path = os.path.join(rootdir, path)
     return path
 
 def getCvacPath( fsPath ):
@@ -98,9 +129,25 @@ def getLabelable( filepath, labelText=None ):
     labelable = cvac.Labelable( 0.0, label, substrate )
     return labelable
 
+def getLabelableList(dirpath, recursive=True, video=True, image=True):
+    '''Return a list of Labelables contained within the directory (optionally recursively)'''
+    if type(dirpath) is str:
+        if dirpath.startswith(CVAC_DataDir +'/'):
+            strpath = dirpath
+        else:
+            strpath = getFSPath(dirpath)
+    elif type(dirpath) is cvac.DirectoryPath:
+        strpath = dirpath.relativePath
+    res = []
+    misc.searchDir(res, strpath, recursive, video, image)
+    return res
+    
+        
+
 def getCorpusServer( configstr ):
     '''Connect to a Corpus server based on the given configuration string'''
-    cs_base = ic.stringToProxy( configstr )
+    proxyStr = getProxyString(configstr)
+    cs_base = ic.stringToProxy( proxyStr )
     if not cs_base:
         raise RuntimeError("CorpusServer not found in config:", configstr)
     cs = cvac.CorpusServicePrx.checkedCast(cs_base)
@@ -112,7 +159,12 @@ def getDefaultCorpusServer():
     '''Returns the CorpusServer that is expected to run locally at port 10011'''
     global defaultCS
     if not defaultCS:
-        defaultCS = getCorpusServer( "CorpusServer:default -p 10011" )
+        #first try configured Corpus Server
+        proxstr = getProxyString("PythonCorpusService")
+        if not proxstr:
+            defaultCS = getCorpusServer( "PythonCorpusService:default -p 10011" )
+        else:
+            defaultCS = getCorpusServer( proxstr)
     return defaultCS
 
 def openCorpus( corpusPath, corpusServer=None ):
@@ -133,7 +185,7 @@ def openCorpus( corpusPath, corpusServer=None ):
         corpus = corpusServer.createCorpus( cvacPath )
         if not corpus:
             raise RuntimeError("Could not create corpus from directory at '"
-                               + getFSPath( cvacPath ))
+                               + corpusPath)
     else:
         # open an existing corpus
         cvacPath = getCvacPath( corpusPath )
@@ -208,13 +260,93 @@ def getDataSet( corpus, corpusServer=None, createMirror=False ):
                                "(specify createMirror=True to do so)")
 
     labelList = corpusServer.getDataSet( corpus )
-    categories = {}
-    for lb in labelList:
-        if lb.lab.name in categories:
-            categories[lb.lab.name].append( lb )
-        else:
-            categories[lb.lab.name] = [lb]
+    categories = getCategories(labelList)
     return (categories, labelList)
+
+def isInBounds( labelable ):
+    '''Return True if the LabeledLocation is within image bounds.
+    '''
+    minX = 0
+    minY = 0
+    maxX = sys.maxint 
+    maxY = sys.maxint                
+    if labelable.sub.width>0:
+        maxX = labelable.sub.width
+    if labelable.sub.height>0:
+        maxY = labelable.sub.height
+
+    if isinstance(labelable, cvac.LabeledLocation):
+        for pt in labelable.loc.points:
+            if (pt.x < minX) or (pt.y < minY) \
+                or (pt.x >= maxX) or (pt.y >= maxY):
+                print("Warning: label \"" \
+                      + labelname + "\" is out of bounds in file \"" \
+                      + labelable.sub.path.filename + "\"" \
+                    + " (X=" + str(pt.x) + ", Y=" + str(pt.y) + ")")
+                return False
+#     else:
+#         print("File= " + labelable.sub.path.filename)
+#         print("Label= " + labelable.lab.name)
+#         if labelable.lab.name in categories:
+#             categories[labelable.lab.name].append(labelable)
+#         else:       
+#             categories[labelable.lab.name] = [labelable]
+# 
+#         if isinstance(labelable, cvac.LabeledTrack):
+#             framestart = -1
+#             curFrame = -1
+#             for frame in labelable.keyframesLocations:
+#                 frameNo = frame.frame.framecnt
+#                 if framestart == -1:
+#                     framestart = frameNo
+#                     curFrame = frameNo
+#                     if frameNo == curFrame:
+#                         curFrame = curFrame + 1
+#                     else:
+#                         print ("Track frames {0} to {1}".format(framestart, curFrame))
+#                         framestart = frameNo
+#                         curFrame = frameNo + 1  
+#                     if framestart != curFrame:   
+#                         print ("Track frames {0} to {1}".format(framestart, curFrame))
+    return True
+
+def isProperRunSet(runset, deleteInvalid=False):
+    '''Return True if the RunSet has proper syntax, False otherwise.
+    If deleteInvalid==True, labeled artifacts with bounding boxes out
+    of image bounds will be removed from the RunSet. 
+    '''
+
+    if type(runset) is dict and not runset['runset'] is None\
+        and isinstance(runset['runset'], cvac.RunSet):
+        runset = runset['runset']
+        
+    if not runset or not isinstance(runset, cvac.RunSet) or not runset.purposedLists:
+        print("Not a valid runset")
+        return False
+    
+    #categories = {}
+    for plist in runset.purposedLists:
+        if isinstance(plist, cvac.PurposedLabelableSeq) != True: 
+            print("unexpected plist type "+type(plist))
+            return False
+        else:
+            # process list backwards since we might be removing entries
+            for i in xrange(len(plist.labeledArtifacts)-1, -1, -1):
+                lb = plist.labeledArtifacts[i]               
+                labelname  = 'nolabel'
+                if lb.lab.hasLabel != True:
+                    print("Warning: " + lb.sub.path.filename + " has no label.")
+                else:
+                    labelname = lb.lab.name
+
+                inBounds = isInBounds( lb )
+                if not inBounds:
+                    if deleteInvalid == False:
+                        return False
+                    else:
+                        del plist.labeledArtifacts[i]
+                        
+    return True    
 
 def printCategoryInfo( categories ):
     '''Categories are a dictionary, key being the label and the
@@ -256,7 +388,7 @@ def printSubstrateInfo( labelList, indent="", printLabels=False ):
             print("{0}{1} ({2} label{3})".\
                   format( indent, subpath, numlabels, ("s","")[numlabels==1] ))
 
-def printRunSetInfo( runset, printLabels=False ):
+def printRunSetInfo( runset, printLabels=False, printArtifacts=True ):
     '''You can pass in an actual cvac.RunSet or a dictionary with
     the runset and a classmap, as returned by createRunSet.'''
     classmap = None
@@ -264,7 +396,7 @@ def printRunSetInfo( runset, printLabels=False ):
         and isinstance(runset['runset'], cvac.RunSet):
         classmap = runset['classmap']
         runset = runset['runset']
-    if not runset or not isinstance(runset, cvac.RunSet):
+    if not runset or not isinstance(runset, cvac.RunSet) or not runset.purposedLists:
         print("no (proper) runset, nothing to print")
         return
     sys.stdout.softspace=False;
@@ -276,10 +408,12 @@ def printRunSetInfo( runset, printLabels=False ):
             print("directory with Purpose '{0}'; not listing members"\
                   .format( purposeText ) )
         elif isinstance(plist, cvac.PurposedLabelableSeq):
-            print("sequence with Purpose '{0}' and {1} labeled artifacts:"\
-                  .format( purposeText, len(plist.labeledArtifacts) ) )
-            printSubstrateInfo( plist.labeledArtifacts, indent="  ",
-                                printLabels=printLabels )
+            print("sequence with Purpose '{0}' and {1} labeled artifacts{2}"\
+                  .format( purposeText, len(plist.labeledArtifacts),
+                           (".",":")[printArtifacts]) )
+            if printArtifacts:
+                printSubstrateInfo( plist.labeledArtifacts, indent="  ",
+                                    printLabels=printLabels )
         else:
             raise RuntimeError("unexpected plist type "+type(plist))
     if classmap:
@@ -356,6 +490,15 @@ def _determineDefaultPurpose( label, purpose, classmap ):
     if label in classmap:
         return classmap[label]
     return cvac.Purpose( cvac.PurposeType.UNPURPOSED )
+
+def getCategories(lablist):
+    categories = {}
+    for lb in lablist:
+        if lb.lab.name in categories:
+            categories[lb.lab.name].append(lb)
+        else:
+            categories[lb.lab.name] = [lb]
+    return categories
     
 def addToRunSet( runset, samples, purpose=None, classmap=None ):
     '''Add samples to a given RunSet.
@@ -408,8 +551,8 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
                 # POSITIVES in keys[1]
                 poskeyid = 1
             if poskeyid != -1:
-                pospur = cvac.Purpose( cvac.PurposeType.POSITIVE, -1 )
-                negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, -1 )
+                pospur = cvac.Purpose( cvac.PurposeType.POSITIVE, 1 )
+                negpur = cvac.Purpose( cvac.PurposeType.NEGATIVE, 0 )
                 poskey = pur_categories_keys[poskeyid]
                 negkey = pur_categories_keys[1-poskeyid]
                 addPurposedLabelablesToRunSet( rnst, pospur, samples[poskey] )
@@ -449,10 +592,9 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
 
     elif type(samples) is str and isLikelyDir( samples ):
         # single path to a directory.  Create a corpus, turn into RunSet, close corpus.
-        corpus = openCorpus( samples, corpusServer=getDefaultCorpusServer() )
-        categories, lablist = getDataSet( corpus, corpusServer=getDefaultCorpusServer() )
+        lablist = getLabelableList(samples)
+        categories = getCategories(lablist)
         addToRunSet( runset, categories, purpose=purpose, classmap=classmap )
-        closeCorpus( corpus, corpusServer=getDefaultCorpusServer() )
         
     elif type(samples) is str and not isLikelyDir( samples ):
         # single file, create an unpurposed entry
@@ -484,9 +626,10 @@ def createRunSet( samples, purpose=None, classmap=None ):
 def getFileServer( configString ):
     '''Obtain a reference to a remote FileServer.
     Generally, every host of CVAC services also has one FileServer.'''
-    fileserver_base = ic.stringToProxy( configString )
+    proxyStr = getProxyString(configString)
+    fileserver_base = ic.stringToProxy( proxyStr )
     if not fileserver_base:
-        raise RuntimeError("no such FileService: "+configString)
+        raise RuntimeError("no such FileService: "+proxyStr)
     fileserver = cvac.FileServicePrx.checkedCast( fileserver_base )
     if not fileserver:
         raise RuntimeError("Invalid FileServer proxy")
@@ -517,12 +660,16 @@ def getDefaultFileServer( detector ):
     if not host:
         host = "localhost"
 
-    # get the FileServer at said host at the default port
-    configString = "FileService:default -h "+host+" -p 10110"
+    proxyStr = getProxyString('PythonFileService')
+    if not proxyStr:
+        # get the FileServer at said host at the default port
+        configString = "PythonFileService:default -h "+host+" -p 10110"
+    else:
+        configString = proxyStr
     try:
         fs = getFileServer( configString )
     except RuntimeError:
-        raise RuntimeError( "No default FileServer at the detector's host",
+        raise RuntimeError( "No default Python FileServer at the detector's host",
                             host, "on port 10110" )
     return fs
 
@@ -547,16 +694,14 @@ def putFile( fileserver, filepath, testExistence=True ):
     forig.close()
 
 def getFile( fileserver, filepath ):
-    if type(filepath) is cvac.DetectorData:
-        filepath = filepath.file
-    elif type(filepath) is str:
+    if type(filepath) is str:
         filepath = getCvacPath( filepath )
     else:
         assert( type(filepath) is cvac.FilePath )
     localFS = getFSPath( filepath )
     if not os.path.exists( os.path.dirname(localFS) ):
         os.makedirs( os.path.dirname(localFS) )
-    flocal = open( localFS, 'w' )
+    flocal = open( localFS, 'wb' )
     
     # "get" the file's bytes from the FileServer
     bytes = fileserver.getFile( filepath );
@@ -629,6 +774,32 @@ def putAllFiles( fileserver, runset ):
 
     return {'uploaded':uploadedFiles, 'existing':existingFiles}
 
+def getAllFiles( fileserver, runset ):
+    '''Make sure all files in the RunSet are available on the local site;
+    if they are not then they will be downloaded via the remote fileserver
+    to the local site.
+    For reporting purposes, return what has and has not been uploaded.'''
+    assert( fileserver and runset )
+
+    # collect all "substrates"
+    substrates = collectSubstrates( runset )
+    
+    # upload if not present
+    downloadedFiles = []
+    existingFiles = []
+    for sub in substrates:
+        if not isinstance(sub, cvac.Substrate):
+            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
+        filepath = getFSPath(sub.path)
+        if not os.path.exists( filepath ):
+            getFile( fileserver, sub.path)
+            downloadedFiles.append( sub.path )
+        else:
+            existingFiles.append( sub.path )
+
+    return {'downloaded':downloadedFiles, 'existing':existingFiles}
+
+
 def deleteAllFiles( fileserver, uploadedFiles ):
     '''Delete all files that were previously uploaded to the fileserver.
     For reporting purposes, return what has and has not been uploaded.'''
@@ -641,6 +812,10 @@ def deleteAllFiles( fileserver, uploadedFiles ):
     # try top delete, ignore but log errors
     deletedFiles = []
     notDeletedFiles = []
+    if type(uploadedFiles) is dict and not uploadedFiles['uploaded'] is None:
+	uploadedFiles = uploadedFiles['uploaded']
+    if not uploadedFiles:
+        return
     for path in uploadedFiles:
         if not isinstance(path, cvac.FilePath):
             raise RuntimeError("Unexpected type found instead of cvac.FilePath:", type(path))
@@ -652,31 +827,96 @@ def deleteAllFiles( fileserver, uploadedFiles ):
 
     return {'deleted':deletedFiles, 'notDeleted':notDeletedFiles}
 
+def getProxyString(configString):
+    '''If we have a proxy string already then just return it.  If we have
+    a detector name look it up in the config.client file and return the
+    proxy string.  If we don't have either then return empty string '''
+    scanner = re.Scanner([
+      (r"[_a-zA-Z0-9]+", lambda scanner, token:("IDENT", token)),
+      (r"-tp", lambda scanner, token:("PORT", token)),
+      (r"-p", lambda scanner, token:("PORT", token)),
+      (r":", lambda scanner, token:("COLON", token)),
+      (r"@", lambda scanner, token:("LOC", token)),
+      (r"\s+", None), #skip white space
+    ])
+    parselist, remainder = scanner.scan(configString)
+    for entry in parselist:
+        if entry[0] == "PORT" or entry[0] == "COLON" or entry[0] == "LOC":
+            return configString
+    # We don't have a proxy so lets see if we have a match in client.config
+    properties = ic.getProperties()
+    prop = properties.getProperty(configString + ".Proxy")
+    return prop
+
+def getTrainerProperties(trainer):
+    ''' Get the trainer properties for this trainer'''
+    trainerProps = trainer.getTrainerProperties()
+    if not trainerProps:
+        raise RuntimeError("Getting trainer properties failed")
+    return trainerProps
+
 def getTrainer( configString ):
     '''Connect to a trainer service'''
-    trainer_base = ic.stringToProxy( configString )
-    trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
+    proxyStr = getProxyString(configString)
+    if not proxyStr:
+        return None
+    trainer_base = ic.stringToProxy( proxyStr )
+    try:
+        trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
+    except Ice.ConnectionRefusedException:
+        raise RuntimeError("Cannot connect to trainer '{0}'"
+                           .format(proxyStr) )
     if not trainer:
         raise RuntimeError("Invalid DetectorTrainer proxy")
     return trainer
+
+def getVerbosityNumber( verbosityString ):
+    '''Convert error, info, warning etc into 1, 2, 3 etc.
+    '''
+    try:
+        # first see if it's a string digit ("0", "1", etc)
+        return int( verbosityString )
+    except ValueError:
+        pass
+    if verbosityString.lower().startswith("silent"):
+        return 0
+    if verbosityString.lower().startswith("err"):
+        return 1
+    if verbosityString.lower().startswith("warn"):
+        return 2
+    if verbosityString.lower().startswith("info"):
+        return 3
+    if verbosityString.lower().startswith("debug1") or verbosityString.lower()=="debug":
+        return 4
+    if verbosityString.lower().startswith("debug2"):
+        return 5
+    if verbosityString.lower().startswith("debug3"):
+        return 6
 
 # a default implementation for a TrainerCallbackHandler, in case
 # the easy user doesn't specify one;
 # this will get called once the training is done
 class TrainerCallbackReceiverI(cvac.TrainerCallbackHandler):
-    detectorData = None
-    trainingFinished = False
+    def __init__(self):
+        self.detectorData = None
+        self.trainingFinished = False
+        
     def message( self, level, messageString, current=None ):
-        print("message from trainer: "+messageString, end="")
+        global CVAC_ClientVerbosity
+        if isinstance(CVAC_ClientVerbosity, str):
+            CVAC_ClientVerbosity = getVerbosityNumber( CVAC_ClientVerbosity )
+        if level<=CVAC_ClientVerbosity:
+            print("message (level {0}) from trainer: {1}"
+                  .format( str(level), messageString), end="")
         
     def createdDetector(self, detData, current=None):
         if not detData:
-            raise RuntimeError("Finished training, but obtained no DetectorData")
-        print("Finished training, obtained DetectorData of type", detData.type)
+            raise RuntimeError("Finished training, but obtained no trained model")
+        # print("Finished training, obtained a trained model (DetectorData)")
         self.detectorData = detData
         self.trainingFinished = True
 
-def train( trainer, runset, callbackRecv=None ):
+def train( trainer, runset, callbackRecv=None, trainerProperties=None ):
     '''A callback receiver can optionally be specified'''
     
     # ICE functionality to enable bidirectional connection for callback
@@ -691,25 +931,37 @@ def train( trainer, runset, callbackRecv=None ):
     trainer.ice_getConnection().setAdapter(adapter)
 
     # connect to trainer, initialize with a verbosity value, and train
-    trainer.initialize( 3 )
+    if not trainerProperties:
+        trainerProperties = cvac.TrainerProperties()
+        trainerProperties.verbosity = 3
     if type(runset) is dict:
         runset = runset['runset']
-    trainer.process( cbID, runset )
+    trainer.process( cbID, runset, trainerProperties )
 
     # check results
     if not callbackRecv.detectorData:
         raise RuntimeError("no DetectorData received from trainer")    
-    if callbackRecv.detectorData.type == cvac.DetectorDataType.BYTES:
-        raise RuntimeError('detectorData as BYTES has not been tested yet')
-    elif callbackRecv.detectorData.type == cvac.DetectorDataType.PROVIDER:
-        raise RuntimeError('detectorData as PROVIDER has not been tested yet')
 
     return callbackRecv.detectorData
 
+def getDetectorProperties(detector):
+    ''' Get the detector properties for this detector'''
+    detectProps = detector.getDetectorProperties()
+    if not detectProps:
+        raise RuntimeError("Getting detector properties failed")
+    return detectProps
+
 def getDetector( configString ):
     '''Connect to a detector service'''
-    detector_base = ic.stringToProxy( configString )
-    detector = cvac.DetectorPrx.checkedCast(detector_base)
+    proxyStr = getProxyString(configString)
+    if not proxyStr:
+        return None
+    detector_base = ic.stringToProxy( proxyStr )
+    try:
+        detector = cvac.DetectorPrx.checkedCast(detector_base)
+    except Ice.ConnectionRefusedException:
+        raise RuntimeError("Cannot connect to detector '{0}'"
+                           .format(proxyStr) )
     if not detector:
         raise RuntimeError("Invalid Detector service proxy")
     return detector
@@ -719,18 +971,270 @@ def getDetector( configString ):
 # this will get called when results have been found;
 # replace the multiclass-ID label with the string label
 class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
-    allResults = []
-    detectionFinished = False
+    def __init__(self):
+        self.allResults = []
+        self.detectionFinished = False
+        
+    def message( self, level, messageString, current=None ):
+        global CVAC_ClientVerbosity
+        if isinstance(CVAC_ClientVerbosity, str):
+            CVAC_ClientVerbosity = getVerbosityNumber( CVAC_ClientVerbosity )
+        if level<=CVAC_ClientVerbosity:
+            print("message (level {0}) from detector: {1}"
+                  .format( str(level), messageString), end="")
+        
     def foundNewResults(self, r2, current=None):
         # collect all results
         self.allResults.extend( r2.results )
+        
+        
+def discardSuboptimal(perfdata,saveRelativeDir = None):
+    '''
+    This function returns
+    1) all ROC operating points [x-axis: false alarm, y-axis:recall] 
+    2) index of optimal ROC points among all ROC points.
+    Input variables are 
+    1) perfdata = performance data from jousting 
+    2) saveRelativeDir = directory for saving a log file (CAUTION: it's just for DEBUGGING)         
+    '''    
+    ptsROC = []    
+    for data in perfdata:
+        tp = float(data.res.tp)
+        fp = float(data.res.fp)
+        tn = float(data.res.tn)
+        fn = float(data.res.fn)
+        xaxis = 1.0
+        if (tp+fp)!=0:
+            xaxis = fp/(tp+fp)
+        else:
+            print("Warning: " + "Invalid RoC data: (tp+fp) = 0")
+            #raise RuntimeError("Invalid RoC data: (tp+fp) = 0")        
+        yaxis = 0.0
+        if (tp+fn)!=0:
+            yaxis = tp/(tp+fn)
+        else:
+            print("Warning: " + "Invalid RoC data: (tp+fn) = 0")
+            #raise RuntimeError("Invalid RoC data: (tp+fn) = 0")
+        ptsROC.append([xaxis,yaxis,(1.0-xaxis)*yaxis,tp,fp,tn,fn])
+        
+    index_optimal = []
+    for i in range(0,len(ptsROC)):
+        flagOpt = True
+        for j in range(0,len(ptsROC)):
+            if j==i:
+                continue
+            elif ptsROC[j][1]<ptsROC[i][1]:                
+                continue
+            elif ptsROC[j][1]==ptsROC[i][1]:
+                if ptsROC[j][0]<ptsROC[i][0]:
+                    flagOpt = False
+                    break
+                else:
+                    continue                                    
+            elif ptsROC[j][0]<ptsROC[i][0]:
+                flagOpt = False
+                break
+            elif ptsROC[j][0]==ptsROC[i][0]:
+                if ptsROC[j][1]>ptsROC[i][1]:
+                    flagOpt = False
+                    break
+                else:
+                    continue                          
+        
+        if flagOpt==True:
+            index_optimal.append(i)
+            
+    if saveRelativeDir is not None: 
+        fpathROC = CVAC_DataDir+"/"\
+        +saveRelativeDir+"/"\
+        +"RocTable_Full_"\
+        +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S") + ".txt"                 
+        f = open(fpathROC,'w')        
+        for pt in ptsROC:
+            f.write(str(pt[0]) + '\t')
+            f.write(str(pt[1]) + '\n')  
+        f.close() 
+            
+    return ptsROC,index_optimal
 
-def detect( detector, detectorData, runset, callbackRecv=None ):
+        
+def getBestDetectorData(listRocData,dFAR,dRec):
+    '''
+    This function returns the best detector data among detectors from a ROC file
+    according to a criteria.
+    Users can select only one criteria at a time; false alarm rate or recall rate
+    When users set both criterias, it will return the best f-scored detector data. 
+    But, it may cause unexpected results. 
+    '''
+    if len(listRocData)<1 | len(listRocData[0])<3:
+        raise RuntimeError("RoC Data must include at least three elements in a row: detectorData, x-axis and y-axis")
+    
+    resMsg = "The best detectorData is "
+    bestDetectorData = None
+    if (dFAR<0):
+        #when an user sets recall rate
+        valueSmallest = 1.0
+        for elem in listRocData:
+            dist= elem[2]-dRec
+            if (dist>=0) & (dist<valueSmallest):
+                valueSmallest = dist
+                bestDetectorData = elem[0]        
+        if bestDetectorData == None:
+            valueBiggest = -1.0
+            for elem in listRocData:
+                dist= elem[2]-dRec
+                if (dist>valueBiggest):
+                    valueBiggest = dist
+                    bestDetectorData = elem[0]
+            resMsg = "Most likely detectorData is "
+    elif (dRec<0):
+        #when an user sets false alarm rate
+        valueBiggest = -1.0
+        for elem in listRocData:
+            dist= elem[1]-dFAR
+            if (dist<=0) & (dist>valueBiggest):
+                valueBiggest = dist
+                bestDetectorData = elem[0]        
+        if bestDetectorData == None:
+            valueSmallest = 1.0
+            for elem in listRocData:
+                dist= elem[1]-dFAR
+                if (dist<valueSmallest):
+                    valueSmallest = dist
+                    bestDetectorData = elem[0]
+            resMsg = "Most likely detectorData is "
+    else:
+        #when an user sets both criteia
+        #actually, this case is not allowed in pre-screen routine
+        valueBiggest = -1.0
+        for elem in listRocData:
+            distX = elem[1]-dFAR
+            distY = elem[2]-dRec
+            if (distX<=0) & (distY>=0):
+                fvalue = (1.0-elem[1])*elem[2]
+                if (fvalue>valueBiggest):
+                    valueBiggest = fvalue
+                    bestDetectorData = elem[0]
+        
+        if bestDetectorData == None:
+            valueBiggest = -1.0
+            for elem in listRocData:
+                fvalue = (1.0-elem[1])*elem[2]
+                if (fvalue>valueBiggest):
+                    valueBiggest = fvalue
+                    bestDetectorData = elem[0]
+            resMsg = "Most likely detectorData is "
+            
+    resMsg = resMsg + bestDetectorData.filename
+    
+    print(resMsg)
+    #strip off any leading CVAC_DataDir in the detector data
+    bestDetectorData = misc.stripCVAC_DataDir_from_FilePath(bestDetectorData)
+    return bestDetectorData
+
+#from easy.util.ArchiveHandler import *
+def makeROCdata(rocData_optimal):
+    '''
+    This function makes a single ZIP file incluing mulitple detector data 
+    and their performance values (false alarm and recall).
+    Performance values are written in the file "roc.properties"
+    Input format: a list of [detectordata, false alarm, recall]
+    '''
+    
+    ###############################
+    # Make a single zip file
+    ###############################
+    rocArch = ArchiveHandler(CVAC_DataDir)
+    rocArch.mDDA.mPropertyFilename = "roc.properties"
+    clientName = rocArch.createClientName('ROC', 'TBD')
+    tempDir = rocArch.createTrainingDir(clientName)
+    clientDir,relClientDir = rocArch.createClientDir(clientName)
+    rocZip_fileName = rocArch.setArchivePath(clientDir,"ROCdata")
+    
+    for roc in rocData_optimal:
+        valueStr = str(roc[1]) + ', ' + str(roc[2])
+        rocArch.addFile(roc[0].filename,getFSPath(roc[0]),valueStr)                        
+    
+    rocArch.createArchive(tempDir)
+    rocArch.deleteTrainingDir(clientName)
+    
+    ###############################
+    # Move the file to its parent folder
+    ###############################
+    rocZiptemp = cvac.FilePath()
+    rocZiptemp.directory.relativePath = relClientDir                      
+    rocZiptemp.filename = rocZip_fileName
+    
+    rocZip = cvac.FilePath()
+    rocZip.directory.relativePath = os.path.join(relClientDir, '..')                      
+    rocZip.filename = rocZip_fileName
+    
+    rocZiptempPath = getFSPath(rocZiptemp)  
+    shutil.move(rocZiptempPath,getFSPath(rocZip))
+    
+    dirname, filename = os.path.split(rocZiptempPath)
+    shutil.rmtree(dirname)
+    
+    return rocZip
+
+def isROCdata(rocZip):
+    '''
+    This function checks whether the input zip file is a ROC zip file or 
+    not (a regular detector file). Decision is based on existence 
+    of the file "roc.properties".
+    Return 1) is it a ROC zip file or not
+    Return 2) model files and their false alarm rate and recall rate 
+    (if it is a ROC zip file). 
+    Return 3) a temp folder including model files (if it is a ROC zip file).     
+    '''
+    zipfilepath = getFSPath(rocZip)
+    # Make a temp directory under the data directory in a directory
+    # called "clientTemp"
+    tempdirloc = CVAC_DataDir + "/clientTemp"
+    if os.path.isdir(tempdirloc) == False:
+        os.makedirs(tempdirloc)
+    tempDir = tempfile.mkdtemp(dir=tempdirloc)
+
+    rocArch = DetectorDataArchive()
+    rocArch.mPropertyFilename = "roc.properties"    
+    rocDict = rocArch.unArchive(zipfilepath,tempDir)
+    rocData_optimal = []
+    isROC = False
+    if len(rocDict) > 0:
+        isROC = True
+        for filename in rocDict:
+            detectorData = cvac.FilePath()
+            detectorData.directory.relativePath = tempDir #relDir
+            detectorData.filename = filename
+            tperf = rocDict[filename].split(',')
+            rocData_optimal.append([detectorData,\
+                                    float(tperf[0]),float(tperf[1])])
+    return isROC,rocData_optimal,tempDir
+
+def getSensitivityOptions(detectorData):
+    '''
+    Return any False Alarm, and Recall rate options available
+    in the model file.  This will return a list of False Alarm, Recall pairs that
+    have been trained into the model or None if they are not any.
+    detectorData is the model file that that might contain the different model files and sensitivity options.
+    '''
+    isRoc, rockList, tempDir = isROCData(detectorData)
+    if isRoc == False:
+        return None
+    else:
+        if tempDir != None:
+            if os.path.isdir(tempDir):
+               shutil.rmtree(tempDir)
+        return rockList
+    
+
+def detect( detector, detectorData, runset, detectorProperties=None, callbackRecv=None ):
     '''
     Synchronously run detection with the specified detector,
     trained model, and optional callback receiver.
-    The detectorData can be either a cvac.DetectorData object or simply
-     a filename of a pre-trained model.  Naturally, the model has to be
+    The detectorData has to be a filename of a pre-trained model, or
+     empty if the detector is pre-configured with a model, or if it does
+     not require a model.  Naturally, the model has to be
      compatible with the detector.
     The runset can be either a cvac.RunSet object or anything that
     createRunSet can turn into a RunSet.
@@ -739,12 +1243,34 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
     '''
 
     # create a cvac.DetectorData object out of a filename
-    if type(detectorData) is str:
-        ddpath = getCvacPath( detectorData );
-        detectorData = cvac.DetectorData( cvac.DetectorDataType.FILE, None, ddpath, None )
-    elif not type(detectorData) is cvac.DetectorData:
-        raise RuntimeError("detectorData must be either filename or cvac.DetectorData")
-
+    tempDir = None
+    if not detectorData:
+        detectorData = getCvacPath( "" )
+    elif type(detectorData) is str:
+        detectorData = getCvacPath( detectorData )
+        
+    if type(detectorData) is cvac.FilePath:
+        fileext = os.path.splitext(detectorData.filename)[1]
+        if fileext.lower()==".zip":
+            #check whether the zip file is roc data or not
+            isROC, rocData_optimal, tempDir = isROCdata(detectorData)
+            if isROC == True:
+                if detectorProperties == None:
+                    raise RuntimeError("For selecting the best detectorData, " + \
+                                       "detectorProperties including desired precision " + \
+                                       "and recall must be entered")
+                dFAR = detectorProperties.falseAlarmRate
+                dRec = detectorProperties.recall
+                if (dFAR<0) & (dRec<0):
+                    raise RuntimeError("Inapporopriate values for desired recall and precision")
+                elif (dFAR>1.0) & (dRec>1.0):
+                    raise RuntimeError("Inapporopriate values for desired recall and precision")
+                elif (dFAR>0.0) & (dRec>0.0):
+                    raise RuntimeError("Users can set only one criteria not both")                
+                detectorData = getBestDetectorData(rocData_optimal,dFAR,dRec)
+    elif not type(detectorData) is cvac.FilePath:
+        raise RuntimeError("detectorData must be filename, cvac.FilePath, or RoC data")
+    
     # if not given an actual cvac.RunSet, try to create a RunSet
     if isinstance(runset, cvac.RunSet):
         pass
@@ -773,8 +1299,12 @@ def detect( detector, detectorData, runset, callbackRecv=None ):
 
     # connect to detector, initialize with a verbosity value
     # and the trained model, and run the detection on the runset
-    detector.initialize( 3, detectorData )
-    detector.process( cbID, runset )
+    if detectorProperties == None:
+        detectorProperties = cvac.DetectorProperties()
+    detector.process( cbID, runset, detectorData, detectorProperties )
+    
+    if tempDir != None:
+        shutil.rmtree(tempDir)    
 
     if ourRecv:
         return callbackRecv.allResults
@@ -809,7 +1339,7 @@ def getLabelText( label, classmap=None, guess=False ):
         if type(mapped) is cvac.Purpose:
             text = getPurposeName( mapped )
             if type(text) is int:
-                if guess and text.isdigit():
+                if guess:
                     text = 'class {0}'.format( text )
                 else:
                     text = '{0}'.format( text )
@@ -874,12 +1404,16 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
             numfound, ("s","")[numfound==1], ', '.join(names) ))
         if numfound==1 and origname.lower()==names[0].lower():
             identical += 1
-    print('{0} out of {1} results had identical labels'.format( identical, len( results ) ))
+    if foundMap and origMap:
+        print('{0} out of {1} results had identical purposes'
+              .format( identical, len( results ) ))
+    else:
+        print('(labels had unknown purposes, cannot determine result accuracy)')
 
-def initGraphics():
+def initGraphics(title = "results"):
     try:
         wnd = tk.Tk()
-        wnd.title('results')
+        wnd.title(title)
     except:
         wnd = None
         raise RuntimeError("cannot display images - do you have PIL installed?")
@@ -907,6 +1441,46 @@ def showImage( img ):
     # start the event loop
     wnd.mainloop()
     wnd = None
+    
+def showROCPlot(ptList):
+    '''
+    Plot image is 300x200 with 10 pixel space around the plot so the
+    plot area is 280x180. So each 1/10th is 18 pixels in height and 28 pixels in width.
+    Plot 0,0 is pixel 10, 190
+    '''
+    xoffset = 10
+    yoffset = 10
+    
+    wnd = initGraphics(title="ROC Curve Plot")
+    if wnd == None:
+        return
+    try:
+        im = Image.open(getFSPath('plot.jpg'))
+    except:
+        raise RuntimeError("Cannot open ROC plot background image plot.jpg")
+        return
+    width, height = im.size
+    ImbImage = tk.Canvas(wnd, highlightthickness=0, bd=0, bg='red', width=width, height=height)
+    ImbImage.pack()
+    draw = ImageDraw.Draw(im)
+    for pt in ptList:
+        # Scale over plot region assume plot is all but offset above and below
+        x = int(pt.precision*(width - (2 * xoffset)))
+        y = int(pt.recall*(height - (2 * yoffset)))
+        x = x + xoffset
+        y = y + yoffset
+        #convert to origin in upper left
+        y = height - y -1
+        draw.ellipse((x-2, y-2, x+2, y+2), fill="black")
+
+        
+    del draw
+
+    plot = ImageTk.PhotoImage(im)
+    ImbImage.create_image(width/2, height/2, image=plot)
+    wnd.mainloop()
+    wnd = None
+    
 
 def drawResults( results ):
     if not results:
@@ -933,6 +1507,7 @@ def drawResults( results ):
 def drawLabelables( lablist, maxsize=None ):
     # first, collect all image substrates of the labels
     substrates = {}
+    num_videos = 0
     for lbl in lablist:
         if lbl.sub.isImage:
             subpath = getFSPath( lbl.sub )
@@ -940,6 +1515,13 @@ def drawLabelables( lablist, maxsize=None ):
                 substrates[subpath].append( lbl )
             else:
                 substrates[subpath] = [lbl]
+        elif lbl.sub.isVideo:
+            num_videos += 1
+        else:
+            raise RuntimeError("Unknown substrate type")
+    if num_videos>0:
+        print("not drawing {0} video annotation{1}"
+              .format(num_videos, ("s","")[num_videos==1]))
     if not substrates:
         print("no labels and/or no substrates, nothing to draw");
         return
@@ -983,7 +1565,7 @@ def showImagesWithLabels( substrates, maxsize=None ):
                     draw.line( cpts, fill=255, width=2 )
                     del draw
                 else:
-                    print("warning: not rendering Label type {0}".format( type(lbl.loc) ))
+                    print("warning: not rendering Label type {0}".format( type(lbl.loc) ))      
         showImage( img )
 
 def getConfusionMatrix( results, origMap, foundMap ):

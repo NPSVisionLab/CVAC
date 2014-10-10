@@ -45,6 +45,7 @@
 #include <stdarg.h>
 #include <archive.h>
 #include <archive_entry.h>
+
 #include "util/DetectorDataArchive.h"
 #include "util/FileUtils.h"
 
@@ -56,6 +57,23 @@ using namespace std;
 
 static const std::string PROPS = "trainer.properties";
 
+/** TODO:
+    The DetectorDataArchive implementation should be changed as follows.
+    Only one minor interface modification would result: DDA client would
+    need to make the distinction between keys that are references to files
+    and keys that are other properties.
+
+Changes:
+*    use a std::map instead of two parallel vectors of keys and values.
+*    Make the key comparison operator perform a case-insensitive string comparison.
+*    Don't distinguish between a property and file in DDA; always use "=" as separator.
+*    Instead, provide a function that returns a full file path for a given key which a
+        DDA client can call: getFSPathForProperty( const std::string& key )
+*    Do not require the space before and after the =
+*    Chop the keys and values (remove leading and trailing whitespace)
+*    Write a unit test for DDA.
+
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 cvac::DetectorDataArchive::DetectorDataArchive()
@@ -141,30 +159,28 @@ void cvac::DetectorDataArchive::unarchive(const string &archiveFile, const strin
     std::string line;
     while( std::getline(propfile, line))
     {
-        char name[512];
-        char value[512];
-        int res;
         // See if its a property
         int idx = line.find(":");
         if (idx > 0)
         {
-            if (res = sscanf(line.c_str(), "%s : %s", name, value) > 0)
-            { 
-                // We got a name value pair to save
-                mPropNames.push_back(string(name));
-                mPropValues.push_back(string(value));
-                continue;
-            }
+            string name = line.substr(0, idx);  trim( name );
+            string value = line.substr(idx+1, string::npos);  trim( value );
+            // We got a name value pair to save
+            mPropNames.push_back( name );
+            mPropValues.push_back( value );
+            continue;
         } 
         // See if its an id
-        if (res = sscanf(line.c_str(), "%s = %s", name, value) > 0)
+        idx = line.find("=");
+        if (idx > 0)
         {
+            string name = line.substr(0, idx);  trim( name );
+            string value = line.substr(idx+1, string::npos);  trim( value );
             // We got a name value pair to save
-            mFileIds.push_back(string(name));
-            mFileNames.push_back(cdir + "/" + string(value));
+            mFileIds.push_back( name );
+            mFileNames.push_back( cdir + "/" + value );
         }
     }
-    
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -196,7 +212,7 @@ vector<string> cvac::DetectorDataArchive::getProperties()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-string cvac::DetectorDataArchive::getProperty(const string &name)
+string cvac::DetectorDataArchive::getProperty(const string &name) const
 {
     string empty;
     int size = mPropNames.size();
@@ -256,13 +272,15 @@ const std::vector<std::string> cvac::DetectorDataArchive::getFileIds()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-const std::string cvac::DetectorDataArchive::getFile(const std::string &identifier)
+const std::string
+cvac::DetectorDataArchive::getFile(const std::string &identifier) const
 {
     std::string empty;
     int size = mFileIds.size();
     int i;
     for (i = 0; i < size; i++)
     {
+      // printf("%s: %s\n", mFileIds[i].c_str(), mFileNames[i].c_str());
         if (mFileIds[i].compare(identifier) == 0)
         {
             return mFileNames[i];
@@ -272,7 +290,7 @@ const std::string cvac::DetectorDataArchive::getFile(const std::string &identifi
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-int copy_data(struct archive *ar, struct archive *aw)
+int copy_data(struct archive *ar, struct archive *aw, unsigned long totalSize)
 {
   int r;
   const void *buff;
@@ -284,18 +302,53 @@ int copy_data(struct archive *ar, struct archive *aw)
   __LA_INT64_T offset;
 #endif
 
-  for (;;) {
+  // On OSX totalSize ends up as 0.  It must be a bug, but to
+  // work around this always save sizeLeft and rely on the ARCHIVE_EOF.
+  // On machines without this issue we can still use sizeLeft to get
+  // around the other bug of not returning a valid ARCHIVE_EOF.
+  unsigned long sizeLeft = totalSize;
+  if (sizeLeft == 0)
+    sizeLeft = 1;
+  while (sizeLeft > 0) {
+    
     r = archive_read_data_block(ar, &buff, &size, &offset);
     if (r == ARCHIVE_EOF)
       return (ARCHIVE_OK);
-    if (r != ARCHIVE_OK)
-      return (r);
+    if (r < ARCHIVE_OK)
+    {
+      //Report the error and try and finish.  This should never happen
+      std::string errStr = archive_error_string(ar);
+      errStr.append("\n");
+      localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
+      r = archive_write_data_block(aw, buff, size, offset);
+      if (r != ARCHIVE_OK)
+      {
+        std::string errStr = archive_error_string(aw);
+        errStr.append("\n");
+        //if the destination has a problem, it would return Error.        
+        localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
+        return (r);
+      }
+      else
+      {
+        localAndClientMsg(VLogger::WARN, NULL,
+          "It's desirable to check validity of the zip file because it may be truncated or corrupted.\n");
+        return ARCHIVE_OK;
+      }
+    }
+
     r = archive_write_data_block(aw, buff, size, offset);
     if (r != ARCHIVE_OK) {
-      localAndClientMsg(VLogger::WARN, NULL, archive_error_string(aw));
+      std::string errStr = archive_error_string(aw);
+      errStr.append("\n");
+      localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
       return (r);
     }
+    if (totalSize != 0)
+        sizeLeft -= size;
   }
+  // We read all the bytes so return OK
+  return ARCHIVE_OK;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -335,7 +388,7 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
     if (r == ARCHIVE_EOF) // done loop
       break;
 
-    if (r != ARCHIVE_OK)
+    if (r < ARCHIVE_OK)
       localAndClientMsg(VLogger::WARN, NULL, archive_error_string(a));
 
     if (r < ARCHIVE_WARN) {
@@ -349,23 +402,31 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
     archive_entry_set_pathname(entry, fullSubfolderPath.c_str());
 
     r = archive_write_header(ext, entry);
-    if (r != ARCHIVE_OK) {
+    if (r < ARCHIVE_OK) {
       localAndClientMsg(VLogger::WARN, NULL, archive_error_string(ext));
     }
-    //else if (archive_entry_size(entry) > 0) {
     else {
-        r = copy_data(a, ext);
-        if (r != ARCHIVE_OK) {
-          localAndClientMsg(VLogger::WARN, NULL, archive_error_string(a));
-        }
-        if (r < ARCHIVE_WARN) {
-          // Archive error string already echoed, throw exception for serious error
-          localAndClientMsg(VLogger::WARN, NULL, "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
-          throw "";
+        unsigned long entrySize = archive_entry_size(entry);
+        // Need to call copy_data even with an entrySize of 0 size
+        // OSX had a defect an always returns a entrySize of zero.
+        if (entrySize >= 0) {
+            r = copy_data(a, ext, entrySize);
+            if (r < ARCHIVE_OK) {
+              std::string errStr = archive_error_string(a);
+              errStr.append("\n");
+              localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
+            }
+            if (r < ARCHIVE_WARN) {
+              // throw exception for serious error
+              localAndClientMsg(VLogger::WARN, NULL, "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
+              throw "";
+            }
         }
         r = archive_write_finish_entry(ext);
-        if (r != ARCHIVE_OK) {
-          localAndClientMsg(VLogger::WARN, NULL, archive_error_string(ext));
+        if (r < ARCHIVE_OK) {
+          std::string errStr = archive_error_string(ext);
+          errStr.append("\n");
+          localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
         }
         if (r < ARCHIVE_WARN) {
           // Archive error string already echoed, throw exception for serious error
@@ -414,19 +475,20 @@ bool writeZipArchive(const std::string& _outpath,const std::vector<std::string>&
     std::ifstream is(_inPaths[k].c_str(),std::ios::binary);    
     if(!is.is_open())
     {
-      std::cout << "The target file: "
+      std::cout << "The file to be archived: "
         << _inPaths[k].c_str() 
         << " may not exist or has a problem.\n";
       return false;
     }
 
     is.seekg (0, is.end);
-    int tBuffSize = is.tellg();
+    //int tBuffSize = is.tellg();
+    streampos tBuffSize = is.tellg();
     is.seekg (0, is.beg);
     char* tBuff = new char[tBuffSize]; 
     if(tBuff == 0 || tBuff == NULL)
     {
-      std::cout << "The target file: "
+      std::cout << "The file to be archived: "
         << _inPaths[k].c_str() 
         << " is too big to be compressed.\n";
       return false;

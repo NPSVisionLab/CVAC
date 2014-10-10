@@ -18,7 +18,8 @@ easy.printRunSetInfo( trainset, printLabels=True )
 # Connect to the trainer for a Bag of Words algorithm, then
 # train with the given runset
 #
-trainer = easy.getTrainer( "bowTrain:default -p 10103 ")
+print("starting training, this might take a few minutes...")
+trainer = easy.getTrainer( "BOW_Trainer")
 trainedModel = easy.train( trainer, trainset )
 
 #
@@ -29,8 +30,8 @@ trainedModel = easy.train( trainer, trainset )
 zipfname = easy.getFSPath( trainedModel )
 print("{0}".format( zipfname ))
 zipf = zipfile.ZipFile( zipfname )
-print("Training model stored in file {0}; file contents:\n{1}".\
-      format( zipfname, zipf.namelist()))
+print("Training model stored in file {0}".format( zipfname))
+# print("file contents:\n{0}".format(zipf.namelist()))
 
 #
 # test the trained model on a separate set of images
@@ -38,7 +39,7 @@ print("Training model stored in file {0}; file contents:\n{1}".\
 print("==== Test runset: ====")
 testset = easy.createRunSet( "testImg" )
 easy.printRunSetInfo( testset, printLabels=True )
-detector = easy.getDetector( "bowTest:default -p 10104" )
+detector = easy.getDetector( "BOW_Detector" )
 results = easy.detect( detector, trainedModel, testset )
 print("==== Results: ====")
 easy.printResults( results )

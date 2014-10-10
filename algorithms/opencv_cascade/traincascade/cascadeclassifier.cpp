@@ -301,7 +301,7 @@ int CvCascadeClassifier::fillPassedSamples( int first, int count, bool isPositiv
             {
                 getcount++;
                 break;
-            }
+            } 
         }
     }
     return getcount;

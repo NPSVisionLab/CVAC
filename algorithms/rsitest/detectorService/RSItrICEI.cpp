@@ -45,6 +45,8 @@
 #include <util/processRunSet.h>
 #include <util/FileUtils.h>
 #include <util/DetectorDataArchive.h>
+#include <util/ServiceManI.h>
+
 using namespace cvac;
 
 
@@ -58,20 +60,20 @@ extern "C"
   //
   ICE_DECLSPEC_EXPORT IceBox::Service* create(Ice::CommunicatorPtr communicator)
   {
-    ServiceManager *sMan = new ServiceManager();
-    RSItrICEI *rsitr = new RSItrICEI(sMan);    
-    sMan->setService(rsitr, "RSItrTest_Detector");
-    return (::IceBox::Service*) sMan->getIceService();
+    RSItrICEI *rsitr = new RSItrICEI();
+    ServiceManagerI *sMan = new ServiceManagerI( rsitr, rsitr );
+    rsitr->setServiceManager( sMan );
+    return sMan;
   }
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RSItrICEI::RSItrICEI(ServiceManager *sman)
+RSItrICEI::RSItrICEI()
 : fInitialized(false), mRunsetWrapper(NULL), mRunsetIterator(NULL)
 {
-  mServiceMan = sman; 
+  mServiceMan = NULL; 
 }
 
 RSItrICEI::~RSItrICEI()
@@ -85,9 +87,11 @@ RSItrICEI::~RSItrICEI()
   mRunsetWrapper = NULL;
 }
 
-                          // Client verbosity
-void RSItrICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, const ::Ice::Current& current)
+void RSItrICEI::initialize(int verbosity,const ::cvac::FilePath &file,
+                           const::Ice::Current &current)
 {
+  fInitialized = false;
+
   // Set CVAC verbosity according to ICE properties
   Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
   string verbStr = props->getProperty("CVAC.ServicesVerbosity");
@@ -99,18 +103,31 @@ void RSItrICEI::initialize(::Ice::Int verbosity, const ::DetectorData& data, con
 
   fInitialized = true;
   mRunsetConstraint.clear();
+  mRunsetConstraint.addType("jpg");
   mRunsetConstraint.addType("png");    
-  mRunsetConstraint.addType("tif");  
-  //mRunsetConstraint.addType("jpg");
+  mRunsetConstraint.addType("tif");
 }
 
-
-
-bool RSItrICEI::isInitialized(const ::Ice::Current& current)
+bool RSItrICEI::isInitialized()
 {
   return fInitialized;
 }
 
+void RSItrICEI::setServiceManager(cvac::ServiceManagerI *sman)
+{
+  mServiceMan = sman;
+}
+
+std::string RSItrICEI::getName(const ::Ice::Current& current)
+{
+  return "RSItrTest_Detector";
+}
+
+
+std::string RSItrICEI::getDescription(const ::Ice::Current& current)
+{
+  return "Runset Iterator Tester";
+}
 
 void RSItrICEI::destroy(const ::Ice::Current& current)
 {
@@ -125,89 +142,49 @@ void RSItrICEI::destroy(const ::Ice::Current& current)
   fInitialized = false;
 }
 
-
-std::string RSItrICEI::getName(const ::Ice::Current& current)
+bool RSItrICEI::cancel(const Ice::Identity &client, const ::Ice::Current& current)
 {
-  return "RSItrTest_Detector";
+  stopping();
+  mServiceMan->waitForStopService();
+  if (mServiceMan->isStopCompleted())
+    return true;
+  else 
+    return false;
 }
 
-
-std::string RSItrICEI::getDescription(const ::Ice::Current& current)
-{
-  return "Runset Iterator Tester";
-}
-
-
-void RSItrICEI::setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current)
-{
-
-}
-
-
-DetectorData RSItrICEI::createCopyOfDetectorData(const ::Ice::Current& current)
+DetectorProperties RSItrICEI::getDetectorProperties(const ::Ice::Current& current)
 {	
-  DetectorData data;
-  return data;
+  //TODO get the real detector properties but for now return an empty one.
+  DetectorProperties props;
+  return props;
 }
 
-
-DetectorPropertiesPrx RSItrICEI::getDetectorProperties(const ::Ice::Current& current)
-{	
-  return NULL;
-}
-
-
-ResultSetV2 RSItrICEI::processSingleFile(DetectorPtr detector,LabelablePtr _lPtrOriginal)
+void RSItrICEI::starting()
 {
-  ResultSetV2 tResSet;	 
-
-  // Detail the current file being processed (DEBUG_1)
-  std::string tPathFile = _lPtrOriginal->sub.path.directory.relativePath
-                          + "/" + _lPtrOriginal->sub.path.filename;
-  localAndClientMsg(VLogger::DEBUG_1, NULL, "%s is processing.\n",
-                    tPathFile.c_str());
-
-  int tBestClass(7);
-  bool tFlagResult(true);
-
-  //BowICEItrI* _bowCV = static_cast<BowICEItrI*>(detector.get());
-  //float confidence = 0.5f; // TODO: obtain some confidence from BOW
-  //tFlagResult = _bowCV->pBowCV->detect_run(m_CVAC_DataDir + "/" + tPathFile, tBestClass);
-
-  if(true == tFlagResult)
-  {
-    localAndClientMsg(VLogger::DEBUG_1, NULL, "Detection, %s as Class: %d\n", 
-                      tPathFile.c_str(),
-                      tBestClass);
-
-    Result _tResult;
-
-    _tResult.original = _lPtrOriginal;
-    
-    LabelablePtr tlPtrRes = new Labelable();
-    char buff[32];
-    sprintf(buff, "%d", tBestClass);
-    tlPtrRes->confidence = 0.5f;
-    tlPtrRes->lab.hasLabel = true;
-    tlPtrRes->lab.name = buff;
-    _tResult.foundLabels.push_back(tlPtrRes);
-
-    tResSet.results.push_back(_tResult);
-  }
-
-  return tResSet;
+  // Do anything needed on service starting
 }
 
+void RSItrICEI::stopping()
+{
+  mServiceMan->stopService();
+}
 
 void RSItrICEI::process(const Ice::Identity &client,const ::RunSet& runset,
-                         const ::Ice::Current& current)
+                        const ::cvac::FilePath &detectorData,
+                        const::cvac::DetectorProperties &props,
+                        const ::Ice::Current& current)
 {
   DetectorCallbackHandlerPrx _callback = 
     DetectorCallbackHandlerPrx::uncheckedCast(current.con->createProxy(client)->ice_oneway());
   
-  if (!fInitialized)
+  initialize(props.verbosity, detectorData, current);
+
+  if (!isInitialized())
+  {
     localAndClientMsg(VLogger::ERROR, _callback,
-    "RSItrTest is not initialized, aborting.\n");
+                      "RSItrTest is not initialized, aborting.\n");
+    return;
+  }
 
   //////////////////////////////////////////////////////////////////////////
   // Start - Initialization of RunsetWrapper
@@ -217,9 +194,9 @@ void RSItrICEI::process(const Ice::Identity &client,const ::RunSet& runset,
 
   mServiceMan->setStoppable();
   mRunsetWrapper = new RunSetWrapper(&runset,m_CVAC_DataDir,mServiceMan);  
-  //mRunsetWrapper->showList(); //For showing initial runset
-
+  //mRunsetWrapper->showList(); //for debugging
   mServiceMan->clearStop();
+
   if(!mRunsetWrapper->isInitialized())
   {
     localAndClientMsg(VLogger::ERROR, _callback,
@@ -239,7 +216,7 @@ void RSItrICEI::process(const Ice::Identity &client,const ::RunSet& runset,
   mServiceMan->setStoppable();
   int tnSkipFrames = 150;
   mRunsetIterator = new RunSetIterator(mRunsetWrapper,mRunsetConstraint,
-                                       mServiceMan,tnSkipFrames);
+                                       mServiceMan,_callback,tnSkipFrames);
   mServiceMan->clearStop();
   // End - Initialization of RunsetIterator
   //////////////////////////////////////////////////////////////////////////  
@@ -254,8 +231,8 @@ void RSItrICEI::process(const Ice::Identity &client,const ::RunSet& runset,
         mServiceMan->stopCompleted();
         break;
       }
-      ResultSetV2 tResSetV2 = processSingleFile(this,mRunsetIterator->getNext());
-      _callback->foundNewResults(tResSetV2);
+      ResultSet tResSet = processSingleFile(this,mRunsetIterator->getNext());
+      _callback->foundNewResults(tResSet);
     }
     mServiceMan->clearStop();
   }
@@ -265,4 +242,45 @@ void RSItrICEI::process(const Ice::Identity &client,const ::RunSet& runset,
       "RSItrTest is not initialized because of RunsetIterator, aborting.\n");
     return;
   }  
+}
+
+ResultSet RSItrICEI::processSingleFile(DetectorPtr detector,LabelablePtr _lPtrOriginal)
+{
+  ResultSet tResSet;	 
+
+  // Detail the current file being processed (DEBUG_1)
+  std::string tPathFile = _lPtrOriginal->sub.path.directory.relativePath
+    + "/" + _lPtrOriginal->sub.path.filename;
+  localAndClientMsg(VLogger::DEBUG_1, NULL, "%s is processing.\n",
+    tPathFile.c_str());
+
+  int tBestClass(7);  //for testing 
+  bool tFlagResult(true);
+
+  //BowICEItrI* _bowCV = static_cast<BowICEItrI*>(detector.get());
+  //float confidence = 0.5f; // TODO: obtain some confidence from BOW
+  //tFlagResult = _bowCV->pBowCV->detect_run(m_CVAC_DataDir + "/" + tPathFile, tBestClass);
+
+  if(true == tFlagResult)
+  {
+    localAndClientMsg(VLogger::DEBUG_1, NULL, "Detection, %s as Class: %d\n", 
+      tPathFile.c_str(),
+      tBestClass);
+
+    Result _tResult;
+
+    _tResult.original = _lPtrOriginal;
+
+    LabelablePtr tlPtrRes = new Labelable();
+    char buff[32];
+    sprintf(buff, "%d", tBestClass);
+    tlPtrRes->confidence = 0.5f;
+    tlPtrRes->lab.hasLabel = true;
+    tlPtrRes->lab.name = buff;
+    _tResult.foundLabels.push_back(tlPtrRes);
+
+    tResSet.results.push_back(_tResult);
+  }
+
+  return tResSet;
 }

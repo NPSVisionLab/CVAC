@@ -37,7 +37,67 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         COMPONENT IceExt
         PATTERN *.dll
        )
+#Windows also needs numpy install exe
+INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-win32-superpack-python2.7.exe
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+       )
+#Windows also needs python install exe
+INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/python-2.7.8.msi
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+       )
 ENDIF(WIN32)
+
+SET (SVM_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libsvm")
+IF(APPLE)
+# OSX also needs numpy package we will install the whl into the virtual env
+INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-cp27-none-any.whl
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+       )
+INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/virtualenv-1.11.6
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+        USE_SOURCE_PERMISSIONS
+       )
+#Need to install the stdc++ binaries if that option gets turned on
+INSTALL(DIRECTORY  ${ICE_ROOT}/bin
+        DESTINATION 3rdparty/ICE
+        COMPONENT IceExt
+        USE_SOURCE_PERMISSIONS
+       )
+# need to install the opencv stdc++ library files
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/opencv_stdc
+      DESTINATION 3rdparty
+       COMPONENT OpenCVExt
+        USE_SOURCE_PERMISSIONS
+      ) 
+# need to install the opencv ++11 library files
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/opencv
+      DESTINATION 3rdparty
+       COMPONENT OpenCVExt
+        USE_SOURCE_PERMISSIONS
+      ) 
+INSTALL(DIRECTORY   ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++
+        DESTINATION 3rdparty
+        COMPONENT UnitTestPPExt
+        USE_SOURCE_PERMISSIONS
+      )
+INSTALL(DIRECTORY   ${CMAKE_SOURCE_DIR}/3rdparty/UnitTest++_stdc
+        DESTINATION 3rdparty
+        COMPONENT UnitTestPPExt
+        USE_SOURCE_PERMISSIONS
+      )
+INSTALL(FILES ${SVM_DIR}/libsvm.so.2
+              ${SVM_DIR}/setup.py
+              ${SVM_DIR}/svm.py
+              ${SVM_DIR}/svmutil.py
+        DESTINATION 3rdparty/libsvm
+        COMPONENT LibSVMExt
+       )
+
+ELSE (APPLE)
 
 INSTALL(PROGRAMS ${ICE_SLICE_EXECUTABLE}
                  ${ICE_SLICE2JAVA_EXECUTABLE} 
@@ -82,7 +142,26 @@ INSTALL(DIRECTORY ${LIBARCHIVE_BIN_DIR}
        DESTINATION 3rdparty/libarchive
        COMPONENT LibArchiveExt
       )
+#Windows also needs python virtual env package so we don't need root access
+INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/virtualenv-1.11.6
+        DESTINATION 3rdparty
+        COMPONENT NumpyExt
+        USE_SOURCE_PERMISSIONS
+       )
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-sse3.exe
+       DESTINATION 3rdparty
+       COMPONENT  NumpyExt
+      )
+INSTALL(FILES ${SVM_DIR}/libsvm${CMAKE_SHARED_LIBRARY_SUFFIX}
+              ${SVM_DIR}/setup.py
+              ${SVM_DIR}/svm.py
+              ${SVM_DIR}/svmutil.py
+        DESTINATION 3rdparty/libsvm
+        COMPONENT LibSVMExt
+       )
+
 ENDIF( WIN32 )
+
 # OpenCV needs to be isolated in some staging area.  You need
 # to configure this CMake to pull OpenCV from there.
 # OpenCV_DIR points to the shared/OpenCV subdirectory.
@@ -97,6 +176,9 @@ INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}
        COMPONENT OpenCVExt
       ) 
 
+ENDIF(APPLE)
+
+
 include(CPack)
 
 # Declare Third Party Group
@@ -110,6 +192,24 @@ cpack_add_component (
   IceExt
   DISPLAY_NAME "ICE"
   DESCRIPTION "Internet Communication Engine"
+  GROUP ThirdPartyGrp
+)
+cpack_add_component (
+  NumpyExt
+  DISPLAY_NAME "Numpy"
+  DESCRIPTION "Python numeric processing package"
+  GROUP ThirdPartyGrp
+)
+cpack_add_component (
+  LibSVMExt
+  DISPLAY_NAME "libsvm"
+  DESCRIPTION "Python libsvm package"
+  GROUP ThirdPartyGrp
+)
+cpack_add_component (
+  PythonExt
+  DISPLAY_NAME "Python"
+  DESCRIPTION "Python package"
   GROUP ThirdPartyGrp
 )
 cpack_add_component (

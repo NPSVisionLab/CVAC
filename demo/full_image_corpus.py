@@ -29,13 +29,12 @@ print('Obtained {0} labeled artifact{1} from corpus1 "{2}":'.format(
     len(lablist1), ("s","")[len(lablist1)==1], corpus1.name ));
 easy.printCategoryInfo( categories1 )
 
-# Create a corpus that consists of files under a directory.  This
-# is at first identical to creating a RunSet from a folder.
-corpus2 = easy.openCorpus( "trainImg" )
-categories2, lablist2 = easy.getDataSet( corpus2, createMirror=True )
+# Create a list of labelable files under a directory.
+lablist2 = easy.getLabelableList( "trainImg" )
+categories2 = easy.getCategories(lablist2)
 print("\n=== Corpus 2: ===");
-print('Obtained {0} labeled artifact{1} from corpus1 "{2}":'.format(
-    len(lablist2), ("s","")[len(lablist2)==1], corpus2.name ));
+print('Obtained {0} labeled artifact{1} from trainImg directory:'.format(
+    len(lablist2), ("s","")[len(lablist2)==1]));
 easy.printCategoryInfo( categories2 )
 
 # Note how both corpora contain flag images, but they have different
@@ -52,7 +51,7 @@ easy.printRunSetInfo( rs1 )
 
 # A runset can be used for training or for testing
 print("------- Bag of Words results for corporate logos: -------")
-detector = easy.getDetector( "bowTest:default -p 10104" )
+detector = easy.getDetector( "BOW_Detector" )
 modelfile = "detectors/bowUSKOCA.zip"
 results1 = easy.detect( detector, modelfile, rs1 )
 print("Note that both original and found labels are printed:")

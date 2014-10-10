@@ -37,6 +37,10 @@
   ;Set compression
   SetCompressor @CPACK_NSIS_COMPRESSOR@
 
+  ;CVAC Changes
+  RequestExecutionLevel user
+  ;END CVAC Changes
+
 @CPACK_NSIS_DEFINES@   
 
   !include Sections.nsh
@@ -219,7 +223,7 @@ Function AddToPath
   StrLen $2 $1
   IntCmp $2 0 CheckPathLength_ShowPathWarning CheckPathLength_Done CheckPathLength_Done
     CheckPathLength_ShowPathWarning:
-    Messagebox MB_OK|MB_ICONEXCLAMATION "Warning! PATH too long installer unable to modify PATH!"
+    Messagebox MB_OK|MB_ICONEXCLAMATION "Warning! PATH too long installer unable to modify PATH!" /SD IDOK
     Goto AddToPath_done
   CheckPathLength_Done:
   Push "$1;"
@@ -495,7 +499,7 @@ Function ConditionalAddToRegisty
   StrCmp "$0" "" ConditionalAddToRegisty_EmptyString
     WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" \
     "$1" "$0"
-    ;MessageBox MB_OK "Set Registry: '$1' to '$0'"
+    ;MessageBox MB_OK "Set Registry: '$1' to '$0'" /SD IDOK
     DetailPrint "Set install registry entry: '$1' to '$0'"
   ConditionalAddToRegisty_EmptyString:
 FunctionEnd
@@ -520,7 +524,7 @@ Function DownloadFile
     Pop $1
     StrCmp $1 "success" success
     StrCmp $1 "Cancelled" cancel
-    MessageBox MB_OK "Download failed: $1"
+    MessageBox MB_OK "Download failed: $1" /SD IDOK
   cancel:
     Return
   success:
@@ -549,12 +553,22 @@ FunctionEnd
 !include LogicLib.nsh
 !include winmessages.nsh
 
+!define MUI_FINISHPAGE_SHOWREADME ""
+!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
+!define MUI_FINISHPAGE_SHOWREADME_TEXT "Create Desktop Shortcut"
+!define MUI_FINISHPAGE_SHOWREADME_FUNCTION finishpageaction
+#Silent mode does not work with NOAUTOCLOSE
+#!define MUI_FINISHPAGE_NOAUTOCLOSE
+!define MUI_FINISHPAGE_LINK "EasyCV Docs"
+!define MUI_FINISHPAGE_LINK_LOCATION "http://npsvisionlab.github.io/CVAC/"
 
-!define MUI_FINISHPAGE_NOAUTOCLOSE
 !define env_hklm 'HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"'
 !define env_hkcu 'HKCU "Environment"'
 
 Var LabelPython
+Var CheckboxPython
+Var CheckboxState
+Var InstallPython
 Var Dialog
 Var PythonPathText
 Var LabelJava
@@ -564,7 +578,27 @@ Var PythonPathValue
 Var DataPathText
 Var LabelData
 Var DataPathValue
+Var SilentInstall
 
+#!define MUI_FINISHPAGE_RUN "$SilentInstall"
+#!define MUI_FINISHPAGE_RUN_FUNCTION "LaunchApplication"
+#!define MUI_PAGE_CUSTOMFUNCTION_SHOW showFinishPageFunc
+
+
+Function finishpageaction
+    CreateShortCut "$desktop\EasyCV Control Center.lnk" "$INSTDIR\bin\winstart.bat" "$INSTDIR\src\easy\gui.py" "$INSTDIR\bin\EasyComputerVision.ico" 0 SW_SHOWMINIMIZED
+FunctionEnd
+
+Function showFinishPageFunc
+    ${If} $SilentInstall == "True"
+        ${NSD_Uncheck} $mui.FinishPage.Run
+        ShowWindow $mui.FinishPage.Run $(SW_HIDE}
+    ${EndIf}
+FunctionEnd
+
+Function LaunchApplication
+    ExecShell "" "$SMPROGRAMS\$STARTMENU_FOLDER\EasyCV Control Center.lnk"
+FunctionEnd
 
 
 Function customDialog
@@ -574,29 +608,41 @@ Function customDialog
   ${If} $Dialog == error
     Abort
   ${EndIf}
-  ${NSD_CreateLabel} 0 0 100% 12u "Enter path to Python 2.6"
+  ${NSD_CreateCheckbox} 0 0 100% 12u "Select checkbox to install Python 2.7 (admin req), or specify existing python 2.7 location."
+  Pop $CheckboxPython
+  ${NSD_CreateLabel} 0 0 100% 12u "Enter path to Python 2.7"
   Pop $LabelPython
-  ${NSD_CreateText} 0 13u -20u 12u "C:\Python26\python.exe"
+  ${NSD_CreateText} 0 13u -20u 12u "C:\Python27\python.exe"
   Pop $PythonPathText
   ${NSD_CreateBrowseButton} -18u 13u 18u 12u "..."
   Pop $0
   ${NSD_OnClick} $0 BrowsePython
-  ${NSD_CreateLabel} 0 35u 100% 12u "Enter path to Java"
-  Pop $LabelJava
-  ${NSD_CreateText} 0 48u -20u 12u "C:\Windows\system32\java.exe"
-  Pop $JavaPathText
-  ${NSD_CreateBrowseButton} -18u 48u 18u 12u "..."
-  Pop $0
-  ${NSD_OnClick} $0 BrowseJava
+
+  #phased out java
+  Goto nojava
+  StrCmp "@CPACK_PACKAGE_NAME@" "CVAC_binary" 0 nojava
+      ${NSD_CreateLabel} 0 35u 100% 12u "Enter path to Java"
+      Pop $LabelJava
+      ${NSD_CreateText} 0 48u -20u 12u "C:\Windows\system32\java.exe"
+      Pop $JavaPathText
+      ${NSD_CreateBrowseButton} -18u 48u 18u 12u "..."
+      Pop $0
+      ${NSD_OnClick} $0 BrowseJava
+  nojava:
   ${NSD_CreateLabel} 0 70u 100% 12u "Enter path to data directory"
   Pop $LabelData
-  ${NSD_CreateText} 0 83u -20u 12u "data"
+  IfSilent SilentDialog 0 
+  StrCpy  $1 "\data"
+  ${NSD_CreateText} 0 83u -20u 12u $INSTDIR$1
   Pop $DataPathText
   ${NSD_CreateBrowseButton} -18u 83u 18u 12u "..."
   Pop $0
   ${NSD_OnClick} $0 BrowseData
+      
+nonSilentDialog:
  
   nsDialogs::Show
+SilentDialog:
 
 FunctionEnd
 
@@ -634,27 +680,42 @@ Function customDialogLeave
   ${NSD_GetText} $PythonPathText $PythonPathValue
   ${NSD_GetText} $JavaPathText $JavaPathValue
   ${NSD_GetText} $DataPathText $DataPathValue
-  #Check if PythonPathValue is a valid file
-  ${ifnot} ${FileExists} "$PythonPathValue"
-    MessageBox MB_OK "Python path incorrect"
-    Abort
+  ${NSD_GetState} $CheckboxPython $CheckboxState
+  ${if} $CheckboxState == ${BST_UNCHECKED}
+      StrCpy $InstallPython "no"
+      #Check if PythonPathValue is a valid file
+      ${ifnot} ${FileExists} "$PythonPathValue"
+        MessageBox MB_OK "Python path incorrect" /SD IDOK
+        Abort
+      ${endif}
+  ${else}
+      StrCpy $InstallPython "yes"
   ${endif}
 
-  ${ifnot} ${FileExists} "$JavaPathValue"
-    MessageBox MB_OK "Java path incorrect"
-    Abort
-  ${endif}
+  Goto nojava1
+  StrCmp "@CPACK_PACKAGE_NAME@" "CVAC_binary" 0 nojava1
+      ${ifnot} ${FileExists} "$JavaPathValue"
+        MessageBox MB_OK "Java path incorrect" /SD IDOK
+        Abort
+      ${endif}
+nojava1:
 
   #Set a local EnvirnomentVariable
-  System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("PYTHON_HOME", $PythonPathValue).r0'
-  StrCmp $0 0 error
-  System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("JAVA_HOME", $JavaPathValue).r0'
-  StrCmp $0 0 error
+  ${if} $InstallPython == "no"
+      System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("PYTHON_HOME", $PythonPathValue).r0'
+      StrCmp $0 0 error
+  ${endif}
+  Goto nojava2
+  StrCmp "@CPACK_PACKAGE_NAME@" "CVAC_binary" 0 nojava2
+      System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("JAVA_HOME", $JavaPathValue).r0'
+      StrCmp $0 0 error
+nojava2:
   System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("CVAC_DATADIR", $DataPathValue).r0'
   StrCmp $0 0 error
   Goto done
 error:
-  MessageBox MB_OK "Can't set envirnoment variable"
+  MessageBox MB_OK "Can't set envirnoment variable" /SD IDOK
+
 done:
 
   #For CVAC_DATADIR set a global envirnoment variable via the registry
@@ -666,11 +727,34 @@ FunctionEnd
 
 Function installNumPy
     Push $1
-    StrCpy $1 "3rdparty\numpy-1.7.1.win32-py2.6.exe"
-    File /nonfatal $1
+    StrCpy $1 "3rdparty\numpy-1.8.1-win32-superpack-python2.7.exe"
     ${if} ${FileExists} "$INSTDIR\$1" 
-        MessageBox MB_YESNO "Install Numpy (for python services)" /SD IDYES IDNO endInstall
-        ExecWait "$INSTDIR\$1"
+        MessageBox MB_YESNO "Install Numpy (for python services)" /SD IDYES IDNO endInstallnp
+        DetailPrint "Installing numpy"
+        nsExec::ExecToLog '"$INSTDIR\$1"'
+    ${endif}
+endInstallnp:
+    Pop $1
+FunctionEnd
+
+Function installsetuptools
+    Push $1
+    StrCpy $1 "3rdparty\setuptools-0.6c11.win32-py2.7.exe"
+    ${if} ${FileExists} "$INSTDIR\$1" 
+        MessageBox MB_YESNO "Install setuptools (required for python install)" /SD IDYES IDNO endInstallst
+        DetailPrint "Installing setuptools"
+        nsExec::ExecToLog '"$INSTDIR\$1"'
+    ${endif}
+endInstallst:
+    Pop $1
+FunctionEnd
+
+Function installPython
+    Push $1
+    StrCpy $1 "3rdparty\python-2.7.8.msi"
+    ${if} ${FileExists} "$INSTDIR\$1"  
+        MessageBox MB_YESNO "Install Python 2.7.8" /SD IDYES IDNO endInstall
+        nsExec::ExecToLog '"$SYSDIR\msiExec" /i $INSTDIR\$1'
     ${endif}
 endInstall:
     Pop $1
@@ -811,10 +895,12 @@ FunctionEnd
 !macroend
 !insertmacro Func_StrRep ""
 !insertmacro Func_StrRep "un."
+
 ;--------------------------------
 ; End CVAC changes
 ;--------------------------------
 ;Pages
+
   !insertmacro MUI_PAGE_WELCOME
 
   !insertmacro MUI_PAGE_LICENSE "@CPACK_RESOURCE_FILE_LICENSE@"
@@ -971,9 +1057,25 @@ Section "-Core installation"
 
   # CVAC Changes start
   # Set working directory for shortcut to be the INSTDIR
+  #For AddToPath to add path to current user
+  StrCpy $ADD_TO_PATH_ALL_USERS "2"
   SetOutPath "$INSTDIR"
-  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\startServices.lnk" "$INSTDIR\bin\startServices.bat"
-  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\stopServices.lnk" "$INSTDIR\bin\stopServices.bat"
+  IfSilent 0 finishInstall
+      StrCpy $SilentInstall "True"
+finishInstall:
+  ${if} ${FileExists} "$INSTDIR\bin\startServices.bat"
+      CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\startServices.lnk" "$INSTDIR\bin\startServices.bat"
+      CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\stopServices.lnk" "$INSTDIR\bin\stopServices.bat"
+      # Client needs the ice dlls in its path to run demos
+      Push $INSTDIR\3rdparty\ICE\bin
+      #StrCmp "@CPACK_NSIS_MODIFY_PATH@" "ON" 0 cvacdoNotAddToPath
+      #StrCmp $DO_NOT_ADD_TO_PATH "1" cvacdoNotAddToPath 0  
+      Call AddToPath
+      cvacdoNotAddToPath:
+ ${endif} 
+  # Can't use PythonPathValue since it is not set to final value so
+  # instead user virtual path by hand
+  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\EasyCV Control Center.lnk" "$INSTDIR\bin\winstart.bat" "$INSTDIR\src\easy\gui.py" 
   # CVAC Changes end
 
   ;Read a value from an InstallOptions INI file
@@ -1001,13 +1103,87 @@ Section "-Core installation"
   !insertmacro MUI_STARTMENU_WRITE_END
 
   # CVAC Changes start
-  Call installNumPy
-  SetOutPath "$INSTDIR\python"
+  SetOutPath "$INSTDIR"
+  IfSilent noPythonInstall 0
+      ${if} $InstallPython == "yes"
+          Call installPython
+      ${endif}
+noPythonInstall:
+  # Install the virtual env and change the PythonPathValue over to
+  # the virtual env.
+  ${if} $PythonPathValue == ""
+      StrCpy $PythonPathValue "c:\Python27\python.exe"
+  ${endif}
+  DetailPrint "Installing python virtual environment to $INSTDIR\virt"
+  nsExec::ExecToLog '"$PythonPathValue" "$INSTDIR\3rdparty\virtualenv-1.11.6\virtualenv.py" --never-download $INSTDIR\virt'
+  Pop $0
+  StrCmp $0 0 virtok 0
+      MessageBox MB_OK "Can't install virtualenv" /SD IDOK
+      Abort
+virtok: 
+  DetailPrint "Virtual environment install complete"
+  # Change our PythonPathValue to point to virtualevn
+  StrCpy $PythonPathValue "$INSTDIR\virt\Scripts\python.exe"
+  # Temporarily set env PATH to put the virtual env first and
+  # also set PYTHONHOME.
+  System::Call 'Kernel32::SetEnvironmentVariable(t, t) i("PYTHONHOME", "$INSTDIR\virt").r0'
+  StrCmp $0 0 errorPH
+  Goto donePH
+errorPH:
+  MessageBox MB_OK "Can't set environment variable PYTHONHOME"
+donePH:
+  #set PYTHONPATH
+  System::Call 'Kernel32::SetEnvironmentVariable(t, t) i("PYTHONPATH", "$INSTDIR\virt\Lib").r0'
+  StrCmp $0 0 errorPP
+  Goto donePP
+errorPP:
+  MessageBox MB_OK "Can't set environment variable PYTHONPATH"
+donePP:
+  # Read PATH 
+  ReadEnvStr $0 PATH
+  StrCpy $1 "$INSTDIR\virt\Scripts;$0"
+  System::Call 'Kernel32::SetEnvironmentVariable(t, t) i("PATH", $1).r0'
+  StrCmp $0 0 errorP
+  Goto doneP
+errorP:
+  MessageBox MB_OK "Can't set environment variable PATH"
+doneP:
+  # Install numpy
+  nsExec::ExecToLog '"$INSTDIR\virt\Scripts\easy_install.exe" $INSTDIR\3rdparty\numpy-1.8.1-sse3.exe'
+  Pop $0
+  StrCmp $0 0 +2 0
+      MessageBox MB_OK "Can't install numpy" /SD IDOK
+
+  ${if} $JavaPathValue == ""
+      StrCpy $JavaPathValue "C:\Windows\system32\java.exe"
+  ${endif}
+  ${if} $DataPathValue == ""
+      StrCpy $DataPathValue "data"
+  ${endif}
   # install the Python code
+  # First we install easy and then  ice
+  SetOutPath "$INSTDIR\python\easyPkg"
+  DetailPrint "Installing easyPkg- $PythonPathValue setup.py install"
   nsExec::ExecToLog '"$PythonPathValue" setup.py install'
   Pop $0
   StrCmp $0 0 +2 0
-      MessageBox MB_OK "Can't install python code"
+      MessageBox MB_OK "Can't install easy python code" /SD IDOK
+  SetOutPath "$INSTDIR\python\icePkg"
+  DetailPrint "Installing icePkg"
+  nsExec::ExecToLog '"$PythonPathValue" setup.py install'
+  Pop $0
+  StrCmp $0 0 +2 0
+      MessageBox MB_OK "Can't install ice python code" /SD IDOK
+  #Install libSVM if the directory exists
+  ${if} ${FileExists} "$INSTDIR\3rdparty\libsvm\setup.py" 
+      SetOutPath "$INSTDIR\3rdparty\libsvm"
+      DetailPrint "Installing libsvm- $PythonPathValue setup.py install"
+      nsExec::ExecToLog '"$PythonPathValue" setup.py install'
+      Pop $0
+      StrCmp $0 0 +2 0
+      MessageBox MB_OK "Can't install libsvm python code" /SD IDOK
+  ${endif}
+  SetOutPath "$INSTDIR"
   # Fixup paths in start and stopServices files
   !insertmacro _ReplaceInFile $INSTDIR\bin\startServices.bat __PYTHON_PATH__ "$PythonPathValue"
   !insertmacro _ReplaceInFile $INSTDIR\bin\startServices.bat __JAVA_PATH__ "$JavaPathValue"
@@ -1015,15 +1191,20 @@ Section "-Core installation"
 !insertmacro _ReplaceInFile $INSTDIR\bin\stopServices.bat __PYTHON_PATH__ "$PythonPathValue"
   !insertmacro _ReplaceInFile $INSTDIR\bin\stopServices.bat __JAVA_PATH__ "$JavaPathValue"
   !insertmacro _ReplaceInFile $INSTDIR\bin\stopServices.bat __INSTALL_PATH__ "$INSTDIR"
-  !insertmacro _ReplaceInFile $INSTDIR\config.service "CVAC.DataDir = data" "CVAC.DataDir = $DataPathValue"
 
-  #if the data path value is not equal to data then copy the data to this
-  #new datapath
-  StrCmp $DataPathValue "data" cvacNext +2
+  SetOutPath "$INSTDIR"
+  # If DataPathValue is not "data" then copy data files to it
+  ${ifnot} $DataPathValue == "data"
+      #make sure DataPathValue exists
+      CreateDirectory $DataPathValue
+      #Copy required files from install to that data path
       SetOutPath $DataPathValue
       CopyFiles "$INSTDIR/data" "$DataPathValue" 
-cvacNext:
-  SetOutPath "$INSTDIR"
+
+      #Replace DataDir entry in config file with new one
+      !insertmacro _ReplaceInFile $INSTDIR\config.service "CVAC.DataDir = data" "CVAC.DataDir = $DataPathValue"
+      SetOutPath "$INSTDIR"
+  ${endif}
   # CVAC Changes End
 
 @CPACK_NSIS_EXTRA_INSTALL_COMMANDS@
@@ -1058,11 +1239,11 @@ Function un.onInit
   Pop $1
   StrCmp $1 "Admin" 0 +3
     SetShellVarContext all
-    ;MessageBox MB_OK 'User "$0" is in the Admin group'
+    ;MessageBox MB_OK 'User "$0" is in the Admin group' /SD IDOK
     Goto done
   StrCmp $1 "Power" 0 +3
     SetShellVarContext all
-    ;MessageBox MB_OK 'User "$0" is in the Power Users group'
+    ;MessageBox MB_OK 'User "$0" is in the Power Users group' /SD IDOK
     Goto done
     
   noLM:
@@ -1114,17 +1295,17 @@ FunctionEnd
 Section "Uninstall"
   ReadRegStr $START_MENU SHCTX \
    "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "StartMenu"
-  ;MessageBox MB_OK "Start menu is in: $START_MENU"
+  ;MessageBox MB_OK "Start menu is in: $START_MENU" /SD IDOK
   ReadRegStr $DO_NOT_ADD_TO_PATH SHCTX \
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "DoNotAddToPath"
   ReadRegStr $ADD_TO_PATH_ALL_USERS SHCTX \
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "AddToPathAllUsers"
   ReadRegStr $ADD_TO_PATH_CURRENT_USER SHCTX \
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "AddToPathCurrentUser"
-  ;MessageBox MB_OK "Add to path: $DO_NOT_ADD_TO_PATH all users: $ADD_TO_PATH_ALL_USERS"
+  ;MessageBox MB_OK "Add to path: $DO_NOT_ADD_TO_PATH all users: $ADD_TO_PATH_ALL_USERS" /SD IDOK
   ReadRegStr $INSTALL_DESKTOP SHCTX \
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "InstallToDesktop"
-  ;MessageBox MB_OK "Install to desktop: $INSTALL_DESKTOP "
+  ;MessageBox MB_OK "Install to desktop: $INSTALL_DESKTOP " /SD IDOK
 
 @CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS@
 
@@ -1157,6 +1338,12 @@ Section "Uninstall"
   # CVAC start modification
   Delete "$SMPROGRAMS\$MUI_TEMP\startServices.lnk"
   Delete "$SMPROGRAMS\$MUI_TEMP\stopServices.lnk"
+  Delete "$SMPROGRAMS\$MUI_TEMP\gui.lnk"
+  Delete "$desktop\gui.lnk"
+  Push $INSTDIR\3rdparty\ICE\bin
+  #StrCmp $DO_NOT_ADD_TO_PATH_ "1" uncvacdoNotRemoveFromPath 0
+    Call un.RemoveFromPath
+  uncvacdoNotRemoveFromPath:
   # CVAC end modification
 @CPACK_NSIS_DELETE_ICONS@
 @CPACK_NSIS_DELETE_ICONS_EXTRA@
@@ -1219,7 +1406,7 @@ Function .onInit
 
   MessageBox MB_YESNOCANCEL|MB_ICONEXCLAMATION \
   "@CPACK_NSIS_PACKAGE_NAME@ is already installed. $\n$\nDo you want to uninstall the old version before installing the new one?" \
-  IDYES uninst IDNO inst
+  /SD IDYES IDYES uninst IDNO inst
   Abort
 
 ;Run the uninstaller
@@ -1229,7 +1416,7 @@ uninst:
 
   IfErrors uninst_failed inst
 uninst_failed:
-  MessageBox MB_OK|MB_ICONSTOP "Uninstall failed."
+  MessageBox MB_OK|MB_ICONSTOP "Uninstall failed." /SD IDOK
   Abort
 
 
@@ -1259,12 +1446,12 @@ inst:
   Pop $1
   StrCmp $1 "Admin" 0 +4
     SetShellVarContext all
-    ;MessageBox MB_OK 'User "$0" is in the Admin group'
+    ;MessageBox MB_OK 'User "$0" is in the Admin group' /SD IDOK
     StrCpy $SV_ALLUSERS "AllUsers"
     Goto done
   StrCmp $1 "Power" 0 +4
     SetShellVarContext all
-    ;MessageBox MB_OK 'User "$0" is in the Power Users group'
+    ;MessageBox MB_OK 'User "$0" is in the Power Users group' /SD IDOK
     StrCpy $SV_ALLUSERS "AllUsers"
     Goto done
     

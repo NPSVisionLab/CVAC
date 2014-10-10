@@ -168,6 +168,8 @@ module cvac {
   struct FrameLocation {
     VideoSeekTime frame;
     Location loc;
+    bool occluded = false;
+    bool outOfFrame = false;
   };
 
   /** Baseclass for video (temporal) annotations.  This permits labeling
@@ -211,7 +213,7 @@ module cvac {
    * be reported bit by bit.
    */
   sequence<Result> ResultList;
-  struct ResultSetV2 {
+  struct ResultSet {
     ResultList results;
   };
 

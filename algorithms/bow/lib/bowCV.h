@@ -46,6 +46,8 @@
 #include <map>
 #include <algorithm>
 #include <util/ServiceMan.h>
+#include <util/DetectorDataArchive.h>
+#include <util/MsgLogger.h>
 
 #include <opencv2/opencv.hpp>
 // #include <opencv2/opencv.hpp>
@@ -68,72 +70,78 @@
 // #pragma comment(lib,"opencv_features2d242.lib")
 // #endif
 
-
 using namespace cv;
-using namespace std;
-
-#define BOW_VOC_FILE "VOC_FILE"
-#define BOW_SVM_FILE "SVM_FILE"
-#define BOW_DETECTOR_NAME "DETECTOR_NAME"
-#define BOW_EXTRACTOR_NAME "EXTRACTOR_NAME"
-#define BOW_MATCHER_NAME "MATCHER_NAME"
-#define BOW_OPENCV_VERSION "OPENCV_VERSION"
-#define BOW_ONECLASS_ID "ONE-CLASS_ID"
 
 class bowCV {
 public:
-  bowCV();
+
+  static const std::string BOW_VOC_FILE, BOW_SVM_FILE, BOW_DETECTOR_NAME,
+    BOW_EXTRACTOR_NAME, BOW_MATCHER_NAME, BOW_NUM_WORDS,
+    BOW_OPENCV_VERSION, BOW_ONECLASS_ID,
+    BOW_REJECT_CLASS_STRATEGY, BOW_REJECT_CLASS_AS_MULTICLASS,
+    BOW_REJECT_CLASS_IGNORE_SAMPLES, BOW_REJECT_CLASS_AS_FIRST_STAGE;
+  
+public:
+  bowCV(MsgLogger* _msgLog);
   ~bowCV();	
 
   bool  isInitialized();
-  bool  isCompatibleOpenCV(const string& _version);
-  bool  train_initialize(const string& _detectorName,const string& _extractorName,
-                         const string& _matcherName,int _nCluster);
-  bool  train_parseTrainList(const string& _filepathTrain,
-                             const string& _filenameTrainList);
-  void  train_stackTrainImage(const string& _fullpath,const int& _classID);	
-  void  train_stackTrainImage(const string& _fullpath,const int& _classID,
+  bool  train_initialize(const std::string& _detectorName,
+                         const std::string& _extractorName,
+                         const std::string& _matcherName,int _nCluster,
+                         cvac::DetectorDataArchive* dda);
+  void  train_stackTrainImage(const std::string& _fullpath,const int& _classID);	
+  void  train_stackTrainImage(const std::string& _fullpath,const int& _classID,
                               const int& _x,const int& _y,
                               const int& _width,const int& _height);
-  bool  train_run(const string& _filepathForSavingResult,
-                  const string& _filenameForSavingLog, 
+  bool  train_run(const std::string& _filepathForSavingResult,
                   cvac::ServiceManager *,
                   float _oneclassNu = 0.1);  
-
-  bool  detect_initialize(const string& _filepath,const string& _filename);	
-  bool  detect_setParameter(const string& _detectorName,const string& _extractorName,
-                            const string& _matcherName);	
-  bool  detect_readTrainResult(const string& _filepath,const string& _filename);	
-  bool  detect_run(const string& _fullfilename, int& _bestClass,
-                   int _boxX=0,int _boxY=0,int _boxWidth=0,int _boxHeight=0);
-
+  bool  detect_initialize( const cvac::DetectorDataArchive* dda);	
+  std::string  detect_run(const std::string& _fullfilename, int& _bestClass,
+                          int _boxX=0,int _boxY=0,int _boxWidth=0,int _boxHeight=0);
 
 private:
-  bool    train_writeVocabulary(const string& _filename,const Mat& _vocabulary);
-  void    train_writeLog(const string& _dir,const string& _filename);
-  bool    detect_readVocabulary( const string& _filename, Mat& _vocabulary );
-  string  getProperty(const string &_key);
-  void    setProperty(const string &_key,const string &_value);
-  //bool  runTrainFull(const string& _filepathTrain,const string& _filenameTrainList,const string& _filepathForSavingResult,const string& _filenameForSavingResult);	//This function is not good to the ICE project.
+  bool  isCompatibleOpenCV(const std::string& _version);
+  bool  train_parseTrainList(const std::string& _filepathTrain,
+                             const std::string& _filenameTrainList);
+  bool    train_writeVocabulary(const std::string& _filename,const Mat& _vocabulary);
+
+  bool    detect_readVocabulary( const std::string& _filename, Mat& _vocabulary );
+  bool  detect_setParameter(const std::string& _detectorName,
+                            const std::string& _extractorName,
+                            const std::string& _matcherName);	
+  bool  detect_readTrainResult();  
+  
+  /// Show a message to a server or a client
+  void  message(const string& _msg,
+                MsgLogger::Levels _levelClient = MsgLogger::SILENT);
+  
+  /// Show a message to a server in the same line
+  void  messageInSameline(const string& _msg);
+
+  //void  limitImageSize(Mat& _image);
+
+  //bool  runTrainFull(const std::string& _filepathTrain,const std::string& _filenameTrainList,const std::string& _filepathForSavingResult,const std::string& _filenameForSavingResult);	//This function is not good to the ICE project.
   //void  setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses );
   //void  setSVMTrainAutoParams( CvParamGrid& c_grid, CvParamGrid& gamma_grid,CvParamGrid& p_grid, CvParamGrid& nu_grid,CvParamGrid& coef_grid, CvParamGrid& degree_grid );	
 
 public:
-  string  filenameVocabulary;	
-  string  filenameSVM;
+  std::string  filenameVocabulary;	
+  std::string  filenameSVM;
+  cvac::DetectorDataArchive* dda;
 
 protected:
-  Mat               _img;
-  Mat               _descriptors;
-  vector<KeyPoint>  _keypoints;
-  string            _tfileName;
-  char              _buf[255];
-  string            _fullFilePathImg;
-  string            _fullFilePathList;
-  Mat               mVocabulary;
-  string            filenameTrainResult;
-  map< string,string > mProperty;   
-
+  Mat                    _img;
+  Mat                    _descriptors;
+  vector<KeyPoint>       _keypoints;
+  std::string            _tfileName;
+  char                   _buf[255];
+  std::string            _fullFilePathImg;
+  std::string            _fullFilePathList;
+  Mat                    mVocabulary;
+  std::string            filenameTrainResult;
+  
 private:
   int   cntCluster;
   int   mInclassIDforOneClass;
@@ -146,9 +154,13 @@ private:
   Ptr<DescriptorMatcher>    dMatcher;  
   Ptr<BOWImgDescriptorExtractor>  bowExtractor;
   CvSVM  classifierSVM;
-  std::vector<string>  vFilenameTrain;
-  std::vector<int>     vClassIDTrain;
-  std::vector<int>     vBoundX,vBoundY;
-  std::vector<int>     vBoundWidth,vBoundHeight;
+  std::vector<std::string>  vFilenameTrain;
+  std::vector<int>          vClassIDTrain;
+  std::vector<int>          vBoundX,vBoundY;
+  std::vector<int>          vBoundWidth,vBoundHeight;
+
+private:
+  MsgLogger* msgLogger;
 };
+
 #endif	//_BOWCV_H__

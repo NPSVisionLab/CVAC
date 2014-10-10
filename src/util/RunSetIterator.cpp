@@ -36,6 +36,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 #include <util/RunSetIterator.h>
+#include <util/FileUtils.h>
 
 using namespace Ice;
 using namespace cvac;
@@ -43,22 +44,40 @@ using namespace cvac;
 
 RunSetIterator::RunSetIterator(RunSetWrapper* _rsw,RunSetConstraint& _cons,
                                ServiceManager *_sman,
+                               const CallbackHandlerPrx& _callback,
                                int _nSkipFrames)
-{ 
+{   
   mFlagInitialize = false;
-  mServiceMan = NULL;
   mServiceMan = _sman;
+
+  mCallback2Client = _callback;
+  assert(mCallback2Client != 0);
 
   mMediaTempDirectory = "";  
   if(_rsw != NULL)
   {
     mMediaRootDirectory = _rsw->getRootDir();
-    mSrcList = _rsw->getList();
-    mSrcListType = _rsw->getListType();
-    assert(mSrcList.size() == mSrcListType.size());
+    mResultSet = _rsw->getResultSet();
+    mResultSetType = _rsw->getResultSetType();
+    assert(mResultSet.results.size() == mResultSetType.size());
   }      
 
   mConstraintType = _cons.mimeTypes;
+  mConstraintPurpose = _cons.compatiblePurpose;
+  mLost = _cons.excludeLostFrames;
+  if (_cons.spacesInFilenamesPermitted)
+	  mNoSpaces = false;
+  else {
+	  mNoSpaces = true;
+	  std::string dir = getCurrentWorkingDirectory();
+#ifdef WIN32
+      char *tTempName = _tempnam(dir.c_str(), NULL);
+#else
+      char *tTempName = tempnam(dir.c_str(), NULL);
+#endif /* WIN32 */
+      mTempDir = tTempName; //for being used in making a symbolic link
+  }
+  mOccluded = _cons.excludeOccludedFrames;
 
   //////////////////////////////////////////////////////////////////////////    
   mConv_openCV_i2i = new MediaConverter_openCV_i2i(_sman);
@@ -74,7 +93,10 @@ RunSetIterator::~RunSetIterator()
   delete mConv_openCV_i2i;
   
   clear();
-
+  if (!mTempDir.empty())
+  {
+	  deleteDirectory(mTempDir);
+  }
   //if(!mMediaTempDirectory.empty())
   //  deleteDirectory(mMediaRootDirectory + "/" + mMediaTempDirectory);
 }
@@ -82,12 +104,7 @@ RunSetIterator::~RunSetIterator()
 void RunSetIterator::clear()
 {
   mList.clear();
-}
-
-void RunSetIterator::initIterator(vector<LabelablePtr>& _list)
-{
-  mList = _list;  
-  initIterator();
+  mListOrginalIdx.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -96,57 +113,88 @@ bool RunSetIterator::isInConstraintType(const rsMediaType& _type)
   if(mConstraintType.empty())
     return true;
   else
-    return (find(mConstraintType.begin(),mConstraintType.end(),_type)==mConstraintType.end())?false:true;
+  {
+    std::string tRes = (std::string)_type;
+    std::transform( _type.begin(), _type.end(), tRes.begin(), ::tolower );  //for uppercase: toupper
+    return (find(mConstraintType.begin(),mConstraintType.end(),tRes)==mConstraintType.end())?false:true;
+  }
 }
 
 //---------------------------------------------------------------------------
-void RunSetIterator::addToList(const LabelablePtr _pla)
+void RunSetIterator::addToList(const LabelablePtr _pla,int _originalIdx)
 {
-  if(_pla==NULL)
+  if(!_pla)
   {
     localAndClientMsg(VLogger::WARN, NULL,"Empty LabelablePtr is assigned\n");
     return;
   }
 
-  mList.push_back(_pla);  
+  if (mNoSpaces)
+  { // check if filename has spaces and get symlink
+		bool newSymlink;
+		std::string symlinkFullPath = getLegalPath(mTempDir, _pla->sub.path, newSymlink);            
+		if(newSymlink)
+		{             
+			cout << "symbolic link is going to be generated..\n";
+			string fPath = getFSPath(_pla->sub.path, mMediaRootDirectory);
+			if (makeSymlinkFile(symlinkFullPath, fPath))
+			{
+				DirectoryPath dirPath;
+				dirPath.relativePath = getFileDirectory(symlinkFullPath);
+				FilePath filePath;
+				filePath.directory = dirPath;
+				filePath.filename = getFileName(symlinkFullPath);
+				Substrate sub(_pla->sub.isImage, _pla->sub.isVideo, filePath, 0, 0);
+			    LabelablePtr newlab = new Labelable(_pla->confidence, _pla->lab, sub);
+				mList.push_back(newlab);
+			}else
+				mList.push_back(_pla);
+		}else
+			mList.push_back(_pla);
+
+  }else
+  {
+    mList.push_back(_pla);  
+  }
+  mListOrginalIdx.push_back(_originalIdx);
 }
 
-
 //---------------------------------------------------------------------------
-bool RunSetIterator::makeList(vector<LabelablePtr>& _srclist,
-                              vector<rsMediaType>& _srclistType)
+bool RunSetIterator::makeList(ResultSet& _resultSet,
+                              vector<rsMediaType>& _resultSetType)
 {
   clear();
 
-  rsMediaType tTypeSrc;
   string tAbsPath,tRelDir,tFname;
 
+  //Make a directory with a random name
   bool tFlagMakeDirectory = true;
   srand((unsigned)time(NULL));
   std::ostringstream tConvNum2Str;
   tConvNum2Str << rand();
   mMediaTempDirectory = "converted_" + tConvNum2Str.str();
 
-  vector<LabelablePtr>::iterator tItrSrc = _srclist.begin();
-  vector<rsMediaType>::iterator tItrSrcType = _srclistType.begin();
-  for(;tItrSrc!=_srclist.end();tItrSrc++,tItrSrcType++)
+  //Make a final set with a conversion if it's necessary
+  unsigned int k;
+  for(k=0;k<_resultSet.results.size();k++)  
   {
     if((mServiceMan != NULL) && (mServiceMan->stopRequested()))
     {        
       mServiceMan->stopCompleted();
       return false;
     }
-
-    tTypeSrc = (*tItrSrcType);
-    if(isInConstraintType(*tItrSrcType))
-      addToList(*tItrSrc);
+    
+    if(isInConstraintType(_resultSetType[k]))
+      addToList(_resultSet.results[k].original,k);
     else 
-    { 
+    {
+      //if necessary, convert to one of constraint types
       bool tFlagConversion = false;
       mConstraintTypeItr=mConstraintType.begin();
       for(;mConstraintTypeItr!=mConstraintType.end();mConstraintTypeItr++)
-      {        
-        mConvertibleItr = mConvertible.find(tTypeSrc + "2" + (*mConstraintTypeItr));
+      {         
+        mConvertibleItr = mConvertible.find(_resultSetType[k] + "2" 
+                          + (*mConstraintTypeItr));
         if(mConvertibleItr!=mConvertible.end())
         {
           if(tFlagMakeDirectory)
@@ -154,19 +202,35 @@ bool RunSetIterator::makeList(vector<LabelablePtr>& _srclist,
             makeDirectory(mMediaRootDirectory + "/" + mMediaTempDirectory);
             tFlagMakeDirectory = false;
           }
-          if(!convertAndAddToList((*tItrSrc),(*mConstraintTypeItr),
-            mConvertibleItr->second,mMediaTempDirectory))
+          
+          if(!convertAndAddToList(_resultSet.results[k].original,(*mConstraintTypeItr),
+            mConvertibleItr->second,mMediaTempDirectory,k))
+          {
+            //this case may be very rare: error while converting, stopping by user interruption
+            localAndClientMsg(VLogger::ERROR, mCallback2Client,
+              "Conversion is stopped by error or user interruption for %s.\n",
+              (_resultSet.results[k].original)->sub.path.filename.c_str());
             return false;
+          }
 
           tFlagConversion = true;
           break;  //Should be
         } 
       }
 
-      if(!tFlagConversion)
+      //When there is no proper converter
+      if(!tFlagConversion)  
       {
-        localAndClientMsg(VLogger::WARN, NULL,
-          "No conversion: %s\n",(*tItrSrc)->sub.path.filename.c_str());
+        localAndClientMsg(VLogger::WARN, mCallback2Client,
+          "No conversion for %s because of no proper converter\n",
+          (_resultSet.results[k].original)->sub.path.filename.c_str());
+
+        // setup for a foundLabel when there is no proper converter.
+        LabelablePtr labelable = new Labelable();
+        labelable->lab.name = "Error: no converter available";
+        labelable->confidence = 1.0f;
+        labelable->lab.hasLabel = false;
+        _resultSet.results[k].foundLabels.push_back(labelable);
       }
     }
   } 
@@ -174,14 +238,74 @@ bool RunSetIterator::makeList(vector<LabelablePtr>& _srclist,
   return true;
 }
 
+//---------------------------------------------------------------------------
+bool RunSetIterator::makeList(ResultSet& _resultSet)
+{
+  clear(); 
+  unsigned int k;
+  for(k=0;k<_resultSet.results.size();k++)  
+    addToList(_resultSet.results[k].original,k);
+
+  return true;
+}
+
+// Create a new Labelable that is consistant with the target type.  If we have a video source type and
+// and a image target type then convert the Labelable from a video type to image type. We need
+// to new it since the contents will be changed.  For now we assume the target type will always be
+// an image target type.
+LabelablePtr RunSetIterator::cloneLabelablePtr(const LabelablePtr _pla, int frameNum)
+{
+  LabelablePtr result;
+  LabeledLocationPtr locptr = LabeledLocationPtr::dynamicCast(_pla);
+  LabeledVideoSegmentPtr vsptr = LabeledVideoSegmentPtr::dynamicCast(_pla);
+  LabeledTrackPtr tptr = LabeledTrackPtr::dynamicCast(_pla);
+  if (locptr)
+  {
+    locptr = new LabeledLocation(*locptr);
+    result = (LabelablePtr)locptr;
+  }else if (vsptr)
+  {
+    locptr = new LabeledLocation();
+    locptr->loc = vsptr->loc;
+    result = (LabelablePtr)locptr;
+  }else if (tptr && frameNum != -1)
+  {
+    FrameLocationList frames = tptr->keyframesLocations;
+    FrameLocationList::iterator it;
+    for (it = frames.begin(); it != frames.end(); it++)
+    {
+        FrameLocation floc = *it;
+        if (floc.frame.framecnt == frameNum)
+        {
+            locptr = new LabeledLocation();
+            locptr->loc = floc.loc;
+            break;
+        }
+    }
+    if (locptr.get() != NULL)
+        //result = LabelablePtr::dynamicCast(locptr);
+        result = (LabelablePtr)locptr;
+    else
+    {
+        // The object is not in this frame.  If we return a default labelable
+        // The the whole image size will be selected so instead we return
+        // NULL which should cause frame not to be used.
+        result = NULL;
+    }
+  }else
+  {
+    result = new Labelable(*_pla);
+  }
+  return result;
+}
 
 bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
-                                         const rsMediaType& _targerType,
+                                         const rsMediaType& _targetType,
                                          MediaConverter* _pConv,
-                                         const string& _rDirTemp)
+                                         const string& _rDirTemp,int _originalIdx)
 {
   string tFileNameOld = _pla->sub.path.filename;
-  string tFileNameNew = tFileNameOld + "." + _targerType;
+  string tFileNameNew = tFileNameOld + "." + _targetType;
   string tRDirOld = _pla->sub.path.directory.relativePath;
   string tRDirNew = _rDirTemp;
 
@@ -190,10 +314,13 @@ bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
   string tAbsPathNew = tAbsDirNew + "/" + tFileNameNew;
 
   vector<string> tListFileName;
-  if(_pConv->convert(tAbsPathOld,tAbsDirNew,tFileNameNew,tListFileName))
+  vector<string> tAuxInfo;
+  if(_pConv->convert(tAbsPathOld,tAbsDirNew,tFileNameNew,tListFileName,tAuxInfo))
   {
+    //if tAuxInfo is not empty, above conversion comes from "video2image"
+    //the variable "tAuxInfo" includes frame numbers
     vector<string>::iterator tItrFilename = tListFileName.begin();
-    for(;tItrFilename!=tListFileName.end();tItrFilename++)
+    for(int _idx=0;tItrFilename!=tListFileName.end();tItrFilename++,_idx++)
     {
       if((mServiceMan != NULL) && (mServiceMan->stopRequested()))
       {        
@@ -201,12 +328,36 @@ bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
         return false;
       }
 
-      LabelablePtr _la = new Labelable();
-      _la->sub.isImage = true;
-      _la->sub.isVideo = !(_la->sub.isImage);
-      _la->sub.path.filename = (*tItrFilename);
-      _la->sub.path.directory.relativePath = tRDirNew;
-      addToList(_la);
+      int frameNum = -1;
+      if(!tAuxInfo.empty())
+          frameNum = atoi(tAuxInfo[_idx].c_str());
+      
+      LabelablePtr _la = cloneLabelablePtr(_pla, frameNum);
+      if (_la.get() != NULL)
+      {
+          _la->sub.isImage = true;
+          //currently, conversion target is only an image.
+          //refer to the function in RunSetWrapper: getTypeMacro
+          _la->sub.isVideo = !(_la->sub.isImage);
+          _la->sub.path.filename = (*tItrFilename);
+          _la->sub.path.directory.relativePath = tRDirNew;
+          _la->lab.hasLabel = false;
+
+          if(!tAuxInfo.empty())
+            _la->lab.name = tAuxInfo[_idx];
+          else
+            _la->lab.name = "";
+          /*
+          if(!tAuxInfo.empty())
+          {
+            FrameLocation _tFrm;
+            _tFrm.frame.time = 0;
+            _tFrm.frame.framecnt = atoi(tAuxInfo[_idx].c_str());
+            (static_cast<LabeledTrack*>(_la.get()))->keyframesLocations.push_back(_tFrm);
+          }
+          */
+          addToList(_la,_originalIdx);
+       }
     }
     return true;
   }
@@ -218,15 +369,16 @@ bool RunSetIterator::convert()
 { 
   mFlagInitialize = true;
 
-  if(mSrcList.empty() || mConstraintType.empty())
-  {
+  if(mResultSet.results.size()==0 || mConstraintType.empty())
+  {    
     localAndClientMsg(VLogger::WARN, NULL,"Empty RunSetWrapper or constraints.\n");
-    initIterator(mSrcList);  //as it is
+    if(makeList(mResultSet))
+      initIterator(); //as it is
     mFlagInitialize = false;
   }    
   else
   {
-    if(makeList(mSrcList,mSrcListType))
+    if(makeList(mResultSet,mResultSetType))
       initIterator();
     else
       mFlagInitialize = false;      
@@ -254,18 +406,97 @@ void RunSetIterator::showList()
   }
 }
 
+bool RunSetIterator::matchPurpose(int origIdx)
+{
+  Label lab = mResultSet.results[origIdx].original->lab;
+  std::string pname = getPurposeName(mConstraintPurpose);
+  if (pname.compare("any") != 0 && pname.compare("unpurposed") != 0)
+  { // only return labelables that match the contraint purpose
+      if (lab.hasLabel && pname.compare(lab.name) == 0)
+        return true;
+      else
+        return false;
+  }else
+      return true;
+}
+
+bool RunSetIterator::isConstrained(int origIdx, LabelablePtr lptr)
+{
+  if (matchPurpose(origIdx) == false)
+      return true;
+  // If we have a video then make sure its not lost or occluded if that is in the constrants
+  if (mLost == false && mOccluded == false)
+      return false;
+  if (mResultSet.results[origIdx].original->sub.isVideo == false)
+      return false;
+  if (lptr->lab.name.empty())
+      return false;
+  int frameNum = atoi(lptr->lab.name.c_str());
+  if (frameNum > -1)
+  {// Find this frame and see if its lost or occluded
+     LabeledTrackPtr origtptr = LabeledTrackPtr::dynamicCast(mResultSet.results[origIdx].original);
+     if (origtptr.get() != NULL)
+     { // We have a valid LabeledTrackPtr so lets see if this frame is lost or occluded
+        FrameLocationList::iterator it;
+        FrameLocationList frames = origtptr->keyframesLocations;
+        for (it = frames.begin(); it != frames.end(); it++)
+        {
+            FrameLocation floc = *it;
+            if (floc.frame.framecnt == frameNum)
+            {
+                if (floc.occluded && mOccluded)
+                    return true;
+                if (floc.outOfFrame && mLost)
+                    return true;
+                return false;
+            }
+        }
+     }
+   }
+   return false;
+}
+  
 bool RunSetIterator::hasNext()
 {
   if(mListItr != mList.end())
+  {
+    while (isConstrained(*mListOrginalIdxItr, *mListItr))
+    {
+        mListItr++;
+        mListOrginalIdxItr++;
+        if (mListItr == mList.end())
+            return false;
+    }
     return true;
-  else
+  }else
+  {
     return false;
+  }
 }
 
 LabelablePtr RunSetIterator::getNext()
 {
   if(hasNext())
-    return (*(mListItr++));
+  {
+    LabelablePtr lptr = *mListItr;
+    int idx = *mListOrginalIdxItr;
+    mListOrginalIdxItr++;
+    mListItr++;
+    while (isConstrained(idx, lptr))
+    {
+        if (mListItr == mList.end())
+        {
+            localAndClientMsg(VLogger::WARN, NULL,
+               "There is no more elements.\n");
+            return NULL;
+        }
+        lptr = *mListItr;
+        idx = *mListOrginalIdxItr;
+        mListOrginalIdxItr++;
+        mListItr++;
+    }
+    return lptr;
+  }
   else
   {
     localAndClientMsg(VLogger::WARN, NULL,
@@ -274,218 +505,54 @@ LabelablePtr RunSetIterator::getNext()
   }
 }
 
+Result& RunSetIterator::getCurrentResult()
+{  
+  return mResultSet.results[*(mListOrginalIdxItr-1)];
+}
+
+ResultSet& RunSetIterator::getResultSet()
+{
+  return mResultSet;
+}
+
+
 void RunSetIterator::makeConversionList()
 {  
-  mConvertible["bmp2dib"] = mConv_openCV_i2i;
-  mConvertible["bmp2jpeg"] = mConv_openCV_i2i;
-  mConvertible["bmp2jpg"] = mConv_openCV_i2i;
-  mConvertible["bmp2jpe"] = mConv_openCV_i2i;
-  mConvertible["bmp2jp2"] = mConv_openCV_i2i;
-  mConvertible["bmp2png"] = mConv_openCV_i2i;
-  mConvertible["bmp2pbm"] = mConv_openCV_i2i;
-  mConvertible["bmp2pgm"] = mConv_openCV_i2i;
-  mConvertible["bmp2ppm"] = mConv_openCV_i2i;
-  mConvertible["bmp2sr"] = mConv_openCV_i2i;
-  mConvertible["bmp2ras"] = mConv_openCV_i2i;
-  mConvertible["bmp2tiff"] = mConv_openCV_i2i;
-  mConvertible["bmp2tif"] = mConv_openCV_i2i;
-  mConvertible["dib2bmp"] = mConv_openCV_i2i;
-  mConvertible["dib2jpeg"] = mConv_openCV_i2i;
-  mConvertible["dib2jpg"] = mConv_openCV_i2i;
-  mConvertible["dib2jpe"] = mConv_openCV_i2i;
-  mConvertible["dib2jp2"] = mConv_openCV_i2i;
-  mConvertible["dib2png"] = mConv_openCV_i2i;
-  mConvertible["dib2pbm"] = mConv_openCV_i2i;
-  mConvertible["dib2pgm"] = mConv_openCV_i2i;
-  mConvertible["dib2ppm"] = mConv_openCV_i2i;
-  mConvertible["dib2sr"] = mConv_openCV_i2i;
-  mConvertible["dib2ras"] = mConv_openCV_i2i;
-  mConvertible["dib2tiff"] = mConv_openCV_i2i;
-  mConvertible["dib2tif"] = mConv_openCV_i2i;
-  mConvertible["jpeg2bmp"] = mConv_openCV_i2i;
-  mConvertible["jpeg2dib"] = mConv_openCV_i2i;
-  mConvertible["jpeg2jpg"] = mConv_openCV_i2i;
-  mConvertible["jpeg2jpe"] = mConv_openCV_i2i;
-  mConvertible["jpeg2jp2"] = mConv_openCV_i2i;
-  mConvertible["jpeg2png"] = mConv_openCV_i2i;
-  mConvertible["jpeg2pbm"] = mConv_openCV_i2i;
-  mConvertible["jpeg2pgm"] = mConv_openCV_i2i;
-  mConvertible["jpeg2ppm"] = mConv_openCV_i2i;
-  mConvertible["jpeg2sr"] = mConv_openCV_i2i;
-  mConvertible["jpeg2ras"] = mConv_openCV_i2i;
-  mConvertible["jpeg2tiff"] = mConv_openCV_i2i;
-  mConvertible["jpeg2tif"] = mConv_openCV_i2i;
-  mConvertible["jpg2bmp"] = mConv_openCV_i2i;
-  mConvertible["jpg2dib"] = mConv_openCV_i2i;
-  mConvertible["jpg2jpeg"] = mConv_openCV_i2i;
-  mConvertible["jpg2jpe"] = mConv_openCV_i2i;
-  mConvertible["jpg2jp2"] = mConv_openCV_i2i;
-  mConvertible["jpg2png"] = mConv_openCV_i2i;
-  mConvertible["jpg2pbm"] = mConv_openCV_i2i;
-  mConvertible["jpg2pgm"] = mConv_openCV_i2i;
-  mConvertible["jpg2ppm"] = mConv_openCV_i2i;
-  mConvertible["jpg2sr"] = mConv_openCV_i2i;
-  mConvertible["jpg2ras"] = mConv_openCV_i2i;
-  mConvertible["jpg2tiff"] = mConv_openCV_i2i;
-  mConvertible["jpg2tif"] = mConv_openCV_i2i;
-  mConvertible["jpe2bmp"] = mConv_openCV_i2i;
-  mConvertible["jpe2dib"] = mConv_openCV_i2i;
-  mConvertible["jpe2jpeg"] = mConv_openCV_i2i;
-  mConvertible["jpe2jpg"] = mConv_openCV_i2i;
-  mConvertible["jpe2jp2"] = mConv_openCV_i2i;
-  mConvertible["jpe2png"] = mConv_openCV_i2i;
-  mConvertible["jpe2pbm"] = mConv_openCV_i2i;
-  mConvertible["jpe2pgm"] = mConv_openCV_i2i;
-  mConvertible["jpe2ppm"] = mConv_openCV_i2i;
-  mConvertible["jpe2sr"] = mConv_openCV_i2i;
-  mConvertible["jpe2ras"] = mConv_openCV_i2i;
-  mConvertible["jpe2tiff"] = mConv_openCV_i2i;
-  mConvertible["jpe2tif"] = mConv_openCV_i2i;
-  mConvertible["jp22bmp"] = mConv_openCV_i2i;
-  mConvertible["jp22dib"] = mConv_openCV_i2i;
-  mConvertible["jp22jpeg"] = mConv_openCV_i2i;
-  mConvertible["jp22jpg"] = mConv_openCV_i2i;
-  mConvertible["jp22jpe"] = mConv_openCV_i2i;
-  mConvertible["jp22png"] = mConv_openCV_i2i;
-  mConvertible["jp22pbm"] = mConv_openCV_i2i;
-  mConvertible["jp22pgm"] = mConv_openCV_i2i;
-  mConvertible["jp22ppm"] = mConv_openCV_i2i;
-  mConvertible["jp22sr"] = mConv_openCV_i2i;
-  mConvertible["jp22ras"] = mConv_openCV_i2i;
-  mConvertible["jp22tiff"] = mConv_openCV_i2i;
-  mConvertible["jp22tif"] = mConv_openCV_i2i;
-  mConvertible["png2bmp"] = mConv_openCV_i2i;
-  mConvertible["png2dib"] = mConv_openCV_i2i;
-  mConvertible["png2jpeg"] = mConv_openCV_i2i;
-  mConvertible["png2jpg"] = mConv_openCV_i2i;
-  mConvertible["png2jpe"] = mConv_openCV_i2i;
-  mConvertible["png2jp2"] = mConv_openCV_i2i;
-  mConvertible["png2pbm"] = mConv_openCV_i2i;
-  mConvertible["png2pgm"] = mConv_openCV_i2i;
-  mConvertible["png2ppm"] = mConv_openCV_i2i;
-  mConvertible["png2sr"] = mConv_openCV_i2i;
-  mConvertible["png2ras"] = mConv_openCV_i2i;
-  mConvertible["png2tiff"] = mConv_openCV_i2i;
-  mConvertible["png2tif"] = mConv_openCV_i2i;
-  mConvertible["pbm2bmp"] = mConv_openCV_i2i;
-  mConvertible["pbm2dib"] = mConv_openCV_i2i;
-  mConvertible["pbm2jpeg"] = mConv_openCV_i2i;
-  mConvertible["pbm2jpg"] = mConv_openCV_i2i;
-  mConvertible["pbm2jpe"] = mConv_openCV_i2i;
-  mConvertible["pbm2jp2"] = mConv_openCV_i2i;
-  mConvertible["pbm2png"] = mConv_openCV_i2i;
-  mConvertible["pbm2pgm"] = mConv_openCV_i2i;
-  mConvertible["pbm2ppm"] = mConv_openCV_i2i;
-  mConvertible["pbm2sr"] = mConv_openCV_i2i;
-  mConvertible["pbm2ras"] = mConv_openCV_i2i;
-  mConvertible["pbm2tiff"] = mConv_openCV_i2i;
-  mConvertible["pbm2tif"] = mConv_openCV_i2i;
-  mConvertible["pgm2bmp"] = mConv_openCV_i2i;
-  mConvertible["pgm2dib"] = mConv_openCV_i2i;
-  mConvertible["pgm2jpeg"] = mConv_openCV_i2i;
-  mConvertible["pgm2jpg"] = mConv_openCV_i2i;
-  mConvertible["pgm2jpe"] = mConv_openCV_i2i;
-  mConvertible["pgm2jp2"] = mConv_openCV_i2i;
-  mConvertible["pgm2png"] = mConv_openCV_i2i;
-  mConvertible["pgm2pbm"] = mConv_openCV_i2i;
-  mConvertible["pgm2ppm"] = mConv_openCV_i2i;
-  mConvertible["pgm2sr"] = mConv_openCV_i2i;
-  mConvertible["pgm2ras"] = mConv_openCV_i2i;
-  mConvertible["pgm2tiff"] = mConv_openCV_i2i;
-  mConvertible["pgm2tif"] = mConv_openCV_i2i;
-  mConvertible["ppm2bmp"] = mConv_openCV_i2i;
-  mConvertible["ppm2dib"] = mConv_openCV_i2i;
-  mConvertible["ppm2jpeg"] = mConv_openCV_i2i;
-  mConvertible["ppm2jpg"] = mConv_openCV_i2i;
-  mConvertible["ppm2jpe"] = mConv_openCV_i2i;
-  mConvertible["ppm2jp2"] = mConv_openCV_i2i;
-  mConvertible["ppm2png"] = mConv_openCV_i2i;
-  mConvertible["ppm2pbm"] = mConv_openCV_i2i;
-  mConvertible["ppm2pgm"] = mConv_openCV_i2i;
-  mConvertible["ppm2sr"] = mConv_openCV_i2i;
-  mConvertible["ppm2ras"] = mConv_openCV_i2i;
-  mConvertible["ppm2tiff"] = mConv_openCV_i2i;
-  mConvertible["ppm2tif"] = mConv_openCV_i2i;
-  mConvertible["sr2bmp"] = mConv_openCV_i2i;
-  mConvertible["sr2dib"] = mConv_openCV_i2i;
-  mConvertible["sr2jpeg"] = mConv_openCV_i2i;
-  mConvertible["sr2jpg"] = mConv_openCV_i2i;
-  mConvertible["sr2jpe"] = mConv_openCV_i2i;
-  mConvertible["sr2jp2"] = mConv_openCV_i2i;
-  mConvertible["sr2png"] = mConv_openCV_i2i;
-  mConvertible["sr2pbm"] = mConv_openCV_i2i;
-  mConvertible["sr2pgm"] = mConv_openCV_i2i;
-  mConvertible["sr2ppm"] = mConv_openCV_i2i;
-  mConvertible["sr2ras"] = mConv_openCV_i2i;
-  mConvertible["sr2tiff"] = mConv_openCV_i2i;
-  mConvertible["sr2tif"] = mConv_openCV_i2i;
-  mConvertible["ras2bmp"] = mConv_openCV_i2i;
-  mConvertible["ras2dib"] = mConv_openCV_i2i;
-  mConvertible["ras2jpeg"] = mConv_openCV_i2i;
-  mConvertible["ras2jpg"] = mConv_openCV_i2i;
-  mConvertible["ras2jpe"] = mConv_openCV_i2i;
-  mConvertible["ras2jp2"] = mConv_openCV_i2i;
-  mConvertible["ras2png"] = mConv_openCV_i2i;
-  mConvertible["ras2pbm"] = mConv_openCV_i2i;
-  mConvertible["ras2pgm"] = mConv_openCV_i2i;
-  mConvertible["ras2ppm"] = mConv_openCV_i2i;
-  mConvertible["ras2sr"] = mConv_openCV_i2i;
-  mConvertible["ras2tiff"] = mConv_openCV_i2i;
-  mConvertible["ras2tif"] = mConv_openCV_i2i;
-  mConvertible["tiff2bmp"] = mConv_openCV_i2i;
-  mConvertible["tiff2dib"] = mConv_openCV_i2i;
-  mConvertible["tiff2jpeg"] = mConv_openCV_i2i;
-  mConvertible["tiff2jpg"] = mConv_openCV_i2i;
-  mConvertible["tiff2jpe"] = mConv_openCV_i2i;
-  mConvertible["tiff2jp2"] = mConv_openCV_i2i;
-  mConvertible["tiff2png"] = mConv_openCV_i2i;
-  mConvertible["tiff2pbm"] = mConv_openCV_i2i;
-  mConvertible["tiff2pgm"] = mConv_openCV_i2i;
-  mConvertible["tiff2ppm"] = mConv_openCV_i2i;
-  mConvertible["tiff2sr"] = mConv_openCV_i2i;
-  mConvertible["tiff2ras"] = mConv_openCV_i2i;
-  mConvertible["tiff2tif"] = mConv_openCV_i2i;
-  mConvertible["tif2bmp"] = mConv_openCV_i2i;
-  mConvertible["tif2dib"] = mConv_openCV_i2i;
-  mConvertible["tif2jpeg"] = mConv_openCV_i2i;
-  mConvertible["tif2jpg"] = mConv_openCV_i2i;
-  mConvertible["tif2jpe"] = mConv_openCV_i2i;
-  mConvertible["tif2jp2"] = mConv_openCV_i2i;
-  mConvertible["tif2png"] = mConv_openCV_i2i;
-  mConvertible["tif2pbm"] = mConv_openCV_i2i;
-  mConvertible["tif2pgm"] = mConv_openCV_i2i;
-  mConvertible["tif2ppm"] = mConv_openCV_i2i;
-  mConvertible["tif2sr"] = mConv_openCV_i2i;
-  mConvertible["tif2ras"] = mConv_openCV_i2i;
-  mConvertible["tif2tiff"] = mConv_openCV_i2i;
+  //assuming openCV
+  const std::string _supportedImage[] = {"bmp","dib","jpeg","jpg","jpe","jp2",
+                                         "png","pbm","pgm","ppm","sr","ras",
+                                         "tiff","tif"};
 
+  //assuming openCV
+  const std::string _supportedVideo[] = {"mpg","mpeg"};
 
-  mConvertible["mpg2bmp"] = mConv_openCV_v2i;
-  mConvertible["mpg2dib"] = mConv_openCV_v2i;
-  mConvertible["mpg2jpeg"] = mConv_openCV_v2i;
-  mConvertible["mpg2jpg"] = mConv_openCV_v2i;
-  mConvertible["mpg2jpe"] = mConv_openCV_v2i;
-  mConvertible["mpg2jp2"] = mConv_openCV_v2i;
-  mConvertible["mpg2png"] = mConv_openCV_v2i;
-  mConvertible["mpg2pbm"] = mConv_openCV_v2i;
-  mConvertible["mpg2pgm"] = mConv_openCV_v2i;
-  mConvertible["mpg2sr"] = mConv_openCV_v2i;
-  mConvertible["mpg2ras"] = mConv_openCV_v2i;
-  mConvertible["mpg2tiff"] = mConv_openCV_v2i;
-  mConvertible["mpg2tif"] = mConv_openCV_v2i;
+  vector<string> typeImage;
+  for(int k = 0;k<(sizeof(_supportedImage)/sizeof(_supportedImage[0]));k++)
+    typeImage.push_back(_supportedImage[k]);
 
-  mConvertible["mpeg2bmp"] = mConv_openCV_v2i;
-  mConvertible["mpeg2dib"] = mConv_openCV_v2i;
-  mConvertible["mpeg2jpeg"] = mConv_openCV_v2i;
-  mConvertible["mpeg2jpg"] = mConv_openCV_v2i;
-  mConvertible["mpeg2jpe"] = mConv_openCV_v2i;
-  mConvertible["mpeg2jp2"] = mConv_openCV_v2i;
-  mConvertible["mpeg2png"] = mConv_openCV_v2i;
-  mConvertible["mpeg2pbm"] = mConv_openCV_v2i;
-  mConvertible["mpeg2pgm"] = mConv_openCV_v2i;
-  mConvertible["mpeg2sr"] = mConv_openCV_v2i;
-  mConvertible["mpeg2ras"] = mConv_openCV_v2i;
-  mConvertible["mpeg2tiff"] = mConv_openCV_v2i;
-  mConvertible["mpeg2tif"] = mConv_openCV_v2i;
+  vector<string> typeVideo;
+  for(int k = 0;k<(sizeof(_supportedVideo)/sizeof(_supportedVideo[0]));k++)
+    typeVideo.push_back(_supportedVideo[k]);
+  
+  unsigned int i,j;
+  for(i=0;i<typeImage.size();i++)
+  {
+    for(j=0;j<typeImage.size();j++)
+    {
+	  if(i==j)
+	    continue;
+	  else
+	  {
+	    string msg = typeImage[i] + "2" + typeImage[j];
+		mConvertible[msg.c_str()] = mConv_openCV_i2i;
+	  }
+    }
+    
+    for(j=0;j<typeVideo.size();j++)
+    {
+	  string msg = typeVideo[j] + "2" + typeImage[i];
+	  mConvertible[msg.c_str()] = mConv_openCV_v2i;
+	}
+  }
 }
 

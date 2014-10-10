@@ -122,7 +122,7 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
                     label->sub.path.filename = std::string(walker->d_name);
                     label->sub.path.directory.relativePath = std::string(filename);
 
-                    ResultSetV2 res = (*_detectFunc)(_detect, tempName);
+                    ResultSet res = (*_detectFunc)(_detect, tempName);
                     // put the "original" label into the result set
                     for (unsigned int idx=0; idx<res.results.size(); idx++)
                     {
@@ -181,10 +181,21 @@ void cvac::processRunSet(DetectorPtr detector,
     localAndClientMsg(VLogger::DEBUG_2, client, "processRunSet-prefix: %s\n", pathPrefix.c_str());
 #ifdef WIN32
     char *tempName = _tempnam(dir.c_str(), NULL);
-#else
-    char *tempName = tempnam(dir.c_str(), NULL);
-#endif /* WIN32 */
     std::string tempString = tempName;
+#else
+    char *tempName = new char[dir.size()+13];
+    sprintf( tempName, "%s/tmpXXXXXXXX", dir.c_str() );
+    char *res = mktemp(tempName);
+    if (res==NULL)
+    {
+      localAndClientMsg(VLogger::WARN, client,
+                        "cannot create temp file name, might fail soon.\n" );
+    } else {
+      assert( tempName==res );
+    }
+    std::string tempString = tempName;
+    delete[] tempName;
+#endif /* WIN32 */
     sman->setStoppable();
 
     // Step through the Runset doing a detect for each item
@@ -243,7 +254,7 @@ void cvac::processRunSet(DetectorPtr detector,
                 
 
                 // 'result' is a vector of result objects
-                ResultSetV2 result = (*detectFunc)(detector, symlinkFullPath.c_str());
+                ResultSet result = (*detectFunc)(detector, symlinkFullPath.c_str());
 
                 // put the "original" label into the result set
                 for (unsigned int idx=0; idx<result.results.size(); idx++)
@@ -280,7 +291,7 @@ void cvac::processRunSet(DetectorPtr detector,
                 dirptr->directory.relativePath[0] == '\\')
             {  // absolute path
                 fname = dirptr->directory.relativePath;
-                localAndClientMsg(VLogger::WARN, NULL,
+                localAndClientMsg(VLogger::WARN, client,
                                   "Labelable using absolute paths; ignoring file: %s\n", fname.c_str());
                 continue;
             } else { // prepend our prefix
@@ -537,6 +548,15 @@ std::string cvac::fixupRunSet(RunSet &run, const std::string &CVAC_DataDir)
 std::string cvac::getClientConnectionName(const Ice::Current &cur)
 {
     std::string res = "localhost";
+#ifdef __APPLE__
+    // For some reason with Ice 3.5.1 the cur.con->toString() call
+    // crashes.  So for now always return localhost on OSX
+    return res;
+#endif
+    if (!cur.con)
+        return res;
+    if (cur.con.get() == NULL)
+        return res;
     std::string cstring = cur.con->toString();
     if (cstring.empty())
        return res;
@@ -553,5 +573,5 @@ std::string cvac::getClientConnectionName(const Ice::Current &cur)
             return rstr; 
         }
     }
-     return res;
+    return res;
 }

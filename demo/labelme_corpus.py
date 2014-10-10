@@ -13,6 +13,13 @@ import easy
 # LMFolders and LMObjectNames
 corpus = easy.openCorpus( "corpus/LabelMeCarsTest.properties" )
 categories, lablist = easy.getDataSet( corpus, createMirror=True )
+if (len(lablist)==0):
+    print("No labelable objects found for the data set.  Note that\n"
+          "the Python implementation of the FileServer currently requires\n"
+          "all LabelMe files to be local, rather than on a server.\n"
+          "Please either download all image and annotation files first,\n"
+          "or run the Java implementation of the FileServer.")
+    exit(-1)
 print('Obtained {0} labeled artifact{1} from corpus "{2}":'.format(
     len(lablist), ("s","")[len(lablist)==1], corpus.name ));
 easy.printCategoryInfo( categories )
@@ -40,7 +47,7 @@ print("There are {0} car-related labels.".format( len(cars) ))
 quit()  # done for now
 
 # Train a detector on license plates
-trainer = easy.getTrainer( "bowTrain:default -p 10103 ")
+trainer = easy.getTrainer( "BOW_Trainer:default -p 10103 ")
 trainset = easy.createRunSet( license_plates, "pos" )
 easy.printRunSetInfo( trainset )
 licenseplateModel = easy.train( trainer, trainset )
@@ -48,7 +55,7 @@ licenseplateModel = easy.train( trainer, trainset )
 # test the license plate detector on the known locations of cars;
 # this will only try to detect within the boundaries of cars.
 testset = easy.createRunSet( cars, "unpurposed" )
-detector = easy.getDetector( "bowTest:default -p 10104" )
+detector = easy.getDetector( "BOW_Detector:default -p 10104" )
 results = easy.detect( detector, licenseplateModel, testset )
 
 printResults( results )

@@ -10,6 +10,8 @@ import random
 import shutil
 import zipfile
 import datetime
+import re
+import tempfile
 
 DEF_TRAIN_PREFIX = "train_"
 DEF_SANDBOX = "sboxes"
@@ -34,17 +36,18 @@ class ClientSandbox(object):
                 os.makedirs(self.mClientDir)
         return self.mClientDir,relativeClientDir
         
-    def getTempDirname(self,_prefix):
-        fstr = str(random.randint(1,sys.maxint)).zfill(len(str(sys.maxint)))
-        return _prefix + fstr 
+#     def getTempDirname(self,_prefix):
+#         fstr = str(random.randint(1,sys.maxint)).zfill(len(str(sys.maxint)))
+#         return _prefix + fstr 
     
     def createTrainingDir(self):
         self.deleteTrainingDir()
         self.getClientDir()
-        self.mTrainDir = self.getTempDirname(self.mClientDir + "/" + DEF_TRAIN_PREFIX)
-        if os.path.isdir(self.mTrainDir):
-            shutil.rmtree(self.mTrainDir)            
-        os.makedirs(self.mTrainDir)
+        self.mTrainDir = tempfile.mkdtemp(dir = self.mClientDir, prefix = DEF_TRAIN_PREFIX )
+#         self.mTrainDir = self.getTempDirname(self.mClientDir + "/" + DEF_TRAIN_PREFIX)
+#         if os.path.isdir(self.mTrainDir):
+#             shutil.rmtree(self.mTrainDir)            
+#         os.makedirs(self.mTrainDir)
         return self.mTrainDir
         
 class SandboxManager(object):
@@ -88,7 +91,7 @@ class DetectorDataArchive(object):
         self.mArchivePath = ""      
     
     def setArchivePath(self,_dir,_prefix):
-        _postfix = (datetime.datetime.now()).strftime("%m%d%y_%H%M")
+        _postfix = (datetime.datetime.now()).strftime("%m%d%y_%H%M%S")
         if _dir: _dir += "/"
         tArchiveName = _prefix + "_" + _postfix + ".zip"
         self.mArchivePath = _dir + tArchiveName
@@ -106,11 +109,12 @@ class DetectorDataArchive(object):
     def addInfo(self,_key,_infoStr):
         self.setProperty(_key, _infoStr)        
     
-    def addFile(self,_key,_filepath):                
+    def addFile(self,_key,_filepath, _value = None):                
         if not _filepath in self.mSrcFiles:            
             self.mSrcFiles.append(_filepath)
-            filename = os.path.basename(_filepath)
-            self.setProperty(_key, filename)        
+            if _value == None:
+                _value = os.path.basename(_filepath)
+            self.setProperty(_key, _value)        
     
     def createArchive(self,_dirForSrcfile):
         filepath = _dirForSrcfile + "/" + self.mPropertyFilename
@@ -144,17 +148,19 @@ class DetectorDataArchive(object):
             fzip.extractall(_dir)
             fzip.close()
         
-        self.mProperty = {}     
-        f = open(_dir + "/" + self.mPropertyFilename,"r")
-        for line in f:
-            if line[0]=='#':
-                continue;                           
-            line = line.rstrip('\r\n')                            
-            temp = line.split('=')
-            if len(temp)>1:
-                self.mProperty[temp[0]] = temp[1]                        
-        f.close()
-        return self.mProperty
+        self.mProperty = {}
+        try:
+            f = open(_dir + "/" + self.mPropertyFilename,"r")
+            for line in f:
+                if line[0]=='#':
+                    continue;                           
+                line = line.rstrip('\r\n')                            
+                temp = line.split('=')
+                if len(temp)>1:
+                    self.mProperty[temp[0]] = temp[1]                        
+            f.close()
+        finally:        
+            return self.mProperty
         
         
 class ArchiveHandler(object):
@@ -177,8 +183,8 @@ class ArchiveHandler(object):
     def setArchivePath(self,_dir,_prefix):
         return self.mDDA.setArchivePath(_dir, _prefix)
         
-    def addFile(self,_key,_filepath):
-        self.mDDA.addFile(_key,_filepath)
+    def addFile(self,_key,_filepath,_value = None):
+        self.mDDA.addFile(_key,_filepath,_value)
         
     def addInfo(self,_key,_infoStr):
         self.mDDA.addInfo(_key,_infoStr)
@@ -191,3 +197,15 @@ class ArchiveHandler(object):
         
     def unArchive(self,_zipfilepath,_dir):
         return self.mDDA.unArchive(_zipfilepath, _dir)
+
+    def getClientConnectionName(self, current):
+        connectionName = current.con.toString()
+
+        print (connectionName)
+        ips = re.findall("(.*)remote address =(.*)[^\d](\d*\.\d*\.\d*\.\d*):(\d*)", connectionName)
+        # should return [local address = xxxx, xxx, client ip, client port]
+        if not ips: 
+            return "localhost"
+        # return the client ip address
+        return ips[0][2] 
+
