@@ -8,10 +8,13 @@ title: User Documentation
 * [Service scripts](#scripts)
 * [C/C++ Interfaces](#cpp)
 
-Documentation version: if you are reading this from a local file, the
-version of the documentation matches your installed EasyCV version.
-Otherwise, the [online documentation](http://npsvisionlab.github.io/CVAC)
-refers to the EasyCV master branch.  Documentation for other versions
+Documentation version: if you are reading this online but you have
+installed EasyCV on your computer, switch to your local documentation
+as soon as possible.  Just click on "Documentation" in your
+EasyCV Control Center (see below).  The version of the local documentation
+matches your installed EasyCV version.
+The [online documentation](http://npsvisionlab.github.io/CVAC)
+refers to the EasyCV master branch.  Documentation for older versions
 is available from EasyCV version 0.8 onwards and it is included with
 the binary installer.  You can also [build](building.html) the
 documentation from the source distribution.
