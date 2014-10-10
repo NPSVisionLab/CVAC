@@ -409,18 +409,16 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
         unsigned long entrySize = archive_entry_size(entry);
         // Need to call copy_data even with an entrySize of 0 size
         // OSX had a defect an always returns a entrySize of zero.
-        if (entrySize >= 0) {
-            r = copy_data(a, ext, entrySize);
-            if (r < ARCHIVE_OK) {
-              std::string errStr = archive_error_string(a);
-              errStr.append("\n");
-              localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
-            }
-            if (r < ARCHIVE_WARN) {
-              // throw exception for serious error
-              localAndClientMsg(VLogger::WARN, NULL, "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
-              throw "";
-            }
+        r = copy_data(a, ext, entrySize);
+        if (r < ARCHIVE_OK) {
+          std::string errStr = archive_error_string(a);
+          errStr.append("\n");
+          localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
+        }
+        if (r < ARCHIVE_WARN) {
+          // throw exception for serious error
+          localAndClientMsg(VLogger::WARN, NULL, "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
+          throw "";
         }
         r = archive_write_finish_entry(ext);
         if (r < ARCHIVE_OK) {
