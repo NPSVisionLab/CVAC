@@ -90,44 +90,50 @@ class EasyTest(unittest.TestCase):
         Create a test runset and call the detector with it.
         Check for proper handling of intentional problems.
         '''
-        detector = getDetector( configString )
+        detector = easy.getDetector( configString )
         if not detector:
             print("cannot find or connect to detector")
             return False
-        rs = easy.createRunSet( "testImg/italia.jpg" )
-        doesnotexist = easy.getLabelable( "testImg/doesnotexist.jpg" )
-        easy.addToRunSet( rs, doesnotexist )
+        
+        # make a runset including erroneous files
+        rs = cvac.RunSet()
+        file_normal = easy.getLabelable( "testImg/italia.jpg" )
+        file_notexist = easy.getLabelable( "testImg/doesnotexist.jpg" )
+        file_notconvertible = easy.getLabelable( "testImg/notconvertible.xxx")
+        easy.addToRunSet( rs, file_normal, cvac.Purpose( cvac.PurposeType.UNPURPOSED, -1 ))
+        easy.addToRunSet( rs, file_notexist, cvac.Purpose( cvac.PurposeType.UNPURPOSED, -1 ))
+        easy.addToRunSet( rs, file_notconvertible, cvac.Purpose( cvac.PurposeType.UNPURPOSED, -1 ) )
         results = easy.detect( detector, detectorData, rs, detectorProperties )
+        
         # check for number of results: must be the same as runset length
-        if len(results)!=len(rs):
+        nRunset = 0 
+        for pur in rs.purposedLists:
+            nRunset += len(pur.labeledArtifacts)
+        if len(results)!=nRunset:
             print("incorrect result set size")
             return False
+        
         # check that the doesnotexist file caused hasLabel==False
         found=False
         for lbl in results:
-            if lbl.sub==doesnotexist.sub:
-                if lbl.lab.hasLabel:
-                    print("Incorrectly assigned label for a non-existant file.")
-                    return False
-                else:
-                    found=True
-                    break
-            else:
-                # confidence 0..1
-                if not 0.0<=lbl.confidence and lbl.confidence<=1.0:
-                    print("Label confidence out of bounds ({0}).".format(lbl.confidence))
-                    return False
-                # check that either this was not assigned a label, or the
-                # assigned label is of proper syntax
-                if lbl.lab.hasLabel:
-                    if not isinstance(lbl.lab.name, str):
-                        print("Label name must be of string type.")
+            # for an erroneous file
+            if lbl.original.sub==img_notexist.sub or lbl.original.sub==img_notconvertible.sub:
+                for foundlbl in lbl.foundLabels:
+                    if foundlbl.lab.hasLabel:
+                        print("Incorrectly assigned label for an erroneous file.")
                         return False
-                    
-        if not found:
-            print("Every runset labelable must produce a return result.")
-            return False
-
+            else:   #for a normal file
+                for foundlbl in lbl.foundLabels:
+                    # confidence 0..1
+                    if not 0.0<=foundlbl.confidence and foundlbl.confidence<=1.0:
+                        print("Label confidence out of bounds ({0}).".format(foundlbl.confidence))
+                        return False
+                    # check that either this was not assigned a label, or the
+                    # assigned label is of proper syntax
+                    if foundlbl.lab.hasLabel:
+                        if not isinstance(foundlbl.lab.name, str):
+                            print("Label name must be of string type.")
+                            return False
         return True
 
 
