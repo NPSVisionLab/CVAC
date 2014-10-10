@@ -374,7 +374,7 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
     localAndClientMsg(VLogger::WARN, NULL,
                       "DetectorDataArchive::expandSeq_fromFile could not open requested file: %s\n",
                       filename.c_str());
-    throw "";
+    throw "cannot open archive file";
   }
   for (;;) {
     r = archive_read_next_header(a, &entry);
@@ -382,11 +382,12 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
       break;
 
     if (r < ARCHIVE_OK)
-      localAndClientMsg(VLogger::WARN, NULL, archive_error_string(a));
+      localAndClientMsg(VLogger::WARN, NULL, "%s\n", archive_error_string(a));
 
     if (r < ARCHIVE_WARN) {
-      localAndClientMsg(VLogger::WARN, NULL, "Error reading archive header, in DetectorDataArchive expandSeq_fromFile\n");
-      throw "";
+      localAndClientMsg(VLogger::WARN, NULL,
+                        "Error reading archive header, in DetectorDataArchive expandSeq_fromFile\n");
+      throw "cannot read archive header";
     }
 
     // Augment entry-file which will get specified subfolder added-on
@@ -409,8 +410,9 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
             }
             if (r < ARCHIVE_WARN) {
               // throw exception for serious error
-              localAndClientMsg(VLogger::WARN, NULL, "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
-              throw "";
+              localAndClientMsg(VLogger::WARN, NULL,
+                                "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
+              throw "cannot write (copy) archive header";
             }
         }
         r = archive_write_finish_entry(ext);
@@ -421,8 +423,9 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
         }
         if (r < ARCHIVE_WARN) {
           // Archive error string already echoed, throw exception for serious error
-          localAndClientMsg(VLogger::WARN, NULL, "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
-          throw "";
+          localAndClientMsg(VLogger::WARN, NULL,
+                            "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
+          throw "cannot write archive header";
         }
      }
   }
