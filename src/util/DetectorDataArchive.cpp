@@ -45,6 +45,7 @@
 #include <stdarg.h>
 #include <archive.h>
 #include <archive_entry.h>
+
 #include "util/DetectorDataArchive.h"
 #include "util/FileUtils.h"
 
@@ -289,7 +290,7 @@ cvac::DetectorDataArchive::getFile(const std::string &identifier) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-int copy_data(struct archive *ar, struct archive *aw)
+int copy_data(struct archive *ar, struct archive *aw, unsigned long totalSize)
 {
   int r;
   const void *buff;
@@ -301,18 +302,26 @@ int copy_data(struct archive *ar, struct archive *aw)
   __LA_INT64_T offset;
 #endif
 
-  for (;;) {
+  unsigned long sizeLeft = totalSize;
+  while (sizeLeft > 0) {
+    
     r = archive_read_data_block(ar, &buff, &size, &offset);
     if (r == ARCHIVE_EOF)
       return (ARCHIVE_OK);
-    if (r != ARCHIVE_OK)
+    sizeLeft -= size;
+    if (r < ARCHIVE_OK)
     {
-      //forcefully copy to destination
+      //Report the error and try and finish.  This should never happen
+      std::string errStr = archive_error_string(ar);
+      errStr.append("\n");
+      localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
       r = archive_write_data_block(aw, buff, size, offset);
       if (r != ARCHIVE_OK)
       {
+        std::string errStr = archive_error_string(aw);
+        errStr.append("\n");
         //if the destination has a problem, it would return Error.        
-        localAndClientMsg(VLogger::WARN, NULL, archive_error_string(aw));
+        localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
         return (r);
       }
       else
@@ -325,10 +334,14 @@ int copy_data(struct archive *ar, struct archive *aw)
 
     r = archive_write_data_block(aw, buff, size, offset);
     if (r != ARCHIVE_OK) {
-      localAndClientMsg(VLogger::WARN, NULL, archive_error_string(aw));
+      std::string errStr = archive_error_string(aw);
+      errStr.append("\n");
+      localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
       return (r);
     }
   }
+  // We read all the bytes so return OK
+  return ARCHIVE_OK;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -368,7 +381,7 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
     if (r == ARCHIVE_EOF) // done loop
       break;
 
-    if (r != ARCHIVE_OK)
+    if (r < ARCHIVE_OK)
       localAndClientMsg(VLogger::WARN, NULL, archive_error_string(a));
 
     if (r < ARCHIVE_WARN) {
@@ -382,23 +395,29 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
     archive_entry_set_pathname(entry, fullSubfolderPath.c_str());
 
     r = archive_write_header(ext, entry);
-    if (r != ARCHIVE_OK) {
+    if (r < ARCHIVE_OK) {
       localAndClientMsg(VLogger::WARN, NULL, archive_error_string(ext));
     }
-    //else if (archive_entry_size(entry) > 0) {
     else {
-        r = copy_data(a, ext);
-        if (r != ARCHIVE_OK) {
-          localAndClientMsg(VLogger::WARN, NULL, archive_error_string(a));
-        }
-        if (r < ARCHIVE_WARN) {
-          // Archive error string already echoed, throw exception for serious error
-          localAndClientMsg(VLogger::WARN, NULL, "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
-          throw "";
+        unsigned long entrySize = archive_entry_size(entry);
+        if (entrySize > 0) {
+            r = copy_data(a, ext, entrySize);
+            if (r < ARCHIVE_OK) {
+              std::string errStr = archive_error_string(a);
+              errStr.append("\n");
+              localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
+            }
+            if (r < ARCHIVE_WARN) {
+              // throw exception for serious error
+              localAndClientMsg(VLogger::WARN, NULL, "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
+              throw "";
+            }
         }
         r = archive_write_finish_entry(ext);
-        if (r != ARCHIVE_OK) {
-          localAndClientMsg(VLogger::WARN, NULL, archive_error_string(ext));
+        if (r < ARCHIVE_OK) {
+          std::string errStr = archive_error_string(ext);
+          errStr.append("\n");
+          localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
         }
         if (r < ARCHIVE_WARN) {
           // Archive error string already echoed, throw exception for serious error

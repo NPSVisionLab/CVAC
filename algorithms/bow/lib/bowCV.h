@@ -98,8 +98,8 @@ public:
                   cvac::ServiceManager *,
                   float _oneclassNu = 0.1);  
   bool  detect_initialize( const cvac::DetectorDataArchive* dda);	
-  bool  detect_run(const std::string& _fullfilename, int& _bestClass,
-                   int _boxX=0,int _boxY=0,int _boxWidth=0,int _boxHeight=0);
+  std::string  detect_run(const std::string& _fullfilename, int& _bestClass,
+                          int _boxX=0,int _boxY=0,int _boxWidth=0,int _boxHeight=0);
 
 private:
   bool  isCompatibleOpenCV(const std::string& _version);
@@ -111,7 +111,16 @@ private:
   bool  detect_setParameter(const std::string& _detectorName,
                             const std::string& _extractorName,
                             const std::string& _matcherName);	
-  bool  detect_readTrainResult();	
+  bool  detect_readTrainResult();  
+  
+  /// Show a message to a server or a client
+  void  message(const string& _msg,
+                MsgLogger::Levels _levelClient = MsgLogger::SILENT);
+  
+  /// Show a message to a server in the same line
+  void  messageInSameline(const string& _msg);
+
+  //void  limitImageSize(Mat& _image);
 
   //bool  runTrainFull(const std::string& _filepathTrain,const std::string& _filenameTrainList,const std::string& _filepathForSavingResult,const std::string& _filenameForSavingResult);	//This function is not good to the ICE project.
   //void  setSVMParams( CvSVMParams& svmParams, CvMat& class_wts_cv, const Mat& responses, bool balanceClasses );

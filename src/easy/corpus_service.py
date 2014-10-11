@@ -121,6 +121,11 @@ class LabelMeCorpusI(CorpusI):
         localDir = self.dataSetFolder
         labels = []
         for folder in self.folderList:
+            # if not local, attempt to download
+            fsPath = os.path.join(self.CVAC_DataDir, folder)
+            if not os.path.isdir(fsPath):
+                labelme.downloadImages( self.homeImages, folder,
+                                        self.CVAC_DataDir, fsPath )
             labels += labelme.parseFolder(localDir, self.homeAnnotations,
                                           self.homeImages, folder, 
                                           self.CVAC_DataDir)

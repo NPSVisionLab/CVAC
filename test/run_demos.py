@@ -24,9 +24,13 @@ if __name__ == '__main__' :
             os.putenv("PATH", pathenv + ";" + thisPath + "/../3rdparty/Ice/bin")
         else:
             os.putenv("PATH", pathenv + ":" + thisPath + "/../3rdparty/Ice/lib")
+        # Need to stop any old services incase we had a crash last time
+        # This gets rid of the lock file incase its still there
+        call([binPath + "/stopServices" + extension], shell=True)
+        time.sleep(2)
         print("Starting " + binPath + "/startServices" + extension)
         call([binPath + "/startServices" + extension], shell=True)
-        time.sleep(5)
+        time.sleep(8)
         execfile(demoPath + '/prerequisites.py')
         execfile(demoPath + '/detect.py')
         execfile(demoPath + '/training.py')

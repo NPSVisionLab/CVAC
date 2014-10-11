@@ -8,7 +8,7 @@ then
     echo "INSTALLDIR needs to be defined! Please set INSTALLDIR to binary distribution install directory"
     exit
 fi
-export PYTHONEXE=/usr/bin/python2.6
+export PYTHONEXE=/usr/bin/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}
 export PATH=$PATH:${INSTALLDIR}/bin
 export ICEDIR=${INSTALLDIR}/3rdparty/ICE
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${INSTALLDIR}/lib"
@@ -35,7 +35,7 @@ if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLDIR}/python.config" ]
 then
     grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE
     do
-        for X in `ps -ef | grep -m 1 -i $LINE | awk {'print $2'}`; do
+        for X in `ps -ef | grep -m 1 -i "$LINE" | awk {'print $2'}`; do
             kill $X;
         done
     done
