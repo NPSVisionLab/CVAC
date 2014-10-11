@@ -101,7 +101,7 @@ file server and a corpus server.
 
 Take note of the service's "data" directory.  That's where media files
 need to be located in order to be accessible to the services.  If you
-have them in another folder, you need to "upload" them to the
+have them in another machine, you need to "upload" them to the
 FileServer first.  If you would like to change this folder, you need
 to edit the config.services file in the Application's directory.
 
@@ -127,13 +127,16 @@ Stop the services in your EasyCV Control Center.
 # <a name="scripts"></a> Service Scripts
 
 You can start and stop the local services without the EasyCV Control
-Center graphical user interface.  The startIcebox and stopIcebox
+Center graphical user interface.  The startServices and stopServices
 scripts are provided in the application's directory.  That is:
 
-<br>`/Applications/EasyComputerVision.app/Contents/Resources/bin/startIcebox.sh`
-<br>`/Applications/EasyComputerVision.app/Contents/Resources/bin/stopIcebox.sh`
-<br>`C:\Program Files\EasyComputerVision\bin\startIcebox.sh`
-<br>`C:\Program Files\EasyComputerVision\bin\stopIcebox.sh`
+On the MAC:
+<br>`/Applications/EasyComputerVision.app/Contents/Resources/bin/startServices.sh`
+<br>`/Applications/EasyComputerVision.app/Contents/Resources/bin/stopServices.sh`
+
+On Windows:
+<br>`C:\EasyCV\CVAC_binary-0.X.XX-Win7\bin\startServices.bat`
+<br>`C:\EasyCV\CVAC_binary-0.X.XX-Win7\bin\stopServices.bat`
 
 
 # <a name="cpp"></a> C/C++ Interfaces

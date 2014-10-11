@@ -45,13 +45,12 @@ ELSE (PYTHON_ONLY_CLIENT)
     SET (START_ICE_SERVICES 1)
 ENDIF (PYTHON_ONLY_CLIENT)
 
-
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
 
 # where the Find*.cmake files are
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
-SET(PROJECT_BINARY_DIR ${CMAKE_SOURCE_DIR})
+#SET(PROJECT_BINARY_DIR ${CMAKE_SOURCE_DIR})
 
 SET(OUTPUT_BINDIR ${PROJECT_BINARY_DIR}/bin)
 MAKE_DIRECTORY(${OUTPUT_BINDIR})
@@ -343,7 +342,11 @@ IF( PYTHONINTERP_FOUND )
   IF (WIN32)
     FIND_FILE(OPENCV_PY_LIB cv2.pyd 
              HINTS "${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
-  ELSE (WIN32)
+  ELSEIF (APPLE)
+    FIND_LIBRARY(OPENCV_PY_LIB cv2.so
+      HINTS ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
+            ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+  ELSE ()
     FIND_LIBRARY(OPENCV_PY_LIB cv2.so
       HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
             ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
@@ -399,7 +402,7 @@ ENDIF( BUILD_WITH_RSI )
 IF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
     SET( CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/installed" CACHE PATH "default install path" FORCE )
 ELSE( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
-    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cvac" )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/EasyCV" )
 ENDIF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
 
 #Need to have this at top level since multiple directories need it
@@ -434,26 +437,34 @@ MATH(EXPR FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+110")
 MATH(EXPR PYTHON_FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+111")
 MATH(EXPR RSITR_TEST_PORT "${CVAC_FIRST_SERVICE_PORT}+109")
 
+IF (BUILD_BINARY_PACKAGE)
+   SET(CVAC_DATA_DIR "data")
+ELSE (BUILD_BINARY_PACKAGE)
+   SET(CVAC_DATA_DIR "${CMAKE_SOURCE_DIR}/data")
+ENDIF (BUILD_BINARY_PACKAGE)
 # the configuration of config.{icebox,service} must come after including the
 # etc directory, because that's where the user.config.{..} get configured.
-CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
-CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
-CONFIGURE_FILE("etc/config.client.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.client")
-CONFIGURE_FILE("etc/config.admin.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.admin")
-CONFIGURE_FILE("etc/config.java_admin.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.java_admin")
-CONFIGURE_FILE("etc/config.java_icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.java_icebox")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.service" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.client" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
+CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_BINARY_DIR}/config.icebox")
+CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_BINARY_DIR}/config.service")
+CONFIGURE_FILE("etc/config.client.in" "${CMAKE_CURRENT_BINARY_DIR}/config.client")
+# We need a copy of the config.client in the source directory for
+# the ctests to work!
+CONFIGURE_FILE("etc/config.client.in" "${CMAKE_SOURCE_DIR}/config.client")
+CONFIGURE_FILE("etc/config.admin.in" "${CMAKE_CURRENT_BINARY_DIR}/config.admin")
+CONFIGURE_FILE("etc/config.java_admin.in" "${CMAKE_CURRENT_BINARY_DIR}/config.java_admin")
+CONFIGURE_FILE("etc/config.java_icebox.in" "${CMAKE_CURRENT_BINARY_DIR}/config.java_icebox")
+IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.service")
+    FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.service" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.service" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.service")
+IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.client")
+    FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.client" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.client" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.client")
+IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.icebox")
+    FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.icebox" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.icebox" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.icebox")
 
 IF( BUILD_WITH_TESTS)
   ENABLE_TESTING()
@@ -474,32 +485,3 @@ ENDIF( BUILD_3RDPARTY_PACKAGE )
 IF ( BUILD_BINARY_PACKAGE )
     ADD_SUBDIRECTORY( etc/pack_binary )
 ENDIF ( BUILD_BINARY_PACKAGE )
-
-#
-# Display a message that details what the user has to do in order
-# to start services and run clients.
-#
-# This is currently printed rather early in the "make install" output
-# instead of at the end where it should be.
-# But since CMake doesn't make any guarantees on the order of subdirectories
-# getting installed, I don't see a way to put it at the end.
-#
-GET_FILENAME_COMPONENT(OPENCV_SITE_PACKAGES ${OpenCV_LIB_DIR_OPT}/python2.7/site-packages ABSOLUTE)
-GET_FILENAME_COMPONENT(OPENCV_LIB_DIR ${OpenCV_LIB_DIR_OPT} ABSOLUTE)
-GET_FILENAME_COMPONENT(ICE_LIB_DIR ${ICE_LIBRARY} PATH)
-SET(LIBSVM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libsvm)
-SET(PPATH ${ICE_PYTHON_DIR}:${OPENCV_SITE_PACKAGES}:${LIBSVM_DIR} )
-SET(DPATH ${ICE_LIB_DIR}:${OPENCV_LIB_DIR} )
-INSTALL(CODE "MESSAGE(\"==============================================\")")
-INSTALL(CODE "MESSAGE(\"Run EasyCV services after installation as:\")")
-INSTALL(CODE "MESSAGE(\"export PYTHONPATH=${PPATH}\")")
-INSTALL(CODE "MESSAGE(\"export DYLD_LIBRARY_PATH=${DPATH}\")")
-INSTALL(CODE "MESSAGE(\"cd ${CMAKE_INSTALL_PREFIX}; bin/startIcebox.sh\")")
-
-SET(PPATH ${CMAKE_CURRENT_BINARY_DIR}/etc/python/easyPkg:${ICE_PYTHON_DIR}:${OPENCV_SITE_PACKAGES} )
-SET(DPATH ${ICE_LIB_DIR} )
-INSTALL(CODE "MESSAGE(\"Run EasyCV clients as:\")")
-INSTALL(CODE "MESSAGE(\"export PYTHONPATH=${PPATH}\")")
-INSTALL(CODE "MESSAGE(\"export DYLD_LIBRARY_PATH=${DPATH}\")")
-INSTALL(CODE "MESSAGE(\"cd ${CMAKE_CURRENT_SOURCE_DIR}; ${PYTHON_EXECUTABLE} demo/prerequisites.py\")")
-INSTALL(CODE "MESSAGE(\"==============================================\")")

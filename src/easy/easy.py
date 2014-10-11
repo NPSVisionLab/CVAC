@@ -14,6 +14,7 @@ import sys, traceback
 import shutil
 import tempfile
 import datetime
+from util import misc
 # paths should setup the PYTHONPATH.  If you special requirements
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
@@ -54,8 +55,14 @@ else:
         args.append('--Ice.Config='+config_client_path)
 ic = Ice.initialize(args)
 defaultCS = None
+# Parse the client.config for CVAC_DataDir
+CVAC_DataDir = ic.getProperties().getProperty("CVAC.DataDir")
+if CVAC_DataDir == None:
+    CVAC_DataDir = "data"
 # IF the environment variable is set, then use that else use data
-CVAC_DataDir = os.getenv("CVAC_DATADIR", "data")
+CVAC_DataDir = os.getenv("CVAC_DATADIR", CVAC_DataDir)
+if CVAC_DataDir == None or CVAC_DataDir == "":
+    CVAC_DataDir = "data"
 CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
 
 
@@ -1123,6 +1130,8 @@ def getBestDetectorData(listRocData,dFAR,dRec):
     resMsg = resMsg + bestDetectorData.filename
     
     print(resMsg)
+    #strip off any leading CVAC_DataDir in the detector data
+    bestDetectorData = misc.stripCVAC_DataDir_from_FilePath(bestDetectorData)
     return bestDetectorData
 
 #from easy.util.ArchiveHandler import *
@@ -1181,7 +1190,12 @@ def isROCdata(rocZip):
     Return 3) a temp folder including model files (if it is a ROC zip file).     
     '''
     zipfilepath = getFSPath(rocZip)
-    tempDir = tempfile.mkdtemp()
+    # Make a temp directory under the data directory in a directory
+    # called "clientTemp"
+    tempdirloc = CVAC_DataDir + "/clientTemp"
+    if os.path.isdir(tempdirloc) == False:
+        os.makedirs(tempdirloc)
+    tempDir = tempfile.mkdtemp(dir=tempdirloc)
 
     rocArch = DetectorDataArchive()
     rocArch.mPropertyFilename = "roc.properties"    
@@ -1192,7 +1206,7 @@ def isROCdata(rocZip):
         isROC = True
         for filename in rocDict:
             detectorData = cvac.FilePath()
-            detectorData.directory.relativePath = tempDir#relDir
+            detectorData.directory.relativePath = tempDir #relDir
             detectorData.filename = filename
             tperf = rocDict[filename].split(',')
             rocData_optimal.append([detectorData,\
