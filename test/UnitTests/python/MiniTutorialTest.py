@@ -89,7 +89,7 @@ class MiniTutorialTest(unittest.TestCase):
         execfile(self.demoDir + "/bootstrapping.py");
 
     #
-    # Run bootstrapping.py
+    # Run evaluation.py
     #
     def test_evaluation(self):
         print("running evaluation.py")
