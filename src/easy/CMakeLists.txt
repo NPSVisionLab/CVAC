@@ -26,6 +26,7 @@ ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
 # Copy easy python files to the staging area so we can build a python egg
 #
 CONFIGURE_FILE(easy.py "${SLICE_OUTPUT_PYTHONDIR}/easy/easy.py" COPYONLY)
+CONFIGURE_FILE(version.py "${SLICE_OUTPUT_PYTHONDIR}/easy/version.py" COPYONLY)
 CONFIGURE_FILE(evaluate.py "${SLICE_OUTPUT_PYTHONDIR}/easy/evaluate.py" COPYONLY)
 CONFIGURE_FILE(corpus_service.py "${SLICE_OUTPUT_PYTHONDIR}/easy/corpus_service.py" COPYONLY)
 CONFIGURE_FILE(fileserver.py "${SLICE_OUTPUT_PYTHONDIR}/easy/fileserver.py" COPYONLY)

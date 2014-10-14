@@ -51,6 +51,8 @@ using namespace cvac;
 using namespace Ice;
 
 ///////////////////////////////////////////////////////////////////////////////
+/** Pass the constructed detector instance to the ServiceManager.
+   */
 ServiceManagerI::ServiceManagerI( CVAlgorithmService *service,
                                   StartStop *ss )
 {
@@ -63,7 +65,12 @@ ServiceManagerI::ServiceManagerI( CVAlgorithmService *service,
 
 ///////////////////////////////////////////////////////////////////////////////
 /**
- * The start function called by IceBox to start this service.
+ * The start function called by IceBox to start this service.  This
+ * handles all the icebox interactions.  We obtain the
+ * service name from the config.icebox file as follows. Given this
+ * entry:
+ * IceBox.Service.BOW_Detector=bowICEServer:create --Ice.Config=config.service
+ * ... the name of the service is BOW_Detector.
  */
 void ServiceManagerI::start(const ::std::string& name,
                            const CommunicatorPtr& communicator,

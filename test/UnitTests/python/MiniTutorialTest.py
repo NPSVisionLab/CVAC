@@ -88,6 +88,14 @@ class MiniTutorialTest(unittest.TestCase):
         sys.stdout.flush()
         execfile(self.demoDir + "/bootstrapping.py");
 
+    #
+    # Run evaluation.py
+    #
+    def test_evaluation(self):
+        print("running evaluation.py")
+        sys.stdout.flush()
+        execfile(self.demoDir + "/evaluation.py");
+
 
     def tearDown(self):
         # Clean up

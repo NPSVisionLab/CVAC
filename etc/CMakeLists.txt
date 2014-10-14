@@ -84,7 +84,7 @@ IF( BUILD_CORPUS_SERVICE_PYTHON)
         ENDIF (FILE_STRINGS STREQUAL "")
     ELSE (EXISTS "${CMAKE_BINARY_DIR}/python.config")
         FILE(WRITE "${CMAKE_BINARY_DIR}/python.config" 
-             " src/easy/corpus_service.py\n")
+             "src/easy/corpus_service.py\n")
     ENDIF (EXISTS "${CMAKE_BINARY_DIR}/python.config")
 ENDIF( BUILD_CORPUS_SERVICE_PYTHON)
 
@@ -98,7 +98,7 @@ IF( BUILD_FILESERVER_PYTHON)
              REGEX "src/easy/fileserver.py")
         IF (FILE_STRINGS STREQUAL "")
             FILE(APPEND "${CMAKE_BINARY_DIR}/python.config" 
-                 " src/easy/fileserver.py\n")
+                 "src/easy/fileserver.py\n")
         ENDIF (FILE_STRINGS STREQUAL "")
     ELSE (EXISTS "${CMAKE_BINARY_DIR}/python.config")
         FILE(WRITE "${CMAKE_BINARY_DIR}/python.config" 
