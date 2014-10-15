@@ -166,11 +166,11 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/version.h
       )
 
 IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
-    INSTALL(FILES ${CMAKE_SOURCE_DIR}/config.admin ${CMAKE_SOURCE_DIR}/config.icebox ${CMAKE_SOURCE_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.java_admin ${CMAKE_SOURCE_DIR}/config.java_icebox ${CMAKE_SOURCE_DIR}/config.client 
+    INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.client 
        DESTINATION .
        COMPONENT Runtime
       )
-    INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/bin/startServices.${SCRIPT_EXT} ${CMAKE_SOURCE_DIR}/bin/stopServices.${SCRIPT_EXT}
+    INSTALL(PROGRAMS ${CMAKE_BINARY_DIR}/bin/startServices.${SCRIPT_EXT} ${CMAKE_BINARY_DIR}/bin/stopServices.${SCRIPT_EXT}
        DESTINATION bin
        COMPONENT Runtime
       )
