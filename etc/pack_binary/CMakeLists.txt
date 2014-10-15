@@ -165,17 +165,6 @@ INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/version.h
        COMPONENT Runtime
       )
 
-IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
-    INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.client 
-       DESTINATION .
-       COMPONENT Runtime
-      )
-    INSTALL(PROGRAMS ${CMAKE_BINARY_DIR}/bin/startServices.${SCRIPT_EXT} ${CMAKE_BINARY_DIR}/bin/stopServices.${SCRIPT_EXT}
-       DESTINATION bin
-       COMPONENT Runtime
-      )
-ENDIF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
-
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/test/run_demos.py 
        DESTINATION test
        COMPONENT Runtime
@@ -220,6 +209,11 @@ IF (WIN32)
        DESTINATION 3rdparty
        COMPONENT Runtime 
       )
+
+  #INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-win32.zip
+  #     DESTINATION 3rdparty
+  #     COMPONENT Runtime 
+  #    )
 
 IF (NOT PYTHON_ONLY_CLIENT)
   INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libsvm

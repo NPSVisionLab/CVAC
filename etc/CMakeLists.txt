@@ -159,7 +159,7 @@ ENDIF (WIN32)
 CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/PostInstall.cmake @ONLY)
 
 IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
-    INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_BINARY_DIR}/config.java_admin ${CMAKE_BINARY_DIR}/config.java_icebox ${CMAKE_BINARY_DIR}/config.client 
+    INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.client 
        DESTINATION .
        COMPONENT Runtime
       )
