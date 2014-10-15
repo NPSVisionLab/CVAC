@@ -1,5 +1,9 @@
 #CPACK_PACKAGE_FILE_NAME requires this
-cmake_minimum_required(VERSION 2.8.6)
+IF (APPLE)
+    cmake_minimum_required(VERSION 2.8.12)
+ELSE (APPLE)
+    cmake_minimum_required(VERSION 2.8.6)
+ENDIF (APPLE)
 
 cmake_policy( SET CMP0012 NEW)
 
@@ -446,13 +450,10 @@ ENDIF (BUILD_BINARY_PACKAGE)
 # etc directory, because that's where the user.config.{..} get configured.
 CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_BINARY_DIR}/config.icebox")
 CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_BINARY_DIR}/config.service")
-CONFIGURE_FILE("etc/config.client.in" "${CMAKE_CURRENT_BINARY_DIR}/config.client")
-# We need a copy of the config.client in the source directory for
-# the ctests to work!
+# We need  config.client in the source directory for
+# the ctests to work and for demos to find it!
 CONFIGURE_FILE("etc/config.client.in" "${CMAKE_SOURCE_DIR}/config.client")
 CONFIGURE_FILE("etc/config.admin.in" "${CMAKE_CURRENT_BINARY_DIR}/config.admin")
-CONFIGURE_FILE("etc/config.java_admin.in" "${CMAKE_CURRENT_BINARY_DIR}/config.java_admin")
-CONFIGURE_FILE("etc/config.java_icebox.in" "${CMAKE_CURRENT_BINARY_DIR}/config.java_icebox")
 IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.service")
     FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.service" FILE_DATA )
     FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.service" ${FILE_DATA} )
