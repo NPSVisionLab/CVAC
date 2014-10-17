@@ -36,7 +36,7 @@ then
     grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE
     do
         for X in `ps -ef | grep -v "grep" | grep -i "$LINE" | awk {'print $2'}`; do
-            kill $X;
+            kill -9 $X;
         done
     done
 fi

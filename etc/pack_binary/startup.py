@@ -159,6 +159,12 @@ if __name__ == '__main__':
         # if it is then try and change the permissions on the install dir.
         if installpath.startswith("/Applications") == True:
             os.chmod(installpath, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+        # Install the Pillow zip
+        import zipfile
+        with zipfile.ZipFile(installpath + 
+                   '/3rdparty/Pillow-2.6.0-cp27-none-macosx.zip') as zf:
+            zf.extractall(path=installpath + 
+                         '/virt/lib/python2.7/site-packages')
 
     # open the simple GUI that displays system information
     # and permits startup of the services using the correct python

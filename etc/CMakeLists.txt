@@ -29,9 +29,9 @@ ELSE (WIN32)
     IF (APPLE)
         Set (ICEPLIBS "${ICE_PYTHON_DIR}/../pythonlib")
         IF (USE_LEGACY_STDC++LIBS)
-            SET (ICELIBS "${ICEDIR}/lib")
+            SET (ICELIBS "${ICE_ROOT}/lib/c++11")
         ELSE (USE_LEGACY_STDC++LIBS)
-            SET (ICELIBS "${ICEDIR}/lib/c++11")
+            SET (ICELIBS "${ICE_ROOT}/lib")
         ENDIF (USE_LEGACY_STDC++LIBS)
     ENDIF (APPLE)
     SET( SCRIPT_EXT sh )
@@ -219,7 +219,6 @@ ENDIF(WIN32)
 
 SET (SVM_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libsvm")
 IF(APPLE)
-    #Need to install the stdc++ binaries if that option gets turned on
     INSTALL(DIRECTORY  ${ICE_ROOT}/bin
         DESTINATION 3rdparty/ICE
         COMPONENT IceExt
@@ -332,16 +331,6 @@ IF (NOT PYTHON_ONLY_CLIENT)
            COMPONENT ThirdParty
           ) 
 
-    ELSE (WIN32)
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
-      DESTINATION 3rdparty/opencv
-       COMPONENT ThirdParty
-      )
-    #If not windows need the libs for the shared libraries
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
-          DESTINATION 3rdparty/opencv
-           COMPONENT ThirdParty
-          ) 
     ENDIF(WIN32)
 
 ENDIF (NOT PYTHON_ONLY_CLIENT)
