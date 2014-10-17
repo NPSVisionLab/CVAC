@@ -54,6 +54,10 @@ class CorpusI(cvac.Corpus):
         self.dataSetFolder = location
         self.main_location = location
         
+    def getFSPath(self, cvacPath ):
+        path = os.path.join(self.CVAC_DataDir,  cvacPath.directory.relativePath, cvacPath.filename)
+        return path
+        
     def parseConfigProperties(self, configProps, propFile):
         prop = configProps.get('main_locationType')
         if prop == None:
@@ -74,7 +78,7 @@ class CorpusI(cvac.Corpus):
         urlfile = urllib.URLopener()
         urlfile.retrieve( self.main_location, "deleteme.tar.gz" )
         # extract the tar into a hardcoded dir path
-        self.dataSetFolder = easy.getFSPath( "deleteme_tmpdir" )
+        self.dataSetFolder = getFSPath( "deleteme_tmpdir" )
         if not os.path.exists(self.dataSetFolder):
             os.makedirs(self.dataSetFolder)
         tar = tarfile.open("deleteme.tar.gz")
@@ -243,7 +247,8 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         print("info: service stopped: CorpusService (Python)")
         
     def addCorpusFromConfig(self, cvacPath):
-        propFile = easy.getFSPath( cvacPath )
+  
+        propFile = os.path.join(self.CVAC_DataDir,  cvacPath.directory.relativePath, cvacPath.filename)
         # since our config file does not have sections and we need one so we
         # create a string with the required header and file contents
         # and pass that to the parser
