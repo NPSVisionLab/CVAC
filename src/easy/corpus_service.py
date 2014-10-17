@@ -78,7 +78,7 @@ class CorpusI(cvac.Corpus):
         urlfile = urllib.URLopener()
         urlfile.retrieve( self.main_location, "deleteme.tar.gz" )
         # extract the tar into a hardcoded dir path
-        self.dataSetFolder = getFSPath( "deleteme_tmpdir" )
+        self.dataSetFolder = self.getFSPath( "deleteme_tmpdir" )
         if not os.path.exists(self.dataSetFolder):
             os.makedirs(self.dataSetFolder)
         tar = tarfile.open("deleteme.tar.gz")
