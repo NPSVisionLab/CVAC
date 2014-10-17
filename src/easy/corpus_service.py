@@ -55,7 +55,18 @@ class CorpusI(cvac.Corpus):
         self.main_location = location
         
     def getFSPath(self, cvacPath ):
-        path = os.path.join(self.CVAC_DataDir,  cvacPath.directory.relativePath, cvacPath.filename)
+        if isinstance(cvacPath, cvac.Labelable):
+            cvacPath = cvacPath.sub.path
+        elif isinstance(cvacPath, cvac.Substrate):
+            cvacPath = cvacPath.path
+        if isinstance( cvacPath, str ):
+            path = self.CVAC_DataDir+"/"+cvacPath
+        elif isinstance(cvacPath, cvac.FilePath):
+            path = self.CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
+        elif isinstance(cvacPath, cvac.DirectoryPath):
+            path = self.CVAC_DataDir+"/"+cvacPath.relativePath;
+        else:
+            path = self.CVAC_DataDir+"/"+cvacPath.filename
         return path
         
     def parseConfigProperties(self, configProps, propFile):
