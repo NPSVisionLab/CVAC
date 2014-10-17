@@ -85,7 +85,9 @@ def addFileToLabelableSet(lset, ldir, lfile, video=True, image=True):
     # FIll in props with each directory
     nextDir = os.path.dirname(ldir)
     while nextDir != None and nextDir != "":
-        props[nextDir] = ""
+        nextProp = os.path.basename(nextDir)
+        if nextProp != None and next != "":
+            props[nextProp] = ""
         nextDir = os.path.dirname(nextDir)
     dirpath = cvac.DirectoryPath(ldir)
     fpath = cvac.FilePath(dirpath,lfile)
