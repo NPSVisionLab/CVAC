@@ -210,10 +210,10 @@ IF (WIN32)
        COMPONENT Runtime 
       )
 
-  #INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-win32.zip
-  #     DESTINATION 3rdparty
-  #     COMPONENT Runtime 
-  #    )
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-win32.zip
+       DESTINATION 3rdparty
+       COMPONENT Runtime 
+      )
 
 IF (NOT PYTHON_ONLY_CLIENT)
   INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libsvm
@@ -236,10 +236,10 @@ ELSE (WIN32)
            DESTINATION 3rdparty
            COMPONENT Runtime 
       )
-      #INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-macosx.zip
-      #     DESTINATION 3rdparty
-      #     COMPONENT Runtime 
-      #)
+      INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-macosx.zip
+           DESTINATION 3rdparty
+           COMPONENT Runtime 
+      )
       IF (NOT PYTHON_ONLY_CLIENT)
         INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libsvm
            DESTINATION 3rdparty
