@@ -1224,12 +1224,16 @@ doneP:
   Pop $0
   StrCmp $0 0 +2 0
       MessageBox MB_OK "Can't install easy python code" /SD IDOK
+  #cleanup the install leftovers
+  nsExec::ExecToLog '"$PythonPathValue" setup.py clean --all'
   SetOutPath "$INSTDIR\python\icePkg"
   DetailPrint "Installing icePkg"
   nsExec::ExecToLog '"$PythonPathValue" setup.py install'
   Pop $0
   StrCmp $0 0 +2 0
       MessageBox MB_OK "Can't install ice python code" /SD IDOK
+  #cleanup the install leftovers
+  nsExec::ExecToLog '"$PythonPathValue" setup.py clean --all'
   #Install libSVM if the directory exists
   ${if} ${FileExists} "$INSTDIR\3rdparty\libsvm\setup.py" 
       SetOutPath "$INSTDIR\3rdparty\libsvm"
@@ -1237,7 +1241,8 @@ doneP:
       nsExec::ExecToLog '"$PythonPathValue" setup.py install'
       Pop $0
       StrCmp $0 0 +2 0
-      MessageBox MB_OK "Can't install libsvm python code" /SD IDOK
+          MessageBox MB_OK "Can't install libsvm python code" /SD IDOK
+      nsExec::ExecToLog '"$PythonPathValue" setup.py clean --all'
   ${endif}
   SetOutPath "$INSTDIR"
   #Install Pillow my just unzipping to the virtual site packages.
@@ -1367,6 +1372,12 @@ Section "Uninstall"
 
 @CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS@
 
+  # CVAC start modification
+  # Remove the virt files
+  SetOutPath $INSTDIR\virt
+  SetOutPath $INSTDIR
+  RMDir /r "$INSTDIR\virt"
+  # CVAC end modification
   ;Remove files we installed.
   ;Keep the list of directories here in sync with the File commands above.
 @CPACK_NSIS_DELETE_FILES@
@@ -1396,8 +1407,8 @@ Section "Uninstall"
   # CVAC start modification
   Delete "$SMPROGRAMS\$MUI_TEMP\startServices.lnk"
   Delete "$SMPROGRAMS\$MUI_TEMP\stopServices.lnk"
-  Delete "$SMPROGRAMS\$MUI_TEMP\gui.lnk"
-  Delete "$desktop\gui.lnk"
+  Delete "$SMPROGRAMS\$MUI_TEMP\EasyCV Control Center.lnk"
+  Delete "$desktop\EasyCV Control Center.lnk"
   Push $INSTDIR\3rdparty\ICE\bin
   #StrCmp $DO_NOT_ADD_TO_PATH_ "1" uncvacdoNotRemoveFromPath 0
     Call un.RemoveFromPath
