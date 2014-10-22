@@ -209,3 +209,18 @@ class ArchiveHandler(object):
         # return the client ip address
         return ips[0][2] 
 
+
+class ServiceMan(object):
+    
+    def __init__(self, communicator, current):
+        if communicator == None or current == None:
+            self.serviceName = None
+            self.iceProps = None
+        else:
+            self.serviceName = communicator.identityToString(current.id)
+            self.iceProps = communicator.getProperties()
+        
+    def getModelFileFromConfig(self):
+        if self.iceProps != None:
+            return self.iceProps.getProperty(self.serviceName + 'x.TrainedModel')
+        return None
