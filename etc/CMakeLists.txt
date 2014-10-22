@@ -67,7 +67,8 @@ IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
 ENDIF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
 
 # We create a empty python.config file so the services are entered only once.
-# We must create the file before the UserCMakeLists.txt is included
+# We must create the file before the UserCMakeLists.txt is included.  This 
+# allows us to start with a fresh python.config each time.
 CONFIGURE_FILE("python.config.in"
                 "${CMAKE_BINARY_DIR}/python.config")
 
