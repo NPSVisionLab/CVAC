@@ -302,13 +302,18 @@ int copy_data(struct archive *ar, struct archive *aw, unsigned long totalSize)
   __LA_INT64_T offset;
 #endif
 
+  // On OSX totalSize ends up as 0.  It must be a bug, but to
+  // work around this always save sizeLeft and rely on the ARCHIVE_EOF.
+  // On machines without this issue we can still use sizeLeft to get
+  // around the other bug of not returning a valid ARCHIVE_EOF.
   unsigned long sizeLeft = totalSize;
+  if (sizeLeft == 0)
+    sizeLeft = 1;
   while (sizeLeft > 0) {
     
     r = archive_read_data_block(ar, &buff, &size, &offset);
     if (r == ARCHIVE_EOF)
       return (ARCHIVE_OK);
-    sizeLeft -= size;
     if (r < ARCHIVE_OK)
     {
       //Report the error and try and finish.  This should never happen
@@ -339,6 +344,8 @@ int copy_data(struct archive *ar, struct archive *aw, unsigned long totalSize)
       localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
       return (r);
     }
+    if (totalSize != 0)
+        sizeLeft -= size;
   }
   // We read all the bytes so return OK
   return ARCHIVE_OK;
@@ -401,19 +408,19 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
     }
     else {
         unsigned long entrySize = archive_entry_size(entry);
-        if (entrySize > 0) {
-            r = copy_data(a, ext, entrySize);
-            if (r < ARCHIVE_OK) {
-              std::string errStr = archive_error_string(a);
-              errStr.append("\n");
-              localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
-            }
-            if (r < ARCHIVE_WARN) {
-              // throw exception for serious error
-              localAndClientMsg(VLogger::WARN, NULL,
-                                "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
-              throw "cannot write (copy) archive header";
-            }
+        // Need to call copy_data even with an entrySize of 0 size
+        // OSX had a defect an always returns a entrySize of zero.
+        r = copy_data(a, ext, entrySize);
+        if (r < ARCHIVE_OK) {
+          std::string errStr = archive_error_string(a);
+          errStr.append("\n");
+          localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
+        }
+        if (r < ARCHIVE_WARN) {
+          // throw exception for serious error
+          localAndClientMsg(VLogger::WARN, NULL,
+                            "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
+          throw "cannot write (copy) archive header";
         }
         r = archive_write_finish_entry(ext);
         if (r < ARCHIVE_OK) {

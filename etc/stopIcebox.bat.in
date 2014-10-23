@@ -1,7 +1,7 @@
 @echo off
 @setlocal
 set PATH=%PATH%;${ICE_ROOT}/bin
-chdir "${CVAC_ROOT_DIR}"
+chdir "${CVAC_BINARY_DIR}"
 
 set LOCKFILE=.services_started.lock
 if not exist "%LOCKFILE%" (

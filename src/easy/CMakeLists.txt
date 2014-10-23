@@ -12,8 +12,10 @@ WRAP_SLICE2PY( SLICE_FILES
 
 MAKE_DIRECTORY(${SLICE_OUTPUT_PYTHONDIR})
 
+# These python files are installed into src/easy so the python.config file
+# can find these since they are run as python src/easy/xxxx.py
 IF (NOT BUILD_3RDPARTY_PACKAGE)
-    INSTALL(FILES corpus_service.py gui.py labelme.py evaluate.py vatic.py videosegment.py fileserver.py
+    INSTALL(FILES corpus_service.py gui.py fileserver.py
         DESTINATION src/easy
         COMPONENT Runtime
         )
@@ -21,9 +23,10 @@ ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
     
 
 #
-# Copy easy.py to the python lib dir without expanding
+# Copy easy python files to the staging area so we can build a python egg
 #
 CONFIGURE_FILE(easy.py "${SLICE_OUTPUT_PYTHONDIR}/easy/easy.py" COPYONLY)
+CONFIGURE_FILE(version.py "${SLICE_OUTPUT_PYTHONDIR}/easy/version.py" COPYONLY)
 CONFIGURE_FILE(evaluate.py "${SLICE_OUTPUT_PYTHONDIR}/easy/evaluate.py" COPYONLY)
 CONFIGURE_FILE(corpus_service.py "${SLICE_OUTPUT_PYTHONDIR}/easy/corpus_service.py" COPYONLY)
 CONFIGURE_FILE(fileserver.py "${SLICE_OUTPUT_PYTHONDIR}/easy/fileserver.py" COPYONLY)
