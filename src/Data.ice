@@ -200,7 +200,7 @@ module cvac {
   };
 
   /** The original is the Labelable artifact that was to be tested, which
-   * might contain a ground truth label or not.  It does always point to the
+   * might contain a ground truth label or not.  It always points to the
    * original image or video.
    * The foundLabels are all things that the detector found.
    */
