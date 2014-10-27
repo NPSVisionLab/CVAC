@@ -451,8 +451,10 @@ ENDIF (BUILD_BINARY_PACKAGE)
 CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_BINARY_DIR}/config.icebox")
 CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_BINARY_DIR}/config.service")
 # We need  config.client in the source directory for
-# the ctests to work and for demos to find it!
+# the ctests to work and for demos to find it.  Also tests need it in
+# the binary directory so put it in both
 CONFIGURE_FILE("etc/config.client.in" "${CMAKE_SOURCE_DIR}/config.client")
+CONFIGURE_FILE("etc/config.client.in" "${CMAKE_CURRENT_BINARY_DIR}/config.client")
 CONFIGURE_FILE("etc/config.admin.in" "${CMAKE_CURRENT_BINARY_DIR}/config.admin")
 IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.service")
     FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.service" FILE_DATA )
