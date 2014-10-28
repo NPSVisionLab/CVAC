@@ -39,7 +39,7 @@ if (easy.getTrainer("DPM_Detector")==None):
     print("DPM service(s) are insufficiently configured, skipping.")
 else:
     c = ev.Contender("DPM")
-    c.detectorString = "DPM_Detector:default -p 10116"
+    c.detectorString = "DPM_Detector"
     c.detectorData = "detectors/dpmStarbucksLogo.zip"
     c.foundMap = {'Positive':easy.getPurpose('pos'), 'Negative':easy.getPurpose('neg')}
     contenders.append( c );
@@ -49,8 +49,8 @@ if (easy.getTrainer("OpenCVCascadeTrainer")==None):
     print("Cascade service(s) are insufficiently configured, skipping.")
 else:
     c = ev.Contender("cascade")
-    c.trainerString = "OpenCVCascadeTrainer:default -p 10107"
-    c.detectorString = "OpenCVCascadeDetector:default -p 10102"
+    c.trainerString = "OpenCVCascadeTrainer"
+    c.detectorString = "OpenCVCascadeDetector"
     # c.foundMap = {'any':easy.getPurpose('pos')}
     c.foundMap = {'positive':posPurpose, 'negative':negPurpose}
     detector = easy.getDetector(c.detectorString)

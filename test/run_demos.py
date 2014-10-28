@@ -31,22 +31,44 @@ if __name__ == '__main__' :
         print("Starting " + binPath + "/startServices" + extension)
         call([binPath + "/startServices" + extension], shell=True)
         time.sleep(8)
-        execfile(demoPath + '/prerequisites.py')
-        execfile(demoPath + '/detect.py')
-        execfile(demoPath + '/training.py')
-        execfile(demoPath + '/runset.py')
-        execfile(demoPath + '/full_image_corpus.py')
-        execfile(demoPath + '/bootstrapping.py')
+        finalRes = 0
+        res = call([sys.executable, demoPath + '/prerequisites.py'])
+        if res == 1:
+            print("prerequisites.py failed")
+            finalRes = 1
+        res = call([sys.executable, demoPath + '/detect.py'])
+        if res == 1:
+            print("detect.py failed")
+            finalRes = 1
+        res = call([sys.executable, demoPath + '/training.py'])
+        if res == 1:
+            print("training.py failed")
+            finalRes = 1
+        res = call([sys.executable, demoPath + '/runset.py'])
+        if res == 1:
+            print("runset.py failed")
+            finalRes = 1
+        res = call([sys.executable, demoPath + '/full_image_corpus.py'])
+        if res == 1:
+            print("full_image_corpus.py failed")
+            finalRes = 1
+        res = call([sys.executable, demoPath + '/bootstrapping.py'])
+        if res == 1:
+            print("bootstrapping.py failed")
+            finalRes = 1
         time.sleep(5)
         try:
             call([binPath + "/stopServices" + extension], shell=True)
         except:
             pass
     except:
+        #failure so set error return
+        finalRes = 1
         # If we get an error or forced quit we still want to stop the services
         try:
             call([binPath + "/stopServices" + extension], shell=True)
         except:
             pass
 
+    exit(finalRes)
 

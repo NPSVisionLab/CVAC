@@ -78,28 +78,17 @@ def addFileToLabelableSet(lset, ldir, lfile, video=True, image=True):
     
     props = {}
     # last directory is the label name
-    idx = ldir.rfind("/")
-    lastIdx = len(ldir)
-    labelName = None
-    if idx == -1:
-        # at top level directory use directory name as labelName
-        labelName = ldir
-        lastIdx = 0
-    while idx != -1:
-        nextdir = ldir[idx+1:lastIdx]
-        if labelName == None:
-            labelName = nextdir
-        else:
-            props[nextdir] = ""
-        lastIdx = idx
-        if idx > 0:
-            idx = ldir.rfind("/", 0, idx-1)
-        else:
-            break
-    # add final property
-    if lastIdx > 0:
-        nextdir = ldir[0:lastIdx]
-        props[nextdir] = ""
+    ldir = os.path.normpath(ldir)
+    ldir = ldir.rstrip('\\')
+    ldir = ldir.rstrip('/')
+    labelName = os.path.basename(ldir)
+    # FIll in props with each directory
+    nextDir = os.path.dirname(ldir)
+    while nextDir != None and nextDir != "":
+        nextProp = os.path.basename(nextDir)
+        if nextProp != None and next != "":
+            props[nextProp] = ""
+        nextDir = os.path.dirname(nextDir)
     dirpath = cvac.DirectoryPath(ldir)
     fpath = cvac.FilePath(dirpath,lfile)
     sub = cvac.Substrate(isImage, isVideo, fpath, 0, 0)

@@ -27,11 +27,11 @@ IF (WIN32)
     SET( PYTHON_EXT pyd )
 ELSE (WIN32)
     IF (APPLE)
-        Set (ICEPLIBS "${ICEDIR}/lib")
+        Set (ICEPLIBS "${ICE_PYTHON_DIR}/../pythonlib")
         IF (USE_LEGACY_STDC++LIBS)
-            SET (ICELIBS "${ICEDIR}/lib")
+            SET (ICELIBS "${ICE_ROOT}/lib/c++11")
         ELSE (USE_LEGACY_STDC++LIBS)
-            SET (ICELIBS "${ICEDIR}/lib/c++11")
+            SET (ICELIBS "${ICE_ROOT}/lib")
         ENDIF (USE_LEGACY_STDC++LIBS)
     ENDIF (APPLE)
     SET( SCRIPT_EXT sh )
@@ -159,20 +159,24 @@ ENDIF (WIN32)
 CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/PostInstall.cmake @ONLY)
 
 IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
-    INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_BINARY_DIR}/config.java_admin ${CMAKE_BINARY_DIR}/config.java_icebox ${CMAKE_BINARY_DIR}/config.client 
-       DESTINATION .
-       COMPONENT Runtime
-      )
-    INSTALL(PROGRAMS ${CMAKE_BINARY_DIR}/bin/startServices.${SCRIPT_EXT} ${CMAKE_BINARY_DIR}/bin/stopServices.${SCRIPT_EXT}
-       DESTINATION bin
-       COMPONENT Runtime
-      )
+    IF (NOT BUILD_3RDPARTY_PACKAGE)
+        INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.client 
+           DESTINATION .
+           COMPONENT Runtime
+          )
+        INSTALL(PROGRAMS ${CMAKE_BINARY_DIR}/bin/startServices.${SCRIPT_EXT} ${CMAKE_BINARY_DIR}/bin/stopServices.${SCRIPT_EXT}
+           DESTINATION bin
+           COMPONENT Runtime
+          )
+    ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
 ENDIF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
 
-INSTALL(FILES ${CMAKE_SOURCE_DIR}/test/run_demos.py 
+IF (NOT BUILD_3RDPARTY_PACKAGE)
+    INSTALL(FILES ${CMAKE_SOURCE_DIR}/test/run_demos.py 
        DESTINATION test
        COMPONENT Runtime
       )
+ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
 
 # 3rdparty dependencies for building CVAC
 INSTALL(DIRECTORY   ${ICE_ROOT}/include  ${ICE_ROOT}/slice
@@ -219,7 +223,6 @@ ENDIF(WIN32)
 
 SET (SVM_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libsvm")
 IF(APPLE)
-    #Need to install the stdc++ binaries if that option gets turned on
     INSTALL(DIRECTORY  ${ICE_ROOT}/bin
         DESTINATION 3rdparty/ICE
         COMPONENT IceExt
@@ -332,16 +335,6 @@ IF (NOT PYTHON_ONLY_CLIENT)
            COMPONENT ThirdParty
           ) 
 
-    ELSE (WIN32)
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
-      DESTINATION 3rdparty/opencv
-       COMPONENT ThirdParty
-      )
-    #If not windows need the libs for the shared libraries
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
-          DESTINATION 3rdparty/opencv
-           COMPONENT ThirdParty
-          ) 
     ENDIF(WIN32)
 
 ENDIF (NOT PYTHON_ONLY_CLIENT)
