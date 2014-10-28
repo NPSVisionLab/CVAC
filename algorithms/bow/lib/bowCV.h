@@ -100,6 +100,7 @@ public:
   bool  detect_initialize( const cvac::DetectorDataArchive* dda);	
   std::string  detect_run(const std::string& _fullfilename, int& _bestClass,
                           int _boxX=0,int _boxY=0,int _boxWidth=0,int _boxHeight=0);
+  bool modelFileLoaded() { return flagTrain; }
 
 private:
   bool  isCompatibleOpenCV(const std::string& _version);

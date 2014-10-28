@@ -190,22 +190,29 @@ bool CascadeDetectI::initialize( const DetectorProperties& detprops,
   {
     if (!gotModel)
     {
-        localAndClientMsg(VLogger::ERROR, NULL, "No trained model available, aborting.\n" );
+        localAndClientMsg(VLogger::ERROR, callback, "No trained model available, aborting.\n" );
         return false;
     }
     // ok, go on with pre-configured model
   }
   else
   {
-    string modelfile = getFSPath( model, m_CVAC_DataDir );
-    localAndClientMsg( VLogger::DEBUG_1, NULL, "initializing with %s\n", modelfile.c_str());
-    gotModel = readModelFile( modelfile, current );
-    if (!gotModel)
+    if (gotModel)
     {
-      localAndClientMsg(VLogger::ERROR, NULL,
+        localAndClientMsg(VLogger::WARN , callback, "Detector Preconfigured with a model file so ignoring passed in model %s.\n",
+                          model.filename.c_str() );
+    }else
+    {
+        string modelfile = getFSPath( model, m_CVAC_DataDir );
+        localAndClientMsg( VLogger::DEBUG_1, NULL, "initializing with %s\n", modelfile.c_str());
+        bool res = readModelFile( modelfile, current );
+        if (!res)
+        {
+          localAndClientMsg(VLogger::ERROR, callback,
                         "Failed to initialize because explicitly specified trained model "
                         "cannot be found or loaded: %s\n", modelfile.c_str());
-      return false;
+          return false;
+        }
     }
   }
 
@@ -249,7 +256,9 @@ void CascadeDetectI::process( const Identity &client,
   callback = DetectorCallbackHandlerPrx::uncheckedCast(
             current.con->createProxy(client)->ice_oneway());
 
-  initialize( detprops, model, current );
+  bool initRes = initialize( detprops, model, current );
+  if (initRes == false)
+      return;
   mDetectorProps->load(detprops);
   //////////////////////////////////////////////////////////////////////////
   // Setup - RunsetConstraints

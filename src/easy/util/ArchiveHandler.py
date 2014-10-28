@@ -219,8 +219,10 @@ class ServiceMan(object):
         else:
             self.serviceName = communicator.identityToString(current.id)
             self.iceProps = communicator.getProperties()
+            self.communicator = communicator
         
     def getModelFileFromConfig(self):
         if self.iceProps != None:
+            self.iceProps = self.communicator.getProperties()
             return self.iceProps.getProperty(self.serviceName + 'x.TrainedModel')
         return None
