@@ -765,6 +765,7 @@ nojava1:
       StrCmp $0 0 error
 nojava2:
   # No need to set CVAC_DATADIR env variable since we now have a client.config
+  # So we set the CVAC.DataDir variable if changed
   #System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("CVAC_DATADIR", $DataPathValue).r0'
   StrCmp $0 0 error
   Goto done
@@ -1267,6 +1268,7 @@ doneP:
 
       #Replace DataDir entry in config file with new one
       !insertmacro _ReplaceInFile $INSTDIR\config.service "CVAC.DataDir = data" "CVAC.DataDir = $DataPathValue"
+      !insertmacro _ReplaceInFile $INSTDIR\config.client "CVAC.DataDir = data" "CVAC.DataDir = $DataPathValue"
       SetOutPath "$INSTDIR"
   ${endif}
   # CVAC Changes End
