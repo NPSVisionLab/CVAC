@@ -2,6 +2,7 @@
 #define _DATA_ICE
 
 module cvac {
+  const bool CVACFALSE = false;
   enum PurposeType {UNPURPOSED, POSITIVE, NEGATIVE, MULTICLASS, ANY};
 
   struct Purpose {
@@ -62,13 +63,26 @@ module cvac {
    * other options are too generic and commonly used for other
    * purposes: image, media, file, ...
    */
-  struct Substrate {
-    bool isImage = true;
-    bool isVideo = false;
-
-    FilePath path;
+  class Substrate {
     int width = 0;
     int height = 0;
+  };
+
+  /** A common image file such as a jpg, bmp or gif.
+   */
+  class ImageSubstrate extends Substrate {
+    FilePath path;
+  };
+
+  /** Videos can be represented as a regular video file or as
+   *  a sequence of frame images.  Both is possible, as well.
+   *  Frames is a dictionary, not a sequence, because not every
+   *  successive frame might have been extracted.
+   */
+  dictionary<int, FilePath> FramePaths;
+  class VideoSubstrate extends Substrate {
+    FilePath videopath;
+    FramePaths framepaths;
   };
 
   /** LabelProperties are name-value pairs that can
@@ -95,7 +109,6 @@ module cvac {
    * LabelProperties.  The Semantics refer to a URL that specifies the
    * meaning of the name strings.
    */
-  const bool CVACFALSE = false;
   struct Label {
     bool hasLabel = CVACFALSE;
     string name;
