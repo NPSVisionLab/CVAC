@@ -764,7 +764,8 @@ nojava1:
       System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("JAVA_HOME", $JavaPathValue).r0'
       StrCmp $0 0 error
 nojava2:
-  System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("CVAC_DATADIR", $DataPathValue).r0'
+  # No need to set CVAC_DATADIR env variable since we now have a client.config
+  #System::Call 'Kernel32::SetEnvironmentVariable(t,t) i("CVAC_DATADIR", $DataPathValue).r0'
   StrCmp $0 0 error
   Goto done
 error:
@@ -772,8 +773,8 @@ error:
 
 done:
 
-  #For CVAC_DATADIR set a global envirnoment variable via the registry
-  WriteRegExpandStr ${env_hklm} "CVAC_DATADIR" "$DataPathValue"
+  # No need to set CVAC_DATADIR env variable since we now have a client.config
+  #WriteRegExpandStr ${env_hklm} "CVAC_DATADIR" "$DataPathValue"
   #notify windows of change
   SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
 
