@@ -79,10 +79,10 @@ module cvac {
    *  Frames is a dictionary, not a sequence, because not every
    *  successive frame might have been extracted.
    */
-  dictionary<int, FilePath> FramePaths;
+  dictionary<int, FilePath> FramePath;
   class VideoSubstrate extends Substrate {
     FilePath videopath;
-    FramePaths framepaths;
+    FramePath framepaths;
   };
 
   /** LabelProperties are name-value pairs that can
