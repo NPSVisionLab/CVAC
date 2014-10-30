@@ -127,7 +127,10 @@ def getLabelable( filepath, labelText=None ):
     else:
         label = cvac.Label( False, "", None, cvac.Semantics() )
     isVideo = isLikelyVideo( filepath )
-    substrate = cvac.Substrate( not isVideo, isVideo, filepath, 0, 0 )
+    if( isVideo ):
+        substrate = cvac.VideoSubstrate( width=0, height=0, videopath=filepath )  
+    else:
+        substrate = cvac.ImageSubstrate( width=0, height=0, path=filepath )
     labelable = cvac.Labelable( 0.0, label, substrate )
     return labelable
 
