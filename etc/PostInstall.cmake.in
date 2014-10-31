@@ -1,7 +1,5 @@
 
-message("Copying python ice files")
-message("from @SLICE_OUTPUT_PATH@")
-message("to @PYTHON_BUILD_DIR@")
+message("Copying python ice files from @SLICE_OUTPUT_PATH@ to @PYTHON_BUILD_DIR@")
 execute_process(
         COMMAND "@CMAKE_COMMAND@" -E copy "@SLICE_OUTPUT_PATH@/Corpus_ice.py" "@PYTHON_BUILD_DIR@/easyPkg/cvac"
         COMMAND "@CMAKE_COMMAND@" -E copy "@SLICE_OUTPUT_PATH@/Data_ice.py" "@PYTHON_BUILD_DIR@/easyPkg/cvac"
@@ -62,5 +60,5 @@ ELSE ()
     MESSAGE("export LD_LIBRARY_PATH=${DPATH}")
     MESSAGE("export PYTHONPATH=${PPATH}")
 ENDIF()
-MESSAGE("cd @CMAKE_INSTALL_PREFIX@; ${PYTHON_EXECUTABLE} demo/prerequisites.py")
+MESSAGE("cd @CMAKE_INSTALL_PREFIX@; @PYTHON_EXECUTABLE@ demo/prerequisites.py")
 MESSAGE("==============================================")
