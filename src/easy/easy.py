@@ -129,7 +129,6 @@ def getLabelable( filepath, labelText=None, framesFolder=None ):
     isVideo = isLikelyVideo( filepath )
     if( isVideo ):
         frm_paths = {}
-        print( "frames folder: {0}".format( framesFolder ) )
         if( type( framesFolder ) is str ):
             # add each frame to the framepaths dictionary <int,str>
             # this assumes that the frames in the folder are named
