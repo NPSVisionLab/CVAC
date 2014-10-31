@@ -117,7 +117,7 @@ def isLikelyDir( path ):
             return True
     return False
         
-def getLabelable( filepath, labelText=None ):
+def getLabelable( filepath, labelText=None, framesFolder=None ):
     '''Create a Labelable wrapper around the file, assigning
     a textual label if specified.'''
     if type(filepath) is str:
@@ -128,7 +128,18 @@ def getLabelable( filepath, labelText=None ):
         label = cvac.Label( False, "", None, cvac.Semantics() )
     isVideo = isLikelyVideo( filepath )
     if( isVideo ):
-        substrate = cvac.VideoSubstrate( width=0, height=0, videopath=filepath )  
+        frm_paths = {}
+        print( "frames folder: {0}".format( framesFolder ) )
+        if( type( framesFolder ) is str ):
+            # add each frame to the framepaths dictionary <int,str>
+            # this assumes that the frames in the folder are named
+            # according to their frames location (0-based). For example,
+            # a file named 99.jpg corresponds to frame 99 of the movie.
+            folder_listing = os.listdir( framesFolder )
+            for frm in folder_listing:
+                frm_num = int( frm.split( '.' )[ 0 ] )
+                frm_paths[ frm_num ] = getCvacPath( framesFolder + '/' + frm )
+        substrate = cvac.VideoSubstrate( width=0, height=0, videopath=filepath, framepaths=frm_paths )
     else:
         substrate = cvac.ImageSubstrate( width=0, height=0, path=filepath )
     labelable = cvac.Labelable( 0.0, label, substrate )
@@ -505,7 +516,7 @@ def getCategories(lablist):
             categories[lb.lab.name] = [lb]
     return categories
     
-def addToRunSet( runset, samples, purpose=None, classmap=None ):
+def addToRunSet( runset, samples, purpose=None, classmap=None, framesFolder=None ):
     '''Add samples to a given RunSet.
     Take a look at the documentation for createRunSet for details.'''
     rnst = runset
@@ -604,7 +615,7 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
     elif type(samples) is str and not isLikelyDir( samples ):
         # single file, create an unpurposed entry
         fpath = getCvacPath( samples )
-        labelable = getLabelable( fpath )  # no label text, hence nothing for the classmap
+        labelable = getLabelable( fpath, framesFolder=framesFolder )  # no label text, hence nothing for the classmap
         if purpose is None:
             purpose = cvac.Purpose( cvac.PurposeType.UNPURPOSED )
         addPurposedLabelablesToRunSet( rnst, purpose, [labelable] )
@@ -612,7 +623,7 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
     else:
         raise RuntimeError( "don't know how to create a RunSet from ", type(samples) )
 
-def createRunSet( samples, purpose=None, classmap=None ):
+def createRunSet( samples, purpose=None, classmap=None, framesFolder=None ):
     '''Add all samples from the argument to a new RunSet.
     Determine whether this is a two-class (positive and negative)
     or a multiclass dataset and create the RunSet appropriately.
@@ -625,7 +636,7 @@ def createRunSet( samples, purpose=None, classmap=None ):
     runset = cvac.RunSet()
     if classmap is None:
         classmap={}
-    addToRunSet( runset, samples, purpose=purpose, classmap=classmap )
+    addToRunSet( runset, samples, purpose=purpose, classmap=classmap, framesFolder=framesFolder )
     return {'runset':runset, 'classmap':classmap}
 
 def getFileServer( configString ):
