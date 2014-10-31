@@ -1414,9 +1414,14 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
             if res.original.lab in origMap and \
                     str(origMap[res.original.lab]) in purposeLabelMap:
                 origname = purposeLabelMap[ str(origMap[res.original.lab]) ]
-        print("result for {0} ({1}): found {2} label{3}: {4}".format(
-            res.original.sub.path.filename, origname,
-            numfound, ("s","")[numfound==1], ', '.join(names) ))
+        if ( type(res.original.sub) is cvac.VideoSubstrate ):
+            print("result for {0} ({1}): found {2} label{3}: {4}".format(
+                res.original.sub.videopath.filename, origname,
+                numfound, ("s","")[numfound==1], ', '.join(names) ))
+        else:
+            print("result for {0} ({1}): found {2} label{3}: {4}".format(
+                res.original.sub.path.filename, origname,
+                numfound, ("s","")[numfound==1], ', '.join(names) ))
         if numfound==1 and origname.lower()==names[0].lower():
             identical += 1
     if foundMap and origMap:
