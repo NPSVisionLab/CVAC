@@ -66,44 +66,26 @@ IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
          )
 ENDIF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
 
+# We create a empty python.config file so the services are entered only once.
+# We must create the file before the UserCMakeLists.txt is included.  This 
+# allows us to start with a fresh python.config each time.
+CONFIGURE_FILE("python.config.in"
+                "${CMAKE_BINARY_DIR}/python.config")
+
 INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 # This code has to be after the UserCMakeLists.txt include as it modifies
 # python.config that the include creates.
 IF( BUILD_CORPUS_SERVICE_PYTHON)
     # Add to the python config file since the python corpus server requires it.
-    # If it already exists add to the end else create it
-    IF (EXISTS "${CMAKE_BINARY_DIR}/python.config")
-        #If we don't have the string corpus_service add it
-        SET (FILE_STRINGS "")
-        FILE(STRINGS "${CMAKE_BINARY_DIR}/python.config" FILE_STRINGS  
-             REGEX "src/easy/corpus_service.py")
-        IF (FILE_STRINGS STREQUAL "")
-            FILE(APPEND "${CMAKE_BINARY_DIR}/python.config" 
+    FILE(APPEND "${CMAKE_BINARY_DIR}/python.config" 
                  "src/easy/corpus_service.py\n")
-        ENDIF (FILE_STRINGS STREQUAL "")
-    ELSE (EXISTS "${CMAKE_BINARY_DIR}/python.config")
-        FILE(WRITE "${CMAKE_BINARY_DIR}/python.config" 
-             "src/easy/corpus_service.py\n")
-    ENDIF (EXISTS "${CMAKE_BINARY_DIR}/python.config")
 ENDIF( BUILD_CORPUS_SERVICE_PYTHON)
 
 IF( BUILD_FILESERVER_PYTHON)
     # Add to the python config file since the python fileserver requires it.
-    # If it already exists add to the end else create it
-    IF (EXISTS "${CMAKE_BINARY_DIR}/python.config")
-        #If we don't have the string fileservice add it
-        SET (FILE_STRINGS "")
-        FILE(STRINGS "${CMAKE_BINARY_DIR}/python.config" FILE_STRINGS  
-             REGEX "src/easy/fileserver.py")
-        IF (FILE_STRINGS STREQUAL "")
-            FILE(APPEND "${CMAKE_BINARY_DIR}/python.config" 
+    FILE(APPEND "${CMAKE_BINARY_DIR}/python.config" 
                  "src/easy/fileserver.py\n")
-        ENDIF (FILE_STRINGS STREQUAL "")
-    ELSE (EXISTS "${CMAKE_BINARY_DIR}/python.config")
-        FILE(WRITE "${CMAKE_BINARY_DIR}/python.config" 
-             "src/easy/fileserver.py\n")
-    ENDIF (EXISTS "${CMAKE_BINARY_DIR}/python.config")
 ENDIF( BUILD_FILESERVER_PYTHON)
 
 IF( BUILD_FILESERVICE_PYTHON OR BUILD_CORPUS_SERVICE_PYTHON)
