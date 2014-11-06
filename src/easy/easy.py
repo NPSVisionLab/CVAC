@@ -132,15 +132,11 @@ def getLabelable( filepath, labelText=None, framesFolder=None ):
         if( type( framesFolder ) is str ):
             # add each frame to the framepaths dictionary <int,str>
             # this assumes that the frames in the folder are named
-            # according to their frames location (1-based). For example,
-            # a file named 99.jpg corresponds to frame 99 of the movie.
+            # according to their frames location (starting a 0). For example,
+            # a file named 99.jpg corresponds to frame 100 of the movie.
             folder_listing = os.listdir( 'data/' + framesFolder )
-            # sort the folder_listing
-            folder_listing = [ (int(f.split('.')[0]),f.split('.')[1]) for f in folder_listing ]
-            folder_listing = sorted(folder_listing)
-            folder_listing = [ str(f[0]) + '.' + f[1] for f in folder_listing ]
             for frm in folder_listing:
-                frm_num = int( frm.split( '.' )[ 0 ] ) + 1
+                frm_num = int( frm.split( '.' )[ 0 ] )
                 frm_paths[ frm_num ] = getCvacPath( framesFolder + '/' + frm )
         substrate = cvac.VideoSubstrate( width=0, height=0, videopath=filepath, framepaths=frm_paths )
     else:
