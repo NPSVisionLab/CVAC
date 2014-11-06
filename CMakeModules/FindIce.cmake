@@ -16,6 +16,7 @@ FIND_PATH (ICE_ROOT slice
            /opt/Ice-3.5
            /usr/include
            /usr/share/Ice-3.5
+           /usr/share/Ice-3.5.1
            /Library/Developer/Ice-3.5
            DOC "The ICE root folder"
            )
