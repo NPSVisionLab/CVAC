@@ -135,6 +135,10 @@ def getLabelable( filepath, labelText=None, framesFolder=None ):
             # according to their frames location (1-based). For example,
             # a file named 99.jpg corresponds to frame 99 of the movie.
             folder_listing = os.listdir( 'data/' + framesFolder )
+            # sort the folder_listing
+            folder_listing = [ (int(f.split('.')[0]),f.split('.')[1]) for f in folder_listing ]
+            folder_listing = sorted(folder_listing)
+            folder_listing = [ str(f[0]) + '.' + f[1] for f in folder_listing ]
             for frm in folder_listing:
                 frm_num = int( frm.split( '.' )[ 0 ] ) + 1
                 frm_paths[ frm_num ] = getCvacPath( framesFolder + '/' + frm )
