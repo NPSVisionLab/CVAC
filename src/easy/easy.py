@@ -1047,10 +1047,9 @@ def discardSuboptimal(perfdata,saveRelativeDir = None):
             index_optimal.append(i)
             
     if saveRelativeDir is not None: 
-        fpathROC = CVAC_DataDir+"/"\
-        +saveRelativeDir+"/"\
-        +"RocTable_Full_"\
-        +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S") + ".txt"                 
+        fpathROC = getFSPath(saveRelativeDir+"/"\
+                             +"RocTable_Full_"\
+                           +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S") + ".txt")                 
         f = open(fpathROC,'w')        
         for pt in ptsROC:
             f.write(str(pt[0]) + '\t')
@@ -1192,7 +1191,7 @@ def isROCdata(rocZip):
     zipfilepath = getFSPath(rocZip)
     # Make a temp directory under the data directory in a directory
     # called "clientTemp"
-    tempdirloc = CVAC_DataDir + "/clientTemp"
+    tempdirloc = getFSPath("clientTemp")
     if os.path.isdir(tempdirloc) == False:
         os.makedirs(tempdirloc)
     tempDir = tempfile.mkdtemp(dir=tempdirloc)
