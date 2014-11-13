@@ -81,7 +81,8 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None,
                 foundPurpose = foundMap[labelText]
                 foundPurposes.append(foundPurpose)
             else:
-                print("warning: Label " + labelText + " not in foundMap can't compute evaluation.")
+                print("warning: Result label {0} not in foundMap, can't compute evaluation."
+                      .format(labelText))
         numfound = len(res.foundLabels)
         origpur = origMap[ getRelativePath(res.original) ]
        
@@ -419,4 +420,4 @@ def printEvaluationResults(results):
                 print (result.name[0:11] + '.' + '||'+ desc)  
             else: 
                 print (result.name.ljust(12) + "||" + desc)
-                
+    print('-------------------------------------------------------------------')             
