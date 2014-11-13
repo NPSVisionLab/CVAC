@@ -153,14 +153,14 @@ void BowICEI::initialize( DetectorDataArchive* dda,
             else
                 zipfilepath = m_CVAC_DataDir + "/" + configModelFileName;
         }
-    } else 
+    } else if (configModelFileName.empty() == false)
     {
-        if (pBowCV->modelFileLoaded() && file.filename.empty() == false) 
+        if (file.filename.empty() == false) 
         {
             localAndClientMsg(VLogger::WARN , callbackPtr, "Detector Preconfigured with a model file so ignoring passed in model %s.\n",
                             file.filename.c_str() );
-            return;
         }
+        return;
     }
     if (configModelFileName.empty())
         zipfilepath = getFSPath(file, m_CVAC_DataDir);
