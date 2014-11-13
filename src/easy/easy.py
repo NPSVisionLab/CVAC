@@ -49,24 +49,29 @@ args.append('--Ice.ACM.Client=0')
 if os.path.isfile('config.client'):
     args.append('--Ice.Config=config.client')
 else:
+    # Search for config.client up the directory tree
     modulepath = os.path.dirname(__file__)
-    config_client_path = os.path.abspath(modulepath+'/../../config.client')
-    if os.path.isfile(config_client_path):
-        args.append('--Ice.Config='+config_client_path)
+    config_client_path = os.path.abspath(modulepath)
+    while config_client_path != None:
+        if os.path.isfile(config_client_path + '/config.client'):
+            args.append('--Ice.Config=' + config_client_path + '/config.client')
+            break;
+        else:
+            nextdir = os.path.dirname(config_client_path)
+            if nextdir == config_client_path:
+                break
+            else:
+                config_client_path = nextdir
 ic = Ice.initialize(args)
 defaultCS = None
 # Parse the client.config for CVAC_DataDir
 CVAC_DataDir = ic.getProperties().getProperty("CVAC.DataDir")
-print("CVAC.DataDir from properties is " + CVAC_DataDir)
 if CVAC_DataDir == None:
     CVAC_DataDir = "data"
 # IF the environment variable is set, then use that else use data
-print("getting env with default of " + CVAC_DataDir)
 CVAC_DataDir = os.getenv("CVAC_DATADIR", CVAC_DataDir)
-print("env returned " + CVAC_DataDir)
 if CVAC_DataDir == None or CVAC_DataDir == "":
     CVAC_DataDir = "data"
-print("Final CVAC_DataDir " + CVAC_DataDir)
 CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
 
 
@@ -77,13 +82,37 @@ def getFSPath( cvacPath, abspath=False ):
     elif isinstance(cvacPath, cvac.Substrate):
         cvacPath = cvacPath.path
     if isinstance( cvacPath, str ):
-        path = CVAC_DataDir+"/"+cvacPath
+        # if cvacPath already has CVAC_DataDir then
+        # don't add it again
+        dirabs = os.path.abspath(cvacPath)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath
+        else:
+            path = CVAC_DataDir+"/"+cvacPath
     elif isinstance(cvacPath, cvac.FilePath):
-        path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
+        # if cvacPath already has CVAC_DataDir then
+        # don't add it again
+        dirabs = os.path.abspath(cvacPath.directory.relativePath)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath.directory.relativePath + '/' + cvacPath.filename
+        else:
+            path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
     elif isinstance(cvacPath, cvac.DirectoryPath):
-        path = CVAC_DataDir+"/"+cvacPath.relativePath;
+        dirabs = os.path.abspath(cvacPath.directory.relativePath)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath.relativePath
+        else:
+            path = CVAC_DataDir+"/"+cvacPath.relativePath
     else:
-        path = CVAC_DataDir+"/"+cvacPath.filename
+        dirabs = os.path.abspath(cvacPath.filename)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath.filename
+        else:
+            path = CVAC_DataDir+"/"+cvacPath.filename
     if abspath == True:
         if os.path.isabs(path) == True:
             return path
@@ -1252,8 +1281,7 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     if not detectorData:
         detectorData = getCvacPath( "" )
     elif type(detectorData) is str:
-        detectorData = getCvacPath( detectorData )
-        
+        detectorData = getCvacPath( detectorData ) 
     if type(detectorData) is cvac.FilePath:
         fileext = os.path.splitext(detectorData.filename)[1]
         if fileext.lower()==".zip":
@@ -1307,6 +1335,7 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     if detectorProperties == None:
         detectorProperties = cvac.DetectorProperties()
         detectorProperties.verbosity = getVerbosityNumber( CVAC_ClientVerbosity )
+    misc.stripCVAC_DataDir_from_FilePath(detectorData)
     detector.process( cbID, runset, detectorData, detectorProperties )
     
     if tempDir != None:
