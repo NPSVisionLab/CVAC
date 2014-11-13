@@ -7,7 +7,6 @@ updated by k.lee May/2014
 '''
 
 import easy
-import evaluate
 import cvac
 import time #for computing computation time
 import os   #for chdir
@@ -18,13 +17,8 @@ Making training data
 '''
 #trainImg_roc_simple
 #trainImg_roc
-trainsetPos = []
-easy.misc.searchDir(trainsetPos,'data/corporate_logos',\
-                    recursive=True, video=False, image=True)
- 
-trainsetNeg = []
-easy.misc.searchDir(trainsetNeg,'data/trainImg',\
-                    recursive=True, video=False, image=True)
+trainsetPos = easy.createRunSet( 'corporate_logos' )
+trainsetNeg = easy.createRunSet( 'trainImg' )
  
 runset = cvac.RunSet()
 easy.addToRunSet(runset, trainsetPos, 'pos')

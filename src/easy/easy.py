@@ -1248,11 +1248,13 @@ def isROCdata(rocZip):
 def getSensitivityOptions(detectorData):
     '''
     Return any False Alarm, and Recall rate options available
-    in the model file.  This will return a list of False Alarm, Recall pairs that
+    in the model file.  This will return a list of
+    <false alarm, recall> pairs that
     have been trained into the model or None if they are not any.
-    detectorData is the model file that that might contain the different model files and sensitivity options.
+    detectorData is the model file that that might contain the
+    different model files and sensitivity options.
     '''
-    isRoc, rockList, tempDir = isROCData(detectorData)
+    isRoc, rockList, tempDir = isROCdata(detectorData)
     if isRoc == False:
         return None
     else:

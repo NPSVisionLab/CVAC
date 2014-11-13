@@ -32,11 +32,6 @@ execute_process(
 # Display a message that details what the user has to do in order
 # to start services and run clients.
 #
-# This is currently printed rather early in the "make install" output
-# instead of at the end where it should be.
-# But since CMake doesn't make any guarantees on the order of subdirectories
-# getting installed, I don't see a way to put it at the end.
-#
 GET_FILENAME_COMPONENT(ICE_LIB_DIR @ICE_LIBRARY@ PATH)
 SET(LIBSVM_DIR "@CMAKE_SOURCE_DIR@/3rdparty/libsvm")
 
