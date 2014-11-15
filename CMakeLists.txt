@@ -270,7 +270,7 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
             MESSAGE( SEND_ERROR "Could not unpack 3rdparty package - subsequent errors may occur" )
         ENDIF()
     ENDIF( EXISTS ${3RDPARTY_DIR} )
-    MESSAGE( SEND_ERROR "You should clean your CMake cache and re-configure to obtain new 3rdparty paths." )
+    MESSAGE( STATUS "You should clean your CMake cache and re-configure to obtain new 3rdparty paths." )
     SET( DOWNLOAD_3RDPARTY_PACKAGE OFF CACHE BOOL "Download 3rd-party package had download or unpack errors, please obtain manually" FORCE )
 ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
 
