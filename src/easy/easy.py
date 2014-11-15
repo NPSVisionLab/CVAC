@@ -127,9 +127,56 @@ def getLabelable( filepath, labelText=None ):
     else:
         label = cvac.Label( False, "", None, cvac.Semantics() )
     isVideo = isLikelyVideo( filepath )
-    substrate = cvac.Substrate( not isVideo, isVideo, filepath, 0, 0 )
+    if( isVideo ):
+        # check whether this video is a single file or a directory
+        # of individual frames
+        substrate = getVideoSubstrate( filepath )
+    else:
+        substrate = cvac.ImageSubstrate( width=0, height=0, path=filepath )
+
     labelable = cvac.Labelable( 0.0, label, substrate )
     return labelable
+
+def getVideoSubstrate( filepath ):
+    '''
+        Create a Labelable from a CVAC filepath.  This requires actual
+        file system access to check whether individual frame images exist.
+        It distinguishes the following cases:
+        * the filepath is an actual video file:
+          ** insert this filepath into the substrate
+          ** if a directory exists with a name that starts with the
+             filepath, such as avideo.mpg_frames/, look for frames there.
+        * the filepath is a directory, not a file:
+          ** look for frames inside this directory
+    '''
+    # do we have file system access?  if so, is the path a file (vs. directory)?
+    fsPath = getFSPath( filepath )
+    vpath = None
+    if (os.path.isfile( fsPath )):
+        vpath = filepath
+
+    # is the path a directory?
+    frm_paths = None
+    if (os.path.isdir( fsPath )):
+        # add each frame to the framepaths dictionary <int,str>
+        # this assumes that the frames in the folder are named
+        # according to their frames location (starting a 0). For example,
+        # a file named 99.jpg corresponds to frame 100 of the movie.
+        folder_listing = os.listdir( fsPath )
+        frm_paths = {}
+        for frm in folder_listing:
+                frm_num = int( frm.split( '.' )[ 0 ] )
+                frm_paths[ frm_num ] = getCvacPath( fsPath + '/' + frm )
+        if frm_paths.empty():
+            frm_paths = None
+
+    # if we didn't file system access:
+    if not vpath and not frm_paths:
+        vpath = filepath
+        
+    substrate = cvac.VideoSubstrate( width=0, height=0,
+                                     videopath=vpath, framepaths=frm_paths )
+    return substrate
 
 def getLabelableList(dirpath, recursive=True, video=True, image=True):
     '''Return a list of Labelables contained within the directory (optionally recursively)'''
@@ -1352,6 +1399,22 @@ def getLabelText( label, classmap=None, guess=False ):
                                 type(mapped) )
     return text
 
+def getPrintableFileName( substrate ):
+    if isinstance(substrate, cvac.ImageSubstrate):
+        return substrate.path.filename
+    elif isinstance(substrate, cvac.VideoSubstrate):
+        if substrate.videopath:
+            return substrate.videopath.filename
+        elif substrate.framepaths:
+            minkey = min( substrate.framepaths.keys() )
+            maxkey = max( substrate.framepaths.keys() )
+            name = substrate.framepaths[minkey] \
+                 + " [" + str(minkey) + ".." + str(maxkey) + "]"
+        else:
+            raise RuntimeError("neither videopath nor framepaths specified")
+    else:
+        raise RuntimeError("unknown Substrate type: "+type(res.original.sub))
+
 def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
     '''Print detection results as specified in a ResultSet.
     If classmaps are specified, the labels are mapped
@@ -1401,8 +1464,9 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
             if res.original.lab in origMap and \
                     str(origMap[res.original.lab]) in purposeLabelMap:
                 origname = purposeLabelMap[ str(origMap[res.original.lab]) ]
+        printname = getPrintableFileName( res.original.sub )
         print("result for {0} ({1}): found {2} label{3}: {4}".format(
-            res.original.sub.path.filename, origname,
+            printname, origname,
             numfound, ("s","")[numfound==1], ', '.join(names) ))
         if numfound==1 and origname.lower()==names[0].lower():
             identical += 1
@@ -1413,6 +1477,39 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
         #print('(labels had unknown purposes, cannot determine result accuracy)')
         pass
 
+def getLocationString( location ):
+    if isinstance( location, cvac.Point2D ):
+        return str(location.x) + ", " + str(location.y)
+    elif isinstance( location, cvac.PreciseLocation ):
+        return str(location.centerX) + ", " + str(location.centerY)
+    else:
+        raise RuntimeError("need to pretty-print " + type(location))
+                
+def printLabeledTrack( track ):
+    '''
+    print out the frame numbers and track locations.
+    input argument can be a ResultSet ... LabeledTrack.
+    '''
+    if isinstance( track, cvac.ResultSet ):
+        for res in results:
+            printLabeledTrack( res.foundLabels )
+        return
+    if isinstance( track, cvac.Result ):
+        printLabeledTrack( track.foundLabels )
+        return
+    if isinstance( track, list ):
+        for lbl in track:
+            printLabeledTrack( lbl )
+        return
+    if not isinstance( track, cvac.LabeledTrack ):
+        # ignore silently
+        return
+    for floc in track.keyframesLocations:
+        locstr = getLocationString( floc.loc )
+        print( "{0} ({1}): {2}".format( floc.frame.framecnt,
+                                        floc.frame.time,
+                                        locstr ))
+    
 def initGraphics(title = "results"):
     try:
         wnd = tk.Tk()
