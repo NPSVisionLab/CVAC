@@ -104,6 +104,14 @@ INSTALL(FILES ${SVM_DIR}/libsvm.so.2
         DESTINATION 3rdparty/libsvm
         COMPONENT LibSVMExt
        )
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/lib/libarchive.dylib
+       DESTINATION 3rdparty/libarchive/lib
+       COMPONENT LibArchiveExt
+      )
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/include
+       DESTINATION 3rdparty/libarchive
+       COMPONENT LibArchiveExt
+      )
 
 ELSE (APPLE)
 
