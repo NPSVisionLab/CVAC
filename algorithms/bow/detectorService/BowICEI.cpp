@@ -117,40 +117,59 @@ void BowICEI::initialize( DetectorDataArchive* dda,
                           const::Ice::Current &current)
 {
   // Set CVAC verbosity according to ICE properties
-  Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
-  string verbStr = props->getProperty("CVAC.ServicesVerbosity");
-  if (!verbStr.empty())
-    getVLogger().setLocalVerbosityLevel( verbStr );  
+    Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
+    string verbStr = props->getProperty("CVAC.ServicesVerbosity");
+    if (!verbStr.empty())
+        getVLogger().setLocalVerbosityLevel( verbStr );  
 
-  // Since constructor only called on service start and destroy
-  // can be called.  We need to make sure we have it
-  if (pBowCV == NULL)
-    pBowCV = new bowCV(this);
+    // Since constructor only called on service start and destroy
+    // can be called.  We need to make sure we have it
+    if (pBowCV == NULL)
+        pBowCV = new bowCV(this);
 
-  // Get the default CVAC data directory as defined in the config file    
-  std::string connectName = getClientConnectionName(current);
-  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
-    connectName);                               
-  std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
+    // Get the default CVAC data directory as defined in the config file    
+    std::string connectName = getClientConnectionName(current);
+    std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
+        connectName);                               
+    std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
 
-  string zipfilepath;
-  if(configModelFileName.empty() || file.filename.empty() == false)  //use default model file only if we did not get one.
-  {
-    zipfilepath = getFSPath(file, m_CVAC_DataDir);    
-  }else
-  {
-    if (pathAbsolute(configModelFileName))
-      zipfilepath = configModelFileName;
-    else
-      zipfilepath = m_CVAC_DataDir + "/" + configModelFileName;
-  }
-  dda->unarchive(zipfilepath, clientDir);
+    string zipfilepath;
+    if (fInitialized == false)
+    { // We are initializing for the first time so load the configModelFileName
+        if (configModelFileName.empty() && file.filename.empty())
+        {
+            localAndClientMsg(VLogger::ERROR, callbackPtr, "No trained model available, aborting.\n" );
+            return;
+        }
+        if (configModelFileName.empty() == false)
+        {
+            if (file.filename.empty() == false )
+            {
+                localAndClientMsg(VLogger::WARN , callbackPtr, "Detector Preconfigured with a model file so ignoring passed in model %s.\n",
+                              file.filename.c_str() );
+            }
+            if (pathAbsolute(configModelFileName))
+                zipfilepath = configModelFileName;
+            else
+                zipfilepath = m_CVAC_DataDir + "/" + configModelFileName;
+        }
+    } else if (configModelFileName.empty() == false)
+    {
+        if (file.filename.empty() == false) 
+        {
+            localAndClientMsg(VLogger::WARN , callbackPtr, "Detector Preconfigured with a model file so ignoring passed in model %s.\n",
+                            file.filename.c_str() );
+        }
+        return;
+    }
+    if (configModelFileName.empty())
+        zipfilepath = getFSPath(file, m_CVAC_DataDir);
+    dda->unarchive(zipfilepath, clientDir);
 
-  // add the CVAC.DataDir root path and initialize from dda  
-  fInitialized = pBowCV->detect_initialize( dda );
-  if (!fInitialized)
-    localAndClientMsg(VLogger::WARN, NULL,
-    "Failed to run CV detect_initialize\n");
+    // add the CVAC.DataDir root path and initialize from dda  
+    fInitialized = pBowCV->detect_initialize( dda );
+    if (!fInitialized)
+        localAndClientMsg(VLogger::WARN, callbackPtr,"Failed to run CV detect_initialize\n");
 }
 
 bool BowICEI::isInitialized()
