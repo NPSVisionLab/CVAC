@@ -29,8 +29,8 @@ def parsePolygon( etelem ):
             ty = int(float(num))
         else:
             ty = int(num)
-        polygon.points = polygon.points \
-          + [cvac.Point2D(str(tx-1), str(ty-1))]
+        # + [cvac.Point2D(str(tx-1), str(ty-1))]
+        polygon.points = polygon.points + [cvac.Point2D((tx-1), (ty-1))]
     return polygon
 
 def parseLabeledObjects( root, substrate ):
