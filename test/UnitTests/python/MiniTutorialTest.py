@@ -91,7 +91,7 @@ class MiniTutorialTest(unittest.TestCase):
     #
     # Run evaluation.py
     #
-    # Can't do this as it uses svn code
+    # Can't run evaluation as it has svn code in it.
     def xtest_evaluation(self):
         print("running evaluation.py")
         sys.stdout.flush()
