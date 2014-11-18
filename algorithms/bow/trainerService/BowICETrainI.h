@@ -53,7 +53,7 @@
 #include <util/MsgLogger.h>
 
 typedef std::map<cvac::Purpose, std::string> LabelMap;
-
+namespace{  // Need an anonymous namespace to resolve issues with classes of the same name
 class TrainerPropertiesI : public cvac::TrainerProperties
 {
 public:
@@ -150,5 +150,5 @@ private:
   cvac::TrainerCallbackHandlerPrx callbackPtr;
   virtual void message(MsgLogger::Levels msgLevel, const string& _msgStr);
 };
-
+}
 #endif //_BowICETrainI_H__

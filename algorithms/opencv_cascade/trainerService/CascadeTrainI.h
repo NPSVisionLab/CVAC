@@ -47,6 +47,7 @@
 #include <util/processRunSet.h>
 #include <util/ServiceManI.h>
 
+namespace { // Need an anonymous namespace to resolve issues with classes of the same name
 class SamplesParams
 {
  public:
@@ -137,5 +138,5 @@ class CascadeTrainI : public cvac::DetectorTrainer, public cvac::StartStop
   Ice::ObjectAdapterPtr  mAdapter;
   TrainerPropertiesI    *mTrainProps;
 };
-
+}
 #endif //_CascadeTrainI_H__
