@@ -97,7 +97,7 @@ def getCvacPath( fsPath ):
     return cvac.FilePath( dataRoot, filename )
 
 def isLikelyVideo( cvacPath ):
-    videoExtensions = ['avi', 'mpg', 'wmv']
+    videoExtensions = ['avi', 'mpg', 'wmv', 'mov']
     for ext in videoExtensions:
         if cvacPath.filename.endswith(ext):
             return True
@@ -151,7 +151,7 @@ def getVideoSubstrate( filepath ):
     '''
     # do we have file system access?  if so, is the path a file (vs. directory)?
     fsPath = getFSPath( filepath )
-    vpath = None
+    vpath = cvac.FilePath()
     if (os.path.isfile( fsPath )):
         vpath = filepath
 
@@ -165,12 +165,12 @@ def getVideoSubstrate( filepath ):
         folder_listing = os.listdir( fsPath )
         frm_paths = {}
         for frm in folder_listing:
+            if any(char.isdigit() for char in frm):
+                # ignore filenames without numbers
                 frm_num = int( frm.split( '.' )[ 0 ] )
                 frm_paths[ frm_num ] = getCvacPath( fsPath + '/' + frm )
-        if frm_paths.empty():
-            frm_paths = None
 
-    # if we didn't file system access:
+    # if we didn't have file system access:
     if not vpath and not frm_paths:
         vpath = filepath
         
@@ -415,9 +415,7 @@ def printSubstrateInfo( labelList, indent="", printLabels=False ):
     substrates = {}
     labels = {}
     for lb in labelList:
-        # subpath = getFSPath( lb.sub.path )  # print file system paths
-        subpath = lb.sub.path.directory.relativePath +\
-                  "/" + lb.sub.path.filename # print cvac.FilePath
+        subpath = getPrintableFileName( lb.sub )
         if subpath in substrates:
             substrates[subpath] = substrates[subpath]+1
             if printLabels:
@@ -1400,20 +1398,22 @@ def getLabelText( label, classmap=None, guess=False ):
     return text
 
 def getPrintableFileName( substrate ):
+    name = ''
     if isinstance(substrate, cvac.ImageSubstrate):
-        return substrate.path.filename
+        name = substrate.path.filename
     elif isinstance(substrate, cvac.VideoSubstrate):
         if substrate.videopath:
-            return substrate.videopath.filename
-        elif substrate.framepaths:
+            name = substrate.videopath.filename
+        if substrate.framepaths:
             minkey = min( substrate.framepaths.keys() )
             maxkey = max( substrate.framepaths.keys() )
-            name = substrate.framepaths[minkey] \
+            name = name + substrate.framepaths[minkey].filename \
                  + " [" + str(minkey) + ".." + str(maxkey) + "]"
         else:
             raise RuntimeError("neither videopath nor framepaths specified")
     else:
         raise RuntimeError("unknown Substrate type: "+type(res.original.sub))
+    return name
 
 def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
     '''Print detection results as specified in a ResultSet.
