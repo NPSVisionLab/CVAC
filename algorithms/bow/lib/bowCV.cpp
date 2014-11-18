@@ -376,11 +376,12 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         { 
           // limitImageSize(_img);
           std::string err_str = std::string(e.what());
-          
+          char sizeStr[128];
+          sprintf(sizeStr, "%dx%d", _img.cols, _img.rows);
           msgout = "The file \"" + _fullFilePathImg + 
-            "\" has a problem (OpenCV Error). " + 
-            "So, it will not be processed in the training. Details: " + 
-            err_str;
+            "\" has a problem (OpenCV Error). Image size= " + sizeStr +
+            " So, it will not be processed in the training. Details: " + 
+            err_str ;
           message(msgout,MsgLogger::WARN);          
           continue;
         }       
@@ -643,9 +644,10 @@ std::string bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _
     {
       //limitImageSize(_img);
       std::string err_str = std::string(e.what());
+      char sizeStr[128];
+      sprintf(sizeStr, "%dx%d", _img.cols, _img.rows);
       msgout = "The file \"" + _fullfilename + 
-        "\" has a problem (OpenCV Error). "+
-        "So, it will not be processed. Details: "+
+         "\" has a problem (OpenCV Error). Image size= " + sizeStr + " : "+
         err_str;
       message(msgout,MsgLogger::WARN);
       msgReturn = "Error: opencv error";
