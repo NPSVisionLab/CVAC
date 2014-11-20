@@ -894,7 +894,7 @@ def getTrainer( configString ):
     '''Connect to a trainer service'''
     proxyStr = getProxyString(configString)
     if not proxyStr:
-        return None
+        raise RuntimeError("Invalid or unknown Trainer configString")
     trainer_base = ic.stringToProxy( proxyStr )
     try:
         trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
@@ -990,7 +990,7 @@ def getDetector( configString ):
     '''Connect to a detector service'''
     proxyStr = getProxyString(configString)
     if not proxyStr:
-        return None
+        raise RuntimeError("Invalid or unknown Detector configString")
     detector_base = ic.stringToProxy( proxyStr )
     try:
         detector = cvac.DetectorPrx.checkedCast(detector_base)
@@ -1248,11 +1248,13 @@ def isROCdata(rocZip):
 def getSensitivityOptions(detectorData):
     '''
     Return any False Alarm, and Recall rate options available
-    in the model file.  This will return a list of False Alarm, Recall pairs that
+    in the model file.  This will return a list of
+    <false alarm, recall> pairs that
     have been trained into the model or None if they are not any.
-    detectorData is the model file that that might contain the different model files and sensitivity options.
+    detectorData is the model file that that might contain the
+    different model files and sensitivity options.
     '''
-    isRoc, rockList, tempDir = isROCData(detectorData)
+    isRoc, rockList, tempDir = isROCdata(detectorData)
     if isRoc == False:
         return None
     else:
@@ -1416,8 +1418,10 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
                         purposeLabelMap[pid] += ", " +key
                     else:
                         purposeLabelMap[pid] = key
-    
-    print('received a total of {0} results:'.format( len( results ) ))
+
+    numres = len( results );
+    print('received a total of {0} results{1}'\
+          .format( numres, (":",".")[numres==1] ))
     identical = 0
     for res in results:
         names = []
@@ -1603,15 +1607,6 @@ def showImagesWithLabels( substrates, maxsize=None ):
                 else:
                     print("warning: not rendering Label type {0}".format( type(lbl.loc) ))      
         showImage( img )
-
-def getConfusionMatrix( results, origMap, foundMap ):
-    '''produce a confusion matrix'''
-    import numpy
-    catsize = len( origMap )
-    if catsize>50:
-        pass
-    confmat = numpy.empty( (catsize+1, catsize+1) )
-    return confmat
 
 def getHighestConfidenceLabel( lablist ):
     '''

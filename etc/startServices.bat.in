@@ -25,7 +25,8 @@ set LOCKFILE=.services_started.lock
 if exist %LOCKFILE% (
     echo CVAC services have supposedly been started already.  Either stop them
     echo first, or if you are sure that they are not running, remove the
-    echo lock file \'%LOCKFILE%\'.
+    echo lock file \'%LOCKFILE%\' in the following directory:
+    echo "%INSTALLDIR%"
     exit /b 1
 )
 

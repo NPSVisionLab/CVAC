@@ -28,7 +28,8 @@ first time you start it.
 
 1. Click the "start services" button. If you get firewall warnings,
 select "Allow" so the services can accept the client's service
-requests in the next step.
+requests in the next step.  On Windows, several windows will pop
+up.  You can minimize them, but don't close them.
 
 1. Click the "Detect Demo" button.  This will run a standard face
 detector on a sample image and print the results.  If you have PIL
@@ -37,7 +38,9 @@ installed it will also pop up a window showing you the result.
 
 ## Run custom "easy" code in a Python shell
 
-1. Click the "Terminal Window" button.  Once the window has opened,
+1. Click the "Terminal Window" button.  This sets the 
+environment variables necessary to run client code *for this specific
+window only*.  Once the window has opened,
 change the current directory to the root installation folder, such as
 <br>`cd /Applications/EasyComputerVision.app/Contents/Resources` or
 <br>`cd C:\Program Files\EasyComputerVision` or
