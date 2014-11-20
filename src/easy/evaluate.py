@@ -11,6 +11,45 @@ import cvac
 import math
 from operator import attrgetter, itemgetter
 
+def defaultHitStrategy(origpur, foundLabels, foundMap, tres):
+    foundPurposes = []
+    '''
+    Get one count each of each purpose found.  We use this to make sure that we
+    only return a result for each purpose and no more.  If more than one result for each
+    purpose is in the foundLabels, then only the first one is counted.
+    '''
+    for lbl in foundLabels:
+        labelText = easy.getLabelText( lbl.lab, guess=False )
+        if labelText in foundMap:
+            foundPurpose = foundMap[labelText]
+            if foundPurpose not in foundPurposes:
+                foundPurposes.append(foundPurpose)
+        else:
+            print("warning: Label " + labelText + " not in foundMap can't compute evaluation.")
+    for lbl in foundLabels:
+        labelText = easy.getLabelText( lbl.lab, guess=False )
+        if labelText in foundMap:
+            foundPurpose = foundMap[labelText]
+            '''We only want to count a purpose once
+               so remove it from the foundPurposes list '''
+            if foundPurpose in foundPurposes:
+                foundPurposes.remove(foundPurpose)
+                if origpur.ptype == cvac.PurposeType.POSITIVE:
+                    if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
+                        tres.tp += 1
+                    else:
+                        tres.fn += 1
+                else:
+                    if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
+                        # This defaultHitStrategy counts every false positive
+                        tres.fp += 1
+                    else:
+                        tres.tn += 1
+    return tres
+                            
+                            
+                   
+    
 class TestResult:
     def __init__(self, tp=0, fp=0, tn=0, fn=0):
         self.tp = tp;
@@ -42,7 +81,7 @@ def verifyFoundMap(foundMap):
     return True
 
 def getConfusionTable( results, foundMap, origMap=None, origSet=None, 
-                       multipleHitStrategy=MultipleHitStrategy.CountEveryFalsePositive ):
+                       HitStrategy=defaultHitStrategy):
     '''Determine true and false positives and negatives based on
     the purpose of original and found labels.
     origMap maps the relative file path of every label to the assigned purpose.
@@ -74,50 +113,22 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None,
         print("warning: Not able to determine samples not evaluated")
     tres = TestResult()
     for res in results:
-        foundPurposes = []
-        for lbl in res.foundLabels:
-            labelText = easy.getLabelText( lbl.lab, guess=False )
-            if labelText in foundMap:
-                foundPurpose = foundMap[labelText]
-                foundPurposes.append(foundPurpose)
-            else:
-                print("warning: Label " + labelText + " not in foundMap can't compute evaluation.")
-        numfound = len(res.foundLabels)
         origpur = origMap[ getRelativePath(res.original) ]
-       
+        numfound = len(res.foundLabels)
         if numfound==0:
             if origpur.ptype==cvac.PurposeType.POSITIVE:
                 tres.fn += 1
             else:
                 tres.tn += 1
         else:
-            # We found multiple things so look at multiple hit strategy to see how to count
-            foundFalsePos = False 
-            for lbl in res.foundLabels:
-                labelText = easy.getLabelText( lbl.lab, guess=False )
-                if labelText in foundMap:
-                    foundPurpose = foundMap[labelText]
-                    '''We only want to count a purpose once
-                       so remove it from the foundPurposes list '''
-                    if foundPurpose in foundPurposes:
-                        foundPurposes.remove(foundPurpose)
-                        if origpur.ptype == cvac.PurposeType.POSITIVE:
-                            if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
-                                tres.tp += 1
-                            else:
-                                tres.fn += 1
-                        else:
-                            if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
-                                if multipleHitStrategy == MultipleHitStrategy.CountEveryFalsePositive:
-                                    tres.fp += 1
-                                elif foundFalsePos == False:
-                                    tres.fp += 1
-                                    foundFalsePos = True
-                            else:
-                                tres.tn += 1
-                            
-                            
-                   
+            '''
+            We can define our strategy on how to count hits.  The default
+            strategy provided is to count all the false positives and a true positive
+            only for each purpose found.  So if the same object is found 3 times it is only
+            counted once, but if 2 different objects are found, they both are counted.
+            '''
+            tres = HitStrategy(origpur, res.foundLabels, foundMap, tres)
+            
     print('{0}, nores: {1}'.format(tres, nores))
        
     return tres, nores
