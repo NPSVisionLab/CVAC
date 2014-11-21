@@ -11,7 +11,18 @@ import cvac
 import math
 from operator import attrgetter, itemgetter
 
+'''
+The default callback used to count the positive and/or negative hits when building 
+the confusion table.
+'''
 def defaultHitStrategy(origpur, foundLabels, foundMap, tres):
+    numfound = len(foundLabels)
+    if numfound==0:
+        if origpur.ptype==cvac.PurposeType.POSITIVE:
+            tres.fn += 1
+        else:
+            tres.tn += 1
+        return tres
     foundPurposes = []
     '''
     Get one count each of each purpose found.  We use this to make sure that we
@@ -61,12 +72,7 @@ class TestResult:
         desc = "{0} tp, {1} fp, {2} tn, {3} fn"\
            .format(self.tp, self.fp, self.tn, self.fn)
         return desc
-    
-class MultipleHitStrategy:
-    CountEveryFalsePositive, CountAsOneFalsPositive = range(2)
-    
-    def __init__(self, value):
-        self.value = value;
+   
 
 def getRelativePath( label ):
     return label.sub.path.directory.relativePath + "/" + label.sub.path.filename
@@ -114,20 +120,13 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None,
     tres = TestResult()
     for res in results:
         origpur = origMap[ getRelativePath(res.original) ]
-        numfound = len(res.foundLabels)
-        if numfound==0:
-            if origpur.ptype==cvac.PurposeType.POSITIVE:
-                tres.fn += 1
-            else:
-                tres.tn += 1
-        else:
-            '''
-            We can define our strategy on how to count hits.  The default
-            strategy provided is to count all the false positives and a true positive
-            only for each purpose found.  So if the same object is found 3 times it is only
-            counted once, but if 2 different objects are found, they both are counted.
-            '''
-            tres = HitStrategy(origpur, res.foundLabels, foundMap, tres)
+        '''
+        We can define our strategy on how to count hits.  The default
+        strategy provided is to count all the false positives and a true positive
+        only for each purpose found.  So if the same object is found 3 times it is only
+        counted once, but if 2 different objects are found, they both are counted.
+        '''
+        tres = HitStrategy(origpur, res.foundLabels, foundMap, tres)
             
     print('{0}, nores: {1}'.format(tres, nores))
        
@@ -192,18 +191,28 @@ class EvaluationResult:
         self.nores = nores
         self.detail = detail
         self.name = name
-        num_pos = self.res.tp+self.res.fn
-        if num_pos!=0:
-            self.recall = self.res.tp/float(num_pos)
+        '''
+        recall is sensitivity or True positive rate (TP/(TP + FN).    
+        trueNegRate is specificity or True negative rate (TN/FP + TN).  
+        '''
+        numpos = self.res.tp + self.res.fn
+        numneg = self.res.fp + self.res.tn
+    
+        if numpos != 0:
+            self.recall = self.res.tp/float(numpos)
         else:
             self.recall = 0
-        num_det = self.res.tp+self.res.fp
-        if num_det!=0:
-            self.precision = self.res.tp/float(self.res.tp+self.res.fp)
+        if numneg != 0:
+            self.trueNegRate = self.res.tn/float(numneg)
         else:
-            self.precision = 0
-        # calculate combined recall/precision score:
-        self.score = (self.recall + self.precision)/2.0
+            self.trueNegRate = 0
+        if self.res.tp > 0 and self.res.tn > 0:
+            # calculate combined recall/trueNegRate score:
+            self.score = (self.recall + self.trueNegRate)/2.0
+        elif self.res.tp > 0:
+            self.score = self.recall
+        else:
+            self.score = self.trueNegRate
         # add in to the score no result counts
         allSam = self.res.tp + self.res.tn + \
                   self.res.fp + self.res.fn + self.nores;
@@ -211,18 +220,34 @@ class EvaluationResult:
         self.score = self.score * resfactor;
 
     def __str__(self):
-        desc = "{0:5.2f}% score, {1:5.2f}% recall, {2:5.2f}% precision " \
-            "({3} tp, {4} fp, {5} tn, {6} fn, {7} nores)" \
-            .format( self.score*100.0, self.recall*100.0, self.precision*100.0,
-                     self.res.tp, self.res.fp, 
-                     self.res.tn, self.res.fn, self.nores )
+        
+        if self.res.tp != 0  and self.res.tn != 0:
+            desc = "{0:5.2f}  score, {1:5.2f}% recall, {2:5.2f}% 1-FPR " \
+                "({3} tp, {4} fp, {5} tn, {6} fn, {7} nores)" \
+                .format( self.score*100.0, self.recall*100.0, self.trueNegRate*100.0,
+                         self.res.tp, self.res.fp, 
+                         self.res.tn, self.res.fn, self.nores )
+        elif self.res.tp == 0:
+            # Don't show recall since its not valid with no tp
+            desc = "{0:5.2f}  score,   -   recall, {2:5.2f}% 1-FPR " \
+                "({3} tp, {4} fp, {5} tn, {6} fn, {7} nores)" \
+                .format( self.score*100.0, self.trueNegRate*100.0,
+                         self.res.tp, self.res.fp, 
+                         self.res.tn, self.res.fn, self.nores )
+        else:
+            # Don't show specificity since its not valid with no tn
+            desc = "{0:5.2f}  score, {1:5.2f}% recall,   -   1 - FPR  " \
+                "({3} tp, {4} fp, {5} tn, {6} fn, {7} nores)" \
+                .format( self.score*100.0, self.recall*100.0, 
+                         self.res.tp, self.res.fp, 
+                         self.res.tn, self.res.fn, self.nores )
         if self.name:
             return self.name + ": " + desc
         return desc
 
         
 def crossValidate( contender, runset, folds=10, printVerbose=False ):
-    '''Returns summary statistics tp, fp, tn, fn, recall, precision,
+    '''Returns summary statistics tp, fp, tn, fn, recall, trueNegRate,
     and a detailed matrix of results with one row for
     each fold, and one column each for true positive, false
     positive, true negative, and false negative counts'''
@@ -417,14 +442,25 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     return sortedResults,originalResults
 
 def printEvaluationResults(results):
-    print('name        ||  score |  recall | precis. ||  tp  |  fp  |  tn  |  fn  | nores')
+    print('name        ||  score |  recall | 1 - FPR ||  tp  |  fp  |  tn  |  fn  | nores')
     print('-------------------------------------------------------------------')
     for result in results:
         # need 6.2 instead of 5.2 to allow for 100.0%
-        desc = "{0:6.2f}% | {1:6.2f}% | {2:6.2f}% || " \
-            "{3:4d} | {4:4d} | {5:4d} | {6:4d} | {7:4d}" \
-            .format( result.score*100.0, result.recall*100.0, result.precision*100.0,
-                     result.res.tp, result.res.fp, result.res.tn, result.res.fn, result.nores )
+        if result.res.tp != 0 and result.res.tn != 0:
+            desc = "{0:6.2f}  | {1:6.2f}% | {2:6.2f}% || " \
+                "{3:4d} | {4:4d} | {5:4d} | {6:4d} | {7:4d}" \
+                .format( result.score*100.0, result.recall*100.0, result.trueNegRate*100.0,
+                         result.res.tp, result.res.fp, result.res.tn, result.res.fn, result.nores )
+        elif result.res.tp == 0:
+            desc = "{0:6.2f}  |    -    | {1:6.2f}% || " \
+                "{2:4d} | {3:4d} | {4:4d} | {5:4d} | {6:4d}" \
+                .format( result.score*100.0,  result.trueNegRate*100.0,
+                         result.res.tp, result.res.fp, result.res.tn, result.res.fn, result.nores )
+        else:
+            desc = "{0:6.2f}  | {1:6.2f}% |    -    || " \
+                "{2:4d} | {3:4d} | {4:4d} | {5:4d} | {6:4d}" \
+                .format( result.score*100.0, result.recall*100.0, 
+                         result.res.tp, result.res.fp, result.res.tn, result.res.fn, result.nores )
         if result.name:
             if len(result.name) > 12:
                 print (result.name[0:11] + '.' + '||'+ desc)  
