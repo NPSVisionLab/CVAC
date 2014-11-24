@@ -88,6 +88,15 @@ class MiniTutorialTest(unittest.TestCase):
         sys.stdout.flush()
         execfile(self.demoDir + "/bootstrapping.py");
 
+    #
+    # Run evaluation.py
+    #
+    # Can't run evaluation as it has svn code in it.
+    def xtest_evaluation(self):
+        print("running evaluation.py")
+        sys.stdout.flush()
+        execfile(self.demoDir + "/evaluation.py");
+
 
     def tearDown(self):
         # Clean up

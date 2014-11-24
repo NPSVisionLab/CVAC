@@ -30,3 +30,9 @@ easy.printRunSetInfo( rs2, printLabels=True )
 rs3 = easy.createRunSet( "trainImg" )
 print("\n=== RunSet 3: ===");
 easy.printRunSetInfo( rs3, printLabels=True )
+
+# you can check wether the runset has been properly constructed:
+if easy.isProperRunSet( rs3 ):
+    print("correctly constructed runset")
+else:
+    print("improperly constructed runset")

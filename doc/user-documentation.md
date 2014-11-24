@@ -8,10 +8,13 @@ title: User Documentation
 * [Service scripts](#scripts)
 * [C/C++ Interfaces](#cpp)
 
-Documentation version: if you are reading this from a local file, the
-version of the documentation matches your installed EasyCV version.
-Otherwise, the [online documentation](http://npsvisionlab.github.io/CVAC)
-refers to the EasyCV master branch.  Documentation for other versions
+Documentation version: if you are reading this online but you have
+installed EasyCV on your computer, switch to your local documentation
+as soon as possible.  Just click on "Documentation" in your
+EasyCV Control Center (see below).  The version of the local documentation
+matches your installed EasyCV version.
+The [online documentation](http://npsvisionlab.github.io/CVAC)
+refers to the EasyCV master branch.  Documentation for older versions
 is available from EasyCV version 0.8 onwards and it is included with
 the binary installer.  You can also [build](building.html) the
 documentation from the source distribution.
@@ -25,7 +28,8 @@ first time you start it.
 
 1. Click the "start services" button. If you get firewall warnings,
 select "Allow" so the services can accept the client's service
-requests in the next step.
+requests in the next step.  On Windows, several windows will pop
+up.  You can minimize them, but don't close them.
 
 1. Click the "Detect Demo" button.  This will run a standard face
 detector on a sample image and print the results.  If you have PIL
@@ -34,7 +38,9 @@ installed it will also pop up a window showing you the result.
 
 ## Run custom "easy" code in a Python shell
 
-1. Click the "Terminal Window" button.  Once the window has opened,
+1. Click the "Terminal Window" button.  This sets the 
+environment variables necessary to run client code *for this specific
+window only*.  Once the window has opened,
 change the current directory to the root installation folder, such as
 <br>`cd /Applications/EasyComputerVision.app/Contents/Resources` or
 <br>`cd C:\Program Files\EasyComputerVision` or
@@ -98,7 +104,7 @@ file server and a corpus server.
 
 Take note of the service's "data" directory.  That's where media files
 need to be located in order to be accessible to the services.  If you
-have them in another folder, you need to "upload" them to the
+have them in another machine, you need to "upload" them to the
 FileServer first.  If you would like to change this folder, you need
 to edit the config.services file in the Application's directory.
 
@@ -124,13 +130,16 @@ Stop the services in your EasyCV Control Center.
 # <a name="scripts"></a> Service Scripts
 
 You can start and stop the local services without the EasyCV Control
-Center graphical user interface.  The startIcebox and stopIcebox
+Center graphical user interface.  The startServices and stopServices
 scripts are provided in the application's directory.  That is:
 
-<br>`/Applications/EasyComputerVision.app/Contents/Resources/bin/startIcebox.sh`
-<br>`/Applications/EasyComputerVision.app/Contents/Resources/bin/stopIcebox.sh`
-<br>`C:\Program Files\EasyComputerVision\bin\startIcebox.sh`
-<br>`C:\Program Files\EasyComputerVision\bin\stopIcebox.sh`
+On the MAC:
+<br>`/Applications/EasyComputerVision.app/Contents/Resources/bin/startServices.sh`
+<br>`/Applications/EasyComputerVision.app/Contents/Resources/bin/stopServices.sh`
+
+On Windows:
+<br>`C:\EasyCV\CVAC_binary-0.X.XX-Win7\bin\startServices.bat`
+<br>`C:\EasyCV\CVAC_binary-0.X.XX-Win7\bin\stopServices.bat`
 
 
 # <a name="cpp"></a> C/C++ Interfaces

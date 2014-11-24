@@ -13,6 +13,7 @@ import cvac
 import xml.etree.ElementTree as et
 import glob
 import os
+import urllib
 
 def parsePolygon( etelem ):
     polygon = cvac.Silhouette()
@@ -28,8 +29,8 @@ def parsePolygon( etelem ):
             ty = int(float(num))
         else:
             ty = int(num)
-        polygon.points = polygon.points \
-          + [cvac.Point2D(str(tx-1), str(ty-1))]
+        # + [cvac.Point2D(str(tx-1), str(ty-1))]
+        polygon.points = polygon.points + [cvac.Point2D((tx-1), (ty-1))]
     return polygon
 
 def parseLabeledObjects( root, substrate ):
@@ -146,3 +147,16 @@ def parseFolder( localDir, lmAnnotations, lmImages, lmFolder, CVAC_DataDir ):
         substrate = cvac.Substrate( True, False, cvacFp, -1, -1 )
         labels = labels + parseLabeledObjects( root, substrate )
     return labels
+
+def downloadImages( lmImages, lmFolder, CVAC_DataDir, toLocalDir ):
+    # note: remote directories need to have the trailing slash /
+    remoteDirName = lmImages + "/Images/" + lmFolder + "/"
+    localDirFilename = toLocalDir + "/dirlist.html"
+    # print("debug: fetching directory listing from " + remoteDirName)
+    if not os.path.isdir( toLocalDir ):
+        os.makedirs( toLocalDir )
+    urlfile = urllib.URLopener()
+    localfname = urlfile.retrieve( remoteDirName, localDirFilename )
+
+    # parse for images: look for a link to a jpg with the same name
+    # <a href="img_0868.jpg">img_0868.jpg</a>

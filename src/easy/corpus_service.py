@@ -51,7 +51,23 @@ class CorpusI(cvac.Corpus):
     def __init__(self, name, description, homepageURL, location, CVAC_DataDir):
         cvac.Corpus.__init__(self, name, description, homepageURL, True)
         self.CVAC_DataDir = CVAC_DataDir
+        self.dataSetFolder = location
         self.main_location = location
+        
+    def getFSPath(self, cvacPath ):
+        if isinstance(cvacPath, cvac.Labelable):
+            cvacPath = cvacPath.sub.path
+        elif isinstance(cvacPath, cvac.Substrate):
+            cvacPath = cvacPath.path
+        if isinstance( cvacPath, str ):
+            path = self.CVAC_DataDir+"/"+cvacPath
+        elif isinstance(cvacPath, cvac.FilePath):
+            path = self.CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
+        elif isinstance(cvacPath, cvac.DirectoryPath):
+            path = self.CVAC_DataDir+"/"+cvacPath.relativePath;
+        else:
+            path = self.CVAC_DataDir+"/"+cvacPath.filename
+        return path
         
     def parseConfigProperties(self, configProps, propFile):
         prop = configProps.get('main_locationType')
@@ -73,14 +89,14 @@ class CorpusI(cvac.Corpus):
         urlfile = urllib.URLopener()
         urlfile.retrieve( self.main_location, "deleteme.tar.gz" )
         # extract the tar into a hardcoded dir path
-        extractinto = easy.getFSPath( "deleteme_tmpdir" )
-        if not os.path.exists(extractinto):
-            os.makedirs(extractinto)
+        self.dataSetFolder = self.getFSPath( "deleteme_tmpdir" )
+        if not os.path.exists(self.dataSetFolder):
+            os.makedirs(self.dataSetFolder)
         tar = tarfile.open("deleteme.tar.gz")
-        tar.extractall(path=extractinto)
+        tar.extractall(path=self.dataSetFolder)
         tar.close()
         # obtain labelables from extracted tar directory
-        return easy.getLabelableList(extractinto)
+        return easy.getLabelableList(self.dataSetFolder)
     
 '''
 LabelMeCorpusI is a LabelMe corpus.  This reads the
@@ -120,6 +136,11 @@ class LabelMeCorpusI(CorpusI):
         localDir = self.dataSetFolder
         labels = []
         for folder in self.folderList:
+            # if not local, attempt to download
+            fsPath = os.path.join(self.CVAC_DataDir, folder)
+            if not os.path.isdir(fsPath):
+                labelme.downloadImages( self.homeImages, folder,
+                                        self.CVAC_DataDir, fsPath )
             labels += labelme.parseFolder(localDir, self.homeAnnotations,
                                           self.homeImages, folder, 
                                           self.CVAC_DataDir)
@@ -209,6 +230,7 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         threading.Thread.__init__(self)
         # Change stdout to automaticly flush output
         sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+        #print("debug: starting service: CorpusService (Python)")
         self._communicator = communicator
         self._destroy = False
         self._clients = []
@@ -219,12 +241,12 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
         self.ConnectionName = "localhost"
         self.ServiceName = ""
         self.corpToImp = {}
-        print("Service started: Python CorpusService.")
+        print("info: service started: CorpusService (Python)")
 
     def destroy(self):
+        #print("debug: stopping service: CorpusService (Python)")
         self._cond.acquire()
 
-        print("Exiting Python CorpusService")
         self._destroy = True
 
         try:
@@ -233,9 +255,11 @@ class CorpusServiceI(cvac.CorpusService, threading.Thread):
             self._cond.release()
 
         self.join()
+        print("info: service stopped: CorpusService (Python)")
         
     def addCorpusFromConfig(self, cvacPath):
-        propFile = easy.getFSPath( cvacPath )
+  
+        propFile = os.path.join(self.CVAC_DataDir,  cvacPath.directory.relativePath, cvacPath.filename)
         # since our config file does not have sections and we need one so we
         # create a string with the required header and file contents
         # and pass that to the parser

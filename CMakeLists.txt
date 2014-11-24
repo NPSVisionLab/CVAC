@@ -1,12 +1,15 @@
 #CPACK_PACKAGE_FILE_NAME requires this
-cmake_minimum_required(VERSION 2.8.6)
+IF (APPLE)
+    cmake_minimum_required(VERSION 2.8.12)
+ELSE (APPLE)
+    cmake_minimum_required(VERSION 2.8.6)
+ENDIF (APPLE)
 
 cmake_policy( SET CMP0012 NEW)
 
-IF(WIN32)
-    # don't want the four default configuration types with MS Visual Studio
-    SET (CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "")
-ENDIF(WIN32)
+#Define the configuration types.  If this is not done OpenCV cmake
+#find_package fails!
+SET (CMAKE_CONFIGURATION_TYPES "Release;DEBUG" CACHE STRING "")
 
 PROJECT(CVAC)
 
@@ -46,14 +49,12 @@ ELSE (PYTHON_ONLY_CLIENT)
     SET (START_ICE_SERVICES 1)
 ENDIF (PYTHON_ONLY_CLIENT)
 
-
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
 
 # where the Find*.cmake files are
-SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules
-                      ${CMAKE_MODULE_PATH})
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
-SET(PROJECT_BINARY_DIR ${CMAKE_SOURCE_DIR})
+#SET(PROJECT_BINARY_DIR ${CMAKE_SOURCE_DIR})
 
 SET(OUTPUT_BINDIR ${PROJECT_BINARY_DIR}/bin)
 MAKE_DIRECTORY(${OUTPUT_BINDIR})
@@ -201,9 +202,13 @@ if( INCREASE_VERSION_PATCH )
   CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/version.h.in
     ${CMAKE_SOURCE_DIR}/include/version.h)
   # don't store this variable in the cache or else the version will be increased
-  # open every invocation of CMake in the same build directory
+  # upon every invocation of CMake in the same build directory
   UNSET( INCREASE_VERSION_PATCH CACHE )
 endif( INCREASE_VERSION_PATCH )
+
+# write a Python file with the CVAC version information
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/easy/version.py.in
+  ${CMAKE_SOURCE_DIR}/src/easy/version.py)
 
 
 # offer pre-packaged 3rd-party software for developers; specific to Major.Minor version but not Patch
@@ -233,12 +238,12 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
                 SHOW_PROGRESS
 #                EXPECTED_MD5;aaaab03d4f38d7fe0525c994e52c3aaa
                )
-        list(GET ${DOWNLOAD_RESULT} 0 ${DOWNLOAD_CODE}) 
-        list(GET ${DOWNLOAD_RESULT} 1 ${DOWNLOAD_STRING}) 
-        IF( NOT ${DOWNLOAD_CODE} EQUAL 0)
+        list(GET DOWNLOAD_RESULT 0 DOWNLOAD_CODE) 
+        list(GET DOWNLOAD_RESULT 1 DOWNLOAD_STRING) 
+        IF( NOT DOWNLOAD_CODE EQUAL 0)
             FILE( REMOVE ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )  # this doesn't seem to work.
             MESSAGE( SEND_ERROR "Could not download 3rd-party software package: ${DOWNLOAD_STRING}" )
-        ENDIF( NOT ${DOWNLOAD_CODE} EQUAL 0) 
+        ENDIF()
     ENDIF( EXISTS ${CMAKE_SOURCE_DIR}/${3RDPARTY_FILENAME} )
 
     # untar or unzip the file;
@@ -265,6 +270,7 @@ IF( DOWNLOAD_3RDPARTY_PACKAGE )
             MESSAGE( SEND_ERROR "Could not unpack 3rdparty package - subsequent errors may occur" )
         ENDIF()
     ENDIF( EXISTS ${3RDPARTY_DIR} )
+    MESSAGE( STATUS "You should clean your CMake cache and re-configure to obtain new 3rdparty paths." )
     SET( DOWNLOAD_3RDPARTY_PACKAGE OFF CACHE BOOL "Download 3rd-party package had download or unpack errors, please obtain manually" FORCE )
 ENDIF( DOWNLOAD_3RDPARTY_PACKAGE )
 
@@ -307,7 +313,6 @@ FIND_PACKAGE( PythonInterp 2.7)
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
-#Opencv includes now required for src/util library
 FIND_PACKAGE( OpenCV 2.4 REQUIRED
                             core imgproc highgui ml features2d nonfree objdetect calib3d
              HINTS
@@ -315,12 +320,12 @@ FIND_PACKAGE( OpenCV 2.4 REQUIRED
 )
 
 #If the find package did not set these lib dirs, then set ourselfs
-IF (OpenCV_LIB_DIR_OPT STREQUAL "")
+IF ("${OpenCV_LIB_DIR_OPT}" STREQUAL "")
     SET(OpenCV_LIB_DIR_OPT "${OpenCV_DIR}/../../lib")
-ENDIF (OpenCV_LIB_DIR_OPT STREQUAL "")
-IF (OpenCV_LIB_DIR_DBG STREQUAL "")
+ENDIF ()
+IF ("${OpenCV_LIB_DIR_DBG}" STREQUAL "")
     SET(OpenCV_LIB_DIR_DBG "${OpenCV_DIR}/../../lib")
-ENDIF (OpenCV_LIB_DIR_DBG STREQUAL "")
+ENDIF ()
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   IF( OpenCV_DIR )
@@ -340,9 +345,13 @@ IF( PYTHONINTERP_FOUND )
   #For Python set a variable for cv2 dynamic library
   #
   IF (WIN32)
-    FIND_FILE(OPENCV_PY_LIB cv2.pyd
-      HINTS ${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
-  ELSE (WIN32)
+    FIND_FILE(OPENCV_PY_LIB cv2.pyd 
+             HINTS "${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
+  ELSEIF (APPLE)
+    FIND_LIBRARY(OPENCV_PY_LIB cv2.so
+      HINTS ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
+            ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+  ELSE ()
     FIND_LIBRARY(OPENCV_PY_LIB cv2.so
       HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
             ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
@@ -398,7 +407,7 @@ ENDIF( BUILD_WITH_RSI )
 IF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
     SET( CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/installed" CACHE PATH "default install path" FORCE )
 ELSE( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
-    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cvac" )
+    SET( CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/EasyCV" )
 ENDIF( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
 
 #Need to have this at top level since multiple directories need it
@@ -433,26 +442,34 @@ MATH(EXPR FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+110")
 MATH(EXPR PYTHON_FILE_SERVER_PORT "${CVAC_FIRST_SERVICE_PORT}+111")
 MATH(EXPR RSITR_TEST_PORT "${CVAC_FIRST_SERVICE_PORT}+109")
 
+IF (BUILD_BINARY_PACKAGE)
+   SET(CVAC_DATA_DIR "data")
+ELSE (BUILD_BINARY_PACKAGE)
+   SET(CVAC_DATA_DIR "${CMAKE_SOURCE_DIR}/data")
+ENDIF (BUILD_BINARY_PACKAGE)
 # the configuration of config.{icebox,service} must come after including the
 # etc directory, because that's where the user.config.{..} get configured.
-CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox")
-CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.service")
-CONFIGURE_FILE("etc/config.client.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.client")
-CONFIGURE_FILE("etc/config.admin.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.admin")
-CONFIGURE_FILE("etc/config.java_admin.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.java_admin")
-CONFIGURE_FILE("etc/config.java_icebox.in" "${CMAKE_CURRENT_SOURCE_DIR}/config.java_icebox")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.service" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.service")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.client" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.client")
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
-    FILE( READ "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox" FILE_DATA )
-    FILE( APPEND "${CMAKE_CURRENT_SOURCE_DIR}/config.icebox" ${FILE_DATA} )
-ENDIF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/user.config.icebox")
+CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_BINARY_DIR}/config.icebox")
+CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_BINARY_DIR}/config.service")
+# We need  config.client in the source directory for
+# the ctests to work and for demos to find it.  Also tests need it in
+# the binary directory so put it in both
+CONFIGURE_FILE("etc/config.client.in" "${CMAKE_SOURCE_DIR}/config.client")
+CONFIGURE_FILE("etc/config.client.in" "${CMAKE_CURRENT_BINARY_DIR}/config.client")
+CONFIGURE_FILE("etc/config.admin.in" "${CMAKE_CURRENT_BINARY_DIR}/config.admin")
+IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.service")
+    FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.service" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.service" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.service")
+IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.client")
+    FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.client" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.client" ${FILE_DATA} )
+    FILE( APPEND "${CMAKE_SOURCE_DIR}/config.client" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.client")
+IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.icebox")
+    FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.icebox" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.icebox" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.icebox")
 
 IF( BUILD_WITH_TESTS)
   ENABLE_TESTING()
@@ -473,4 +490,3 @@ ENDIF( BUILD_3RDPARTY_PACKAGE )
 IF ( BUILD_BINARY_PACKAGE )
     ADD_SUBDIRECTORY( etc/pack_binary )
 ENDIF ( BUILD_BINARY_PACKAGE )
-

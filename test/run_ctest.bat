@@ -12,7 +12,10 @@ REM Tell the Tests what machine to use for remote fileserver tests
 set CVAC_REMOTE_TEST_SERVER=%4
 set RES=0
 REM start up services
-cd "%ROOT_DIR%"
+cd "%BUILD_DIR%"
+REM in case it crashed and left the services running stop them
+call bin\stopIcebox.bat
+waitfor DUMMY /T 2 2> NUL
 call bin\startIcebox.bat
 waitfor DUMMY /T 5 2> NUL
 REM run the tests, capture exit status
@@ -27,6 +30,6 @@ if errorlevel  1 (
 )
 REM irrespective of exit status: shut down services
 REM then return exit status
-cd "%ROOT_DIR%"
+cd "%BUILD_DIR%"
 call bin\stopIcebox.bat
 exit /B %RES%

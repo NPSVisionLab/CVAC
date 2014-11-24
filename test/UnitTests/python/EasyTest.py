@@ -5,6 +5,20 @@ from __future__ import print_function
 import sys
 import unittest
 import os
+
+'''Since we need to setup this env variable before
+   we import easy lets do it now!
+'''
+
+filepath = os.path.dirname(os.path.abspath(__file__))
+dataDir = filepath + "/../../../data"
+if not os.path.exists( dataDir ):
+    print("Present working directory: " + os.getcwd())
+    print("Looking for CVAC.DataDir at: " + dataDir)
+    raise RuntimeError("Cannot obtain path to CVAC.DataDir, see comments")
+#set environment variable so easy knows where the data is
+os.environ["CVAC_DATADIR"] = dataDir
+# wait to import easy after we setup CVAC_DATADIR
 import easy
 import cvac
 
@@ -15,25 +29,10 @@ class EasyTest(unittest.TestCase):
     dataDir = None
     
     #
-    # Test the initialization of Ice and the service proxy
+    # Test the initialization 
     #
     def setUp(self):
-
-        # Since this is a test, it's probably run in the build directory. We
-        # need to know the path to the original files for various operations, but we
-        # don't have easy access to the CVAC.DataDir variable.  Let's guess.
-        # Lets get the directory of the script and work upwards to 
-        # get the data directory
-        filepath = os.path.dirname(os.path.abspath(__file__))
-        self.dataDir = filepath + "/../../../data"
-        if not os.path.exists( self.dataDir ):
-            print("Present working directory: " + os.getcwd())
-            print("Looking for CVAC.DataDir at: " + self.dataDir)
-            raise RuntimeError("Cannot obtain path to CVAC.DataDir, see comments")
-        #set environment variable so easy knows where the data is
-        os.environ["CVAC_DATADIR"] = self.dataDir
-       
-
+        pass
    
     #
     # Create a runset from a directory.
@@ -67,7 +66,7 @@ class EasyTest(unittest.TestCase):
         runset = cvac.RunSet()
         posPurpose = easy.getPurpose('pos')
         easy.addToRunSet(runset, labelList, posPurpose)
-        if easy.testRunSetIntegrity(runset) == False:
+        if not easy.isProperRunSet(runset):
             raise RuntimeError("test getLabelableList failed with an invalid runset")
         labelList = easy.getLabelableList("easyTestData", recursive=False)
         ''' should only have one label "easyTestData"
@@ -78,12 +77,129 @@ class EasyTest(unittest.TestCase):
             if len(entry.lab.properties) > 0:
                 raise RuntimeError("labelable should not have any properties")
                 
-        if easy.testRunSetIntegrity(runset) == False:
+        if not easy.isProperRunSet(runset):
             raise RuntimeError("test getLabelableList failed with an invalid runset with non-recursive call")
 
+    #
+    def test_cvacdatadir(self):
+        print("testing cvac data dir")
+        if sys.platform == 'win32':
+            datadir = os.getenv("CVAC_DATADIR", None) 
+            datadir = datadir.replace("/", "\\")
+            easy.CVAC_DataDir = datadir
+            print("Testing using back slashes")
+            print("Using CVAC_DATADIR as " + datadir)
+            testset = []
+            easy.misc.searchDir(testset, datadir + '\\testImg', recursive=True, video=False, image=True)
+            runset = cvac.RunSet()
+            easy.addToRunSet(runset, testset, 'pos')
+            modelfile = 'detectors/bowUSKOCA.zip'
+            detector = easy.getDetector("BOW_Detector")
+            props = easy.getDetectorProperties(detector)
+            props.verbosity = 3
+            results = easy.detect(detector, modelfile, runset, 
+                            detectorProperties=props)
+            easy.printResults(results)
+        else:
+            print("Skipping back slash test on this platform")
+        
+        #run it again with all forward slashes
+        datadir = os.getenv("CVAC_DATADIR", None) 
+        datadir = datadir.replace("\\", "/")
+        print("Testing using all forward slashes")
+        print("Using CVAC_DATADIR as " + datadir)
+        easy.CVAC_DataDir = datadir
+        testset = []
+        easy.misc.searchDir(testset, datadir + '/testImg', recursive=True, video=False, image=True)
+        runset = cvac.RunSet()
+        easy.addToRunSet(runset, testset, 'pos')
+        modelfile = 'detectors/bowUSKOCA.zip'
+        detector = easy.getDetector("BOW_Detector")
+        props = easy.getDetectorProperties(detector)
+        props.verbosity = 3
+        results = easy.detect(detector, modelfile, runset,
+                               detectorProperties=props)
+        easy.printResults(results)
+
+        #run it for forward slashes and relative path
+        origDir = datadir
+        curDir = os.getcwd()
+        curDir = curDir.replace("\\", "/")
+        datadir = datadir.replace("\\", "/")
+        print("using relative paths for " + curDir + " in  data dir " + datadir)
+        if datadir.startswith(curDir):
+            datadir = datadir[len(curDir)+1:]
+            easy.CVAC_DataDir = datadir
+            print("Using CVAC_DataDir as "  + datadir)
+            testset = []
+            easy.misc.searchDir(testset, origDir + '/testImg', recursive=True, video=False, image=True)
+            runset = cvac.RunSet()
+            easy.addToRunSet(runset, testset, 'pos')
+            modelfile = origDir + '/detectors/bowUSKOCA.zip'
+            detector = easy.getDetector("BOW_Detector")
+            props = easy.getDetectorProperties(detector)
+            props.verbosity = 3
+            results = easy.detect(detector, modelfile, runset,
+                                   detectorProperties=props)
+            easy.printResults(results)
+        else:
+            RuntimeError("Bad datadir")
+        
     def tearDown(self):
         # Clean up
         pass
+
+    def isProperDetector( self, configString, detectorData=None, detectorProperties=None ):
+        '''Try to create or use the specified detector.
+        Create a test runset and call the detector with it.
+        Check for proper handling of intentional problems.
+        '''
+        detector = easy.getDetector( configString )
+        if not detector:
+            print("cannot find or connect to detector")
+            return False
+        
+        # make a runset including erroneous files
+        rs = cvac.RunSet()
+        file_normal = easy.getLabelable( "testImg/italia.jpg" )
+        file_notexist = easy.getLabelable( "testImg/doesnotexist.jpg" )
+        file_notconvertible = easy.getLabelable( "testImg/notconvertible.xxx")
+        easy.addToRunSet( rs, file_normal, cvac.Purpose( cvac.PurposeType.UNPURPOSED, -1 ))
+        easy.addToRunSet( rs, file_notexist, cvac.Purpose( cvac.PurposeType.UNPURPOSED, -1 ))
+        easy.addToRunSet( rs, file_notconvertible, cvac.Purpose( cvac.PurposeType.UNPURPOSED, -1 ) )
+        results = easy.detect( detector, detectorData, rs, detectorProperties )
+        
+        # check for number of results: must be the same as runset length
+        nRunset = 0 
+        for pur in rs.purposedLists:
+            nRunset += len(pur.labeledArtifacts)
+        if len(results)!=nRunset:
+            print("incorrect result set size")
+            return False
+        
+        # check that the doesnotexist file caused hasLabel==False
+        found=False
+        for lbl in results:
+            # for an erroneous file
+            if lbl.original.sub==img_notexist.sub or lbl.original.sub==img_notconvertible.sub:
+                for foundlbl in lbl.foundLabels:
+                    if foundlbl.lab.hasLabel:
+                        print("Incorrectly assigned label for an erroneous file.")
+                        return False
+            else:   #for a normal file
+                for foundlbl in lbl.foundLabels:
+                    # confidence 0..1
+                    if not 0.0<=foundlbl.confidence and foundlbl.confidence<=1.0:
+                        print("Label confidence out of bounds ({0}).".format(foundlbl.confidence))
+                        return False
+                    # check that either this was not assigned a label, or the
+                    # assigned label is of proper syntax
+                    if foundlbl.lab.hasLabel:
+                        if not isinstance(foundlbl.lab.name, str):
+                            print("Label name must be of string type.")
+                            return False
+        return True
+
 
 if __name__ == '__main__':
     unittest.main()

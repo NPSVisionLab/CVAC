@@ -27,6 +27,29 @@ def getVideoExtensions():
             "amr","nsv","dpg","m2ts","m2t","mts", \
             "k3g","skm","evo","nsr","amv","divx","webm"];
 
+'''
+Return the directory name with the CVAC_DataDir stripped off
+if its appended to the front of the directory.
+'''
+def stripCVAC_DataDir(mydir):
+    # make both CVAC_DataDir and mydir absolute and then strip off
+    absCVAC = os.path.abspath(easy.CVAC_DataDir)
+    absdir = os.path.abspath(mydir)
+    if absdir.startswith(absCVAC):
+        absdir = absdir[len(absCVAC + '/'):]
+        return absdir
+    return mydir   # Noth9ing to strip so return original
+
+'''
+Return the FilePath with the CVAC_DataDir stripped off
+if its appended to the front of the directory.
+'''
+def stripCVAC_DataDir_from_FilePath(mypath):
+    mydir = os.path.join(mypath.directory.relativePath,mypath.filename);
+    resdir = stripCVAC_DataDir(mydir)
+    if resdir != mydir:
+        mypath.directory.relativePath = os.path.dirname(resdir)
+    return mypath
 
 '''
   Add a labelable to the set for the given file.  Use the last directory as
@@ -51,32 +74,25 @@ def addFileToLabelableSet(lset, ldir, lfile, video=True, image=True):
     if isImage and image == False:
         return
     # strip off cvac data dir
-    if ldir.startswith(easy.CVAC_DataDir +'/'):
-        ldir = ldir[len(easy.CVAC_DataDir + '/'):]
+    ldir = stripCVAC_DataDir(ldir)
+    
     props = {}
     # last directory is the label name
-    idx = ldir.rfind("/")
-    lastIdx = len(ldir)
-    labelName = None
-    if idx == -1:
-        # at top level directory use directory name as labelName
-        labelName = ldir
-        lastIdx = 0
-    while idx != -1:
-        nextdir = ldir[idx+1:lastIdx]
-        if labelName == None:
-            labelName = nextdir
-        else:
-            props[nextdir] = ""
-        lastIdx = idx
-        if idx > 0:
-            idx = ldir.rfind("/", 0, idx-1)
-        else:
+    ldir = os.path.normpath(ldir)
+    ldir = ldir.rstrip('\\')
+    ldir = ldir.rstrip('/')
+    labelName = os.path.basename(ldir)
+    # FIll in props with each directory
+    nextDir = os.path.dirname(ldir)
+    while nextDir != None and nextDir != "":
+        nextProp = os.path.basename(nextDir)
+        if nextProp != None and nextProp != "":
+            props[nextProp] = ""
+        nextd = os.path.dirname(nextDir)
+        if nextd == nextDir:
             break
-    # add final property
-    if lastIdx > 0:
-        nextdir = ldir[0:lastIdx]
-        props[nextdir] = ""
+        else:
+            nextDir = nextd
     dirpath = cvac.DirectoryPath(ldir)
     fpath = cvac.FilePath(dirpath,lfile)
     sub = cvac.Substrate(isImage, isVideo, fpath, 0, 0)

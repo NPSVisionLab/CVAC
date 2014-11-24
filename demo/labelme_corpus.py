@@ -13,6 +13,13 @@ import easy
 # LMFolders and LMObjectNames
 corpus = easy.openCorpus( "corpus/LabelMeCarsTest.properties" )
 categories, lablist = easy.getDataSet( corpus, createMirror=True )
+if (len(lablist)==0):
+    print("No labelable objects found for the data set.  Note that\n"
+          "the Python implementation of the FileServer currently requires\n"
+          "all LabelMe files to be local, rather than on a server.\n"
+          "Please either download all image and annotation files first,\n"
+          "or run the Java implementation of the FileServer.")
+    exit(-1)
 print('Obtained {0} labeled artifact{1} from corpus "{2}":'.format(
     len(lablist), ("s","")[len(lablist)==1], corpus.name ));
 easy.printCategoryInfo( categories )

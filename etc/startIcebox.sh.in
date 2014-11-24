@@ -4,7 +4,7 @@
 # startIcebox.sh script generated for CVAC version ${CVAC_VERSION}
 #
 
-LOCKFILE=${CMAKE_SOURCE_DIR}/.services_started.lock
+LOCKFILE=${CMAKE_BINARY_DIR}/.services_started.lock
 if [ -f $LOCKFILE ]
 then
     echo CVAC services have supposedly been started already.  Either stop them
@@ -14,13 +14,13 @@ then
 fi
 
 export PATH=$PATH:/opt/local/bin
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_ROOT_DIR}/lib:${OpenCV_LIB_DIR_OPT}"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_BINARY_DIR}/lib:${OpenCV_LIB_DIR_OPT}"
 export MATLAB_MCR_DYLD_PATH="/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/runtime/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/sys/os/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/bin/maci64:/System/Library/Frameworks/JavaVM.framework/JavaVM:/System/Library/Frameworks/JavaVM.framework/Libraries"
 export XAPPLRESDIR=/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/X11/app-defaults
 export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${OpenCV_LIB_DIR_OPT}:$MATLAB_MCR_DYLD_PATH"
 
 # C/C++ services, via IceBox
-cd ${CVAC_ROOT_DIR}
+cd ${CVAC_BINARY_DIR}
 if [ "${START_ICE_SERVICES}" == "1" ]
 then
     ${ICE_BOX_EXECUTABLE} --Ice.Config=config.icebox &
@@ -34,14 +34,14 @@ then
 fi
 
 # Python services that are listed in python.config
-if [ "${PYTHON_EXECUTABLE}" != "" ] && [ -f "${CMAKE_SOURCE_DIR}/python.config" ]
+if [ "${PYTHON_EXECUTABLE}" != "" ] && [ -f "${CMAKE_BINARY_DIR}/python.config" ]
 then
-    # add in ice's python library path for osx
-    export DYLD_LIBRARY_PATH="${ICE_PYTHON_DIR}/../pythonlib:$DYLD_LIBRARY_PATH"
-    export PYTHONPATH="${ICE_PYTHON_DIR}:${SLICE_OUTPUT_PYTHONDIR}:3rdparty/opencv/lib/python2.6/site-packages:$PYTHONPATH"
-    grep -v -e ^# ${CMAKE_SOURCE_DIR}/python.config | while read LINE
+    # add in ice's python library and the non-stdlib opencv path for osx
+    export DYLD_LIBRARY_PATH="${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib:${ICE_PYTHON_DIR}/../pythonlib:$DYLD_LIBRARY_PATH"
+    export PYTHONPATH="${ICE_PYTHON_DIR}:${CMAKE_BINARY_DIR}/etc/python/easyPkg:${CMAKE_BINARY_DIR}/etc/python/icePkg:${PYTHONPATH}"
+    grep -v -e ^# ${CMAKE_BINARY_DIR}/python.config | while read LINE
     do
-        ${PYTHON_EXECUTABLE} $LINE &
+        ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/$LINE &
     done
 fi
 

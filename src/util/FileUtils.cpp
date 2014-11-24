@@ -198,10 +198,7 @@ bool cvac::makeDirectories(const std::string& dirPath)
     if (dirPath.empty())
         return false;
     int lastIdx = 0;
-    if (pathAbsolute(dirPath))
-    {  // absolute path
-        result = "/";
-    }
+  
 #ifdef WIN32
     int idx = dirPath.find(':', 1);
     if (idx != -1)
@@ -211,21 +208,25 @@ bool cvac::makeDirectories(const std::string& dirPath)
     }
     if (dirPath[lastIdx] == '\\')
          lastIdx++;   // ignore a first backslash
+    else if (dirPath[lastIdx] == '/')
+         lastIdx++; // ignore a first forward slash
     idx = dirPath.find('\\', lastIdx);
     if (idx == -1)
          idx = dirPath.find('/', lastIdx); // try forward slash
 #else
     if (dirPath[lastIdx] == '/')
     {
-      //         lastIdx++;   // ignore a first slash
-      // TODO: why ignore a first slash??
+               lastIdx++;   // ignore a first slash we do thus
+                            // since we are creating a directory
+                            // for things before the /, there is 
+                            // nothing before the / at index 0.
     }
     int idx =  dirPath.find('/', lastIdx);
 #endif /* WIN32 */
     std::string substr;
     if (idx > 0)
     {
-        std::string substr = dirPath.substr(lastIdx, idx - lastIdx);
+        std::string substr = dirPath.substr(0, idx);
         getVLogger().printv(VLogger::DEBUG_2,
                        "makeDirectories: first path substr: %s\n", substr.c_str());
         if (!makeDirectory(substr))

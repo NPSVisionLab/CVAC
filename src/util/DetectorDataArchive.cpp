@@ -45,6 +45,7 @@
 #include <stdarg.h>
 #include <archive.h>
 #include <archive_entry.h>
+
 #include "util/DetectorDataArchive.h"
 #include "util/FileUtils.h"
 
@@ -289,7 +290,7 @@ cvac::DetectorDataArchive::getFile(const std::string &identifier) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-int copy_data(struct archive *ar, struct archive *aw)
+int copy_data(struct archive *ar, struct archive *aw, unsigned long totalSize)
 {
   int r;
   const void *buff;
@@ -301,18 +302,31 @@ int copy_data(struct archive *ar, struct archive *aw)
   __LA_INT64_T offset;
 #endif
 
-  for (;;) {
+  // On OSX totalSize ends up as 0.  It must be a bug, but to
+  // work around this always save sizeLeft and rely on the ARCHIVE_EOF.
+  // On machines without this issue we can still use sizeLeft to get
+  // around the other bug of not returning a valid ARCHIVE_EOF.
+  unsigned long sizeLeft = totalSize;
+  if (sizeLeft == 0)
+    sizeLeft = 1;
+  while (sizeLeft > 0) {
+    
     r = archive_read_data_block(ar, &buff, &size, &offset);
     if (r == ARCHIVE_EOF)
       return (ARCHIVE_OK);
-    if (r != ARCHIVE_OK)
+    if (r < ARCHIVE_OK)
     {
-      //forcefully copy to destination
+      //Report the error and try and finish.  This should never happen
+      std::string errStr = archive_error_string(ar);
+      errStr.append("\n");
+      localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
       r = archive_write_data_block(aw, buff, size, offset);
       if (r != ARCHIVE_OK)
       {
+        std::string errStr = archive_error_string(aw);
+        errStr.append("\n");
         //if the destination has a problem, it would return Error.        
-        localAndClientMsg(VLogger::WARN, NULL, archive_error_string(aw));
+        localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
         return (r);
       }
       else
@@ -325,10 +339,16 @@ int copy_data(struct archive *ar, struct archive *aw)
 
     r = archive_write_data_block(aw, buff, size, offset);
     if (r != ARCHIVE_OK) {
-      localAndClientMsg(VLogger::WARN, NULL, archive_error_string(aw));
+      std::string errStr = archive_error_string(aw);
+      errStr.append("\n");
+      localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
       return (r);
     }
+    if (totalSize != 0)
+        sizeLeft -= size;
   }
+  // We read all the bytes so return OK
+  return ARCHIVE_OK;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -361,19 +381,20 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
     localAndClientMsg(VLogger::WARN, NULL,
                       "DetectorDataArchive::expandSeq_fromFile could not open requested file: %s\n",
                       filename.c_str());
-    throw "";
+    throw "cannot open archive file";
   }
   for (;;) {
     r = archive_read_next_header(a, &entry);
     if (r == ARCHIVE_EOF) // done loop
       break;
 
-    if (r != ARCHIVE_OK)
-      localAndClientMsg(VLogger::WARN, NULL, archive_error_string(a));
+    if (r < ARCHIVE_OK)
+      localAndClientMsg(VLogger::WARN, NULL, "%s\n", archive_error_string(a));
 
     if (r < ARCHIVE_WARN) {
-      localAndClientMsg(VLogger::WARN, NULL, "Error reading archive header, in DetectorDataArchive expandSeq_fromFile\n");
-      throw "";
+      localAndClientMsg(VLogger::WARN, NULL,
+                        "Error reading archive header, in DetectorDataArchive expandSeq_fromFile\n");
+      throw "cannot read archive header";
     }
 
     // Augment entry-file which will get specified subfolder added-on
@@ -382,28 +403,36 @@ void expandSeq_fromFile(const std::string& filename, const std::string& expandSu
     archive_entry_set_pathname(entry, fullSubfolderPath.c_str());
 
     r = archive_write_header(ext, entry);
-    if (r != ARCHIVE_OK) {
+    if (r < ARCHIVE_OK) {
       localAndClientMsg(VLogger::WARN, NULL, archive_error_string(ext));
     }
-    //else if (archive_entry_size(entry) > 0) {
     else {
-        r = copy_data(a, ext);
-        if (r != ARCHIVE_OK) {
-          localAndClientMsg(VLogger::WARN, NULL, archive_error_string(a));
+        unsigned long entrySize = archive_entry_size(entry);
+        // Need to call copy_data even with an entrySize of 0 size
+        // OSX had a defect an always returns a entrySize of zero.
+        r = copy_data(a, ext, entrySize);
+        if (r < ARCHIVE_OK) {
+          std::string errStr = archive_error_string(a);
+          errStr.append("\n");
+          localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
         }
         if (r < ARCHIVE_WARN) {
-          // Archive error string already echoed, throw exception for serious error
-          localAndClientMsg(VLogger::WARN, NULL, "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
-          throw "";
+          // throw exception for serious error
+          localAndClientMsg(VLogger::WARN, NULL,
+                            "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
+          throw "cannot write (copy) archive header";
         }
         r = archive_write_finish_entry(ext);
-        if (r != ARCHIVE_OK) {
-          localAndClientMsg(VLogger::WARN, NULL, archive_error_string(ext));
+        if (r < ARCHIVE_OK) {
+          std::string errStr = archive_error_string(ext);
+          errStr.append("\n");
+          localAndClientMsg(VLogger::WARN, NULL, errStr.c_str());
         }
         if (r < ARCHIVE_WARN) {
           // Archive error string already echoed, throw exception for serious error
-          localAndClientMsg(VLogger::WARN, NULL, "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
-          throw "";
+          localAndClientMsg(VLogger::WARN, NULL,
+                            "Error writing archive header, in DetectorDataArchive expandSeq_fromFile");
+          throw "cannot write archive header";
         }
      }
   }

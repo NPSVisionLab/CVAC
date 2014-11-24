@@ -117,39 +117,59 @@ void BowICEI::initialize( DetectorDataArchive* dda,
                           const::Ice::Current &current)
 {
   // Set CVAC verbosity according to ICE properties
-  Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
-  string verbStr = props->getProperty("CVAC.ServicesVerbosity");
-  if (!verbStr.empty())
-    getVLogger().setLocalVerbosityLevel( verbStr );  
+    Ice::PropertiesPtr props = (current.adapter->getCommunicator()->getProperties());
+    string verbStr = props->getProperty("CVAC.ServicesVerbosity");
+    if (!verbStr.empty())
+        getVLogger().setLocalVerbosityLevel( verbStr );  
 
-  // Since constructor only called on service start and destroy
-  // can be called.  We need to make sure we have it
-  if (pBowCV == NULL)
-    pBowCV = new bowCV(this);
+    // Since constructor only called on service start and destroy
+    // can be called.  We need to make sure we have it
+    if (pBowCV == NULL)
+        pBowCV = new bowCV(this);
 
-  // Get the default CVAC data directory as defined in the config file    
-  std::string connectName = getClientConnectionName(current);
-  std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
-    connectName);                               
-  std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
+    // Get the default CVAC data directory as defined in the config file    
+    std::string connectName = getClientConnectionName(current);
+    std::string clientName = mServiceMan->getSandbox()->createClientName(mServiceMan->getServiceName(),
+        connectName);                               
+    std::string clientDir = mServiceMan->getSandbox()->createClientDir(clientName);
 
-  string zipfilepath;
-  if(configModelFileName.empty() || file.filename.empty() == false)  //use default model file only if we did not get one.
-    zipfilepath = getFSPath(file, m_CVAC_DataDir);    
-  else
-  {
-    if (pathAbsolute(configModelFileName))
-      zipfilepath = configModelFileName;
-    else
-      zipfilepath = m_CVAC_DataDir + "/" + configModelFileName;
-  }
-  dda->unarchive(zipfilepath, clientDir);
+    string zipfilepath;
+    if (fInitialized == false)
+    { // We are initializing for the first time so load the configModelFileName
+        if (configModelFileName.empty() && file.filename.empty())
+        {
+            localAndClientMsg(VLogger::ERROR, callbackPtr, "No trained model available, aborting.\n" );
+            return;
+        }
+        if (configModelFileName.empty() == false)
+        {
+            if (file.filename.empty() == false )
+            {
+                localAndClientMsg(VLogger::WARN , callbackPtr, "Detector Preconfigured with a model file so ignoring passed in model %s.\n",
+                              file.filename.c_str() );
+            }
+            if (pathAbsolute(configModelFileName))
+                zipfilepath = configModelFileName;
+            else
+                zipfilepath = m_CVAC_DataDir + "/" + configModelFileName;
+        }
+    } else if (configModelFileName.empty() == false)
+    {
+        if (file.filename.empty() == false) 
+        {
+            localAndClientMsg(VLogger::WARN , callbackPtr, "Detector Preconfigured with a model file so ignoring passed in model %s.\n",
+                            file.filename.c_str() );
+        }
+        return;
+    }
+    if (configModelFileName.empty())
+        zipfilepath = getFSPath(file, m_CVAC_DataDir);
+    dda->unarchive(zipfilepath, clientDir);
 
-  // add the CVAC.DataDir root path and initialize from dda  
-  fInitialized = pBowCV->detect_initialize( dda );
-  if (!fInitialized)
-    localAndClientMsg(VLogger::WARN, NULL,
-    "Failed to run CV detect_initialize\n");
+    // add the CVAC.DataDir root path and initialize from dda  
+    fInitialized = pBowCV->detect_initialize( dda );
+    if (!fInitialized)
+        localAndClientMsg(VLogger::WARN, callbackPtr,"Failed to run CV detect_initialize\n");
 }
 
 bool BowICEI::isInitialized()
@@ -167,7 +187,7 @@ void BowICEI::destroy(const ::Ice::Current& current)
 }
 std::string BowICEI::getName(const ::Ice::Current& current)
 {
-	return "bowTest";
+	return mServiceMan->getServiceName();
 }
 std::string BowICEI::getDescription(const ::Ice::Current& current)
 {
@@ -192,7 +212,9 @@ DetectorProperties BowICEI::getDetectorProperties(const ::Ice::Current& current)
 }
 
 int BowICEI::detectObjects(const CallbackHandlerPrx& _callback,
-                           const cvac::Labelable& _lbl)
+                           const cvac::Labelable& _lbl,
+                           bool& _resFlag,
+                           std::string& _resStr)
 { 
   std::string tfilepath = getFSPath( _lbl.sub.path, m_CVAC_DataDir );
 
@@ -201,18 +223,20 @@ int BowICEI::detectObjects(const CallbackHandlerPrx& _callback,
   
   BowICEI* _bowCV = static_cast<BowICEI*>(this);  
   int _bestClass;
-  bool _result = _bowCV->pBowCV->detect_run(tfilepath, _bestClass);
+  _resStr = _bowCV->pBowCV->detect_run(tfilepath, _bestClass);
+  _resFlag = _resStr.empty();
 
-  if(true == _result)
+  if(true == _resFlag)
   {
     localAndClientMsg(VLogger::DEBUG, _callback, "Detection, %s as Class: %d\n",
                       tfilepath.c_str(), _bestClass);
   }
-  else
-  {
-    localAndClientMsg(VLogger::WARN, _callback,
-                      "Error while processing %s\n", tfilepath.c_str());
-  }
+  // the following message is already shown in the algorithm.
+//   else
+//   {
+//     localAndClientMsg(VLogger::WARN, _callback,
+//                       "Error while processing %s\n", tfilepath.c_str());
+//   }
   return _bestClass;
 }
 
@@ -238,7 +262,7 @@ void BowICEI::process(const Ice::Identity &client,
   cvac::RunSetConstraint mRunsetConstraint;  
   mRunsetConstraint.addType("jpg");
   mRunsetConstraint.addType("png");
-  mRunsetConstraint.addType("tif");  
+  mRunsetConstraint.addType("tif");
   // End - RunsetConstraints
 
   //////////////////////////////////////////////////////////////////////////
@@ -280,8 +304,11 @@ void BowICEI::process(const Ice::Identity &client,
 
     cvac::Labelable& labelable = *(mRunsetIterator.getNext());
     {
-      int _bestClass = detectObjects( callbackPtr, labelable );
-      addResult(mRunsetIterator.getCurrentResult(),labelable,_bestClass);      
+      bool _resFlag(false);
+      std::string _resString;
+      int _bestClass = detectObjects( callbackPtr, labelable, _resFlag,_resString);      
+      addResult(mRunsetIterator.getCurrentResult(),labelable,_bestClass,
+                _resFlag,_resString);
     }
   }  
   callbackPtr->foundNewResults(mRunsetIterator.getResultSet());
@@ -290,26 +317,35 @@ void BowICEI::process(const Ice::Identity &client,
 
 void BowICEI::addResult(cvac::Result& _res,
                         cvac::Labelable& _converted,
-                        int _bestClass)
-{	
+                        int _bestClass,
+                        bool _resFlag,
+                        std::string _resString)
+{ 
   // The original field is for the original label and file name.  Results need
   // to be returned in foundLabels.  If the DetectorDataArchive contains properties
   // of the sort labelname_0 = 'somelabel', then a detection of classID 0 will be
   // reported as 'somelabel'
   LabelablePtr labelable = new Labelable();
-  ostringstream ss;
-  ss << _bestClass;
-  string lname = ss.str();
-  BowICEI* _bowCV = static_cast<BowICEI*>(this);
-  string val = _bowCV->pBowCV->dda->getProperty("labelname_"+lname);
-  if ( val.empty() )
-    labelable->lab.name = lname;
+  if(_resFlag)
+  {
+    ostringstream ss;
+    ss << _bestClass;
+    string lname = ss.str();
+    BowICEI* _bowCV = static_cast<BowICEI*>(this);
+    string val = _bowCV->pBowCV->dda->getProperty("labelname_"+lname);
+    if ( val.empty() )
+      labelable->lab.name = lname;
+    else
+      labelable->lab.name = val;
+    labelable->confidence = 1.0f;//ToBeUpdated
+    labelable->lab.hasLabel = true;
+  }
   else
-    labelable->lab.name = val;
-
-  labelable->confidence = 1.0f;//ToBeUpdated
-  labelable->lab.hasLabel = true;
-
+  {
+    labelable->lab.name = _resString;
+    labelable->confidence = 1.0f;
+    labelable->lab.hasLabel = false;
+  }
   _res.foundLabels.push_back(labelable);
 }
 

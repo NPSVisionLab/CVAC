@@ -65,7 +65,7 @@ release = '0.8'
 # non-false value, then it is used:
 #today = ''
 # Else, today_fmt is used as the format for a strftime call.
-#today_fmt = '%B %d, %Y'
+today_fmt = '%B %d, %Y'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -186,7 +186,7 @@ latex_elements = {
 
 # Additional stuff for the LaTeX preamble.
 #'preamble': '',
-'date':'June 23, 2013',
+#'date':'June 23, 2013',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
