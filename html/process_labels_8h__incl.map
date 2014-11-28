@@ -1,9 +1,0 @@
-<map id="include/util/processLabels.h" name="include/util/processLabels.h">
-<area shape="rect" id="node9" href="$_run_set_iterator_8h.html" title="util/RunSetIterator.h" alt="" coords="319,80,449,107"/>
-<area shape="rect" id="node12" href="$_run_set_wrapper_8h.html" title="util/RunSetWrapper.h" alt="" coords="473,155,615,181"/>
-<area shape="rect" id="node26" href="$_media_converter_8h.html" title="util/MediaConverter.h" alt="" coords="716,155,855,181"/>
-<area shape="rect" id="node13" href="$process_run_set_8h.html" title="util/processRunSet.h" alt="" coords="589,229,728,256"/>
-<area shape="rect" id="node14" href="$_file_utils_8h.html" title="util/FileUtils.h" alt="" coords="708,304,799,331"/>
-<area shape="rect" id="node24" href="$_service_man_8h.html" title="util/ServiceMan.h" alt="" coords="1027,304,1144,331"/>
-<area shape="rect" id="node16" href="$_v_logger_8h.html" title="util/VLogger.h" alt="" coords="539,379,637,405"/>
-</map>

@@ -1,7 +1,0 @@
-<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node2" href="$classeasy_1_1gui_1_1_application_1_1_stdout_redirector.html" title="easy.gui.Application.Stdout\lRedirector" alt="" coords="110,5,285,47"/>
-<area shape="rect" id="node3" href="$classpkg__resources_1_1_distribution.html" title="pkg_resources.Distribution" alt="" coords="113,71,281,98"/>
-<area shape="rect" id="node4" href="$classpkg__resources_1_1_entry_point.html" title="pkg_resources.EntryPoint" alt="" coords="115,122,279,149"/>
-<area shape="rect" id="node5" href="$classpkg__resources_1_1_environment.html" title="pkg_resources.Environment" alt="" coords="109,173,285,199"/>
-<area shape="rect" id="node6" href="$classpkg__resources_1_1_working_set.html" title="pkg_resources.WorkingSet" alt="" coords="112,223,283,250"/>
-</map>

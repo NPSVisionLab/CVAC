@@ -1,7 +1,0 @@
-<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classcvac_1_1_corpus.html" title="cvac::Corpus" alt="" coords="5,78,103,105"/>
-<area shape="rect" id="node2" href="$classeasy_1_1corpus__service_1_1_corpus_i.html" title="easy.corpus_service.CorpusI" alt="" coords="151,78,337,105"/>
-<area shape="rect" id="node3" href="$classeasy_1_1corpus__service_1_1_label_me_corpus_i.html" title="easy.corpus_service.Label\lMeCorpusI" alt="" coords="409,5,583,47"/>
-<area shape="rect" id="node4" href="$classeasy_1_1corpus__service_1_1_vatic_corpus_i.html" title="easy.corpus_service.Vatic\lCorpusI" alt="" coords="411,71,581,112"/>
-<area shape="rect" id="node5" href="$classeasy_1_1corpus__service_1_1_videosegment_corpus_i.html" title="easy.corpus_service.Videosegment\lCorpusI" alt="" coords="385,136,607,177"/>
-</map>

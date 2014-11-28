@@ -1,6 +1,0 @@
-<map id="cvac::Labelable" name="cvac::Labelable">
-<area shape="rect" id="node2" href="$classcvac_1_1_labeled_full_substrate.html" title="cvac::LabeledFullSubstrate" alt="" coords="169,5,344,32"/>
-<area shape="rect" id="node3" href="$classcvac_1_1_labeled_location.html" title="cvac::LabeledLocation" alt="" coords="183,56,331,83"/>
-<area shape="rect" id="node4" href="$classcvac_1_1_labeled_track.html" title="cvac::LabeledTrack" alt="" coords="191,107,322,133"/>
-<area shape="rect" id="node5" href="$classcvac_1_1_labeled_video_segment.html" title="cvac::LabeledVideoSegment" alt="" coords="165,157,348,184"/>
-</map>

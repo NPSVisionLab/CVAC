@@ -1,7 +1,0 @@
-<map id="cvac::CallbackHandler" name="cvac::CallbackHandler">
-<area shape="rect" id="node2" href="$classcvac_1_1_detector_callback_handler.html" title="cvac::DetectorCallbackHandler" alt="" coords="201,64,396,91"/>
-<area shape="rect" id="node5" href="$classcvac_1_1_trainer_callback_handler.html" title="cvac::TrainerCallbackHandler" alt="" coords="206,121,391,148"/>
-<area shape="rect" id="node3" href="$class_callback_handler_i.html" title="CallbackHandlerI" alt="" coords="476,5,595,32"/>
-<area shape="rect" id="node4" href="$classeasy_1_1easy_1_1_detector_callback_receiver_i.html" title="easy.easy.DetectorCallback\lReceiverI" alt="" coords="444,57,627,98"/>
-<area shape="rect" id="node6" href="$classeasy_1_1easy_1_1_trainer_callback_receiver_i.html" title="easy.easy.TrainerCallback\lReceiverI" alt="" coords="449,122,622,163"/>
-</map>

@@ -1,9 +1,0 @@
-<map id="pkg_resources.NullProvider" name="pkg_resources.NullProvider">
-<area shape="rect" id="node2" href="$classpkg__resources_1_1_egg_provider.html" title="pkg_resources.EggProvider" alt="" coords="218,80,393,107"/>
-<area shape="rect" id="node7" href="$classpkg__resources_1_1_empty_provider.html" title="pkg_resources.EmptyProvider" alt="" coords="417,80,607,107"/>
-<area shape="rect" id="node3" href="$classpkg__resources_1_1_default_provider.html" title="pkg_resources.DefaultProvider" alt="" coords="5,155,197,181"/>
-<area shape="rect" id="node5" href="$classpkg__resources_1_1_zip_provider.html" title="pkg_resources.ZipProvider" alt="" coords="224,155,395,181"/>
-<area shape="rect" id="node4" href="$classpkg__resources_1_1_path_metadata.html" title="pkg_resources.PathMetadata" alt="" coords="5,229,195,256"/>
-<area shape="rect" id="node6" href="$classpkg__resources_1_1_egg_metadata.html" title="pkg_resources.EggMetadata" alt="" coords="219,229,405,256"/>
-<area shape="rect" id="node8" href="$classpkg__resources_1_1_file_metadata.html" title="pkg_resources.FileMetadata" alt="" coords="422,155,602,181"/>
-</map>
