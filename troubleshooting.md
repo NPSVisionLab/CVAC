@@ -36,10 +36,14 @@ Undefined symbols:
 
 Possible reason 1: You are using two different Ice versions.  Make sure you have only one installed - best is the one that comes in the 3rdparty package.  On OSX, check if you have local versions installed via macports (they would be in /opt/local).  You can pre-compile the sliced files (Data.cpp, for example) with gcc -E and make sure you get the right include files.
 
-Possible reason 2: Compiler issues between GNU and Apple, such that the Ice library is compiled with one and you're compiling with the other.  Try switching your compiler: llvm-g++ and llvm-gcc, or i686-apple-darwin10-gcc etc.  But then again, compiler issues might be due to this reason:
+Possible reason 2: Compiler issues between GNU and Apple, such that the Ice library is compiled with one and you're compiling with the other.  Try switching your compiler: llvm-g++ and llvm-gcc, or i686-apple-darwin10-gcc, default clang compiler etc.  But then again, compiler issues might be due to this reason:
 
 Possible reason 3: Apple's compiler is not fully supported by ICE's "slice2cpp" compiler.  See [here](http://www.zeroc.com/forums/bug-reports/4965-slice2cpp-output-does-not-compile-standards-conformant-compiler.html) for more.  Solution: define CC=/usr/bin/gcc and CXX=/usr/bin/g++ **before** running CMake for the first time.  For OSX Mavericks define CC=/usr/bin/cc and CXX=/usr/bin/g++-4.2 also set the cmake build variable CMAKE_CXX_COMPILER=/usr/bin/g++-4.2. You can also set the cmake build variable CMAKE_C_COMPILER=/usr/bin/cc instead of defining CC.
 
+Note that setting -D arguments when invoking cmake is probably insufficient, it will get ignored.  Likewise, setting the CMAKE_CXX_COMPILER variable in a CMake GUI is not going to change the compiler for good.
+
+### 'ptrdiff_t' does not name a type
+If you encounter this error: " 'ptrdiff_t' does not name a type", you need to patch Ice as described here: [http://www.zeroc.com/forums/bug-reports/5697-include-ice-buffer-h-41-17-error-ptrdiff_t-does-not-name-type.html](http://www.zeroc.com/forums/bug-reports/5697-include-ice-buffer-h-41-17-error-ptrdiff_t-does-not-name-type.html)
 
 ### Ice::UnexpectedObjectException
 When invoking an ICE RPC, the seemingly correct argument does not get recognized:
@@ -54,3 +58,17 @@ That's likely due to the client and server being built against a different Data.
 Even though you have a service running locally, and you can connect via "nc" or "telnet", the ICE client won't let you connect.
 
 This might be due to "-h localhost" being specified in the config.service file, but not in the client.  Or the other way around.  Particularly Win8 and some Linux systems want the explicit specification of localhost, or none.
+
+### Cannot run UnitTests due to dyld load failure
+Symptom:
+```
+1: Test command: EasyCV/build/bin/UnitTests "EasyCV/data"
+1: dyld: Library not loaded: @rpath/libIce.35.dylib
+1:   Referenced from: EasyCV/build/bin/UnitTests
+1:   Reason: image not found
+```
+
+Reason: Your CMake version is prior to 2.8.12.  You can verify that this is the problem with
+`otool -l EasyCV/build/bin/UnitTests`: the path to the dylib should be one of the LC_RPATH entries.
+
+Solution: Either upgrade CMake or add EasyCV/3rdparty/ICE/lib to your DYLD_LIBRARY_PATH.
