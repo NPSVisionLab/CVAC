@@ -50,6 +50,7 @@
 
 #include <cv.h>
 
+namespace { // Need an anonymous namespace to resolve issues with classes of the same name
 class DetectorPropertiesI : public cvac::DetectorProperties
 {
  public:
@@ -95,11 +96,11 @@ public:
     void setVerbosity(::Ice::Int verbosity, const ::Ice::Current& current);
     void setServiceManager(cvac::ServiceManagerI *sman);
     virtual void starting();
-
-private:
     cvac::ResultSet convertResults( const cvac::Labelable& original, std::vector<cv::Rect> recs );
     std::vector<cv::Rect> detectObjects( const cvac::CallbackHandlerPrx& callback, const cvac::Labelable& lbl  );
     std::vector<cv::Rect> detectObjects( const cvac::CallbackHandlerPrx& callback, const std::string& fullname );
+private:
+    
     bool initialize(const ::cvac::DetectorProperties& props,
                     const ::cvac::FilePath& model, const ::Ice::Current& current);
     bool readModelFile( std::string modelFSpath, const ::Ice::Current& current);
@@ -113,5 +114,5 @@ private:
 
     friend cvac::ResultSet detectFunc( cvac::DetectorPtr detector, const char *fname );
 };
-
+}
 #endif //_CascadeDetectI_H__
