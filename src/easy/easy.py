@@ -49,10 +49,19 @@ args.append('--Ice.ACM.Client=0')
 if os.path.isfile('config.client'):
     args.append('--Ice.Config=config.client')
 else:
+    # Search for config.client up the directory tree
     modulepath = os.path.dirname(__file__)
-    config_client_path = os.path.abspath(modulepath+'/../../config.client')
-    if os.path.isfile(config_client_path):
-        args.append('--Ice.Config='+config_client_path)
+    config_client_path = os.path.abspath(modulepath)
+    while config_client_path != None:
+        if os.path.isfile(config_client_path + '/config.client'):
+            args.append('--Ice.Config=' + config_client_path + '/config.client')
+            break;
+        else:
+            nextdir = os.path.dirname(config_client_path)
+            if nextdir == config_client_path:
+                break
+            else:
+                config_client_path = nextdir
 ic = Ice.initialize(args)
 defaultCS = None
 # Parse the client.config for CVAC_DataDir
@@ -73,13 +82,37 @@ def getFSPath( cvacPath, abspath=False ):
     elif isinstance(cvacPath, cvac.Substrate):
         cvacPath = cvacPath.path
     if isinstance( cvacPath, str ):
-        path = CVAC_DataDir+"/"+cvacPath
+        # if cvacPath already has CVAC_DataDir then
+        # don't add it again
+        dirabs = os.path.abspath(cvacPath)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath
+        else:
+            path = CVAC_DataDir+"/"+cvacPath
     elif isinstance(cvacPath, cvac.FilePath):
-        path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
+        # if cvacPath already has CVAC_DataDir then
+        # don't add it again
+        dirabs = os.path.abspath(cvacPath.directory.relativePath)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath.directory.relativePath + '/' + cvacPath.filename
+        else:
+            path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
     elif isinstance(cvacPath, cvac.DirectoryPath):
-        path = CVAC_DataDir+"/"+cvacPath.relativePath;
+        dirabs = os.path.abspath(cvacPath.directory.relativePath)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath.relativePath
+        else:
+            path = CVAC_DataDir+"/"+cvacPath.relativePath
     else:
-        path = CVAC_DataDir+"/"+cvacPath.filename
+        dirabs = os.path.abspath(cvacPath.filename)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath.filename
+        else:
+            path = CVAC_DataDir+"/"+cvacPath.filename
     if abspath == True:
         if os.path.isabs(path) == True:
             return path
@@ -861,7 +894,7 @@ def getTrainer( configString ):
     '''Connect to a trainer service'''
     proxyStr = getProxyString(configString)
     if not proxyStr:
-        return None
+        raise RuntimeError("Invalid or unknown Trainer configString")
     trainer_base = ic.stringToProxy( proxyStr )
     try:
         trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
@@ -957,7 +990,7 @@ def getDetector( configString ):
     '''Connect to a detector service'''
     proxyStr = getProxyString(configString)
     if not proxyStr:
-        return None
+        raise RuntimeError("Invalid or unknown Detector configString")
     detector_base = ic.stringToProxy( proxyStr )
     try:
         detector = cvac.DetectorPrx.checkedCast(detector_base)
@@ -1215,11 +1248,13 @@ def isROCdata(rocZip):
 def getSensitivityOptions(detectorData):
     '''
     Return any False Alarm, and Recall rate options available
-    in the model file.  This will return a list of False Alarm, Recall pairs that
+    in the model file.  This will return a list of
+    <false alarm, recall> pairs that
     have been trained into the model or None if they are not any.
-    detectorData is the model file that that might contain the different model files and sensitivity options.
+    detectorData is the model file that that might contain the
+    different model files and sensitivity options.
     '''
-    isRoc, rockList, tempDir = isROCData(detectorData)
+    isRoc, rockList, tempDir = isROCdata(detectorData)
     if isRoc == False:
         return None
     else:
@@ -1248,8 +1283,7 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     if not detectorData:
         detectorData = getCvacPath( "" )
     elif type(detectorData) is str:
-        detectorData = getCvacPath( detectorData )
-        
+        detectorData = getCvacPath( detectorData ) 
     if type(detectorData) is cvac.FilePath:
         fileext = os.path.splitext(detectorData.filename)[1]
         if fileext.lower()==".zip":
@@ -1303,6 +1337,7 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     if detectorProperties == None:
         detectorProperties = cvac.DetectorProperties()
         detectorProperties.verbosity = getVerbosityNumber( CVAC_ClientVerbosity )
+    misc.stripCVAC_DataDir_from_FilePath(detectorData)
     detector.process( cbID, runset, detectorData, detectorProperties )
     
     if tempDir != None:
@@ -1383,8 +1418,10 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
                         purposeLabelMap[pid] += ", " +key
                     else:
                         purposeLabelMap[pid] = key
-    
-    print('received a total of {0} results:'.format( len( results ) ))
+
+    numres = len( results );
+    print('received a total of {0} results{1}'\
+          .format( numres, (":",".")[numres==1] ))
     identical = 0
     for res in results:
         names = []
@@ -1570,15 +1607,6 @@ def showImagesWithLabels( substrates, maxsize=None ):
                 else:
                     print("warning: not rendering Label type {0}".format( type(lbl.loc) ))      
         showImage( img )
-
-def getConfusionMatrix( results, origMap, foundMap ):
-    '''produce a confusion matrix'''
-    import numpy
-    catsize = len( origMap )
-    if catsize>50:
-        pass
-    confmat = numpy.empty( (catsize+1, catsize+1) )
-    return confmat
 
 def getHighestConfidenceLabel( lablist ):
     '''

@@ -1,7 +1,5 @@
 
-message("Copying python ice files")
-message("from @SLICE_OUTPUT_PATH@")
-message("to @PYTHON_BUILD_DIR@")
+message("Copying python ice files from @SLICE_OUTPUT_PATH@ to @PYTHON_BUILD_DIR@")
 execute_process(
         COMMAND "@CMAKE_COMMAND@" -E copy "@SLICE_OUTPUT_PATH@/Corpus_ice.py" "@PYTHON_BUILD_DIR@/easyPkg/cvac"
         COMMAND "@CMAKE_COMMAND@" -E copy "@SLICE_OUTPUT_PATH@/Data_ice.py" "@PYTHON_BUILD_DIR@/easyPkg/cvac"
@@ -34,11 +32,6 @@ execute_process(
 # Display a message that details what the user has to do in order
 # to start services and run clients.
 #
-# This is currently printed rather early in the "make install" output
-# instead of at the end where it should be.
-# But since CMake doesn't make any guarantees on the order of subdirectories
-# getting installed, I don't see a way to put it at the end.
-#
 GET_FILENAME_COMPONENT(ICE_LIB_DIR @ICE_LIBRARY@ PATH)
 SET(LIBSVM_DIR "@CMAKE_SOURCE_DIR@/3rdparty/libsvm")
 
@@ -53,11 +46,11 @@ ENDIF (WIN32)
 MESSAGE("==============================================")
 MESSAGE("Start and stop EasyCV services with these scripts:")
 IF (WIN32)
-MESSAGE("@CMAKE_INSTALL_PREFIX@/bin/startServices.bat starts the services")
-MESSAGE("@CMAKE_INSTALL_PREFIX@/bin/stopServices.bat stops the services")
+MESSAGE("@CMAKE_INSTALL_PREFIX@/bin/startServices.bat")
+MESSAGE("@CMAKE_INSTALL_PREFIX@/bin/stopServices.bat")
 ELSE (WIN32)
-MESSAGE("@CMAKE_INSTALL_PREFIX@/bin/startServices.sh starts the services")
-MESSAGE("@CMAKE_INSTALL_PREFIX@/bin/stopServices.sh stops the services")
+MESSAGE("@CMAKE_INSTALL_PREFIX@/bin/startServices.sh")
+MESSAGE("@CMAKE_INSTALL_PREFIX@/bin/stopServices.sh")
 ENDIF (WIN32)
 MESSAGE("==============================================")
 MESSAGE("Run EasyCV clients as:")
@@ -65,11 +58,11 @@ IF (WIN32)
     MESSAGE("set PATH=\"${DPATH}\"")
     MESSAGE("set PYTHONPATH=\"${PPATH}\"")
 ELSEIF (APPLE)
-    MESSAGE("export DYLD_LIBRARY_PATH=${DPATH}")
-    MESSAGE("export PYTHONPATH=${PPATH}")
+    MESSAGE("export DYLD_LIBRARY_PATH=\"${DPATH}\"")
+    MESSAGE("export PYTHONPATH=\"${PPATH}\"")
 ELSE ()
-    MESSAGE("export LD_LIBRARY_PATH=${DPATH}")
-    MESSAGE("export PYTHONPATH=${PPATH}")
+    MESSAGE("export LD_LIBRARY_PATH=\"${DPATH}\"")
+    MESSAGE("export PYTHONPATH=\"${PPATH}\"")
 ENDIF()
 MESSAGE("cd @CMAKE_INSTALL_PREFIX@; @PYTHON_EXECUTABLE@ demo/prerequisites.py")
 MESSAGE("==============================================")
