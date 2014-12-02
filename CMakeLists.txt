@@ -54,7 +54,9 @@ MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
 # where the Find*.cmake files are
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
-#SET(PROJECT_BINARY_DIR ${CMAKE_SOURCE_DIR})
+#Windows and OSX work without needing to set PROJECT_BINARY_DIR
+#but linux requires it be set otherwise it defaults to the source dir
+SET(PROJECT_BINARY_DIR ${CMAKE_BINARY_DIR})
 
 SET(OUTPUT_BINDIR ${PROJECT_BINARY_DIR}/bin)
 MAKE_DIRECTORY(${OUTPUT_BINDIR})
