@@ -93,7 +93,11 @@ def getCvacPath( fsPath ):
     # todo: should figure out what CVAC.DataDir is and parse that out, too
     drive, path = os.path.splitdrive( fsPath )
     path, filename = os.path.split( path )
-    dataRoot = cvac.DirectoryPath( path );
+    if os.path.abspath( path ).startswith( CVAC_DataDir ):
+        path = path[ len(CVAC_DataDir)+1: ]
+        if path.startswith('/') or path.startswith('\\'):
+            path = path[ 1: ]
+    dataRoot = cvac.DirectoryPath( path )
     return cvac.FilePath( dataRoot, filename )
 
 def isLikelyVideo( cvacPath ):
@@ -169,6 +173,7 @@ def getVideoSubstrate( filepath ):
                 # ignore filenames without numbers
                 frm_num = int( frm.split( '.' )[ 0 ] )
                 frm_paths[ frm_num ] = getCvacPath( fsPath + '/' + frm )
+                print(frm_paths[ frm_num ])
 
     # if we didn't have file system access:
     if not vpath and not frm_paths:
