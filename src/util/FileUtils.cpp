@@ -440,10 +440,10 @@ void cvac::addFileToRunSet( RunSet& runSet, const std::string& relativePath,
       runSet.purposedLists.push_back(purposeClass1);
    }
 
-   Labelable* class1Label = new Labelable();
-   class1Label->sub.isImage = true; class1Label->sub.isVideo = false;
-   class1Label->sub.path.filename = filename;
-   class1Label->sub.path.directory.relativePath = relativePath;
+   ImageSubstratePtr sub = new ImageSubstrate();
+   sub->path.filename = filename;
+   sub->path.directory.relativePath = relativePath;
+   LabelablePtr class1Label = new Labelable(0.0, Label(), sub);
    purposeClass1->labeledArtifacts.push_back(class1Label);
 }
 
