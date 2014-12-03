@@ -118,9 +118,11 @@ void DirectoryWalker::walk(const char* filename, const char* suffixes[],
                     strcpy(tempName, filename);
                     strcat(tempName, "/");
                     strcat(tempName, walker->d_name);
-                    Labelable *label = new Labelable();  // Ice will clean up so don't delete
-                    label->sub.path.filename = std::string(walker->d_name);
-                    label->sub.path.directory.relativePath = std::string(filename);
+                    LabelablePtr label = new Labelable();  // Ice will clean up so don't delete
+                    ImageSubstratePtr sub = new ImageSubstrate();
+                    label->sub = sub;
+                    sub->path.filename = std::string(walker->d_name);
+                    sub->path.directory.relativePath = std::string(filename);
 
                     ResultSet res = (*_detectFunc)(_detect, tempName);
                     // put the "original" label into the result set
@@ -222,8 +224,16 @@ void cvac::processRunSet(DetectorPtr detector,
                     break;
                 }
                 LabelablePtr lptr = *lIt;
-                Substrate sub = lptr->sub;
-                FilePath  filePath = sub.path;
+                ImageSubstratePtr sub = ImageSubstratePtr::dynamicCast( lptr->sub );
+                if (!sub)
+                {
+                  // must be VideoSubstrate which we cannot handle at this point
+                  // VideoSubstratePtr vidsub = VideoSubstratePtr::dynamicCast( lptr->sub );
+                  localAndClientMsg(VLogger::WARN, client,
+                                    "not processing a VideoSubstrate\n");
+                  continue;
+                }
+                FilePath  filePath = sub->path;
                 filePath.directory.relativePath = pathPrefix + "/" + filePath.directory.relativePath;
                 std::string fname;
                 
@@ -336,24 +346,19 @@ void cvac::addToRunSet( RunSet& runSet, const std::string& relativePath,
       runSet.purposedLists.push_back(purposeClass1);
    }
 
+   ImageSubstratePtr sub = new ImageSubstrate();
+   sub->path.filename = filename;
+   sub->path.directory.relativePath = relativePath;
+   LabelablePtr class1Label;
    if(loc.get() == NULL)
    {
-	   Labelable* class1Label = new Labelable();
-	   class1Label->sub.isImage = true; class1Label->sub.isVideo = false;
-	   class1Label->sub.path.filename = filename;
-	   class1Label->sub.path.directory.relativePath = relativePath;
-	   purposeClass1->labeledArtifacts.push_back(class1Label);
+     class1Label = new Labelable(0.0, Label(), sub);
    }
    else
    {
-	   LabeledLocation* class1Label = new LabeledLocation();
-	   class1Label->sub.isImage = true; 
-	   class1Label->sub.isVideo = false;
-	   class1Label->sub.path.filename = filename;
-	   class1Label->sub.path.directory.relativePath = relativePath;	
-	   class1Label->loc = loc;	
-	   purposeClass1->labeledArtifacts.push_back(class1Label);
+     class1Label = new LabeledLocation(0.0, Label(), sub, loc);
    }
+   purposeClass1->labeledArtifacts.push_back(class1Label);
 }
 
 void cvac::addToRunSet( RunSet& runSet, const std::string& relativePath,
@@ -485,7 +490,8 @@ std::string cvac::getLegalPath(std::string putLinksDir, FilePath filePath, bool 
 
 /**
  * Fixes the RunSet files so they don't contain spaces.
- * Returns the directory of symbolic links created.  This will need to be deleted after the run set is used.
+ * Returns the directory of symbolic links created.  This will
+ * need to be deleted after the run set is used.
  */
 std::string cvac::fixupRunSet(RunSet &run, const std::string &CVAC_DataDir)
 {
@@ -509,8 +515,16 @@ std::string cvac::fixupRunSet(RunSet &run, const std::string &CVAC_DataDir)
             for (lIt = llist.begin(); lIt < llist.end(); lIt++)
             {
                 LabelablePtr lptr = *lIt;
-                Substrate sub = lptr->sub;
-                FilePath  filePath = sub.path;
+                ImageSubstratePtr sub = ImageSubstratePtr::dynamicCast( lptr->sub );
+                if (!sub)
+                {
+                  // must be VideoSubstrate which we cannot handle at this point
+                  // VideoSubstratePtr vidsub = VideoSubstratePtr::dynamicCast( lptr->sub );
+                  localAndClientMsg(VLogger::WARN, NULL,
+                                    "not fixing up a VideoSubstrate\n");
+                  continue;
+                }
+                FilePath  filePath = sub->path;
                 std::string cwd = getCurrentWorkingDirectory();
                 std::string fname = cwd.c_str(); 
                 fname +=  "/";
@@ -531,11 +545,11 @@ std::string cvac::fixupRunSet(RunSet &run, const std::string &CVAC_DataDir)
                       int idx = symlinkFullPath.find_last_of('/');
                       if (idx == -1)
                       { // No slashes
-                          lptr->sub.path.filename = symlinkFullPath;
+                        sub->path.filename = symlinkFullPath;
                       }else
                       {
-                          lptr->sub.path.filename = symlinkFullPath.substr(idx+1, len - idx);
-                          lptr->sub.path.directory.relativePath = symlinkFullPath.substr(0, idx);
+                        sub->path.filename = symlinkFullPath.substr(idx+1, len - idx);
+                        sub->path.directory.relativePath = symlinkFullPath.substr(0, idx);
                       }
                   }
                 }
