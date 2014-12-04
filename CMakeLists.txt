@@ -16,6 +16,9 @@ PROJECT(CVAC)
 SET (PYTHON_ONLY_CLIENT true)
 SET(CVAC_FIRST_SERVICE_PORT "10000" CACHE STRING "First socket port to use")
 
+# where the Find*.cmake files are
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
+
 INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 OPTION(BUILD_WITH_BOW "Build a Bag of Words trainer and detector (requires OpenCV)" ON)
@@ -50,9 +53,6 @@ ELSE (PYTHON_ONLY_CLIENT)
 ENDIF (PYTHON_ONLY_CLIENT)
 
 MARK_AS_ADVANCED( BUILD_3RDPARTY_PACKAGE BUILD_BINARY_PACKAGE )
-
-# where the Find*.cmake files are
-LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
 #Windows and OSX work without needing to set PROJECT_BINARY_DIR
 #but linux requires it be set otherwise it defaults to the source dir
