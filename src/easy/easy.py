@@ -1435,10 +1435,11 @@ def getLabelText( label, classmap=None, guess=False ):
     return text
 
 def getPrintableFileName( substrate ):
-    name = ''
+    name = '??'
     if isinstance(substrate, cvac.ImageSubstrate):
         name = substrate.path.filename
     elif isinstance(substrate, cvac.VideoSubstrate):
+        name = ''
         if substrate.videopath:
             name = substrate.videopath.filename
         if substrate.framepaths:
@@ -1447,7 +1448,9 @@ def getPrintableFileName( substrate ):
             name = name + substrate.framepaths[minkey].filename \
                  + " [" + str(minkey) + ".." + str(maxkey) + "]"
         else:
-            raise RuntimeError("neither videopath nor framepaths specified")
+            # raise RuntimeError("neither videopath nor framepaths specified")
+            # todo: should it be policy that if there is a substrate it should be correct?
+            name = '(incorrect substrate)'
     else:
         raise RuntimeError("unknown Substrate type: "+type(res.original.sub))
     return name
