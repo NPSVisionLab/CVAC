@@ -35,7 +35,8 @@ def stripCVAC_DataDir(mydir):
     # make both CVAC_DataDir and mydir absolute and then strip off
     absCVAC = os.path.abspath(easy.CVAC_DataDir)
     absdir = os.path.abspath(mydir)
-    if absdir.startswith(absCVAC):
+    absdir = absdir.lower()
+    if absdir.startswith(absCVAC.lower()):
         absdir = absdir[len(absCVAC + '/'):]
         return absdir
     return mydir   # Noth9ing to strip so return original

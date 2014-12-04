@@ -123,13 +123,10 @@ def getFSPath( cvacPath, abspath=False ):
 
 def getCvacPath( fsPath ):
     '''Turn a file system path into a CVAC FilePath'''
-    # todo: should figure out what CVAC.DataDir is and parse that out, too
+    # Remove the CVAC.DataDir from the fspath if there is one.
+    fsPath = misc.stripCVAC_DataDir(fsPath)
     drive, path = os.path.splitdrive( fsPath )
     path, filename = os.path.split( path )
-    if os.path.abspath( path ).startswith( CVAC_DataDir ):
-        path = path[ len(CVAC_DataDir)+1: ]
-        if path.startswith('/') or path.startswith('\\'):
-            path = path[ 1: ]
     dataRoot = cvac.DirectoryPath( path )
     return cvac.FilePath( dataRoot, filename )
 
