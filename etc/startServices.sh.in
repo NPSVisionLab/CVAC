@@ -47,7 +47,7 @@ if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLDIR}/python.config" ]
 then
     # add in ice's python library path for osx
     export DYLD_LIBRARY_PATH="${INSTALLDIR}/3rdparty/opencv/lib:@ICEPLIBS@:$DYLD_LIBRARY_PATH"
-    export PYTHONPATH=${INSTALLDIR}/python/easyPkg:${INSTALLDIR}/python/easyPkg/easy:${INSTALLDIR}/python/easyPkg/easy:${INSTALLDIR}/python/icePkg:${INSTALLDIR}/3rdparty/libsvm
+    export PYTHONPATH=${INSTALLDIR}/python/easyPkg:${INSTALLDIR}/python/easyPkg/easy:${INSTALLDIR}/python:${INSTALLDIR}/python/icePkg:${INSTALLDIR}/3rdparty/libsvm
     grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE
     do
         ${PYTHONEXE} $LINE &
