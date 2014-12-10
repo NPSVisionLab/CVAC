@@ -65,7 +65,7 @@ namespace cvac
     ~RunSetWrapper();		
     static cvac::FilePath getFilePath(const LabelablePtr _pla);
     static cvac::FilePath getFilePath(const Labelable& lab);
-    static boolean isVideo(const LabelablePtr _pla);
+    static bool isVideo(const LabelablePtr _pla);
     static string getFilename(const LabelablePtr _pla); 
   private:
     bool   mFlagIntialize;
@@ -87,7 +87,7 @@ namespace cvac
     string convertToAbsDirectory(const string& _directory,
                                     const string& _prefix);     
     
-    string getPath(const LabelablePtr _pla, boolean abs);
+    string getPath(const LabelablePtr _pla, bool abs);
     
     static bool isAbsDirectory(const string& _directory);
 
