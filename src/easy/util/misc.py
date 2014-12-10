@@ -35,8 +35,8 @@ def stripCVAC_DataDir(mydir):
     # make both CVAC_DataDir and mydir absolute and then strip off
     absCVAC = os.path.abspath(easy.CVAC_DataDir)
     absdir = os.path.abspath(mydir)
-    absdir = absdir.lower()
-    if absdir.startswith(absCVAC.lower()):
+    labsdir = absdir.lower()
+    if labsdir.startswith(absCVAC.lower()):
         absdir = absdir[len(absCVAC + '/'):]
         return absdir
     return mydir   # Noth9ing to strip so return original
@@ -96,7 +96,16 @@ def addFileToLabelableSet(lset, ldir, lfile, video=True, image=True):
             nextDir = nextd
     dirpath = cvac.DirectoryPath(ldir)
     fpath = cvac.FilePath(dirpath,lfile)
-    sub = cvac.Substrate(isImage, isVideo, fpath, 0, 0)
+    if isVideo == True:
+        sub = cvac.VideoSubstrate()
+        sub.width = 0
+        sub.height = 0
+        sub.videopath = fpath
+    else:
+        sub = cvac.ImageSubstrate()
+        sub.width = 0
+        sub.height = 0
+        sub.path = fpath
     lab = cvac.Label(True, labelName, props, cvac.Semantics(""))
     lset.append(cvac.Labelable(0.0, lab, sub))
     
@@ -111,3 +120,12 @@ def searchDir(lset, ldir, recursive=True, video=True, image=True):
             searchDir(lset, ldir + '/' + f)
         else:
             addFileToLabelableSet(lset, ldir, f, video, image)
+
+def getLabelableFilePath(lab):
+    #if lab.sub.ice_isA('::cvac::ImageSubstrate'):
+    if isinstance(lab.sub, cvac.ImageSubstrate):
+        path = lab.sub.path
+    else:
+        path = lab.sub.videopath
+    return path
+        

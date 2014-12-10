@@ -63,7 +63,10 @@ namespace cvac
     RunSetWrapper(const RunSet* _runset,string _mediaRootPath,
                   ServiceManager *_sman);
     ~RunSetWrapper();		
-
+    static cvac::FilePath getFilePath(const LabelablePtr _pla);
+    static cvac::FilePath getFilePath(const Labelable& lab);
+    static boolean isVideo(const LabelablePtr _pla);
+    static string getFilename(const LabelablePtr _pla); 
   private:
     bool   mFlagIntialize;
     string mMediaRootPath;
@@ -80,9 +83,13 @@ namespace cvac
     rsMediaType getTypeMicro(const string _aPath);//in detail: bmp, png, and so on.
     rsMediaType getTypeMicro(const LabelablePtr _pla);
     string convertToAbsDirectory(const string& _directory);
+  
     string convertToAbsDirectory(const string& _directory,
-                                    const string& _prefix);      
-    bool isAbsDirectory(const string& _directory);
+                                    const string& _prefix);     
+    
+    string getPath(const LabelablePtr _pla, boolean abs);
+    
+    static bool isAbsDirectory(const string& _directory);
 
   private:    //In Future: do with more sophisticated structures  
     bool isInRunset(const string& _rDir,const string& _fname,

@@ -47,6 +47,7 @@ class EasyTest(unittest.TestCase):
            
         '''
         for entry in labelList:
+            print ("label name " + entry.lab.name)
             if entry.lab.name != "easyTestData" and \
                entry.lab.name != "kitchen" and \
                entry.lab.name != "MITmountain":

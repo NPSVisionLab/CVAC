@@ -47,6 +47,7 @@
 #include <util/FileUtils.h>
 #include <util/ServiceManI.h>
 #include <util/DetectorDataArchive.h>
+#include <util/RunSetWrapper.h>
 
 using namespace Ice;
 using namespace cvac;
@@ -545,7 +546,7 @@ void BowICETrainI::processPurposedList( PurposedListPtr purList,
   
   for (size_t artfct=0; artfct< lab->labeledArtifacts.size(); artfct++)
   {						
-    string fullName = getFSPath(lab->labeledArtifacts[artfct]->sub.path,
+    string fullName = getFSPath(RunSetWrapper::getFilePath(lab->labeledArtifacts[artfct]),
                                 CVAC_DataDir);
     string _filename = getFileName(fullName);
     string _filepath = getFileDirectory(fullName);

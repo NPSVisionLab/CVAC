@@ -33,7 +33,7 @@ def parsePolygon( etelem ):
         polygon.points = polygon.points + [cvac.Point2D((tx-1), (ty-1))]
     return polygon
 
-def parseLabeledObjects( root, substrate ):
+def parseLabeledObjects( root, imageSubstrate ):
     ''' for each labeled object in the annotation tree
     that does not have the <deleted> tag set,
     collect the name, attributes and the polygon and create the
@@ -43,11 +43,11 @@ def parseLabeledObjects( root, substrate ):
     if objImgSize != None:
         objH = objImgSize.find('nrows')
         if objH != None:            
-            substrate.height = int(objH.text.encode('utf-8').strip())
+            imageSubstrate.height = int(objH.text.encode('utf-8').strip())
             
         objW = objImgSize.find('ncols')
         if objW != None:
-            substrate.width = int(objW.text.encode('utf-8').strip())
+            imageSubstrate.width = int(objW.text.encode('utf-8').strip())
     
     labels = []
     for lmobj in root.findall('object'):
@@ -56,7 +56,7 @@ def parseLabeledObjects( root, substrate ):
             continue
         label = cvac.LabeledLocation()
         label.confidence = 1.0
-        label.sub = substrate
+        label.sub = imageSubstrate
         nameobj = lmobj.find('name')
         if nameobj.text is None:
             continue
