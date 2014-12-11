@@ -177,6 +177,7 @@ ENDIF()
 # The build process increases the PATCH number found in the
 # version.h file by one before building, and it commits it back into
 # the repository.
+SET( INCREASE_VERSION_PATCH "ON")
 if( INCREASE_VERSION_PATCH )
   if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" )
     MESSAGE( SEND_ERROR "Cannot INCREASE_VERSION_PATCH without git repository" )
@@ -196,8 +197,9 @@ if( INCREASE_VERSION_PATCH )
   # CVAC_VERSION_PATCH is obtained from the previous version file.
   # CVAC_VERSION is 1.2.x
   STRING( REGEX REPLACE "^v(.*)-.*-.*" "\\1" CVAC_VERSION_MAJMIN ${CVAC_VERSION_GIT} ) 
-  STRING( REGEX REPLACE "([^.]).*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
-  STRING( REGEX REPLACE ".*([^.])-*" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
+  STRING( REGEX REPLACE "^([0-9]+)\\..*" "\\1" CVAC_VERSION_MAJOR ${CVAC_VERSION_MAJMIN} )
+  STRING( REGEX REPLACE "^.*\\.([0-9]+)" "\\1" CVAC_VERSION_MINOR ${CVAC_VERSION_MAJMIN} )
+
   MATH( EXPR CVAC_VERSION_PATCH "${CVAC_VERSION_PATCH}+1" )
   SET( CVAC_VERSION ${CVAC_VERSION_MAJOR}.${CVAC_VERSION_MINOR}.${CVAC_VERSION_PATCH} )
   MESSAGE( STATUS "successfully did INCREASE_VERSION_PATCH via git: CVAC-${CVAC_VERSION}" )
