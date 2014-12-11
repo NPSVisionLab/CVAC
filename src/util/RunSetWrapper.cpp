@@ -178,7 +178,7 @@ cvac::FilePath RunSetWrapper::getFilePath(const LabelablePtr _pla)
  return path;
 }
 
-boolean RunSetWrapper::isVideo(const LabelablePtr _pla)
+bool RunSetWrapper::isVideo(const LabelablePtr _pla)
 {
    SubstratePtr sub = _pla->sub; 
    ImageSubstratePtr isub = ImageSubstratePtr::dynamicCast(sub);
@@ -189,7 +189,7 @@ boolean RunSetWrapper::isVideo(const LabelablePtr _pla)
 }
 
 //---------------------------------------------------------------------------
-string RunSetWrapper::getPath(const LabelablePtr _pla, boolean abs)
+string RunSetWrapper::getPath(const LabelablePtr _pla, bool abs)
 {
  FilePath path = getFilePath(_pla);
  
