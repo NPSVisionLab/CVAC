@@ -78,9 +78,11 @@ CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verb
 def getFSPath( cvacPath, abspath=False ):
     '''Turn a CVAC path into a file system path'''
     if isinstance(cvacPath, cvac.Labelable):
-        cvacPath = cvacPath.sub.path
-    elif isinstance(cvacPath, cvac.Substrate):
+        cvacPath = misc.getLabelableFilePath(cvacPath)
+    elif isinstance(cvacPath, cvac.ImageSubstrate):
         cvacPath = cvacPath.path
+    elif isinstance(cvacPath, cvac.VideoSubstrate):
+        cvacPath = cvacPath.videopath
     if isinstance( cvacPath, str ):
         # if cvacPath already has CVAC_DataDir then
         # don't add it again
@@ -123,13 +125,10 @@ def getFSPath( cvacPath, abspath=False ):
 
 def getCvacPath( fsPath ):
     '''Turn a file system path into a CVAC FilePath'''
-    # todo: should figure out what CVAC.DataDir is and parse that out, too
+    # Remove the CVAC.DataDir from the fspath if there is one.
+    fsPath = misc.stripCVAC_DataDir(fsPath)
     drive, path = os.path.splitdrive( fsPath )
     path, filename = os.path.split( path )
-    if os.path.abspath( path ).startswith( CVAC_DataDir ):
-        path = path[ len(CVAC_DataDir)+1: ]
-        if path.startswith('/') or path.startswith('\\'):
-            path = path[ 1: ]
     dataRoot = cvac.DirectoryPath( path )
     return cvac.FilePath( dataRoot, filename )
 
@@ -361,14 +360,14 @@ def isInBounds( labelable ):
         maxX = labelable.sub.width
     if labelable.sub.height>0:
         maxY = labelable.sub.height
-
+    fpath = misc.getLabelableFilePath(labelable)
     if isinstance(labelable, cvac.LabeledLocation):
         for pt in labelable.loc.points:
             if (pt.x < minX) or (pt.y < minY) \
                 or (pt.x >= maxX) or (pt.y >= maxY):
                 print("Warning: label \"" \
                       + labelname + "\" is out of bounds in file \"" \
-                      + labelable.sub.path.filename + "\"" \
+                      + fpath.filename + "\"" \
                     + " (X=" + str(pt.x) + ", Y=" + str(pt.y) + ")")
                 return False
 #     else:
@@ -421,8 +420,9 @@ def isProperRunSet(runset, deleteInvalid=False):
             for i in xrange(len(plist.labeledArtifacts)-1, -1, -1):
                 lb = plist.labeledArtifacts[i]               
                 labelname  = 'nolabel'
+                fpath = misc.getLabelableFilePath(lb)
                 if lb.lab.hasLabel != True:
-                    print("Warning: " + lb.sub.path.filename + " has no label.")
+                    print("Warning: " + fpath.path.filename + " has no label.")
                 else:
                     labelname = lb.lab.name
 
@@ -825,8 +825,9 @@ def _collectSubstratesFromResults( results ):
     substrates = {}
     for res in results:
         for lbl in res.foundLabels:
-            if lbl.sub.isImage:
-                if not lbl.sub.path.filename:
+            if isinstance(lbl.sub, cvac.ImageSubstrate):
+                fpath = misc.getLabelableFilePath(lbl)
+                if not fpath.path.filename:
                     subpath = getFSPath( res.original )
                 else:
                     subpath = getFSPath( lbl )
@@ -849,13 +850,17 @@ def putAllFiles( fileserver, runset ):
     uploadedFiles = []
     existingFiles = []
     for sub in substrates:
-        if not isinstance(sub, cvac.Substrate):
-            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
-        if not fileserver.exists( sub.path ):
-            putFile( fileserver, sub.path, testExistence=False )
-            uploadedFiles.append( sub.path )
+        if isinstance(sub, cvac.ImageSubstrate):
+            path = sub.path
+        elif isinstance(sub, cvac.VideoSubstrate):
+            path = sub.videopath
         else:
-            existingFiles.append( sub.path )
+            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
+        if not fileserver.exists( path ):
+            putFile( fileserver, path, testExistence=False )
+            uploadedFiles.append( path )
+        else:
+            existingFiles.append( path )
 
     return {'uploaded':uploadedFiles, 'existing':existingFiles}
 
@@ -873,14 +878,18 @@ def getAllFiles( fileserver, runset ):
     downloadedFiles = []
     existingFiles = []
     for sub in substrates:
-        if not isinstance(sub, cvac.Substrate):
-            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
-        filepath = getFSPath(sub.path)
-        if not os.path.exists( filepath ):
-            getFile( fileserver, sub.path)
-            downloadedFiles.append( sub.path )
+        if isinstance(sub, cvac.ImageSubstrate):
+            path = sub.path
+        elif isinstance(sub, cvac.VideoSubstrate):
+            path = sub.videopath
         else:
-            existingFiles.append( sub.path )
+            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
+        filepath = getFSPath(path)
+        if not os.path.exists( filepath ):
+            getFile( fileserver, path)
+            downloadedFiles.append( path )
+        else:
+            existingFiles.append( path )
 
     return {'downloaded':downloadedFiles, 'existing':existingFiles}
 

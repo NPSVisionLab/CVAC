@@ -56,9 +56,11 @@ class CorpusI(cvac.Corpus):
         
     def getFSPath(self, cvacPath ):
         if isinstance(cvacPath, cvac.Labelable):
-            cvacPath = cvacPath.sub.path
-        elif isinstance(cvacPath, cvac.Substrate):
+            cvacPath = easy.util.misc.getLabelableFilePath(cvacPath)
+        elif isinstance(cvacPath, cvac.ImageSubstrate):
             cvacPath = cvacPath.path
+        elif isinstance(cvacPath, cvac.VideoSubstrate):
+            cvacPath = cvacPath.videopath
         if isinstance( cvacPath, str ):
             path = self.CVAC_DataDir+"/"+cvacPath
         elif isinstance(cvacPath, cvac.FilePath):

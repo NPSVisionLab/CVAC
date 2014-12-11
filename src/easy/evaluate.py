@@ -75,7 +75,8 @@ class TestResult:
    
 
 def getRelativePath( label ):
-    return label.sub.path.directory.relativePath + "/" + label.sub.path.filename
+    fspath = easy.util.misc.getLabelableFilePath(label)
+    return fspath.directory.relativePath + "/" + fspath.filename
 
 def verifyFoundMap(foundMap):
     ''' Verify that the all the purposes in the found map are pos or neg '''

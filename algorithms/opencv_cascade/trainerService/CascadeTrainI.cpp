@@ -143,35 +143,6 @@ TrainerProperties CascadeTrainI::getTrainerProperties(const Current &current)
   return *mTrainProps;
 }
 
-/**
- * Prepend the CVAC_DataDir to the runset's filepath directories.  
- * @param The runset to modify
- * @param The directory path to prepend.
- **/
-void CascadeTrainI::addDataPath(RunSet runset, const std::string &CVAC_DataDir)
-{
-    unsigned int i;
-    for (i = 0; i < runset.purposedLists.size(); i++)
-    {
-        cvac::PurposedLabelableSeq* lab = static_cast<cvac::PurposedLabelableSeq*>(runset.purposedLists[i].get());
-        // expand the file names
-        LabelableList artifacts = lab->labeledArtifacts;
-        std::vector<LabelablePtr>::iterator it;
-        for (it = artifacts.begin(); it < artifacts.end(); it++)
-        {
-            LabelablePtr lptr = (*it);
-            Substrate sub = lptr->sub;
-            FilePath  filePath = sub.path;
-            std::string fname;
-            fname = cvac::getFSPath(filePath, CVAC_DataDir);
-            filePath.directory.relativePath = getFileDirectory(fname);
-            filePath.filename = getFileName(fname);
-            sub.path = filePath;
-            lptr->sub = sub;
-        }
-    }
-}
-
 
 void CascadeTrainI::writeBgFile(cvac::RunSetWrapper& rsw, 
                                 const string& bgFilename, int* pNumNeg, string CVAC_DataDir,
@@ -540,7 +511,7 @@ bool CascadeTrainI::checkPurposedLists(
         for (it = artifacts.begin(); it < artifacts.end(); it++)
         {
             LabelablePtr lab = *it;
-            if (lab->sub.isVideo)
+            if (RunSetWrapper::isVideo(lab))
             {
                 hasVideo = true;
                 break;
