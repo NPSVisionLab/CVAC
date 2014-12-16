@@ -355,9 +355,10 @@ bool RunSetWrapper::makeBasicList()
       {
         vector<LabelablePtr> list_in = out_seq->labeledArtifacts;
         for(in_itr=list_in.begin();in_itr!=list_in.end();in_itr++)
-        {				
-          in_la=LabelablePtr::dynamicCast(*in_itr);
-
+        {	
+          // Dyanmic cast is losing derived type info and is not needed!!		
+          //in_la=LabelablePtr::dynamicCast(*in_itr);
+          in_la = *in_itr;
           if(in_la)	//default: LabelablePtr
           {	
 			
