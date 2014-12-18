@@ -16,6 +16,7 @@ import tempfile
 import datetime
 from util import misc
 import logging
+from logging.handlers import RotatingFileHandler
 # paths should setup the PYTHONPATH.  If you special requirements
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
@@ -34,10 +35,60 @@ import os
 ic = None
 defaultCS = None
 CVAC_DataDir = None
+CVAC_ClientVerbosity = None
 
 def init():
-    global ic, defaultCS, CVAC_DataDir
+    global ic, defaultCS, CVAC_DataDir, CVAC_ClientVerbosity
     
+    # get the desired verbosity level via environment variable;
+    # default is info, which in EasyCV is verbosity level 2
+    CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info")
+    
+    # set up Python logging; Python defines log levels with numeric values from
+    # CRITICAL=50 to DEBUG=10; change string to lower-case and add debug2+;
+    # map from EasyCV convention to Python convention
+    logging.addLevelName(50, "critical")
+    logging.addLevelName(40, "error")
+    logging.addLevelName(30, "warn ")
+    logging.addLevelName(20, "info ")
+    logging.addLevelName(10, "debug")
+    logging.addLevelName( 9, "debug2")
+    logging.addLevelName( 8, "debug3")
+    easy2pylog = {0: logging.CRITICAL, 1: logging.ERROR, 2: logging.WARNING,
+                  3: logging.INFO, 4: logging.DEBUG, 5: 9, 6: 8}
+    pylevel=easy2pylog[getVerbosityNumber(CVAC_ClientVerbosity)]
+    
+
+    # Logging handlers: console and file
+    formatter = logging.Formatter('%(asctime)s %(levelname)s (%(name)s): %(message)s',
+                                  datefmt='%Y/%m/%d %H:%M:%S')
+    stderr = logging.StreamHandler()
+    stderr.setLevel(pylevel)
+    stderr.setFormatter(formatter)
+    # todo: configure easycv_log filename, location, and test write permissions
+    logfile = 'easycv_log.txt'
+    rotfile = RotatingFileHandler(logfile, maxBytes=128*1024, backupCount=5)
+    rotfile.setLevel(pylevel)
+    rotfile.setFormatter(formatter)
+
+    # set the main logging facility to care about pylevel
+    # (the default in Python is WARNING)
+    # attach our two handlers and turn off the default root handler
+    logging.basicConfig(level=pylevel)
+    logger = logging.getLogger("easy")
+    logger.addHandler(stderr)
+    logger.addHandler(rotfile)
+    logger.propagate = False
+
+    # todo: remove test code
+    #logger.log(8, "testing level debug3")
+    #logger.log(9, "testing level debug2")
+    #logger.debug("testing level debug")
+    #logger.info("testing level info")
+    #logger.warning("testing level warning")
+    #logger.error("testing level error")
+    #logger.critical("testing level critical")
+
     # for drawing only:
     try:
         import Tkinter as tk
