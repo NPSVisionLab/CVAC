@@ -8,7 +8,6 @@ from __future__ import print_function
 
 import os
 import cvac
-import easy
 
 
 def getImageExtensions():
@@ -28,26 +27,26 @@ def getVideoExtensions():
             "k3g","skm","evo","nsr","amv","divx","webm"];
 
 '''
-Return the directory name with the CVAC_DataDir stripped off
+Return the directory name with the prefix (usually CVAC_DataDir) stripped off
 if its appended to the front of the directory.
 '''
-def stripCVAC_DataDir(mydir):
-    # make both CVAC_DataDir and mydir absolute and then strip off
-    absCVAC = os.path.abspath(easy.CVAC_DataDir)
+def strip_path_prefix(mydir, prefix):
+    # make both prefix (usually CVAC_DataDir) and mydir absolute and then strip off
+    absprefix = os.path.abspath(prefix)
     absdir = os.path.abspath(mydir)
     labsdir = absdir.lower()
-    if labsdir.startswith(absCVAC.lower()):
-        absdir = absdir[len(absCVAC + '/'):]
+    if labsdir.startswith(absprefix.lower()):
+        absdir = absdir[len(absprefix + '/'):]
         return absdir
     return mydir   # Noth9ing to strip so return original
 
 '''
-Return the FilePath with the CVAC_DataDir stripped off
+Return the FilePath with the prefix (usually CVAC_DataDir) stripped off
 if its appended to the front of the directory.
 '''
-def stripCVAC_DataDir_from_FilePath(mypath):
+def strip_path_prefix_from_FilePath(mypath, prefix):
     mydir = os.path.join(mypath.directory.relativePath,mypath.filename);
-    resdir = stripCVAC_DataDir(mydir)
+    resdir = strip_path_prefix(mydir, prefix)
     if resdir != mydir:
         mypath.directory.relativePath = os.path.dirname(resdir)
     return mypath
@@ -56,7 +55,7 @@ def stripCVAC_DataDir_from_FilePath(mypath):
   Add a labelable to the set for the given file.  Use the last directory as
   the label name ane previous directories as labelproperties
 '''
-def addFileToLabelableSet(lset, ldir, lfile, video=True, image=True):
+def addFileToLabelableSet(lset, ldir, lfile, relative_to_path, video=True, image=True):
     isVideo = False
     isImage = False
     if '.' not in lfile:
@@ -74,8 +73,8 @@ def addFileToLabelableSet(lset, ldir, lfile, video=True, image=True):
         return
     if isImage and image == False:
         return
-    # strip off cvac data dir
-    ldir = stripCVAC_DataDir(ldir)
+    # strip off relative_to_path (usually cvac data dir)
+    ldir = strip_path_prefix(ldir, relative_to_path)
     
     props = {}
     # last directory is the label name
@@ -113,13 +112,13 @@ def addFileToLabelableSet(lset, ldir, lfile, video=True, image=True):
     Search a directory optionally recursively adding the correct 
     file types to a labelable set
 '''
-def searchDir(lset, ldir, recursive=True, video=True, image=True):
+def searchDir(lset, ldir, relative_to_path, recursive=True, video=True, image=True):
     flist = os.listdir(ldir)
     for f in flist:
         if os.path.isdir(ldir + '/' + f) and recursive:
-            searchDir(lset, ldir + '/' + f)
+            searchDir(lset, ldir + '/' + f, relative_to_path)
         else:
-            addFileToLabelableSet(lset, ldir, f, video, image)
+            addFileToLabelableSet(lset, ldir, f, relative_to_path, video, image)
 
 def getLabelableFilePath(lab):
     #if lab.sub.ice_isA('::cvac::ImageSubstrate'):

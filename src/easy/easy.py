@@ -15,6 +15,7 @@ import shutil
 import tempfile
 import datetime
 from util import misc
+import logging
 # paths should setup the PYTHONPATH.  If you special requirements
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
@@ -30,49 +31,55 @@ import threading
 
 import os
 
-# for drawing only:
-try:
-    import Tkinter as tk
-    from PIL import Image, ImageTk, ImageDraw
-except:
-    # don't raise an error now
-    pass
-
-#
-# one-time initialization code, upon loading the module
-#
-args = sys.argv
-args.append('--Ice.MessageSizeMax=100000')
-args.append('--Ice.ACM.Client=0')
-# try to find the config.client that specifies what services
-# might be running, their names, etc.
-if os.path.isfile('config.client'):
-    args.append('--Ice.Config=config.client')
-else:
-    # Search for config.client up the directory tree
-    modulepath = os.path.dirname(__file__)
-    config_client_path = os.path.abspath(modulepath)
-    while config_client_path != None:
-        if os.path.isfile(config_client_path + '/config.client'):
-            args.append('--Ice.Config=' + config_client_path + '/config.client')
-            break;
-        else:
-            nextdir = os.path.dirname(config_client_path)
-            if nextdir == config_client_path:
-                break
-            else:
-                config_client_path = nextdir
-ic = Ice.initialize(args)
+ic = None
 defaultCS = None
-# Parse the client.config for CVAC_DataDir
-CVAC_DataDir = ic.getProperties().getProperty("CVAC.DataDir")
-if CVAC_DataDir == None:
-    CVAC_DataDir = "data"
-# IF the environment variable is set, then use that else use data
-CVAC_DataDir = os.getenv("CVAC_DATADIR", CVAC_DataDir)
-if CVAC_DataDir == None or CVAC_DataDir == "":
-    CVAC_DataDir = "data"
-CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
+CVAC_DataDir = None
+
+def init():
+    global ic, defaultCS, CVAC_DataDir
+    
+    # for drawing only:
+    try:
+        import Tkinter as tk
+        from PIL import Image, ImageTk, ImageDraw
+    except:
+        # don't raise an error now
+        pass
+
+    #
+    # one-time initialization code, upon loading the module
+    #
+    args = sys.argv
+    args.append('--Ice.MessageSizeMax=100000')
+    args.append('--Ice.ACM.Client=0')
+    # try to find the config.client that specifies what services
+    # might be running, their names, etc.
+    if os.path.isfile('config.client'):
+        args.append('--Ice.Config=config.client')
+    else:
+        # Search for config.client up the directory tree
+        modulepath = os.path.dirname(__file__)
+        config_client_path = os.path.abspath(modulepath)
+        while config_client_path != None:
+            if os.path.isfile(config_client_path + '/config.client'):
+                args.append('--Ice.Config=' + config_client_path + '/config.client')
+                break;
+            else:
+                nextdir = os.path.dirname(config_client_path)
+                if nextdir == config_client_path:
+                    break
+                else:
+                    config_client_path = nextdir
+                    
+    ic = Ice.initialize(args)
+    # Parse the client.config for CVAC_DataDir
+    CVAC_DataDir = ic.getProperties().getProperty("CVAC.DataDir")
+    if CVAC_DataDir == None:
+        CVAC_DataDir = "data"
+    # IF the environment variable is set, then use that else use data
+    CVAC_DataDir = os.getenv("CVAC_DATADIR", CVAC_DataDir)
+    if CVAC_DataDir == None or CVAC_DataDir == "":
+        CVAC_DataDir = "data"
 
 
 def getFSPath( cvacPath, abspath=False ):
@@ -126,7 +133,7 @@ def getFSPath( cvacPath, abspath=False ):
 def getCvacPath( fsPath ):
     '''Turn a file system path into a CVAC FilePath'''
     # Remove the CVAC.DataDir from the fspath if there is one.
-    fsPath = misc.stripCVAC_DataDir(fsPath)
+    fsPath = misc.strip_path_prefix(fsPath, CVAC_DataDir)
     drive, path = os.path.splitdrive( fsPath )
     path, filename = os.path.split( path )
     dataRoot = cvac.DirectoryPath( path )
@@ -1222,7 +1229,7 @@ def getBestDetectorData(listRocData,dFAR,dRec):
     
     print(resMsg)
     #strip off any leading CVAC_DataDir in the detector data
-    bestDetectorData = misc.stripCVAC_DataDir_from_FilePath(bestDetectorData)
+    bestDetectorData = misc.strip_path_prefix_from_FilePath(bestDetectorData, CVAC_DataDir)
     return bestDetectorData
 
 #from easy.util.ArchiveHandler import *
@@ -1396,7 +1403,7 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     if detectorProperties == None:
         detectorProperties = cvac.DetectorProperties()
         detectorProperties.verbosity = getVerbosityNumber( CVAC_ClientVerbosity )
-    misc.stripCVAC_DataDir_from_FilePath(detectorData)
+    misc.strip_path_prefix_from_FilePath(detectorData, CVAC_DataDir)
     detector.process( cbID, runset, detectorData, detectorProperties )
     
     if tempDir != None:
@@ -1823,3 +1830,6 @@ def testResultSyntax( results, runset=None ):
                 print("Label confidence out of (0..1] range: "+lbl.confidence)
                 return False
     return True
+
+
+init()
