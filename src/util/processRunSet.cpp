@@ -224,16 +224,23 @@ void cvac::processRunSet(DetectorPtr detector,
                     break;
                 }
                 LabelablePtr lptr = *lIt;
+                FilePath filePath;
                 ImageSubstratePtr sub = ImageSubstratePtr::dynamicCast( lptr->sub );
                 if (!sub)
                 {
-                  // must be VideoSubstrate which we cannot handle at this point
-                  // VideoSubstratePtr vidsub = VideoSubstratePtr::dynamicCast( lptr->sub );
-                  localAndClientMsg(VLogger::WARN, client,
-                                    "not processing a VideoSubstrate\n");
-                  continue;
+                    VideoSubstratePtr vsub = VideoSubstratePtr::dynamicCast(lptr->sub);
+                    if (!vsub)
+                    {
+                        localAndClientMsg(VLogger::WARN, client,
+                                        "Unknown substrate type\n");
+                        continue;
+                    }
+                    filePath = vsub->videopath;
+                }else
+                {
+                    filePath = sub->path;
                 }
-                FilePath  filePath = sub->path;
+                
                 filePath.directory.relativePath = pathPrefix + "/" + filePath.directory.relativePath;
                 std::string fname;
                 
