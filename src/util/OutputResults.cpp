@@ -68,6 +68,7 @@ void OutputResults::addResult(cvac::Result& _res,
         LabeledTrackPtr newFound = new LabeledTrack();
         newFound->lab.hasLabel = true;
         newFound->confidence = 1.0f;
+        newFound->sub = _converted.sub;
 
         for(std::vector<cv::Rect>::iterator it = _rects.begin(); it != _rects.end(); ++it)
         { 
