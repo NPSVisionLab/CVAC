@@ -561,9 +561,6 @@ def addPurposedLabelablesToRunSet( runset, purpose, labelables ):
     '''Append labelables to a sequence with the same purpose.
     If the runset does not have one, add a new sequence.'''
     # make sure we're getting a list of Labelables
-    print('addPurposeLabelsToRunset labelables size {0}'.format(len(labelables)))
-    for each in labelables:
-        print (type(each).__name__)
     assert( labelables and type(labelables) is list and \
             isinstance( labelables[0], cvac.Labelable ) )
     # see if runset already has a list with these purposes
