@@ -23,7 +23,8 @@ sys.path.append('''.''')
 import Ice
 import IcePy
 import cvac
-from util import misc
+import Queue
+import util.misc as misc
 from util.ArchiveHandler import * 
 
 import unittest
@@ -31,19 +32,63 @@ import stat
 import threading
 
 import os
-# If we are
-guithread = None  
+
+
+'''
+  Class for handling gui drawing.  The drawing
+  is handled by a separate GuiThread that
+  allows callback threads to render.  Basiclly 
+  the GueQueue puts in a queue messages for the
+  GuiThread to draw.
+'''
+class GuiQueue:
+    def __init__(self):
+        self.queue = None
+        self.guiThread = None
+        self.queue = Queue.Queue()
+        self.windows = {}
+    
+    '''
+     Render and Image into a window.  If its the first
+     time the window is created (via creating the GuiThread).
+     The window will stay open until the user closes it.  That
+     will also end the GuiThread.
+    '''    
+    def imgWindow(self, img, window = 0):
+        # we wait to start the guiThread as it will create a icon
+        if self.guiThread == None:
+            self.guiThread = GuiThread(self.queue)  
+            self.guiThread.start() 
+        self.queue.put(("ImageWindow",img, window))
+        
+    '''
+    Create a window that is not the default window.  This allows
+    for multiple windows to be displayed.
+    '''
+    def startWindow(self, img):
+        wid = 1
+        while wid in self.windows.keys():
+            wid = wid + 1
+        self.windows[wid] = wid
+        self.queue.put(("ImageWindow", img, wid))
+        return wid                                   
+        
+    def closeAllWindows(self):
+        for wid in self.windows.keys():
+            self.queue.put(("CloseWindow", wid))
+        self.queue.put(("CloseWindow", 0))
+
 guiqueue = None
 # for drawing only:
 try:
     import Tkinter as tk
-
     from PIL import Image, ImageTk, ImageDraw
-    from util.GuiThread import *
-    guiqueue = Queue.Queue()
-except:
+    from util.GuiThread import GuiThread
+    guiqueue = GuiQueue()
+except Exception as exc:
     # don't raise an error now
-    pass
+    print("No gui available " + str(exc))
+    quiqueue = None
 
 #
 # one-time initialization code, upon loading the module
@@ -82,16 +127,6 @@ if CVAC_DataDir == None or CVAC_DataDir == "":
 CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verbosity level 2
 
 
-def initGui():
-    ''' Create the guithread if we have tk '''
-    if guiqueue != None:
-        # We have the ability to have a goi
-        global guithread
-
-        if guithread == None:
-            guithread = GuiThread(guiqueue)
-            guithread.start()
-                
 def getFSPath( cvacPath, abspath=False ):
     '''Turn a CVAC path into a file system path'''
     if isinstance(cvacPath, cvac.Labelable):
@@ -561,6 +596,7 @@ def addPurposedLabelablesToRunSet( runset, purpose, labelables ):
     '''Append labelables to a sequence with the same purpose.
     If the runset does not have one, add a new sequence.'''
     # make sure we're getting a list of Labelables
+    
     assert( labelables and type(labelables) is list and \
             isinstance( labelables[0], cvac.Labelable ) )
     # see if runset already has a list with these purposes
@@ -620,9 +656,16 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         if not type(purpose) is cvac.Purpose and not type(purpose) is str:
             raise RuntimeError("Purpose must be specified as str or cvac.Purpose")
         purpose = getPurpose( purpose )
+       
+    
+    if type(samples) is dict and 'runset' in samples.keys() and not samples['runset'] is None\
+                and isinstance(samples['runset'], cvac.RunSet)\
+                and not purpose is None:
+            for item in samples['runset'].purposedLists:
+                addPurposedLabelablesToRunSet(rnst, purpose, item.labeledArtifacts)
         
-    if type(samples) is dict and not purpose is None:
-        # all categories get identical purposes
+    elif type(samples) is dict and not purpose is None:
+        # all categories get identical purposes      
         for key in samples.keys():
             addToClassmap( classmap, key, purpose )
             addPurposedLabelablesToRunSet( rnst, purpose, samples[key] )
@@ -1596,42 +1639,7 @@ def initGraphics(title = "cvac results"):
     return wnd
 '''
 
-def showImage( img, pause = True ):
-    
-   
-    guiqueue.put(("ImageWindow",img))
-   
-    '''
-    # open window, convert image into displayable photo
-    wnd = initGraphics()
-    photo = ImageTk.PhotoImage( img )
-    
-    # make the window the size of the image
-    # position coordinates of wnd 'upper left corner'
-    x = 0
-    y = 0
-    w = photo.width()
-    h = photo.height()
-    wnd.geometry("%dx%d+%d+%d" % (w, h, x, y))
-    #wnd.create_image(0, 0, anchor= tk.NW, image=photo)
-    #wnd.pack()
-  
-    # Display the photo in a label (as wnd has no image argument)
-    panel = tk.Label(wnd, image=photo)
-    panel.pack(side='top', fill='both', expand='yes')    
-    # save the panel's image from 'garbage collection'
-    panel.image = photo
-  
 
-    # start the event loop
-    if pause:
-        wnd.mainloop()
-        wnd = None
-    else:
-        wnd.mainloop(1)
-        wnd = None
-    '''
-    
 def showROCPlot(ptList):
     '''
     Plot image is 300x200 with 10 pixel space around the plot so the
@@ -1640,7 +1648,6 @@ def showROCPlot(ptList):
     '''
     xoffset = 10
     yoffset = 10
-    initGui()
     #wnd = initGraphics(title="ROC Curve Plot")
     #wnd = guithread.getCanvas()
     #if wnd == None:
@@ -1655,7 +1662,14 @@ def showROCPlot(ptList):
     draw = ImageDraw.Draw(im)
     for pt in ptList:
         # Scale over plot region assume plot is all but offset above and below
-        x = int(pt.precision*(width - (2 * xoffset)))
+        # x value will be precision = TP / (TP + FP)
+        # y value will be recall (hit rate) = TP ? (TP + FN)
+        poscnt = pt.res.tp + pt.res.fp
+        if poscnt == 0:
+            precision = 0
+        else:
+            precision = pt.res.tp / float(poscnt)
+        x = int(precision*(width - (2 * xoffset)))
         y = int(pt.recall*(height - (2 * yoffset)))
         x = x + xoffset
         y = y + yoffset
@@ -1665,13 +1679,10 @@ def showROCPlot(ptList):
 
         
     del draw
-    guiqueue.put(("ImageWindow", im))
-    #plot = ImageTk.PhotoImage(im)
-    #ImbImage.create_image(width/2, height/2, image=plot)
-    #wnd.mainloop()
-    #wnd = None
-    
-
+    # Draw to a new window the imgWindow
+    #Since we are not updating the window we don't 
+    guiqueue.startWindow(im)
+   
 def drawResults( results ):
     if not results:
         print("no results, nothing to draw")
@@ -1684,7 +1695,6 @@ def drawResults( results ):
     if not substrates:
         print("no labels and/or no substrates, nothing to draw")
         return
-    initGui()
     # print out some summary information
     sys.stdout.softspace=False
 
@@ -1765,7 +1775,8 @@ def showImagesWithLabels( substrates, maxsize=None ):
             elif isinstance(lbl, cvac.LabeledTrack):
                 for frame in lbl.keyframesLocations:
                     showLocation(frame.loc, img, scale)
-        showImage( img)
+        global guiqueue
+        guiqueue.imgWindow(img)
 
 def getHighestConfidenceLabel( lablist ):
     '''

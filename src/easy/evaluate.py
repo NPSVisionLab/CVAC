@@ -7,6 +7,7 @@ import random
 random.seed()
 import numpy
 import easy
+from util.misc import *
 import cvac
 import math
 from operator import attrgetter, itemgetter
@@ -422,7 +423,7 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     for c in contenders:
         if verbose:
             print("======== evaluating contender '{0}' ========".format( c.name ) )
-        try:
+        #try:
             if c.hasTrainer():
                 evalres = crossValidate( c, runset, folds )
             else:
@@ -432,8 +433,8 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
             if verbose:
                 print evalres
                 print evalres.detail
-        except Exception as exc:
-            print("error encountered, evaluation aborted: " + str(exc))
+       # except Exception as exc:
+           # print("error encountered, evaluation aborted: " + str(exc))
 
     if verbose:
         print("======== done! ========")

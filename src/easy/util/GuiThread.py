@@ -16,7 +16,8 @@ class GuiThread(threading.Thread):
         self.canvas = None
         self.gui_queue = queue
         self.pollTime = 100
-        self.imageWindow = False
+        self.defaultWindow = False
+        self.windows = {}
         
     def getCanvas(self):
         return self.canvas
@@ -25,52 +26,95 @@ class GuiThread(threading.Thread):
         return self.qui_queue;
     
     def processQueue(self):
+        #import pydevd
+        #pydevd.connected = True
+        #pydevd.settrace(suspend=False)
         while not self.gui_queue.empty():
             cmd = self.gui_queue.get()
             text = cmd[0]
-            print("got queue " + text)
+            #print("Gui command " + text)
             if text == "ImageWindow":
                 img = cmd[1]
-                if self.imageWindow == False:
-                    self.newWindow(img)
+                wid = cmd[2]
+                if wid == 0:
+                    if self.defaultWindow == False:
+                        self.newWindow(img, wid)
+                    else:
+                        self.updateWindow(img, wid)
                 else:
-                    self.updateWindow(img)
+                    if wid in self.windows.keys():
+                        self.updateWindow(img, wid)
+                    else:
+                        self.newWindow(img, wid)
                 self.gui_queue.task_done()
+            elif text == "CloseWindow":
+                wid = cmd[1]
+                self.closeWindow(wid)
+                self.gui_queue.task_done()
+            else:
+                RuntimeError("command not supported - " + text)
             
         self.canvas.after(self.pollTime, self.processQueue)
        
         
-    def newWindow(self, img):
-       
-        self.canvas.title("CVAC Results")
-        self.canvas.deiconify()
+    def newWindow(self, img, wid):
+        if wid == 0:
+            self.canvas.title("CVAC Results")
+            self.canvas.deiconify()
+            win = self.canvas
+        else:
+            win = tk.Toplevel()
+            win.title("CVAC Window")
         photo = ImageTk.PhotoImage( img )
         
         # make the window the size of the image
         # position coordinates of wnd 'upper left corner'
-        x = 0
-        y = 0
+        x = wid * 50
+        y = wid * 50
         w = photo.width()
         h = photo.height()
-        self.canvas.geometry("%dx%d+%d+%d" % (w, h, x, y))
+        win.geometry("%dx%d+%d+%d" % (w, h, x, y))
         #wnd.create_image(0, 0, anchor= tk.NW, image=photo)
         #wnd.pack()
       
         # Display the photo in a label (as wnd has no image argument)
-        self.panel = tk.Label(self.canvas, image=photo)
-        self.panel.pack(side='top', fill='both', expand='yes')    
+        panel = tk.Label(win, image=photo)
+        panel.pack(side='top', fill='both', expand='yes')    
         # save the panel's image from 'garbage collection'
-        self.panel.image = photo
-        self.imageWindow = True
-        self.canvas.update()
+        panel.image = photo
+        
+        win.update()
+        if wid > 0:
+            self.windows[wid] = (win,panel)
+        else:
+            self.panel = panel
+            self.defaultWindow = True
 
         
-    def updateWindow(self, img):
+    def updateWindow(self, img, wid):
+        if wid == 0:
+            panel = self.panel
+            win = self.canvas
+        else:
+            win = self.windows[wid][0]
+            panel = self.windows[wid][1]
+   
         photo = ImageTk.PhotoImage( img )
-        self.panel.configure(image=photo)
-        self.panel.image = photo
+        panel.configure(image=photo)
+        panel.image = photo
        
-        self.canvas.update()
+        win.update()
+        
+    def closeWindow(self, wid):
+        
+        if wid == 0:
+            win = self.canvas
+            self.defaultWindow = False
+            win.destroy()
+        else:
+            win = self.windows[wid][0]
+            self.windows.pop(wid)
+            win.destroy()
 
   
     def run(self):

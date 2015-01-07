@@ -145,6 +145,29 @@ class EasyTest(unittest.TestCase):
             easy.printResults(results)
         else:
             RuntimeError("Bad datadir")
+            
+    def test_gui(self):
+        print("Testing gui")
+        import Tkinter as tk
+        import time
+        from PIL import Image, ImageTk, ImageDraw
+
+        datadir = os.getenv("CVAC_DATADIR", None) 
+        img = Image.open( datadir +  "/testImg/TestCaFlag.jpg" )
+        img2 = Image.open( datadir +  "/testImg/TestKrFlag.jpg" )
+        img3 = Image.open( datadir +  "/testImg/TestUsFlag.jpg" )
+        easy.guiqueue.imgWindow(img)
+        time.sleep(2)
+        easy.guiqueue.imgWindow(img2)
+        time.sleep(2)
+        easy.guiqueue.imgWindow(img3)
+        w1 = easy.guiqueue.startWindow(img)
+        w2 = easy.guiqueue.startWindow(img2)
+        time.sleep(2)
+        easy.guiqueue.imgWindow(img3, window = w1)
+        easy.guiqueue.imgWindow(img3, window = w2)
+        time.sleep(5)
+        easy.guiqueue.closeAllWindows()
         
     def tearDown(self):
         # Clean up
