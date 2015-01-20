@@ -1333,7 +1333,7 @@ def makeROCdata(rocData_optimal):
     rocZiptemp.filename = rocZip_fileName
     
     rocZip = cvac.FilePath()
-    rocZip.directory.relativePath = os.path.join(relClientDir, '..')                      
+    rocZip.directory.relativePath, basedir = os.path.split(relClientDir)                  
     rocZip.filename = rocZip_fileName
     
     rocZiptempPath = getFSPath(rocZiptemp)  
