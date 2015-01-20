@@ -47,6 +47,15 @@ class GuiQueue:
         self.guiThread = None
         self.queue = Queue.Queue()
         self.windows = {}
+
+    def startThread(self):
+        if self.guiThread == None:
+            self.guiThread = GuiThread(self.queue)  
+            # For OSX use this thread for the guiThread
+            if sys.platform == 'darwin':
+                self.guiThread.run()
+            else:
+                self.guiThread.start() 
     
     '''
      Render and Image into a window.  If its the first
@@ -63,13 +72,7 @@ class GuiQueue:
         self.queue.put(("ImageWindow",img, window))
         # we wait to start the guiThread at the first imgWindow call
         # as it will create an icon.
-        if self.guiThread == None:
-            self.guiThread = GuiThread(self.queue)  
-            # For OSX use this thread for the guiThread
-            if sys.platform == 'darwin':
-                self.guiThread.run()
-            else:
-                self.guiThread.start() 
+        self.startThread();
         
     '''
     Create a window that is not the default window.  This allows

@@ -7,7 +7,7 @@ import random
 random.seed()
 import numpy
 import easy
-from util.misc import *
+import util.misc as misc 
 import cvac
 import math
 from operator import attrgetter, itemgetter
@@ -76,7 +76,7 @@ class TestResult:
    
 
 def getRelativePath( label ):
-    fspath = easy.util.misc.getLabelableFilePath(label)
+    fspath = misc.getLabelableFilePath(label)
     return fspath.directory.relativePath + "/" + fspath.filename
 
 def verifyFoundMap(foundMap):
