@@ -5,8 +5,9 @@ This is used to get the output from the servers.
 
 import Tkinter as tk
 import threading
-from PIL import Image, ImageTk, ImageDraw
 import Queue
+import sys
+from PIL import Image, ImageTk, ImageDraw
 
 
 
@@ -59,8 +60,8 @@ class GuiThread(threading.Thread):
         
     def newWindow(self, img, wid):
         if wid == 0:
-            self.canvas.title("CVAC Results")
             self.canvas.deiconify()
+            self.canvas.title("CVAC Results")
             win = self.canvas
         else:
             win = tk.Toplevel()
@@ -121,8 +122,29 @@ class GuiThread(threading.Thread):
         #import pydevd
         #pydevd.connected = True
         #pydevd.settrace(suspend=False)
+        from PIL import Image, ImageTk, ImageDraw
         self.canvas = tk.Tk()
         self.canvas.iconify()
         self.canvas.after(self.pollTime, self.processQueue)
         self.canvas.mainloop()
         
+
+#Use main for test
+if __name__ == '__main__':
+    import time
+    queue = Queue.Queue()
+    guithread = GuiThread(queue);
+    img = Image.new("RGB", (300,300), "white")
+    draw = ImageDraw.Draw(img)
+    draw.ellipse((0, 0, 100, 100), fill="black")
+    queue.put(("ImageWindow", img, 0))
+    img2 = Image.new("RGB", (300,300), "black")
+    draw2 = ImageDraw.Draw(img2)
+    draw2.ellipse((0, 0, 200, 200), fill="red")
+    queue.put(("ImageWindow", img2, 1))
+    # For OSX the guithread must be the main one
+    guithread = GuiThread(queue);
+    if sys.platform == 'darwin':
+        guithread.run()
+    else:
+        guithread.start()

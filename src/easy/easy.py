@@ -47,19 +47,32 @@ class GuiQueue:
         self.guiThread = None
         self.queue = Queue.Queue()
         self.windows = {}
+
+    def startThread(self):
+        if self.guiThread == None:
+            self.guiThread = GuiThread(self.queue)  
+            # For OSX use this thread for the guiThread
+            if sys.platform == 'darwin':
+                self.guiThread.run()
+            else:
+                self.guiThread.start() 
     
     '''
      Render and Image into a window.  If its the first
      time the window is created (via creating the GuiThread).
      The window will stay open until the user closes it.  That
      will also end the GuiThread.
+     NOTE: On OSX the GuiThead must be the main thread so this
+     call will block until the user closes the window. This also
+     means that for OSX the first imgWindow call must be made from
+     the main thread of the program.  The other calls can then be
+     made from anythread.
     '''    
     def imgWindow(self, img, window = 0):
-        # we wait to start the guiThread as it will create a icon
-        if self.guiThread == None:
-            self.guiThread = GuiThread(self.queue)  
-            self.guiThread.start() 
         self.queue.put(("ImageWindow",img, window))
+        # we wait to start the guiThread at the first imgWindow call
+        # as it will create an icon.
+        self.startThread();
         
     '''
     Create a window that is not the default window.  This allows
