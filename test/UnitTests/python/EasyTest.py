@@ -156,7 +156,7 @@ class EasyTest(unittest.TestCase):
         else:
             RuntimeError("Bad datadir")
 
-    def test_gui(self):
+    def xtest_gui(self):
         print("Testing gui")
         import Tkinter as tk
         import time
