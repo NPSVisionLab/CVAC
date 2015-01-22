@@ -58,3 +58,17 @@ That's likely due to the client and server being built against a different Data.
 Even though you have a service running locally, and you can connect via "nc" or "telnet", the ICE client won't let you connect.
 
 This might be due to "-h localhost" being specified in the config.service file, but not in the client.  Or the other way around.  Particularly Win8 and some Linux systems want the explicit specification of localhost, or none.
+
+### Cannot run UnitTests due to dyld load failure
+Symptom:
+```
+1: Test command: EasyCV/build/bin/UnitTests "EasyCV/data"
+1: dyld: Library not loaded: @rpath/libIce.35.dylib
+1:   Referenced from: EasyCV/build/bin/UnitTests
+1:   Reason: image not found
+```
+
+Reason: Your CMake version is prior to 2.8.12.  You can verify that this is the problem with
+`otool -l EasyCV/build/bin/UnitTests`: the path to the dylib should be one of the LC_RPATH entries.
+
+Solution: Either upgrade CMake or add EasyCV/3rdparty/ICE/lib to your DYLD_LIBRARY_PATH.

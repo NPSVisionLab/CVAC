@@ -132,11 +132,11 @@ void RunSetIterator::addToList(const LabelablePtr _pla,int _originalIdx)
   if (mNoSpaces)
   { // check if filename has spaces and get symlink
 		bool newSymlink;
-		std::string symlinkFullPath = getLegalPath(mTempDir, _pla->sub.path, newSymlink);            
+		std::string symlinkFullPath = getLegalPath(mTempDir, RunSetWrapper::getFilePath(_pla), newSymlink);            
 		if(newSymlink)
 		{             
 			cout << "symbolic link is going to be generated..\n";
-			string fPath = getFSPath(_pla->sub.path, mMediaRootDirectory);
+			string fPath = getFSPath(RunSetWrapper::getFilePath(_pla), mMediaRootDirectory);
 			if (makeSymlinkFile(symlinkFullPath, fPath))
 			{
 				DirectoryPath dirPath;
@@ -144,7 +144,20 @@ void RunSetIterator::addToList(const LabelablePtr _pla,int _originalIdx)
 				FilePath filePath;
 				filePath.directory = dirPath;
 				filePath.filename = getFileName(symlinkFullPath);
-				Substrate sub(_pla->sub.isImage, _pla->sub.isVideo, filePath, 0, 0);
+                ImageSubstratePtr isub = ImageSubstratePtr::dynamicCast(_pla->sub);
+                SubstratePtr sub;
+                if (isub)
+                {
+				    ImageSubstratePtr newisub = new ImageSubstrate(0,0, filePath);
+                    sub = newisub;
+                } else
+                {
+                    VideoSubstratePtr newvsub = new VideoSubstrate();
+                    newvsub->videopath = filePath;
+                    newvsub->width = 0;
+                    newvsub->height = 0;
+                    sub = newvsub;
+                }
 			    LabelablePtr newlab = new Labelable(_pla->confidence, _pla->lab, sub);
 				mList.push_back(newlab);
 			}else
@@ -207,9 +220,10 @@ bool RunSetIterator::makeList(ResultSet& _resultSet,
             mConvertibleItr->second,mMediaTempDirectory,k))
           {
             //this case may be very rare: error while converting, stopping by user interruption
+            string fname = RunSetWrapper::getFilename(_resultSet.results[k].original);
             localAndClientMsg(VLogger::ERROR, mCallback2Client,
               "Conversion is stopped by error or user interruption for %s.\n",
-              (_resultSet.results[k].original)->sub.path.filename.c_str());
+              fname.c_str());
             return false;
           }
 
@@ -221,9 +235,10 @@ bool RunSetIterator::makeList(ResultSet& _resultSet,
       //When there is no proper converter
       if(!tFlagConversion)  
       {
+        string fname = RunSetWrapper::getFilename(_resultSet.results[k].original);
         localAndClientMsg(VLogger::WARN, mCallback2Client,
           "No conversion for %s because of no proper converter\n",
-          (_resultSet.results[k].original)->sub.path.filename.c_str());
+          fname.c_str());
 
         // setup for a foundLabel when there is no proper converter.
         LabelablePtr labelable = new Labelable();
@@ -304,9 +319,10 @@ bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
                                          MediaConverter* _pConv,
                                          const string& _rDirTemp,int _originalIdx)
 {
-  string tFileNameOld = _pla->sub.path.filename;
+  FilePath filePath = RunSetWrapper::getFilePath(_pla);
+  string tFileNameOld = filePath.filename;
   string tFileNameNew = tFileNameOld + "." + _targetType;
-  string tRDirOld = _pla->sub.path.directory.relativePath;
+  string tRDirOld = filePath.directory.relativePath;
   string tRDirNew = _rDirTemp;
 
   string tAbsPathOld = mMediaRootDirectory + "/" + tRDirOld + "/" + tFileNameOld;
@@ -335,12 +351,14 @@ bool RunSetIterator::convertAndAddToList(const LabelablePtr& _pla,
       LabelablePtr _la = cloneLabelablePtr(_pla, frameNum);
       if (_la.get() != NULL)
       {
-          _la->sub.isImage = true;
+          FilePath path;
+          path.directory.relativePath = tRDirNew;
+          path.filename = (*tItrFilename);
+          ImageSubstratePtr isub = new ImageSubstrate(0,0, path);
+          isub->path.directory.relativePath = tRDirNew;
           //currently, conversion target is only an image.
           //refer to the function in RunSetWrapper: getTypeMacro
-          _la->sub.isVideo = !(_la->sub.isImage);
-          _la->sub.path.filename = (*tItrFilename);
-          _la->sub.path.directory.relativePath = tRDirNew;
+          _la->sub = isub;
           _la->lab.hasLabel = false;
 
           if(!tAuxInfo.empty())
@@ -396,8 +414,9 @@ void RunSetIterator::showList()
     LabelablePtr tpla = getNext();
 
     string tRelDir,tFname,tRelPath;
-    tRelDir = tpla->sub.path.directory.relativePath;
-    tFname = tpla->sub.path.filename;
+    FilePath fpath = RunSetWrapper::getFilePath(tpla);
+    tRelDir = fpath.directory.relativePath;
+    tFname = fpath.filename;
     if(tRelDir.compare("")==0)
       tRelPath = tFname; 
     else
@@ -427,7 +446,7 @@ bool RunSetIterator::isConstrained(int origIdx, LabelablePtr lptr)
   // If we have a video then make sure its not lost or occluded if that is in the constrants
   if (mLost == false && mOccluded == false)
       return false;
-  if (mResultSet.results[origIdx].original->sub.isVideo == false)
+  if (RunSetWrapper::isVideo(mResultSet.results[origIdx].original) == false)
       return false;
   if (lptr->lab.name.empty())
       return false;

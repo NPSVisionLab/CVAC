@@ -125,14 +125,99 @@ rsMediaType RunSetWrapper::getTypeMicro(const LabelablePtr _pla)
   }
   else
   {
-    string tAbsFilePath = convertToAbsDirectory(_pla->sub.path.directory.relativePath);
-    tAbsFilePath += "/";
-    tAbsFilePath += _pla->sub.path.filename;
-
+    string tAbsFilePath = getPath(_pla, true);
     return getTypeMicro(tAbsFilePath);
   }	
 }
+//---------------------------------------------------------------------------
+cvac::FilePath RunSetWrapper::getFilePath(const Labelable& lab)
+{
+ SubstratePtr sub = lab.sub; 
+ ImageSubstratePtr isub = ImageSubstratePtr::dynamicCast(sub);
+ 
+ FilePath path;
+ if (isub)
+ { 
+      path = isub->path;
+ }else
+ {
+     VideoSubstratePtr vsub = VideoSubstratePtr::dynamicCast(sub);
+     if (vsub)
+     {
+         path = vsub->videopath;
+     } else
+     { 
+         localAndClientMsg(VLogger::WARN, NULL,
+              "Unsupported Substrate type \n");
+     }
+ }
+ return path;
+}
+//---------------------------------------------------------------------------
+cvac::FilePath RunSetWrapper::getFilePath(const LabelablePtr _pla)
+{
+ SubstratePtr sub = _pla->sub; 
+ ImageSubstratePtr isub = ImageSubstratePtr::dynamicCast(sub);
+ 
+ FilePath path;
+ if (isub)
+ { 
+      path = isub->path;
+ }else
+ {
+     VideoSubstratePtr vsub = VideoSubstratePtr::dynamicCast(sub);
+     if (vsub)
+     {
+         path = vsub->videopath;
+     } else
+     { 
+         localAndClientMsg(VLogger::WARN, NULL,
+              "Unsupported Substrate type \n");
+     }
+ }
+ return path;
+}
 
+bool RunSetWrapper::isVideo(const LabelablePtr _pla)
+{
+   SubstratePtr sub = _pla->sub; 
+   ImageSubstratePtr isub = ImageSubstratePtr::dynamicCast(sub);
+   if (isub)
+        return false;
+   else
+        return true;
+}
+
+//---------------------------------------------------------------------------
+string RunSetWrapper::getPath(const LabelablePtr _pla, bool abs)
+{
+ FilePath path = getFilePath(_pla);
+ 
+ if (abs)
+ {
+     string absdir = convertToAbsDirectory(path.directory.relativePath);
+     absdir += "/";
+     absdir += path.filename;
+     return absdir;
+  } else
+  {
+     string reldir = path.directory.relativePath;
+     if (reldir.compare("") == 0)
+         reldir = path.filename;
+     else
+     {
+         reldir += "/";
+         reldir += path.filename;
+     }
+     return reldir;
+  }
+}
+//---------------------------------------------------------------------------
+string RunSetWrapper::getFilename(const LabelablePtr _pla)
+{
+  FilePath path = getFilePath(_pla);
+  return path.filename;
+}
 //---------------------------------------------------------------------------
 string RunSetWrapper::convertToAbsDirectory(const string& _directory)
 {
@@ -199,25 +284,7 @@ void RunSetWrapper::addToList(const LabelablePtr _pla,const rsMediaType _type,cv
     localAndClientMsg(VLogger::WARN, NULL,"Empty LabelablePtr is assigned\n");
     return;
   }
-
-  //Verify a media type for an original
-  std::string _typeMacro = getTypeMacro(_pla->sub.path.filename);
-  if(_typeMacro.compare(mTypeMacro[0]) == 0)
-  {
-    _pla->sub.isImage = true;
-    _pla->sub.isVideo = false;
-  }
-  else if(_typeMacro.compare(mTypeMacro[1]) == 0)
-  {
-    _pla->sub.isImage = false;
-    _pla->sub.isVideo = true;
-  }
-  else
-  {
-    _pla->sub.isImage = false;
-    _pla->sub.isVideo = false;
-  } 
-
+  
   cvac::Result  _result;
   _result.original = _pla;
   _result.original->lab.hasLabel = true;
@@ -288,13 +355,14 @@ bool RunSetWrapper::makeBasicList()
       {
         vector<LabelablePtr> list_in = out_seq->labeledArtifacts;
         for(in_itr=list_in.begin();in_itr!=list_in.end();in_itr++)
-        {				
-          in_la=LabelablePtr::dynamicCast(*in_itr);
-
+        {	
+          // Dyanmic cast is losing derived type info and is not needed!!		
+          //in_la=LabelablePtr::dynamicCast(*in_itr);
+          in_la = *in_itr;
           if(in_la)	//default: LabelablePtr
           {	
 			
-            addToList(in_la,getTypeMicro(in_la->sub.path.filename), curPurpose);
+            addToList(in_la,getTypeMicro(getFilename(in_la)), curPurpose);
           
           }
           else
@@ -367,8 +435,24 @@ bool RunSetWrapper::makeBasicList_parse(const string& _absDir,bool _recursive,
         if(isInRunset(_rDir,tfname,_types,tType))
         {
           LabelablePtr tpla = new Labelable();
-          tpla->sub.path.filename = tfname;
-          tpla->sub.path.directory.relativePath = _rDir;
+          if (tType.compare(mTypeMacro[0]) == 0)
+          {
+              ImageSubstratePtr isub = new ImageSubstrate();
+              isub->path.filename = tfname;
+              isub->path.directory.relativePath = _rDir;
+              tpla->sub = isub;
+          } else if (tType.compare(mTypeMacro[1]) == 0)
+          {
+              VideoSubstratePtr vsub = new VideoSubstrate();
+              vsub->videopath.filename = tfname;
+              vsub->videopath.directory.relativePath = _rDir;
+              tpla->sub = vsub;
+          }else
+          {
+              localAndClientMsg(VLogger::WARN, NULL,
+                              "Not a vaild media type in makeBasicList_parse\n");	
+               return false;
+          }
           addToList(tpla,tType, purpose);
         }        
       }
@@ -396,15 +480,9 @@ void RunSetWrapper::showList()
   for(i=0;i<mResultSet.results.size();i++)
   {
     tpla = mResultSet.results[i].original;
-    
-    string tRelDir,tFname,tRelPath;
-
-    tRelDir = tpla->sub.path.directory.relativePath;
-    tFname = tpla->sub.path.filename;
-    if(tRelDir.compare("")==0)
-      tRelPath = tFname; 
-    else
-      tRelPath = tRelDir + "/" + tFname; 
+   
+    string tRelPath;
+    tRelPath = getPath(tpla, false);
     cout << "Item: " << tRelPath << '\n';
   }
 }

@@ -14,11 +14,10 @@ export JAVAEXE=/usr/bin/java
 export PYTHONEXE=/usr/bin/python@PYTHON_VERSION_MAJOR@.@PYTHON_VERSION_MINOR@
 
 export ICEDIR=${INSTALLDIR}/3rdparty/ICE
-export OPENCVDIR=${INSTALLDIR}/3rdparty/opencv
+export OPENCVDIR=${INSTALLDIR}/3rdparty/opencv_stdc
 export PATH=$PATH:${INSTALLDIR}/bin
-export MATLAB_MCR_DYLD_PATH="/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/runtime/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/sys/os/maci64:/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/bin/maci64:/System/Library/Frameworks/JavaVM.framework/JavaVM:/System/Library/Frameworks/JavaVM.framework/Libraries"
 export XAPPLRESDIR=/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/X11/app-defaults
-export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${INSTALLDIR}/lib:${OPENCVDIR}/lib:@ICELIBS@:$MATLAB_MCR_DYLD_PATH"
+export DYLD_LIBRARY_PATH="${INSTALLDIR}/lib:${OPENCVDIR}/lib:@ICELIBS@:$DYLD_LIBRARY_PATH"
 
 # C/C++ services, via IceBox
 cd ${INSTALLDIR}
@@ -27,7 +26,8 @@ if [ -f $LOCKFILE ]
 then
     echo CVAC services have supposedly been started already.  Either stop them
     echo first, or if you are sure that they are not running, remove the
-    echo lock file \'$LOCKFILE\'.
+    echo lock file \'$LOCKFILE\' in the following directory:
+    echo ${INSTALLDIR}
     exit
 fi
 
@@ -47,7 +47,7 @@ if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLDIR}/python.config" ]
 then
     # add in ice's python library path for osx
     export DYLD_LIBRARY_PATH="${INSTALLDIR}/3rdparty/opencv/lib:@ICEPLIBS@:$DYLD_LIBRARY_PATH"
-    export PYTHONPATH=${INSTALLDIR}/python/easyPkg:${INSTALLDIR}/python/easyPkg/easy:${INSTALLDIR}/python/easyPkg/easy:${INSTALLDIR}/python/icePkg:${INSTALLDIR}/3rdparty/libsvm
+    export PYTHONPATH=${INSTALLDIR}/python/easyPkg:${INSTALLDIR}/python/easyPkg/easy:${INSTALLDIR}/python:${INSTALLDIR}/python/icePkg:${INSTALLDIR}/3rdparty/libsvm
     grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE
     do
         ${PYTHONEXE} $LINE &

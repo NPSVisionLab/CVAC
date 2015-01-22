@@ -29,9 +29,9 @@ ELSE (WIN32)
     IF (APPLE)
         Set (ICEPLIBS "${ICE_PYTHON_DIR}/../pythonlib")
         IF (USE_LEGACY_STDC++LIBS)
-            SET (ICELIBS "${ICEDIR}/lib")
+            SET (ICELIBS "${ICE_ROOT}/lib/c++11")
         ELSE (USE_LEGACY_STDC++LIBS)
-            SET (ICELIBS "${ICEDIR}/lib/c++11")
+            SET (ICELIBS "${ICE_ROOT}/lib")
         ENDIF (USE_LEGACY_STDC++LIBS)
     ENDIF (APPLE)
     SET( SCRIPT_EXT sh )
@@ -66,44 +66,26 @@ IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
          )
 ENDIF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
 
+# We create a empty python.config file so the services are entered only once.
+# We must create the file before the UserCMakeLists.txt is included.  This 
+# allows us to start with a fresh python.config each time.
+CONFIGURE_FILE("python.config.in"
+                "${CMAKE_BINARY_DIR}/python.config")
+
 INCLUDE (UserCMakeLists.txt OPTIONAL)
 
 # This code has to be after the UserCMakeLists.txt include as it modifies
 # python.config that the include creates.
 IF( BUILD_CORPUS_SERVICE_PYTHON)
     # Add to the python config file since the python corpus server requires it.
-    # If it already exists add to the end else create it
-    IF (EXISTS "${CMAKE_BINARY_DIR}/python.config")
-        #If we don't have the string corpus_service add it
-        SET (FILE_STRINGS "")
-        FILE(STRINGS "${CMAKE_BINARY_DIR}/python.config" FILE_STRINGS  
-             REGEX "src/easy/corpus_service.py")
-        IF (FILE_STRINGS STREQUAL "")
-            FILE(APPEND "${CMAKE_BINARY_DIR}/python.config" 
+    FILE(APPEND "${CMAKE_BINARY_DIR}/python.config" 
                  "src/easy/corpus_service.py\n")
-        ENDIF (FILE_STRINGS STREQUAL "")
-    ELSE (EXISTS "${CMAKE_BINARY_DIR}/python.config")
-        FILE(WRITE "${CMAKE_BINARY_DIR}/python.config" 
-             "src/easy/corpus_service.py\n")
-    ENDIF (EXISTS "${CMAKE_BINARY_DIR}/python.config")
 ENDIF( BUILD_CORPUS_SERVICE_PYTHON)
 
 IF( BUILD_FILESERVER_PYTHON)
     # Add to the python config file since the python fileserver requires it.
-    # If it already exists add to the end else create it
-    IF (EXISTS "${CMAKE_BINARY_DIR}/python.config")
-        #If we don't have the string fileservice add it
-        SET (FILE_STRINGS "")
-        FILE(STRINGS "${CMAKE_BINARY_DIR}/python.config" FILE_STRINGS  
-             REGEX "src/easy/fileserver.py")
-        IF (FILE_STRINGS STREQUAL "")
-            FILE(APPEND "${CMAKE_BINARY_DIR}/python.config" 
+    FILE(APPEND "${CMAKE_BINARY_DIR}/python.config" 
                  "src/easy/fileserver.py\n")
-        ENDIF (FILE_STRINGS STREQUAL "")
-    ELSE (EXISTS "${CMAKE_BINARY_DIR}/python.config")
-        FILE(WRITE "${CMAKE_BINARY_DIR}/python.config" 
-             "src/easy/fileserver.py\n")
-    ENDIF (EXISTS "${CMAKE_BINARY_DIR}/python.config")
 ENDIF( BUILD_FILESERVER_PYTHON)
 
 IF( BUILD_FILESERVICE_PYTHON OR BUILD_CORPUS_SERVICE_PYTHON)
@@ -159,20 +141,24 @@ ENDIF (WIN32)
 CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/PostInstall.cmake @ONLY)
 
 IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
-    INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.client 
-       DESTINATION .
-       COMPONENT Runtime
-      )
-    INSTALL(PROGRAMS ${CMAKE_BINARY_DIR}/bin/startServices.${SCRIPT_EXT} ${CMAKE_BINARY_DIR}/bin/stopServices.${SCRIPT_EXT}
-       DESTINATION bin
-       COMPONENT Runtime
-      )
+    IF (NOT BUILD_3RDPARTY_PACKAGE)
+        INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.client 
+           DESTINATION .
+           COMPONENT Runtime
+          )
+        INSTALL(PROGRAMS ${CMAKE_BINARY_DIR}/bin/startServices.${SCRIPT_EXT} ${CMAKE_BINARY_DIR}/bin/stopServices.${SCRIPT_EXT}
+           DESTINATION bin
+           COMPONENT Runtime
+          )
+    ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
 ENDIF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
 
-INSTALL(FILES ${CMAKE_SOURCE_DIR}/test/run_demos.py 
+IF (NOT BUILD_3RDPARTY_PACKAGE)
+    INSTALL(FILES ${CMAKE_SOURCE_DIR}/test/run_demos.py 
        DESTINATION test
        COMPONENT Runtime
       )
+ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
 
 # 3rdparty dependencies for building CVAC
 INSTALL(DIRECTORY   ${ICE_ROOT}/include  ${ICE_ROOT}/slice
@@ -219,7 +205,6 @@ ENDIF(WIN32)
 
 SET (SVM_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libsvm")
 IF(APPLE)
-    #Need to install the stdc++ binaries if that option gets turned on
     INSTALL(DIRECTORY  ${ICE_ROOT}/bin
         DESTINATION 3rdparty/ICE
         COMPONENT IceExt
@@ -332,16 +317,6 @@ IF (NOT PYTHON_ONLY_CLIENT)
            COMPONENT ThirdParty
           ) 
 
-    ELSE (WIN32)
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
-      DESTINATION 3rdparty/opencv
-       COMPONENT ThirdParty
-      )
-    #If not windows need the libs for the shared libraries
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
-          DESTINATION 3rdparty/opencv
-           COMPONENT ThirdParty
-          ) 
     ENDIF(WIN32)
 
 ENDIF (NOT PYTHON_ONLY_CLIENT)

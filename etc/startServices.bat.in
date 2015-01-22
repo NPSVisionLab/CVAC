@@ -25,7 +25,8 @@ set LOCKFILE=.services_started.lock
 if exist %LOCKFILE% (
     echo CVAC services have supposedly been started already.  Either stop them
     echo first, or if you are sure that they are not running, remove the
-    echo lock file \'%LOCKFILE%\'.
+    echo lock file \'%LOCKFILE%\' in the following directory:
+    echo "%INSTALLDIR%"
     exit /b 1
 )
 
@@ -44,7 +45,7 @@ REM Python services that are listed in python.config
 if "%PYTHONEXE%" neq "" (if exist "%INSTALLDIR%/python.config" goto startpython)
 goto next2
 :startpython
-    set PYTHONPATH=%INSTALLDIR%/python/easyPkg;%INSTALLDIR%/python/easyPkg/easy;%INSTALLDIR%/python/icePkg
+    set PYTHONPATH=%INSTALLDIR%/python/easyPkg;%INSTALLDIR%/python/easyPkg/easy;%INSTALLDIR%/python/icePkg;%INSTALLDIR%/python
     for /F "usebackq eol=# tokens=*" %%A in ("%INSTALLDIR%/python.config") do start "CVAC Service (Python)" "cmd /K ""%PYTHONEXE%" %%A"
 :next2
 echo CVAC services launched

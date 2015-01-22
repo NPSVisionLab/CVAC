@@ -14,7 +14,8 @@ import sys, traceback
 import shutil
 import tempfile
 import datetime
-from util import misc
+import collections
+
 # paths should setup the PYTHONPATH.  If you special requirements
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
@@ -22,21 +23,85 @@ sys.path.append('''.''')
 import Ice
 import IcePy
 import cvac
-from util import misc
+import Queue
+import util.misc as misc
 from util.ArchiveHandler import * 
+
 import unittest
 import stat
 import threading
 
 import os
 
+
+'''
+  Class for handling gui drawing.  The drawing
+  is handled by a separate GuiThread that
+  allows callback threads to render.  Basiclly 
+  the GueQueue puts in a queue messages for the
+  GuiThread to draw.
+'''
+class GuiQueue:
+    def __init__(self):
+        self.queue = None
+        self.guiThread = None
+        self.queue = Queue.Queue()
+        self.windows = {}
+
+    def startThread(self):
+        if self.guiThread == None:
+            self.guiThread = GuiThread(self.queue)  
+            # For OSX use this thread for the guiThread
+            if sys.platform == 'darwin':
+                self.guiThread.run()
+            else:
+                self.guiThread.start() 
+    
+    '''
+     Render and Image into a window.  If its the first
+     time the window is created (via creating the GuiThread).
+     The window will stay open until the user closes it.  That
+     will also end the GuiThread.
+     NOTE: On OSX the GuiThead must be the main thread so this
+     call will block until the user closes the window. This also
+     means that for OSX the first imgWindow call must be made from
+     the main thread of the program.  The other calls can then be
+     made from anythread.
+    '''    
+    def imgWindow(self, img, window = 0):
+        self.queue.put(("ImageWindow",img, window))
+        # we wait to start the guiThread at the first imgWindow call
+        # as it will create an icon.
+        self.startThread();
+        
+    '''
+    Create a window that is not the default window.  This allows
+    for multiple windows to be displayed.
+    '''
+    def startWindow(self, img):
+        wid = 1
+        while wid in self.windows.keys():
+            wid = wid + 1
+        self.windows[wid] = wid
+        self.queue.put(("ImageWindow", img, wid))
+        return wid                                   
+        
+    def closeAllWindows(self):
+        for wid in self.windows.keys():
+            self.queue.put(("CloseWindow", wid))
+        self.queue.put(("CloseWindow", 0))
+
+guiqueue = None
 # for drawing only:
 try:
     import Tkinter as tk
     from PIL import Image, ImageTk, ImageDraw
-except:
+    from util.GuiThread import GuiThread
+    guiqueue = GuiQueue()
+except Exception as exc:
     # don't raise an error now
-    pass
+    print("No gui available " + str(exc))
+    quiqueue = None
 
 #
 # one-time initialization code, upon loading the module
@@ -49,10 +114,19 @@ args.append('--Ice.ACM.Client=0')
 if os.path.isfile('config.client'):
     args.append('--Ice.Config=config.client')
 else:
+    # Search for config.client up the directory tree
     modulepath = os.path.dirname(__file__)
-    config_client_path = os.path.abspath(modulepath+'/../../config.client')
-    if os.path.isfile(config_client_path):
-        args.append('--Ice.Config='+config_client_path)
+    config_client_path = os.path.abspath(modulepath)
+    while config_client_path != None:
+        if os.path.isfile(config_client_path + '/config.client'):
+            args.append('--Ice.Config=' + config_client_path + '/config.client')
+            break
+        else:
+            nextdir = os.path.dirname(config_client_path)
+            if nextdir == config_client_path:
+                break
+            else:
+                config_client_path = nextdir
 ic = Ice.initialize(args)
 defaultCS = None
 # Parse the client.config for CVAC_DataDir
@@ -69,17 +143,43 @@ CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verb
 def getFSPath( cvacPath, abspath=False ):
     '''Turn a CVAC path into a file system path'''
     if isinstance(cvacPath, cvac.Labelable):
-        cvacPath = cvacPath.sub.path
-    elif isinstance(cvacPath, cvac.Substrate):
+        cvacPath = misc.getLabelableFilePath(cvacPath)
+    elif isinstance(cvacPath, cvac.ImageSubstrate):
         cvacPath = cvacPath.path
+    elif isinstance(cvacPath, cvac.VideoSubstrate):
+        cvacPath = cvacPath.videopath
     if isinstance( cvacPath, str ):
-        path = CVAC_DataDir+"/"+cvacPath
+        # if cvacPath already has CVAC_DataDir then
+        # don't add it again
+        dirabs = os.path.abspath(cvacPath)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath
+        else:
+            path = CVAC_DataDir+"/"+cvacPath
     elif isinstance(cvacPath, cvac.FilePath):
-        path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
+        # if cvacPath already has CVAC_DataDir then
+        # don't add it again
+        dirabs = os.path.abspath(cvacPath.directory.relativePath)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath.directory.relativePath + '/' + cvacPath.filename
+        else:
+            path = CVAC_DataDir+"/"+cvacPath.directory.relativePath+"/"+cvacPath.filename
     elif isinstance(cvacPath, cvac.DirectoryPath):
-        path = CVAC_DataDir+"/"+cvacPath.relativePath;
+        dirabs = os.path.abspath(cvacPath.directory.relativePath)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath.relativePath
+        else:
+            path = CVAC_DataDir+"/"+cvacPath.relativePath
     else:
-        path = CVAC_DataDir+"/"+cvacPath.filename
+        dirabs = os.path.abspath(cvacPath.filename)
+        cvacabs = os.path.abspath(CVAC_DataDir)
+        if dirabs.startswith(cvacabs):
+            path = cvacPath.filename
+        else:
+            path = CVAC_DataDir+"/"+cvacPath.filename
     if abspath == True:
         if os.path.isabs(path) == True:
             return path
@@ -90,14 +190,15 @@ def getFSPath( cvacPath, abspath=False ):
 
 def getCvacPath( fsPath ):
     '''Turn a file system path into a CVAC FilePath'''
-    # todo: should figure out what CVAC.DataDir is and parse that out, too
+    # Remove the CVAC.DataDir from the fspath if there is one.
+    fsPath = misc.stripCVAC_DataDir(fsPath)
     drive, path = os.path.splitdrive( fsPath )
     path, filename = os.path.split( path )
-    dataRoot = cvac.DirectoryPath( path );
+    dataRoot = cvac.DirectoryPath( path )
     return cvac.FilePath( dataRoot, filename )
 
 def isLikelyVideo( cvacPath ):
-    videoExtensions = ['avi', 'mpg', 'wmv']
+    videoExtensions = ['avi', 'mpg', 'wmv', 'mov']
     for ext in videoExtensions:
         if cvacPath.filename.endswith(ext):
             return True
@@ -127,9 +228,57 @@ def getLabelable( filepath, labelText=None ):
     else:
         label = cvac.Label( False, "", None, cvac.Semantics() )
     isVideo = isLikelyVideo( filepath )
-    substrate = cvac.Substrate( not isVideo, isVideo, filepath, 0, 0 )
+    if( isVideo ):
+        # check whether this video is a single file or a directory
+        # of individual frames
+        substrate = getVideoSubstrate( filepath )
+    else:
+        substrate = cvac.ImageSubstrate( width=0, height=0, path=filepath )
+
     labelable = cvac.Labelable( 0.0, label, substrate )
     return labelable
+
+def getVideoSubstrate( filepath ):
+    '''
+        Create a Labelable from a CVAC filepath.  This requires actual
+        file system access to check whether individual frame images exist.
+        It distinguishes the following cases:
+        * the filepath is an actual video file:
+          ** insert this filepath into the substrate
+          ** if a directory exists with a name that starts with the
+             filepath, such as avideo.mpg_frames/, look for frames there.
+        * the filepath is a directory, not a file:
+          ** look for frames inside this directory
+    '''
+    # do we have file system access?  if so, is the path a file (vs. directory)?
+    fsPath = getFSPath( filepath )
+    vpath = cvac.FilePath()
+    if (os.path.isfile( fsPath )):
+        vpath = filepath
+
+    # is the path a directory?
+    frm_paths = None
+    if (os.path.isdir( fsPath )):
+        # add each frame to the framepaths dictionary <int,str>
+        # this assumes that the frames in the folder are named
+        # according to their frames location (starting a 0). For example,
+        # a file named 99.jpg corresponds to frame 100 of the movie.
+        folder_listing = os.listdir( fsPath )
+        frm_paths = {}
+        for frm in folder_listing:
+            if any(char.isdigit() for char in frm):
+                # ignore filenames without numbers
+                frm_num = int( frm.split( '.' )[ 0 ] )
+                frm_paths[ frm_num ] = getCvacPath( fsPath + '/' + frm )
+                print(frm_paths[ frm_num ])
+
+    # if we didn't have file system access:
+    if not vpath and not frm_paths:
+        vpath = filepath
+        
+    substrate = cvac.VideoSubstrate( width=0, height=0,
+                                     videopath=vpath, framepaths=frm_paths )
+    return substrate
 
 def getLabelableList(dirpath, recursive=True, video=True, image=True):
     '''Return a list of Labelables contained within the directory (optionally recursively)'''
@@ -206,7 +355,8 @@ def closeCorpus( corpus, corpusServer=None ):
     corpusServer.closeCorpus( corpus )
     
 class CorpusCallbackI(cvac.CorpusCallback):
-    corpus = None
+    def __init__(self):
+        self.corpus = None
     def corpusMirrorProgress( self, corp, numtasks, currtask, taskname, details,
             percentCompleted, current=None ):
         print("CorpusServer: mirroring '{0}', task {1}/{2}: {3} ({4}%)".\
@@ -276,14 +426,14 @@ def isInBounds( labelable ):
         maxX = labelable.sub.width
     if labelable.sub.height>0:
         maxY = labelable.sub.height
-
+    fpath = misc.getLabelableFilePath(labelable)
     if isinstance(labelable, cvac.LabeledLocation):
         for pt in labelable.loc.points:
             if (pt.x < minX) or (pt.y < minY) \
                 or (pt.x >= maxX) or (pt.y >= maxY):
                 print("Warning: label \"" \
-                      + labelname + "\" is out of bounds in file \"" \
-                      + labelable.sub.path.filename + "\"" \
+                      + labelable.label.name + "\" is out of bounds in file \"" \
+                      + fpath.filename + "\"" \
                     + " (X=" + str(pt.x) + ", Y=" + str(pt.y) + ")")
                 return False
 #     else:
@@ -336,8 +486,9 @@ def isProperRunSet(runset, deleteInvalid=False):
             for i in xrange(len(plist.labeledArtifacts)-1, -1, -1):
                 lb = plist.labeledArtifacts[i]               
                 labelname  = 'nolabel'
+                fpath = misc.getLabelableFilePath(lb)
                 if lb.lab.hasLabel != True:
-                    print("Warning: " + lb.sub.path.filename + " has no label.")
+                    print("Warning: " + fpath.path.filename + " has no label.")
                 else:
                     labelname = lb.lab.name
 
@@ -356,7 +507,7 @@ def printCategoryInfo( categories ):
     if not categories:
         print("no categories, nothing to print")
         return
-    sys.stdout.softspace=False;
+    sys.stdout.softspace=False
     for key in sorted( categories.keys() ):
         klen = len( categories[key] )
         print("{0} ({1} artifact{2})".format( key, klen, ("s","")[klen==1] ))
@@ -368,9 +519,7 @@ def printSubstrateInfo( labelList, indent="", printLabels=False ):
     substrates = {}
     labels = {}
     for lb in labelList:
-        # subpath = getFSPath( lb.sub.path )  # print file system paths
-        subpath = lb.sub.path.directory.relativePath +\
-                  "/" + lb.sub.path.filename # print cvac.FilePath
+        subpath = getPrintableFileName( lb.sub )
         if subpath in substrates:
             substrates[subpath] = substrates[subpath]+1
             if printLabels:
@@ -379,7 +528,7 @@ def printSubstrateInfo( labelList, indent="", printLabels=False ):
             substrates[subpath] = 1
             if printLabels:
                 labels[subpath] = [getLabelText(lb.lab)]
-    sys.stdout.softspace=False;
+    sys.stdout.softspace=False
     for subpath in sorted( substrates.keys() ):
         numlabels = substrates[subpath]
         if printLabels:
@@ -401,7 +550,7 @@ def printRunSetInfo( runset, printLabels=False, printArtifacts=True ):
     if not runset or not isinstance(runset, cvac.RunSet) or not runset.purposedLists:
         print("no (proper) runset, nothing to print")
         return
-    sys.stdout.softspace=False;
+    sys.stdout.softspace=False
     for plist in runset.purposedLists:
         purposeText = plist.pur.ptype
         if purposeText is cvac.PurposeType.MULTICLASS:
@@ -460,6 +609,7 @@ def addPurposedLabelablesToRunSet( runset, purpose, labelables ):
     '''Append labelables to a sequence with the same purpose.
     If the runset does not have one, add a new sequence.'''
     # make sure we're getting a list of Labelables
+    
     assert( labelables and type(labelables) is list and \
             isinstance( labelables[0], cvac.Labelable ) )
     # see if runset already has a list with these purposes
@@ -504,7 +654,7 @@ def getCategories(lablist):
     
 def addToRunSet( runset, samples, purpose=None, classmap=None ):
     '''Add samples to a given RunSet.
-    Take a look at the documentation for createRunSet for details.'''
+    Take a look at the documentation for createRunSet for details.''' 
     rnst = runset
     if type(runset) is dict and not runset['runset'] is None\
         and isinstance(runset['runset'], cvac.RunSet):
@@ -519,9 +669,16 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         if not type(purpose) is cvac.Purpose and not type(purpose) is str:
             raise RuntimeError("Purpose must be specified as str or cvac.Purpose")
         purpose = getPurpose( purpose )
+       
+    
+    if type(samples) is dict and 'runset' in samples.keys() and not samples['runset'] is None\
+                and isinstance(samples['runset'], cvac.RunSet)\
+                and not purpose is None:
+            for item in samples['runset'].purposedLists:
+                addPurposedLabelablesToRunSet(rnst, purpose, item.labeledArtifacts)
         
-    if type(samples) is dict and not purpose is None:
-        # all categories get identical purposes
+    elif type(samples) is dict and not purpose is None:
+        # all categories get identical purposes      
         for key in samples.keys():
             addToClassmap( classmap, key, purpose )
             addPurposedLabelablesToRunSet( rnst, purpose, samples[key] )
@@ -530,7 +687,6 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         # multiple categories, try to guess the purpose and
         # if not possible, fall back to MULTICLASS
         assert( purpose is None )
-        pur_categories = []
         pur_categories_keys = sorted( samples.keys() )
 
         if len(samples) is 1:
@@ -689,10 +845,10 @@ def putFile( fileserver, filepath, testExistence=True ):
     if not os.path.exists( origFS ):
         raise RuntimeError("Cannot obtain FS path to local file:",origFS)
     forig = open( origFS, 'rb' )
-    bytes = bytearray( forig.read() )
+    mbytes = bytearray( forig.read() )
     
     # "put" the file's bytes to the FileServer
-    fileserver.putFile( filepath, bytes );
+    fileserver.putFile( filepath, mbytes )
     forig.close()
 
 def getFile( fileserver, filepath ):
@@ -706,11 +862,11 @@ def getFile( fileserver, filepath ):
     flocal = open( localFS, 'wb' )
     
     # "get" the file's bytes from the FileServer
-    bytes = fileserver.getFile( filepath );
-    flocal.write( bytes )
+    mbytes = fileserver.getFile( filepath )
+    flocal.write( mbytes )
     flocal.close()
     if not os.path.exists( localFS ):
-        raise RuntimeError("Cannot obtain FS path to local file:",origFS)
+        raise RuntimeError("Cannot obtain FS path to local file:",localFS)
 
 def collectSubstrates( runset ):
     '''obtain a set (a list without duplicates) of all
@@ -739,18 +895,23 @@ def _collectSubstratesFromResults( results ):
     if the foundLabel does not have a path, use the path from
     the original
     '''
-    substrates = {}
+    substrates = collections.OrderedDict()
     for res in results:
         for lbl in res.foundLabels:
-            if lbl.sub.isImage:
-                if not lbl.sub.path.filename:
-                    subpath = getFSPath( res.original )
-                else:
-                    subpath = getFSPath( lbl )
-                if subpath in substrates:
-                    substrates[subpath].append( lbl )
-                else:
-                    substrates[subpath] = [lbl]
+            if lbl.sub is None:
+                fpath = misc.getLabelableFilePath(res.original)
+            else:
+                fpath = misc.getLabelableFilePath(lbl)
+           
+            if not fpath.filename:
+                subpath = getFSPath( res.original )
+            else:
+                subpath = getFSPath( fpath )
+            if subpath in substrates:
+                substrates[subpath].append( lbl )
+            else:
+                substrates[subpath] = [lbl]
+                
     return substrates
 
 def putAllFiles( fileserver, runset ):
@@ -766,13 +927,17 @@ def putAllFiles( fileserver, runset ):
     uploadedFiles = []
     existingFiles = []
     for sub in substrates:
-        if not isinstance(sub, cvac.Substrate):
-            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
-        if not fileserver.exists( sub.path ):
-            putFile( fileserver, sub.path, testExistence=False )
-            uploadedFiles.append( sub.path )
+        if isinstance(sub, cvac.ImageSubstrate):
+            path = sub.path
+        elif isinstance(sub, cvac.VideoSubstrate):
+            path = sub.videopath
         else:
-            existingFiles.append( sub.path )
+            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
+        if not fileserver.exists( path ):
+            putFile( fileserver, path, testExistence=False )
+            uploadedFiles.append( path )
+        else:
+            existingFiles.append( path )
 
     return {'uploaded':uploadedFiles, 'existing':existingFiles}
 
@@ -790,14 +955,18 @@ def getAllFiles( fileserver, runset ):
     downloadedFiles = []
     existingFiles = []
     for sub in substrates:
-        if not isinstance(sub, cvac.Substrate):
-            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
-        filepath = getFSPath(sub.path)
-        if not os.path.exists( filepath ):
-            getFile( fileserver, sub.path)
-            downloadedFiles.append( sub.path )
+        if isinstance(sub, cvac.ImageSubstrate):
+            path = sub.path
+        elif isinstance(sub, cvac.VideoSubstrate):
+            path = sub.videopath
         else:
-            existingFiles.append( sub.path )
+            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
+        filepath = getFSPath(path)
+        if not os.path.exists( filepath ):
+            getFile( fileserver, path)
+            downloadedFiles.append( path )
+        else:
+            existingFiles.append( path )
 
     return {'downloaded':downloadedFiles, 'existing':existingFiles}
 
@@ -815,7 +984,7 @@ def deleteAllFiles( fileserver, uploadedFiles ):
     deletedFiles = []
     notDeletedFiles = []
     if type(uploadedFiles) is dict and not uploadedFiles['uploaded'] is None:
-	uploadedFiles = uploadedFiles['uploaded']
+        uploadedFiles = uploadedFiles['uploaded']
     if not uploadedFiles:
         return
     for path in uploadedFiles:
@@ -861,7 +1030,7 @@ def getTrainer( configString ):
     '''Connect to a trainer service'''
     proxyStr = getProxyString(configString)
     if not proxyStr:
-        return None
+        raise RuntimeError("Invalid or unknown Trainer configString")
     trainer_base = ic.stringToProxy( proxyStr )
     try:
         trainer = cvac.DetectorTrainerPrx.checkedCast( trainer_base )
@@ -957,7 +1126,7 @@ def getDetector( configString ):
     '''Connect to a detector service'''
     proxyStr = getProxyString(configString)
     if not proxyStr:
-        return None
+        raise RuntimeError("Invalid or unknown Detector configString")
     detector_base = ic.stringToProxy( proxyStr )
     try:
         detector = cvac.DetectorPrx.checkedCast(detector_base)
@@ -1047,10 +1216,9 @@ def discardSuboptimal(perfdata,saveRelativeDir = None):
             index_optimal.append(i)
             
     if saveRelativeDir is not None: 
-        fpathROC = CVAC_DataDir+"/"\
-        +saveRelativeDir+"/"\
-        +"RocTable_Full_"\
-        +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S") + ".txt"                 
+        fpathROC = getFSPath(saveRelativeDir+"/"\
+                             +"RocTable_Full_"\
+                           +(datetime.datetime.now()).strftime("%m%d%y_%H%M%S") + ".txt")                 
         f = open(fpathROC,'w')        
         for pt in ptsROC:
             f.write(str(pt[0]) + '\t')
@@ -1168,7 +1336,7 @@ def makeROCdata(rocData_optimal):
     rocZiptemp.filename = rocZip_fileName
     
     rocZip = cvac.FilePath()
-    rocZip.directory.relativePath = os.path.join(relClientDir, '..')                      
+    rocZip.directory.relativePath, basedir = os.path.split(relClientDir)                  
     rocZip.filename = rocZip_fileName
     
     rocZiptempPath = getFSPath(rocZiptemp)  
@@ -1192,7 +1360,7 @@ def isROCdata(rocZip):
     zipfilepath = getFSPath(rocZip)
     # Make a temp directory under the data directory in a directory
     # called "clientTemp"
-    tempdirloc = CVAC_DataDir + "/clientTemp"
+    tempdirloc = getFSPath("clientTemp")
     if os.path.isdir(tempdirloc) == False:
         os.makedirs(tempdirloc)
     tempDir = tempfile.mkdtemp(dir=tempdirloc)
@@ -1216,17 +1384,19 @@ def isROCdata(rocZip):
 def getSensitivityOptions(detectorData):
     '''
     Return any False Alarm, and Recall rate options available
-    in the model file.  This will return a list of False Alarm, Recall pairs that
+    in the model file.  This will return a list of
+    <false alarm, recall> pairs that
     have been trained into the model or None if they are not any.
-    detectorData is the model file that that might contain the different model files and sensitivity options.
+    detectorData is the model file that that might contain the
+    different model files and sensitivity options.
     '''
-    isRoc, rockList, tempDir = isROCData(detectorData)
+    isRoc, rockList, tempDir = isROCdata(detectorData)
     if isRoc == False:
         return None
     else:
         if tempDir != None:
             if os.path.isdir(tempDir):
-               shutil.rmtree(tempDir)
+                shutil.rmtree(tempDir)
         return rockList
     
 
@@ -1249,8 +1419,7 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     if not detectorData:
         detectorData = getCvacPath( "" )
     elif type(detectorData) is str:
-        detectorData = getCvacPath( detectorData )
-        
+        detectorData = getCvacPath( detectorData ) 
     if type(detectorData) is cvac.FilePath:
         fileext = os.path.splitext(detectorData.filename)[1]
         if fileext.lower()==".zip":
@@ -1293,7 +1462,7 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     ourRecv = False  # will we use our own simple callback receiver?
     if not callbackRecv:
         ourRecv = True
-        callbackRecv = DetectorCallbackReceiverI();
+        callbackRecv = DetectorCallbackReceiverI()
         callbackRecv.allResults = []
     adapter.add( callbackRecv, cbID )
     adapter.activate()
@@ -1304,6 +1473,7 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     if detectorProperties == None:
         detectorProperties = cvac.DetectorProperties()
         detectorProperties.verbosity = getVerbosityNumber( CVAC_ClientVerbosity )
+    misc.stripCVAC_DataDir_from_FilePath(detectorData)
     detector.process( cbID, runset, detectorData, detectorProperties )
     
     if tempDir != None:
@@ -1353,6 +1523,27 @@ def getLabelText( label, classmap=None, guess=False ):
                                 type(mapped) )
     return text
 
+def getPrintableFileName( substrate ):
+    name = '??'
+    if isinstance(substrate, cvac.ImageSubstrate):
+        name = substrate.path.filename
+    elif isinstance(substrate, cvac.VideoSubstrate):
+        name = ''
+        if substrate.videopath:
+            name = substrate.videopath.filename
+        if substrate.framepaths:
+            minkey = min( substrate.framepaths.keys() )
+            maxkey = max( substrate.framepaths.keys() )
+            name = name + substrate.framepaths[minkey].filename \
+                 + " [" + str(minkey) + ".." + str(maxkey) + "]"
+        else:
+            # raise RuntimeError("neither videopath nor framepaths specified")
+            # todo: should it be policy that if there is a substrate it should be correct?
+            name = '(incorrect substrate)'
+    else:
+        raise RuntimeError("unknown Substrate type: "+type(substrate))
+    return name
+
 def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
     '''Print detection results as specified in a ResultSet.
     If classmaps are specified, the labels are mapped
@@ -1384,8 +1575,10 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
                         purposeLabelMap[pid] += ", " +key
                     else:
                         purposeLabelMap[pid] = key
-    
-    print('received a total of {0} results:'.format( len( results ) ))
+
+    numres = len( results )
+    print('received a total of {0} results{1}'\
+          .format( numres, (":",".")[numres==1] ))
     identical = 0
     for res in results:
         names = []
@@ -1402,8 +1595,9 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
             if res.original.lab in origMap and \
                     str(origMap[res.original.lab]) in purposeLabelMap:
                 origname = purposeLabelMap[ str(origMap[res.original.lab]) ]
+        printname = getPrintableFileName( res.original.sub )
         print("result for {0} ({1}): found {2} label{3}: {4}".format(
-            res.original.sub.path.filename, origname,
+            printname, origname,
             numfound, ("s","")[numfound==1], ', '.join(names) ))
         if numfound==1 and origname.lower()==names[0].lower():
             identical += 1
@@ -1414,38 +1608,51 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
         #print('(labels had unknown purposes, cannot determine result accuracy)')
         pass
 
-def initGraphics(title = "results"):
+def getLocationString( location ):
+    if isinstance( location, cvac.Point2D ):
+        return str(location.x) + ", " + str(location.y)
+    elif isinstance( location, cvac.PreciseLocation ):
+        return str(location.centerX) + ", " + str(location.centerY)
+    else:
+        raise RuntimeError("need to pretty-print " + type(location))
+                
+def printLabeledTrack( track ):
+    '''
+    print out the frame numbers and track locations.
+    input argument can be a ResultSet ... LabeledTrack.
+    '''
+    if isinstance( track, cvac.ResultSet ):
+        for res in track:
+            printLabeledTrack( res.foundLabels )
+        return
+    if isinstance( track, cvac.Result ):
+        printLabeledTrack( track.foundLabels )
+        return
+    if isinstance( track, list ):
+        for lbl in track:
+            printLabeledTrack( lbl )
+        return
+    if not isinstance( track, cvac.LabeledTrack ):
+        # ignore silently
+        return
+    for floc in track.keyframesLocations:
+        locstr = getLocationString( floc.loc )
+        print( "{0} ({1}): {2}".format( floc.frame.framecnt,
+                                        floc.frame.time,
+                                        locstr ))
+'''  
+def initGraphics(title = "cvac results"):
     try:
-        wnd = tk.Tk()
-        wnd.title(title)
+      
+        #wnd = tk.Tk()
+        #wnd.title(title)
     except:
         wnd = None
         raise RuntimeError("cannot display images - do you have PIL installed?")
     return wnd
+'''
 
-def showImage( img ):
-    # open window, convert image into displayable photo
-    wnd = initGraphics()
-    photo = ImageTk.PhotoImage( img )
-    
-    # make the window the size of the image
-    # position coordinates of wnd 'upper left corner'
-    x = 0
-    y = 0
-    w = photo.width()
-    h = photo.height()
-    wnd.geometry("%dx%d+%d+%d" % (w, h, x, y))
-    
-    # Display the photo in a label (as wnd has no image argument)
-    panel = tk.Label(wnd, image=photo)
-    panel.pack(side='top', fill='both', expand='yes')    
-    # save the panel's image from 'garbage collection'
-    panel.image = photo
 
-    # start the event loop
-    wnd.mainloop()
-    wnd = None
-    
 def showROCPlot(ptList):
     '''
     Plot image is 300x200 with 10 pixel space around the plot so the
@@ -1454,22 +1661,28 @@ def showROCPlot(ptList):
     '''
     xoffset = 10
     yoffset = 10
-    
-    wnd = initGraphics(title="ROC Curve Plot")
-    if wnd == None:
-        return
+    #wnd = initGraphics(title="ROC Curve Plot")
+    #wnd = guithread.getCanvas()
+    #if wnd == None:
+    #    return
     try:
         im = Image.open(getFSPath('plot.jpg'))
     except:
         raise RuntimeError("Cannot open ROC plot background image plot.jpg")
-        return
     width, height = im.size
-    ImbImage = tk.Canvas(wnd, highlightthickness=0, bd=0, bg='red', width=width, height=height)
-    ImbImage.pack()
+    #ImbImage = tk.Canvas(wnd, highlightthickness=0, bd=0, bg='red', width=width, height=height)
+    #ImbImage.pack()
     draw = ImageDraw.Draw(im)
     for pt in ptList:
         # Scale over plot region assume plot is all but offset above and below
-        x = int(pt.precision*(width - (2 * xoffset)))
+        # x value will be precision = TP / (TP + FP)
+        # y value will be recall (hit rate) = TP ? (TP + FN)
+        poscnt = pt.res.tp + pt.res.fp
+        if poscnt == 0:
+            precision = 0
+        else:
+            precision = pt.res.tp / float(poscnt)
+        x = int(precision*(width - (2 * xoffset)))
         y = int(pt.recall*(height - (2 * yoffset)))
         x = x + xoffset
         y = y + yoffset
@@ -1479,29 +1692,26 @@ def showROCPlot(ptList):
 
         
     del draw
-
-    plot = ImageTk.PhotoImage(im)
-    ImbImage.create_image(width/2, height/2, image=plot)
-    wnd.mainloop()
-    wnd = None
-    
-
+    # Draw to a new window the imgWindow
+    #Since we are not updating the window we don't 
+    guiqueue.startWindow(im)
+   
 def drawResults( results ):
     if not results:
         print("no results, nothing to draw")
         return
-
+    
     # first, collect all image substrates of found labels;
     # if the foundLabel doesn't have a path, use the path from
     # the original
     substrates = collectSubstrates( results )
     if not substrates:
-        print("no labels and/or no substrates, nothing to draw");
+        print("no labels and/or no substrates, nothing to draw")
         return
-
     # print out some summary information
-    sys.stdout.softspace=False;
-    for subpath in sorted( substrates.keys() ):
+    sys.stdout.softspace=False
+
+    for subpath in substrates.iterkeys():
         numlabels = len( substrates[subpath] )
         print("{0} ({1} label{2})".format( subpath, numlabels, ("s","")[numlabels==1] ))
 
@@ -1527,16 +1737,42 @@ def drawLabelables( lablist, maxsize=None ):
         print("not drawing {0} video annotation{1}"
               .format(num_videos, ("s","")[num_videos==1]))
     if not substrates:
-        print("no labels and/or no substrates, nothing to draw");
+        print("no labels and/or no substrates, nothing to draw")
         return
     showImagesWithLabels( substrates, maxsize )
+    
+def showLocation(loc, img, scale):
+    if isinstance( loc, cvac.BBox):
+        a = loc.x/scale
+        b = loc.y/scale
+        c = a+loc.width/scale
+        d = b+loc.height/scale
+        draw = ImageDraw.Draw( img )
+        draw.line([(a,b), (c,b), (c,d), (a,d), (a,b)], fill=255, width=2)
+        del draw
+    elif isinstance( loc, cvac.Silhouette):
+        if len(loc.points) is 0:
+            return
+        if len(loc.points) is 1:
+            raise RuntimeError("Incorrect Labelable: a single point should not be a silhouette")
+        cpts = []
+        for point in loc.points:
+            cpts.append( (point.x/scale, point.y/scale) )
+        cpts.append( cpts[0] )  # close the loop
+        draw = ImageDraw.Draw( img )
+        draw.line( cpts, fill=255, width=2 )
+        del draw
+    else:
+        print("warning: not rendering Label type {0}".format( type(loc) ))  
+    
 
 def showImagesWithLabels( substrates, maxsize=None ):
     '''Takes a dictionary of type dict[file_system_path] = [Labelable] as
     input and renders every image with labels overlaid.  The size
     parameter can be used to display all images at the same size.'''
     # now draw
-    for subpath in substrates:
+    for subpath in substrates.iterkeys():
+    #for subpath in sorted( substrates.keys() ):
         img = Image.open( subpath )
         scale = 1.0
         if not maxsize is None:
@@ -1548,38 +1784,12 @@ def showImagesWithLabels( substrates, maxsize=None ):
         for lbl in substrates[subpath]:
             # draw poly into the image
             if isinstance(lbl, cvac.LabeledLocation):
-                if isinstance( lbl.loc, cvac.BBox):
-                    a = lbl.loc.x/scale
-                    b = lbl.loc.y/scale
-                    c = a+lbl.loc.width/scale
-                    d = b+lbl.loc.height/scale
-                    draw = ImageDraw.Draw( img )
-                    draw.line([(a,b), (c,b), (c,d), (a,d), (a,b)], fill=255, width=2)
-                    del draw
-                elif isinstance( lbl.loc, cvac.Silhouette):
-                    if len(lbl.loc.points) is 0:
-                        continue
-                    if len(lbl.loc.points) is 1:
-                        raise RuntimeError("Incorrect Labelable: a single point should not be a silhouette")
-                    cpts = []
-                    for point in lbl.loc.points:
-                        cpts.append( (point.x/scale, point.y/scale) )
-                    cpts.append( cpts[0] )  # close the loop
-                    draw = ImageDraw.Draw( img )
-                    draw.line( cpts, fill=255, width=2 )
-                    del draw
-                else:
-                    print("warning: not rendering Label type {0}".format( type(lbl.loc) ))      
-        showImage( img )
-
-def getConfusionMatrix( results, origMap, foundMap ):
-    '''produce a confusion matrix'''
-    import numpy
-    catsize = len( origMap )
-    if catsize>50:
-        pass
-    confmat = numpy.empty( (catsize+1, catsize+1) )
-    return confmat
+                showLocation(lbl.loc, img, scale)
+            elif isinstance(lbl, cvac.LabeledTrack):
+                for frame in lbl.keyframesLocations:
+                    showLocation(frame.loc, img, scale)
+        global guiqueue
+        guiqueue.imgWindow(img)
 
 def getHighestConfidenceLabel( lablist ):
     '''

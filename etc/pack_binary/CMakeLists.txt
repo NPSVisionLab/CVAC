@@ -210,10 +210,10 @@ IF (WIN32)
        COMPONENT Runtime 
       )
 
-  #INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-win32.zip
-  #     DESTINATION 3rdparty
-  #     COMPONENT Runtime 
-  #    )
+  INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-win32.zip
+       DESTINATION 3rdparty
+       COMPONENT Runtime 
+      )
 
 IF (NOT PYTHON_ONLY_CLIENT)
   INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libsvm
@@ -233,6 +233,10 @@ ELSE (WIN32)
       )
 
       INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/virtualenv-1.11.6
+           DESTINATION 3rdparty
+           COMPONENT Runtime 
+      )
+      INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-macosx.zip
            DESTINATION 3rdparty
            COMPONENT Runtime 
       )
@@ -295,28 +299,6 @@ IF (NOT PYTHON_ONLY_CLIENT)
       GET_FILENAME_COMPONENT( OpenCV_INSTALL_PATH "${OpenCV_DIR}/../.." REALPATH)
     ENDIF( WIN32 )
     MESSAGE( STATUS "OpenCV will be 3rd-party archived from this path: ${OpenCV_INSTALL_PATH}" )
-
-    IF (WIN32)
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/x86
-      DESTINATION 3rdparty/opencv
-       COMPONENT ThirdParty
-      )
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/python
-          DESTINATION 3rdparty/opencv
-           COMPONENT ThirdParty
-          ) 
-
-    ELSE (WIN32)
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/bin
-      DESTINATION 3rdparty/opencv
-       COMPONENT ThirdParty
-      )
-    #If not windows need the libs for the shared libraries
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/lib
-          DESTINATION 3rdparty/opencv
-           COMPONENT ThirdParty
-          ) 
-    ENDIF(WIN32)
 
 ENDIF (NOT PYTHON_ONLY_CLIENT)
 

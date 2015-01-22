@@ -47,6 +47,10 @@ INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/python-2.7.8.msi
         DESTINATION 3rdparty
         COMPONENT NumpyExt
        )
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-win32.zip
+        DESTINATION 3rdparty
+        COMPONENT PillowExt
+       )
 ENDIF(WIN32)
 
 SET (SVM_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libsvm")
@@ -61,6 +65,10 @@ INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/virtualenv-1.11.6
         COMPONENT NumpyExt
         USE_SOURCE_PERMISSIONS
        )
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-macosx.zip
+      DESTINATION 3rdparty
+      COMPONENT PillowExt
+     )
 #Need to install the stdc++ binaries if that option gets turned on
 INSTALL(DIRECTORY  ${ICE_ROOT}/bin
         DESTINATION 3rdparty/ICE
@@ -96,6 +104,14 @@ INSTALL(FILES ${SVM_DIR}/libsvm.so.2
         DESTINATION 3rdparty/libsvm
         COMPONENT LibSVMExt
        )
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/lib/libarchive.dylib
+       DESTINATION 3rdparty/libarchive/lib
+       COMPONENT LibArchiveExt
+      )
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdparty/libarchive/include
+       DESTINATION 3rdparty/libarchive
+       COMPONENT LibArchiveExt
+      )
 
 ELSE (APPLE)
 
@@ -204,6 +220,12 @@ cpack_add_component (
   LibSVMExt
   DISPLAY_NAME "libsvm"
   DESCRIPTION "Python libsvm package"
+  GROUP ThirdPartyGrp
+)
+cpack_add_component (
+  PillowExt
+  DISPLAY_NAME "pillow"
+  DESCRIPTION "Python PIL(pillow) package"
   GROUP ThirdPartyGrp
 )
 cpack_add_component (

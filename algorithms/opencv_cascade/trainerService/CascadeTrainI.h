@@ -47,6 +47,7 @@
 #include <util/processRunSet.h>
 #include <util/ServiceManI.h>
 
+namespace { // Need an anonymous namespace to resolve issues with classes of the same name
 class SamplesParams
 {
  public:
@@ -123,7 +124,7 @@ class CascadeTrainI : public cvac::DetectorTrainer, public cvac::StartStop
                          const std::string& bgName,
                          int numPos, int numNeg, 
                          const TrainerPropertiesI *trainProps );
-  void addDataPath(cvac::RunSet runset, const std::string &CVAC_DataDir);
+ 
   int addRotatedSamples(string tempVecfile, string vecfile, string image, const char *bgInfo, int numPos, int showSamples, int w, int h);
   bool checkPurposedLists(const cvac::PurposedListSequence& purposedLists,
                           cvac::TrainerCallbackHandlerPrx& _callback );
@@ -137,5 +138,5 @@ class CascadeTrainI : public cvac::DetectorTrainer, public cvac::StartStop
   Ice::ObjectAdapterPtr  mAdapter;
   TrainerPropertiesI    *mTrainProps;
 };
-
+}
 #endif //_CascadeTrainI_H__

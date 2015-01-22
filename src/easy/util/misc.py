@@ -35,7 +35,8 @@ def stripCVAC_DataDir(mydir):
     # make both CVAC_DataDir and mydir absolute and then strip off
     absCVAC = os.path.abspath(easy.CVAC_DataDir)
     absdir = os.path.abspath(mydir)
-    if absdir.startswith(absCVAC):
+    labsdir = absdir.lower()
+    if labsdir.startswith(absCVAC.lower()):
         absdir = absdir[len(absCVAC + '/'):]
         return absdir
     return mydir   # Noth9ing to strip so return original
@@ -78,31 +79,33 @@ def addFileToLabelableSet(lset, ldir, lfile, video=True, image=True):
     
     props = {}
     # last directory is the label name
-    idx = ldir.rfind("/")
-    lastIdx = len(ldir)
-    labelName = None
-    if idx == -1:
-        # at top level directory use directory name as labelName
-        labelName = ldir
-        lastIdx = 0
-    while idx != -1:
-        nextdir = ldir[idx+1:lastIdx]
-        if labelName == None:
-            labelName = nextdir
-        else:
-            props[nextdir] = ""
-        lastIdx = idx
-        if idx > 0:
-            idx = ldir.rfind("/", 0, idx-1)
-        else:
+    ldir = os.path.normpath(ldir)
+    ldir = ldir.rstrip('\\')
+    ldir = ldir.rstrip('/')
+    labelName = os.path.basename(ldir)
+    # FIll in props with each directory
+    nextDir = os.path.dirname(ldir)
+    while nextDir != None and nextDir != "":
+        nextProp = os.path.basename(nextDir)
+        if nextProp != None and nextProp != "":
+            props[nextProp] = ""
+        nextd = os.path.dirname(nextDir)
+        if nextd == nextDir:
             break
-    # add final property
-    if lastIdx > 0:
-        nextdir = ldir[0:lastIdx]
-        props[nextdir] = ""
+        else:
+            nextDir = nextd
     dirpath = cvac.DirectoryPath(ldir)
     fpath = cvac.FilePath(dirpath,lfile)
-    sub = cvac.Substrate(isImage, isVideo, fpath, 0, 0)
+    if isVideo == True:
+        sub = cvac.VideoSubstrate()
+        sub.width = 0
+        sub.height = 0
+        sub.videopath = fpath
+    else:
+        sub = cvac.ImageSubstrate()
+        sub.width = 0
+        sub.height = 0
+        sub.path = fpath
     lab = cvac.Label(True, labelName, props, cvac.Semantics(""))
     lset.append(cvac.Labelable(0.0, lab, sub))
     
@@ -117,3 +120,12 @@ def searchDir(lset, ldir, recursive=True, video=True, image=True):
             searchDir(lset, ldir + '/' + f)
         else:
             addFileToLabelableSet(lset, ldir, f, video, image)
+
+def getLabelableFilePath(lab):
+    #if lab.sub.ice_isA('::cvac::ImageSubstrate'):
+    if isinstance(lab.sub, cvac.ImageSubstrate):
+        path = lab.sub.path
+    else:
+        path = lab.sub.videopath
+    return path
+        

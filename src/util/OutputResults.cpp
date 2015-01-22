@@ -37,7 +37,7 @@
  *****************************************************************************/
 
 #include <util/OutputResults.h>
-
+#include <util/RunSetWrapper.h>
 using namespace cvac;
 using namespace Ice;
 OutputResults::OutputResults(
@@ -63,11 +63,12 @@ void OutputResults::addResult(cvac::Result& _res,
 
     if(_rects.size()>0)
     {
-      if(_res.original->sub.isVideo)
+      if(RunSetWrapper::isVideo(_res.original))
       {
         LabeledTrackPtr newFound = new LabeledTrack();
         newFound->lab.hasLabel = true;
         newFound->confidence = 1.0f;
+        newFound->sub = _converted.sub;
 
         for(std::vector<cv::Rect>::iterator it = _rects.begin(); it != _rects.end(); ++it)
         { 
@@ -91,7 +92,7 @@ void OutputResults::addResult(cvac::Result& _res,
             floc.frame.framecnt = -1; //there is no frame info. even though it comes from a video 
             localAndClientMsg(VLogger::WARN, NULL,
               "There is no frame info. even though it comes from a video (%s).\n",
-              (_res.original->sub.path.filename).c_str()); 
+              (RunSetWrapper::getFilename(_res.original)).c_str()); 
           }
           newFound->keyframesLocations.push_back(floc);
         }
@@ -99,11 +100,11 @@ void OutputResults::addResult(cvac::Result& _res,
       }
       else
       {
-        if(!_res.original->sub.isImage) //Is this case possible?
+        if (RunSetWrapper::isVideo(_res.original)) //Is this case possible?
         {
           localAndClientMsg(VLogger::WARN, NULL,
             "Though this file (%s) is not an image or a video, somethings are found.\n",
-            (_res.original->sub.path.filename).c_str());  
+            RunSetWrapper::getFilename(_res.original).c_str());  
         }
 
         for(std::vector<cv::Rect>::iterator it = _rects.begin(); it != _rects.end(); ++it)
@@ -134,29 +135,30 @@ void OutputResults::addResult(cvac::Result& _res,
     }
     if (mCallbackFreq.compare("immediate") == 0)
     {
-         localAndClientMsg(VLogger::WARN, mCallback, "callbackFrequency mode 'immediate' not supported!\n"); 
-        //ResultSet resSet;
-        //resSet.results.push_back(_res);
-        //mCallback->foundNewResults(resSet);
+        // localAndClientMsg(VLogger::WARN, mCallback, "callbackFrequency mode 'immediate' not supported!\n"); 
+        ResultSet resSet;
+        resSet.results.push_back(_res);
+        mCallback->foundNewResults(resSet);
         // We don't want to send the results multiple times so get rid
         // of results we have aready sent.  We don't have to do this in the
         // labelable case since its a different result but in the case of video it 
         // can be the same result getting added to.
         // TODO have a result sent flag so we can keep the result but know not to send it.
-        //_res.foundLabels.pop_back();
+        _res.foundLabels.pop_back();
     }else if (mCallbackFreq.compare("labelable") == 0)
     {
+        string orig = RunSetWrapper::getFilename(_res.original);
         if (mLastFile.empty())
         {
-            mLastFile = _res.original->sub.path.filename;
+            mLastFile = orig;
         }else
         {
-            if (mLastFile.compare(_res.original->sub.path.filename) != 0)
+            if (mLastFile.compare(orig) != 0)
             { // Filename has changed so output previous results.
                 ResultSet resSet;
                 resSet.results.push_back( *mPrevResult );
                 mCallback->foundNewResults(resSet);
-                mLastFile = _res.original->sub.path.filename;
+                mLastFile = orig;
             }
         }
         mPrevResult = &_res;
