@@ -54,6 +54,7 @@ const string bowCV::BOW_DETECTOR_NAME = "FeatureType";
 const string bowCV::BOW_EXTRACTOR_NAME = "DescriptorType";
 const string bowCV::BOW_MATCHER_NAME = "MatcherType";
 const string bowCV::BOW_NUM_WORDS = "NumWords";
+const string bowCV::BOW_CLASS_WEIGHT = "ClassWeights";
 const string bowCV::BOW_OPENCV_VERSION = "OPENCV_VERSION";
 const string bowCV::BOW_ONECLASS_ID = "ONE-CLASS_ID";
 
@@ -69,6 +70,7 @@ bowCV::bowCV(MsgLogger* _msgLog)
     flagTrain = false;
     flagName = false;
     flagOneClass = false;
+    flagClassWeight = true;
     cntCluster = -1;
     mInclassIDforOneClass = 1;
     mOutclassIDforOneClass = 0;
@@ -100,12 +102,14 @@ bool bowCV::train_initialize(const string& _detectorName,
                              const string& _extractorName,
                              const string& _matcherName,
                              int _nCluster,
+                             bool _flagClassWeight,
                              DetectorDataArchive* _dda)
 {
     //_detectorName;	//SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS
     //_extractorName;	//SURF, SIFT, OpponentSIFT, OpponentSURF
     //_matcherName;	//BruteForce-L1, BruteForce, FlannBased  
 
+    flagClassWeight = _flagClassWeight;
     flagName = false;
     dda = _dda;
 
@@ -120,6 +124,12 @@ bool bowCV::train_initialize(const string& _detectorName,
     message(msgout,MsgLogger::DEBUG);
 
     fDetector = FeatureDetector::create(_detectorName);    
+// When SIFT feature is used, you may adjust its performence with the following options
+//     fDetector->set("nOctaveLayers",1); //smaller -> smaller features
+//     fDetector->set("contrastThreshold",0.1); //larger -> smaller features
+//     fDetector->set("edgeThreshold",18.0); //larger -> smaller features
+//     fDetector->set("sigma",1.9);//larger -> smaller features
+
     dExtractor = DescriptorExtractor::create(_extractorName);
     if( fDetector.empty() || dExtractor.empty() )
     {
@@ -361,7 +371,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
           message(msgout,MsgLogger::WARN);
           continue;
         }
-      	
+
         _rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
         if((_rect.width != 0) && (_rect.height != 0))
 	        _img = _img(_rect);
@@ -383,7 +393,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
             err_str;
           message(msgout,MsgLogger::WARN);          
           continue;
-        }       
+        }
 
         if(_keypoints.size()<1) //According to the version of openCV, it may cause an exceptional error.
         { 
@@ -394,15 +404,31 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
           continue;
         }
 
-        dExtractor->compute(_img, _keypoints, _descriptors);          
-        _descriptorRepository.push_back(_descriptors);
+        dExtractor->compute(_img, _keypoints, _descriptors);
+        
+        try
+        {
+          _descriptorRepository.push_back(_descriptors);          
+        }
+        catch(cv::Exception& e)
+        { 
+          // limitImageSize(_img);
+          std::string err_str = std::string(e.what());
+
+          msgout = "While processing this file \"" + _fullFilePathImg + 
+            "\", a critical error occurred (OpenCV Error). It might be caused by " + 
+            "insufficient memory. So. This training process is stopping. Details: " + 
+            err_str;
+          message(msgout,MsgLogger::ERROR);          
+          return false;
+        }
 
         std::stringstream val2str1,val2str2;
         val2str1 << k+1;
         val2str2 << vFilenameTrain.size();
 
         msgout = "Progress of Feature Extraction: " 
-          + val2str1.str() + "/" + val2str2.str();
+          + val2str1.str() + "/" + val2str2.str();        
         messageInSameline(msgout);
     }
     std::stringstream val2str;
@@ -421,6 +447,9 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     }
     BOWKMeansTrainer bowTrainer(cntCluster); 
     bowTrainer.add(_descriptorRepository);
+    
+    //for saving the memory
+    _descriptorRepository.release();
 
     mVocabulary = bowTrainer.cluster();	
 
@@ -477,7 +506,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         _rect = Rect(vBoundX[k],vBoundY[k],vBoundWidth[k],vBoundHeight[k]);
         if((_rect.width != 0) && (_rect.height != 0))
 	        _img = _img(_rect);
-                
+
         try
         {
           fDetector->detect(_img, _keypoints);          
@@ -488,11 +517,28 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
           //std::string err_str = std::string(e.what());
           continue;
         }
+        
         //cout << "n_pts of " << vFilenameTrain[k]  << ": " << _keypoints.size() << "\n"; fflush(stdout);
         if(_keypoints.size() >= 1)
-        {   
-          bowExtractor->compute(_img, _keypoints, _descriptors);          
-          trainDescriptors.push_back(_descriptors);
+        { 
+          bowExtractor->compute(_img, _keypoints, _descriptors);
+
+          try
+          {
+            trainDescriptors.push_back(_descriptors);
+          }       
+          catch(cv::Exception& e)
+          { 
+            // limitImageSize(_img);
+            std::string err_str = std::string(e.what());
+
+            msgout = "While processing this file \"" + _fullFilePathImg + 
+              "\", a critical error occurred (OpenCV Error). " + 
+              "This training process will be stopped. Details: " + 
+              err_str;
+            message(msgout,MsgLogger::ERROR);          
+            return false;
+          }
           trainClass.push_back(_classID);
           _listClassAll.push_back(_classID);
         }
@@ -554,16 +600,19 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
             _classWeight[_idx++] = (float)_count;
         }
         for(unsigned int k=0;k<_listClassUnique.size();k++)
-            _classWeight[k] = (float)_maxCount/_classWeight[k];		
+            _classWeight[k] = (float)_maxCount/_classWeight[k];
         
         // The order of classWeight is the same with the order of classID. 
         // If there is a list of classID = {-1,2,1}. 
         // Then, the order of classWeights becomes {-1,1,2}. 
 
-        //param.kernel_type = CvSVM::LINEAR;	//empirically, it should NOT be linear for a better performance.
-
-        param.class_weights = new CvMat();	
-        cvInitMatHeader(param.class_weights,1,_listClassUnique.size(),CV_32FC1,_classWeight);
+        //param.kernel_type = CvSVM::LINEAR;	//empirically, it should NOT be linear for a better performance.        
+        if(flagClassWeight)
+        {
+          param.class_weights = new CvMat();	
+          cvInitMatHeader(param.class_weights,1,_listClassUnique.size(),CV_32FC1,_classWeight);
+        }
+        dda->setProperty(BOW_CLASS_WEIGHT,flagClassWeight?"True":"False");
         classifierSVM.train(trainDescriptors,trainClass,cv::Mat(),cv::Mat(),param);
         delete [] _classWeight;
     }
@@ -661,7 +710,9 @@ std::string bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _
       msgReturn = "Error: no feature";
       return msgReturn;
     }
+
     bowExtractor->compute(_img, _keypoints, _descriptors);
+
     // In the manual from OpenCV, it is written as follows:
     // "If true (it is for the second argument of this function)
     // and the problem is 2-class classification then the method

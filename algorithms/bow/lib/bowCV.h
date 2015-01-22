@@ -77,7 +77,7 @@ public:
 
   static const std::string BOW_VOC_FILE, BOW_SVM_FILE, BOW_DETECTOR_NAME,
     BOW_EXTRACTOR_NAME, BOW_MATCHER_NAME, BOW_NUM_WORDS,
-    BOW_OPENCV_VERSION, BOW_ONECLASS_ID,
+    BOW_CLASS_WEIGHT, BOW_OPENCV_VERSION, BOW_ONECLASS_ID,
     BOW_REJECT_CLASS_STRATEGY, BOW_REJECT_CLASS_AS_MULTICLASS,
     BOW_REJECT_CLASS_IGNORE_SAMPLES, BOW_REJECT_CLASS_AS_FIRST_STAGE;
   
@@ -89,6 +89,7 @@ public:
   bool  train_initialize(const std::string& _detectorName,
                          const std::string& _extractorName,
                          const std::string& _matcherName,int _nCluster,
+                         bool _flagClassWeight,
                          cvac::DetectorDataArchive* dda);
   void  train_stackTrainImage(const std::string& _fullpath,const int& _classID);	
   void  train_stackTrainImage(const std::string& _fullpath,const int& _classID,
@@ -146,6 +147,7 @@ private:
   int   cntCluster;
   int   mInclassIDforOneClass;
   int   mOutclassIDforOneClass;
+  bool  flagClassWeight;  //whether class weights are applied for or not
   bool  flagOneClass;
   bool  flagName;	
   bool  flagTrain;  

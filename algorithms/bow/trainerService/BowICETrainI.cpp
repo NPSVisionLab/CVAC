@@ -73,14 +73,20 @@ extern "C"
 //----------------------------------------------------------------------------
 TrainerPropertiesI::TrainerPropertiesI()
 {
+  //2.4.9
+  //Detector: FAST, STAR, SIFT, SURF, ORG, BRISK, MSER, GFTT, HARRIS, Dense, SimpleBlob
+  //Descriptor: SIFT, SURF, BRIEF, BRISK, ORB, FREAK
+  //Matcher: BruteForce, BruteForce-L1, BruteForce-Hamming, BruteForce-Hamming(2), FlannBased
+  //2.4.2
   //Detector: SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS, ORB
   //Descriptor: SURF, SIFT, OpponentSIFT, OpponentSURF, ORB, FREAK
   //Matcher: BruteForce-L1, BruteForce, FlannBased, BruteForce-Hamming 
   keyptName_Detector = "SIFT";
   keyptName_Descriptor = "SIFT";
   keyptName_Matcher = "BruteForce-L1";
-  countWords = 150;
+  countWords = 150;//150;
   rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_MULTICLASS;
+  flagClassWeight = true;
 }
 
 void TrainerPropertiesI::load(const TrainerProperties &p) 
@@ -133,6 +139,16 @@ bool TrainerPropertiesI::readProps()
       std::transform(_strategy.begin(),_strategy.end(),_str.begin(),::tolower);
       rejectClassStrategy = _str;
     }
+    else if(it->first.compare(bowCV::BOW_CLASS_WEIGHT) == 0)
+    {
+      std::string _input = it->second;
+      std::string _inputLower = _input;      
+      std::transform(_input.begin(),_input.end(),_inputLower.begin(),::tolower);
+      if(_inputLower.compare("true") == 0 || _inputLower.compare("1") == 0)
+        flagClassWeight = true;
+      else if(_inputLower.compare("false") == 0 || _inputLower.compare("0") == 0)
+        flagClassWeight = false;
+    }
   }
   return res;
 }
@@ -157,6 +173,9 @@ bool TrainerPropertiesI::writeProps()
 
   props.insert(std::pair<string, string>(bowCV::BOW_REJECT_CLASS_STRATEGY,
     rejectClassStrategy));
+
+  props.insert(std::pair<string, string>(bowCV::BOW_CLASS_WEIGHT,
+    flagClassWeight?"true":"false"));
 
   return res;
 }
@@ -241,7 +260,8 @@ bowCV* BowICETrainI::initialize( TrainerCallbackHandlerPrx& _callback,
   bool fInitialized = pBowCV->train_initialize(mTrainProps->keyptName_Detector,
                                           mTrainProps->keyptName_Descriptor,
                                           mTrainProps->keyptName_Matcher,
-                                          mTrainProps->countWords,&dda);
+                                          mTrainProps->countWords,
+                                          mTrainProps->flagClassWeight,&dda);
     
   if (fInitialized)
   {

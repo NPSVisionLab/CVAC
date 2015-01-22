@@ -94,6 +94,11 @@ public:
    * How to handle negative samples: Ignore, Multiclass, FirstStage
    */
   string    rejectClassStrategy;
+  /**
+   * Whether different class weights are applied for or not   
+   * according to the number of samples in each class
+   */
+  bool      flagClassWeight;
 };
 
 class BowICETrainI : public cvac::DetectorTrainer, public cvac::StartStop, public MsgLogger
