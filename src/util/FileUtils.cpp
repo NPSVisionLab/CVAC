@@ -58,6 +58,7 @@
       #include <windows.h>
 
 #else
+      #include <sys/time.h>
       #include <unistd.h>
       #define GetCurrentDir getcwd
 #endif
@@ -617,13 +618,12 @@ std::string cvac::getTempFilename( const std::string &basedir,
 std::string cvac::getDateFilename( const std::string &basedir, 
                                    const std::string &prefix)
 {
-    
     char tempName[128];
     time_t curtime;
     struct tm *timeinfo;
     time(&curtime);
-    timeinfo = localtime(&curtime);
-    //Format is MMDDYY_HHMM
+    timeinfo = localtime(&curtime);    
+    //Format is MMDDYY_HHMMSS
     strftime(tempName, 128, "%m%d%y_%H%M%S", timeinfo);
     std::string result;
     std::string filename;
@@ -641,6 +641,22 @@ std::string cvac::getDateFilename( const std::string &basedir,
     {
         result = basedir + "/" + filename;
     }
+
+    /*  //for adding micro seconds information
+    char msbuff[128];
+#ifdef WIN32
+    SYSTEMTIME time;
+    GetSystemTime(&time);
+    WORD ms = time.wMilliseconds;
+    sprintf(msbuff, "_%d", ms);
+#else
+    struct timeval tp;
+    gettimeofday(&tp,NULL);
+    long int ms = tp.tv_usec / 1000;    
+    sprintf(msbuff, "_%d", ms);
+#endif 
+    result += msbuff;
+    */
     return result;
 }
 
