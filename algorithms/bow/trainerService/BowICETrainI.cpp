@@ -75,16 +75,16 @@ extern "C"
 TrainerPropertiesI::TrainerPropertiesI()
 {
   //2.4.9
-  //Detector: FAST, STAR, SIFT, SURF, ORG, BRISK, MSER, GFTT, HARRIS, Dense, SimpleBlob
+  //Detector: FAST, STAR, SIFT, SURF, ORB, BRISK, MSER, GFTT, HARRIS, Dense, SimpleBlob
   //Descriptor: SIFT, SURF, BRIEF, BRISK, ORB, FREAK
   //Matcher: BruteForce, BruteForce-L1, BruteForce-Hamming, BruteForce-Hamming(2), FlannBased
   //2.4.2
   //Detector: SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS, ORB
   //Descriptor: SURF, SIFT, OpponentSIFT, OpponentSURF, ORB, FREAK
   //Matcher: BruteForce-L1, BruteForce, FlannBased, BruteForce-Hamming 
-  keyptName_Detector = "SIFT";
-  keyptName_Descriptor = "SIFT";
-  keyptName_Matcher = "BruteForce-L1";
+  keyptName_Detector = "ORB";
+  keyptName_Descriptor = "SURF";
+  keyptName_Matcher = "BruteForce";
   countWords = 150;//150;
   rejectClassStrategy = bowCV::BOW_REJECT_CLASS_AS_MULTICLASS;
   flagClassWeight = true;
