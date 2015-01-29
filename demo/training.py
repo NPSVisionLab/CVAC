@@ -3,7 +3,7 @@ Easy!  mini tutorial
 Build a model for object detection
 matz 6/18/2013
 '''
-
+import cvac
 import easy
 import zipfile
 
@@ -11,7 +11,14 @@ import zipfile
 # create a RunSet from corporate logo images
 #
 print("==== Training runset: ====")
-trainset = easy.createRunSet( "trainImg" );
+#trainset = easy.createRunSet( "trainImg" )
+trainset = cvac.RunSet()
+caset = easy.createRunSet("trainImg/ca")
+krset = easy.createRunSet("trainImg/kr")
+usset = easy.createRunSet("trainImg/us")
+easy.addToRunSet(trainset, caset, cvac.Purpose(cvac.PurposeType.MULTICLASS,0))
+easy.addToRunSet(trainset, krset, cvac.Purpose(cvac.PurposeType.MULTICLASS,1))
+easy.addToRunSet(trainset, usset, cvac.Purpose(cvac.PurposeType.MULTICLASS,2))
 easy.printRunSetInfo( trainset, printLabels=True )
 
 #
