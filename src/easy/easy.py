@@ -1696,7 +1696,7 @@ def showROCPlot(ptList):
     #Since we are not updating the window we don't 
     guiqueue.startWindow(im)
    
-def drawResults( results ):
+def drawResults( results, multiWindow=True ):
     if not results:
         print("no results, nothing to draw")
         return
@@ -1716,9 +1716,9 @@ def drawResults( results ):
         print("{0} ({1} label{2})".format( subpath, numlabels, ("s","")[numlabels==1] ))
 
     # render the substrates with respective labels
-    showImagesWithLabels( substrates )
+    showImagesWithLabels( substrates, multiWindow=multiWindow )
 
-def drawLabelables( lablist, maxsize=None ):
+def drawLabelables( lablist, maxsize=None, multWindow=True ):
     # first, collect all image substrates of the labels
     substrates = {}
     num_videos = 0
@@ -1739,7 +1739,7 @@ def drawLabelables( lablist, maxsize=None ):
     if not substrates:
         print("no labels and/or no substrates, nothing to draw")
         return
-    showImagesWithLabels( substrates, maxsize )
+    showImagesWithLabels( substrates, maxsize, multiWindow=multiWindow )
     
 def showLocation(loc, img, scale):
     if isinstance( loc, cvac.BBox):
@@ -1766,11 +1766,13 @@ def showLocation(loc, img, scale):
         print("warning: not rendering Label type {0}".format( type(loc) ))  
     
 
-def showImagesWithLabels( substrates, maxsize=None ):
+def showImagesWithLabels( substrates, maxsize=None, multiWindow=True ):
     '''Takes a dictionary of type dict[file_system_path] = [Labelable] as
     input and renders every image with labels overlaid.  The size
     parameter can be used to display all images at the same size.'''
     # now draw
+    keycnt = len(substrates)
+    cnt = 0
     for subpath in substrates.iterkeys():
     #for subpath in sorted( substrates.keys() ):
         img = Image.open( subpath )
@@ -1788,8 +1790,17 @@ def showImagesWithLabels( substrates, maxsize=None ):
             elif isinstance(lbl, cvac.LabeledTrack):
                 for frame in lbl.keyframesLocations:
                     showLocation(frame.loc, img, scale)
+        cnt = cnt + 1
         global guiqueue
-        guiqueue.imgWindow(img)
+        if multiWindow:
+            #The last window needs to be the main window otherwise we
+            #end wihout displaying any windows
+            if cnt < keycnt:
+                guiqueue.startWindow(img)
+            else:
+                guiqueue.imgWindow(img)
+        else:
+            guiqueue.imgWindow(img)
 
 def getHighestConfidenceLabel( lablist ):
     '''

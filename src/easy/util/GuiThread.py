@@ -61,7 +61,7 @@ class GuiThread(threading.Thread):
     def newWindow(self, img, wid):
         if wid == 0:
             self.canvas.deiconify()
-            self.canvas.title("CVAC Results")
+            self.canvas.title("CVAC Main Window")
             win = self.canvas
         else:
             win = tk.Toplevel()
