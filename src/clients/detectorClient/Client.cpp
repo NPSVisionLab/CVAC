@@ -44,6 +44,7 @@
 #include <util/ConfusionMatrix.h>
 #include <vector>
 #include <util/ServiceInvocation.h>
+#include <util/RunSetWrapper.h>
 using namespace cvac;
 
 class ClientAppData {
@@ -89,10 +90,11 @@ public:
 		{
 			const ::Result& result = resultSet.results[resultIndex];
 			int numLabelsFound = result.foundLabels.size();
+            string filename = RunSetWrapper::getFilename(result.original);
 			localAndClientMsg(VLogger::INFO, NULL, "Found %d label%s in %s\n", 
 					  numLabelsFound, 
 					  (numLabelsFound==1)?"":"s",
-					  result.original->sub.path.filename.c_str());
+					  filename.c_str());
             std::string className;
             if (result.foundLabels.size() > 0)
             {
@@ -122,9 +124,9 @@ public:
                        int expectedClass;
                        // Class number is last char of filename followed by a 3 char extension
                        //debug
-                       std::cout << result.original->sub.path.filename << std::endl;
-                       int idx = result.original->sub.path.filename.length() - 5;
-                       std::string eClassNum = result.original->sub.path.filename.substr(idx, 1);
+                       std::cout << filename << std::endl;
+                       int idx = filename.length() - 5;
+                       std::string eClassNum = filename.substr(idx, 1);
                        std::cout << eClassNum << std::endl;
                        expectedClass = atoi(eClassNum.c_str());
                        if (expectedClass == atoi(className.c_str()))

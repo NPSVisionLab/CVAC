@@ -58,6 +58,7 @@
       #include <windows.h>
 
 #else
+      #include <sys/time.h>
       #include <unistd.h>
       #define GetCurrentDir getcwd
 #endif
@@ -440,10 +441,10 @@ void cvac::addFileToRunSet( RunSet& runSet, const std::string& relativePath,
       runSet.purposedLists.push_back(purposeClass1);
    }
 
-   Labelable* class1Label = new Labelable();
-   class1Label->sub.isImage = true; class1Label->sub.isVideo = false;
-   class1Label->sub.path.filename = filename;
-   class1Label->sub.path.directory.relativePath = relativePath;
+   ImageSubstratePtr sub = new ImageSubstrate();
+   sub->path.filename = filename;
+   sub->path.directory.relativePath = relativePath;
+   LabelablePtr class1Label = new Labelable(0.0, Label(), sub);
    purposeClass1->labeledArtifacts.push_back(class1Label);
 }
 
@@ -617,13 +618,12 @@ std::string cvac::getTempFilename( const std::string &basedir,
 std::string cvac::getDateFilename( const std::string &basedir, 
                                    const std::string &prefix)
 {
-    
     char tempName[128];
     time_t curtime;
     struct tm *timeinfo;
     time(&curtime);
-    timeinfo = localtime(&curtime);
-    //Format is MMDDYY_HHMM
+    timeinfo = localtime(&curtime);    
+    //Format is MMDDYY_HHMMSS
     strftime(tempName, 128, "%m%d%y_%H%M%S", timeinfo);
     std::string result;
     std::string filename;
@@ -641,6 +641,22 @@ std::string cvac::getDateFilename( const std::string &basedir,
     {
         result = basedir + "/" + filename;
     }
+
+    /*  //for adding micro seconds information
+    char msbuff[128];
+#ifdef WIN32
+    SYSTEMTIME time;
+    GetSystemTime(&time);
+    WORD ms = time.wMilliseconds;
+    sprintf(msbuff, "_%d", ms);
+#else
+    struct timeval tp;
+    gettimeofday(&tp,NULL);
+    long int ms = tp.tv_usec / 1000;    
+    sprintf(msbuff, "_%d", ms);
+#endif 
+    result += msbuff;
+    */
     return result;
 }
 

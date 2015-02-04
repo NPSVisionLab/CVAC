@@ -5,6 +5,8 @@ from __future__ import print_function
 import sys
 import unittest
 import os
+import thread
+import time
 
 '''Since we need to setup this env variable before
    we import easy lets do it now!
@@ -21,6 +23,14 @@ os.environ["CVAC_DATADIR"] = dataDir
 # wait to import easy after we setup CVAC_DATADIR
 import easy
 import cvac
+
+def updateThread(delay, img, win):
+    time.sleep(delay)
+    easy.guiqueue.imgWindow(img, window=win)
+
+def closeWindows(delay):
+    time.sleep(delay)
+    easy.guiqueue.closeAllWindows()
 
 class EasyTest(unittest.TestCase):
 
@@ -47,6 +57,7 @@ class EasyTest(unittest.TestCase):
            
         '''
         for entry in labelList:
+            print ("label name " + entry.lab.name)
             if entry.lab.name != "easyTestData" and \
                entry.lab.name != "kitchen" and \
                entry.lab.name != "MITmountain":
@@ -144,6 +155,36 @@ class EasyTest(unittest.TestCase):
             easy.printResults(results)
         else:
             RuntimeError("Bad datadir")
+
+    def xtest_gui(self):
+        print("Testing gui")
+        import Tkinter as tk
+        import time
+        from PIL import Image, ImageTk, ImageDraw
+
+        datadir = os.getenv("CVAC_DATADIR", None) 
+        img = Image.open( datadir +  "/testImg/TestCaFlag.jpg" )
+        img2 = Image.open( datadir +  "/testImg/TestKrFlag.jpg" )
+        img3 = Image.open( datadir +  "/testImg/TestUsFlag.jpg" )
+        # Since OSX need to do all the window creating before we call
+        # imgWindow
+        w1 = easy.guiqueue.startWindow(img)
+        w2 = easy.guiqueue.startWindow(img2)
+        # Create a bunch of theads to update the windows a latter times.
+        # This is required since on OSX the first imgWindow will block.
+        # We also test threading as well!
+        thread.start_new_thread(updateThread, (2, img2, 0)) 
+        thread.start_new_thread(updateThread, (4, img3, 0)) 
+        thread.start_new_thread(updateThread, (6, img, w1)) 
+        thread.start_new_thread(updateThread, (8, img3, w1)) 
+        thread.start_new_thread(updateThread, (6, img2, w2)) 
+        thread.start_new_thread(updateThread, (8, img3, w2)) 
+        thread.start_new_thread(closeWindows, (10,)) 
+        # On OSX this blocks until the window is closed.  On other
+        # platforms that don't require the gui thread to be the main thread
+        # this call does not block.  In both cases, once the main window (0)
+        # is closed the GUI thread dies.
+        easy.guiqueue.imgWindow(img)
         
     def tearDown(self):
         # Clean up

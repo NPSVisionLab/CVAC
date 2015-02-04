@@ -216,7 +216,7 @@ int BowICEI::detectObjects(const CallbackHandlerPrx& _callback,
                            bool& _resFlag,
                            std::string& _resStr)
 { 
-  std::string tfilepath = getFSPath( _lbl.sub.path, m_CVAC_DataDir );
+  std::string tfilepath = getFSPath(RunSetWrapper::getFilePath(_lbl), m_CVAC_DataDir );
 
   localAndClientMsg(VLogger::DEBUG, _callback,
                     "%s is processing.\n",tfilepath.c_str());
