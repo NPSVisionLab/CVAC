@@ -1665,6 +1665,8 @@ def showROCPlot(ptList):
     #wnd = guithread.getCanvas()
     #if wnd == None:
     #    return
+    if guiqueue == None: 
+         return
     try:
         im = Image.open(getFSPath('plot.jpg'))
     except:
@@ -1770,6 +1772,9 @@ def showImagesWithLabels( substrates, maxsize=None, multiWindow=True ):
     '''Takes a dictionary of type dict[file_system_path] = [Labelable] as
     input and renders every image with labels overlaid.  The size
     parameter can be used to display all images at the same size.'''
+    global guiqueue
+    if guiqueue == None:
+        return
     # now draw
     keycnt = len(substrates)
     cnt = 0
@@ -1791,7 +1796,6 @@ def showImagesWithLabels( substrates, maxsize=None, multiWindow=True ):
                 for frame in lbl.keyframesLocations:
                     showLocation(frame.loc, img, scale)
         cnt = cnt + 1
-        global guiqueue
         if multiWindow:
             #The last window needs to be the main window otherwise we
             #end wihout displaying any windows
