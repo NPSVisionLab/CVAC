@@ -119,7 +119,11 @@ SET (PYTHON_PACK_EASY_NAME "EasyCV")
 SET (PYTHON_PACK_ICE_NAME "EasyCVIce")
 # Next copy over ice. Since we need to change directory name
 # from python to icePkg, copy over the files.  Not sliced so do it now
+IF (UNIX)
+FILE (GLOB ICE_FILES ${ICE_PYTHON_DIR}/Ice* ${ICE_PYTHON_DIR}/Ice*/*)
+ELSE (UNIX)
 FILE (GLOB ICE_FILES ${ICE_PYTHON_DIR}/*)
+ENDIF (UNIX)
 FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/icePkg)
 # Copy over the opencv files required by easy to the easy package.
 # One day these should be in there own package?  Even those these are
@@ -161,18 +165,22 @@ IF (NOT BUILD_3RDPARTY_PACKAGE)
 ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
 
 # 3rdparty dependencies for building CVAC
-INSTALL(DIRECTORY   ${ICE_ROOT}/include  ${ICE_ROOT}/slice
-        DESTINATION 3rdparty/ICE
-        USE_SOURCE_PERMISSIONS
-        COMPONENT IceExt
-        PATTERN *.pdb EXCLUDE
-       )
-INSTALL(DIRECTORY   ${ICE_ROOT}/python
-        DESTINATION 3rdparty/ICE
-        USE_SOURCE_PERMISSIONS
-        COMPONENT IceExt
-        PATTERN *.pyc EXCLUDE
-       )
+IF (NOT UNIX)
+	INSTALL(DIRECTORY   ${ICE_ROOT}/include  ${ICE_ROOT}/slice
+		DESTINATION 3rdparty/ICE
+		USE_SOURCE_PERMISSIONS
+		COMPONENT IceExt
+		PATTERN *.pdb EXCLUDE
+	       )
+
+	INSTALL(DIRECTORY   ${ICE_ROOT}/python
+		DESTINATION 3rdparty/ICE
+		USE_SOURCE_PERMISSIONS
+		COMPONENT IceExt
+		PATTERN *.pyc EXCLUDE
+	       )
+ENDIF (NOT UNIX)
+
 #Windows needs all the dll files
 IF(WIN32)
     INSTALL(DIRECTORY   ${ICE_ROOT}/bin
@@ -290,6 +298,7 @@ ENDIF(APPLE)
 
 
 
+IF (NOT UNIX)
 IF (NOT PYTHON_ONLY_CLIENT)
     INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox${CMAKE_EXECUTABLE_SUFFIX}
                  ${ICE_BOX_ADMIN}
@@ -320,6 +329,7 @@ IF (NOT PYTHON_ONLY_CLIENT)
     ENDIF(WIN32)
 
 ENDIF (NOT PYTHON_ONLY_CLIENT)
+ENDIF (NOT UNIX)
 
 INSTALL(SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/PostInstall.cmake")
 
