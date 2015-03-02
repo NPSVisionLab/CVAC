@@ -144,7 +144,7 @@ def parseFolder( localDir, lmAnnotations, lmImages, lmFolder, CVAC_DataDir ):
             imgFname = felem.text.encode('utf-8').strip() # strip any leading or trailing white space
             
         cvacFp = cvac.FilePath( cvacDir, imgFname )
-        substrate = cvac.Substrate( True, False, cvacFp, -1, -1 )
+        substrate = cvac.ImageSubstrate( -1, -1, cvacFp)
         labels = labels + parseLabeledObjects( root, substrate )
     return labels
 
