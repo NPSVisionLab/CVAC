@@ -46,7 +46,7 @@ def parseLabeledObjects( root, imageSubstrate ):
             imageSubstrate.height = int(objH.text.encode('utf-8').strip())
             
         objW = objImgSize.find('ncols')
-        if objW != None and objW.txt != None:
+        if objW != None and objW.text != None:
             imageSubstrate.width = int(objW.text.encode('utf-8').strip())
     
     labels = []
