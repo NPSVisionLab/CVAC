@@ -1698,7 +1698,11 @@ def showROCPlot(ptList):
     #Since we are not updating the window we don't 
     guiqueue.startWindow(im)
    
-def drawResults( results, multiWindow=True ):
+'''
+Draw the results to the screen.  If you also want to see the results and the
+labled data together then pass the origSet as the runset containing the labeled data.
+'''
+def drawResults( results, origSet=None, multiWindow=True ):
     if not results:
         print("no results, nothing to draw")
         return
@@ -1716,10 +1720,23 @@ def drawResults( results, multiWindow=True ):
     for subpath in substrates.iterkeys():
         numlabels = len( substrates[subpath] )
         print("{0} ({1} label{2})".format( subpath, numlabels, ("s","")[numlabels==1] ))
-
-    # render the substrates with respective labels
-    showImagesWithLabels( substrates, multiWindow=multiWindow )
-
+        
+    origSubs = {}    
+    if origSet:
+        for plist in origSet.purposedLists:
+            assert( isinstance(plist, cvac.PurposedLabelableSeq) )
+            for sample in plist.labeledArtifacts: 
+                opath = getFSPath(sample)
+                if opath not in origSubs:
+                    origSubs[opath] = [sample]
+                else:
+                    origSubs[opath].append(sample)
+    if origSubs:  
+        # render the substrates with respective labels
+        showImagesWithLabels( substrates, origSubs = origSubs, multiWindow=multiWindow )
+    else:
+        showImagesWithLabels( substrates, multiWindow=multiWindow )
+        
 def drawLabelables( lablist, maxsize=None, multWindow=True ):
     # first, collect all image substrates of the labels
     substrates = {}
@@ -1743,14 +1760,14 @@ def drawLabelables( lablist, maxsize=None, multWindow=True ):
         return
     showImagesWithLabels( substrates, maxsize, multiWindow=multiWindow )
     
-def showLocation(loc, img, scale):
+def showLocation(loc, img, scale, color=255):
     if isinstance( loc, cvac.BBox):
         a = loc.x/scale
         b = loc.y/scale
         c = a+loc.width/scale
         d = b+loc.height/scale
         draw = ImageDraw.Draw( img )
-        draw.line([(a,b), (c,b), (c,d), (a,d), (a,b)], fill=255, width=2)
+        draw.line([(a,b), (c,b), (c,d), (a,d), (a,b)], fill=color, width=0)
         del draw
     elif isinstance( loc, cvac.Silhouette):
         if len(loc.points) is 0:
@@ -1762,16 +1779,19 @@ def showLocation(loc, img, scale):
             cpts.append( (point.x/scale, point.y/scale) )
         cpts.append( cpts[0] )  # close the loop
         draw = ImageDraw.Draw( img )
-        draw.line( cpts, fill=255, width=2 )
+        draw.line( cpts, fill=color, width=0 )
         del draw
     else:
         print("warning: not rendering Label type {0}".format( type(loc) ))  
     
 
-def showImagesWithLabels( substrates, maxsize=None, multiWindow=True ):
+def showImagesWithLabels( substrates, origSubs = None, maxsize=None, multiWindow=True ):
     '''Takes a dictionary of type dict[file_system_path] = [Labelable] as
     input and renders every image with labels overlaid.  The size
-    parameter can be used to display all images at the same size.'''
+    parameter can be used to display all images at the same size.
+    If origSubs dictionary is not None the draw those labels too.
+    They are the original labels and drawn in green.
+    '''
     global guiqueue
     if guiqueue == None:
         return
@@ -1788,6 +1808,16 @@ def showImagesWithLabels( substrates, maxsize=None, multiWindow=True ):
             scale = max( scalex, scaley )
             maxsize = int(img.size[0]/scale), int(img.size[1]/scale)
             img = img.resize( maxsize, Image.NEAREST ) # favor speed over quality
+        ''' If we have the original labels draw them first so they are on the buttom. '''
+        if origSubs:
+            if subpath in origSubs:
+                for lbl in origSubs[subpath]:
+                    if isinstance(lbl, cvac.LabeledLocation):
+                        showLocation(lbl.loc, img, scale, color=0xff00)
+                    elif isinstance(lbl, cvac.LabeledTrack):
+                        for frame in lbl.keyframesLocations:
+                            showLocation(frame.loc, img, scale, color=0xff00)
+                    
         for lbl in substrates[subpath]:
             # draw poly into the image
             if isinstance(lbl, cvac.LabeledLocation):
