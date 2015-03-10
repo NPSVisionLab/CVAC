@@ -7,30 +7,269 @@ import random
 random.seed()
 import numpy
 import easy
+import util.misc as misc 
 import cvac
 import math
+import util.clipper as clipper
+
 from operator import attrgetter, itemgetter
 
+'''
+This assumes that the original labels are available and that
+the foundLabels are rectangles or polygons. The option parameter is
+the amount of overlap before its considered a hit.  If not defined or 
+zero then any intersection is a hit. If defined, its the minimum value  of the
+area of the intersection / area of the union before its considered to be a hit.
+'''
+def overlapHitStrategy(origpur, origList, result, foundMap, tres, option = None):
+    foundLabels = result.foundLabels
+    numfound = len(foundLabels)
+    '''Keep track of last path we counted.  If the path did not change
+       then don't add these results since they are the same.  Here we assume that
+       the detector will return the same results if the image is the same.
+    '''
+    resPath = getRelativePath(result.original)
+    if tres.lastPath == resPath:
+        return tres;
+    else:
+        tres.lastPath = resPath
+    ''' Go through the original list collecting all the polygons and the label names '''
+    origPolyList = []
+    for orig in origList:
+        origPoly = []
+        if isinstance(orig, cvac.LabeledLocation) == False:
+            print("Original Label does not include location information!")
+            print("Assuming whole image.")
+            lname = easy.getLabelText( orig.lab, guess=False )
+            origPolyList.append((origPoly,lname))
+            continue
+        origloc = orig.loc
+        if isinstance(origloc, cvac.Silhouette):
+            for pt in origloc.points:
+                origPoly.append(clipper.Point(pt.x, pt.y))  
+        
+        elif isinstance(origloc, cvac.BBox):
+            ''' Normally we would do width-1 and height-1 but since we are using
+                the clipper lets add one to the box.
+            '''
+            pt = clipper.Point(origloc.x, origloc.y)
+            origPoly.add_point(pt)
+            pt = clipper.Point(origloc.x + origloc.width, origloc.y)
+            origPoly.add_point(pt)
+            pt = clipper.Point(origloc.x + origloc.width, origloc.y + origloc.height)
+            origPoly.add_point(pt)
+            pt = clipper.Point(origloc.x, origloc.y + origloc.height)
+            origPoly.add_point(pt)
+            
+        else:
+            print("Error: Original Label location type not supported!")
+            return tres
+        origPolyList.append((origPoly,easy.getLabelText( orig.lab, guess=False )))
+    ''' hitOrigs is a recording of which originals got hit in this result '''
+    hitOrigs = []
+    cnt = len(origPolyList)
+    for i in range(cnt):
+        hitOrigs.append(0)
+    ''' finds represents to total number of things found.  We will subtract the
+        number of correct hits from the total finds to get the misses.
+    '''
+    finds = 0
+    ''' Go through each found label and compare to all the originals.  We will keep track 
+        of which originals got hit and how many times they got it.
+    '''
+    for lbl in foundLabels:
+        foundlabelText = easy.getLabelText( lbl.lab, guess=False )
+        if foundlabelText in foundMap:
+            foundPurpose = foundMap[foundlabelText]
+        else:
+            print("Warning: Found label not found in foundMap!")
+            foundPurpose = easy.getPurpose('pos')
+        foundPoly = [];
+        if isinstance(lbl, cvac.LabeledLocation) == False:
+            print("Warning: Found Label does not include location information!")
+            continue
+        foundloc = lbl.loc
+        if isinstance(foundloc, cvac.Silhouette): 
+            for pt in foundloc.points:
+                foundPoly.append((pt.x, pt.y))  
+            
+        elif isinstance(foundloc, cvac.BBox):
+            pt = clipper.Point(foundloc.x, foundloc.y)
+            foundPoly.append(pt)
+            pt = clipper.Point(foundloc.x + foundloc.width, foundloc.y)
+            foundPoly.append(pt)
+            pt = clipper.Point(foundloc.x + foundloc.width, foundloc.y + foundloc.height)
+            foundPoly.append(pt)
+            pt = clipper.Point(foundloc.x, foundloc.y + foundloc.height)
+            foundPoly.append(pt)
+            
+        else:
+            print("Warning: found Label location type not supported!")
+            continue
+        
+        ''' Keep track of the total things we thought we found '''
+        if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
+            finds = finds + 1
+      
+        ''' Record all the originals that are foundPoly hits '''
+        for i,(origPoly, origLabelText) in enumerate(origPolyList):
+            if origLabelText in foundMap:
+                origFoundPurpose = foundMap[origLabelText]
+            else:
+                ''' We assume a positive purpose unless we don't have label data then its negative'''
+                if not origPoly:
+                    origFoundPurpose = easy.getPurpose('neg')
+                else:
+                    origFoundPurpose = easy.getPurpose('pos')
+            if not origPoly:
+                if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
+                    hitOrigs[i] +=  1
+            else:
+                clip = clipper.Clipper()
+                clip.AddPolygon(foundPoly, clipper.PolyType.Clip)
+                clip.AddPolygon(origPoly, clipper.PolyType.Subject)
+                polyInter = []
+                resultInter = clip.Execute(clipper.ClipType.Intersection, polyInter)
+                if not resultInter:
+                    print("Warning: In overlap HitStrategy intersection failed!") 
+                if option == None or option == 0:
+                    ''' No overlap percentage to just check for any intersection '''
+                    if resultInter and polyInter:
+                        ''' We have an overlap'''
+                        if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
+                            hitOrigs[i] +=  1
+       
+                else:
+                    ''' We have a overlap percentage to meet before we call it a hit'''
+                    polyUnion = []
+                    resultUnion = clip.Execute(clipper.ClipType.Union, polyUnion)
+                    if not resultUnion:
+                        print("Warning: In overlap HitStrategy union failed!") 
+                    if (resultInter and resultUnion and polyInter and polyUnion):
+                        union_area = 0;
+                        for poly in polyUnion:
+                            union_area += clipper.Area(poly)
+                        inter_area = 0;
+                        for poly in polyInter:
+                            inter_area += clipper.Area(poly)
+                        if union_area != 0:
+                            overlap = inter_area / union_area
+                            if overlap >= option:
+                                if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
+                                    hitOrigs[i] +=  1
+  
+    
+    ''' We are going to compute the results based upon originals.'''
+
+    for i,(origPoly, origLabelText) in enumerate(origPolyList):
+        if origLabelText in foundMap:
+            origFoundPurpose = foundMap[origLabelText]
+        else:
+            if not origPoly:
+                origFoundPurpose = easy.getPurpose('neg')
+            else:
+                origFoundPurpose = easy.getPurpose('pos')
+                print("Warning: Original label: {0} not found in foundMap assuming pos!".format(origLabelText))
+        if origFoundPurpose.ptype == cvac.PurposeType.POSITIVE:
+            if hitOrigs[i] == 0:
+                ''' We missed it but we should have it it '''
+                tres.fn += 1
+            else:
+                ''' We it it and were supposed to but don't now number of times we hit it '''
+                tres.tp += 1
+                ''' We subtract the hits we had so finds will be the misses '''
+                finds -= hitOrigs[i]
+        if origFoundPurpose.ptype == cvac.PurposeType.NEGATIVE:
+            if hitOrigs[i] == 0:
+                ''' We were supposed to miss and we did '''
+                tres.tn += 1
+            else:
+                ''' We hit it but we where supposed to miss, count each one '''
+                tres.fp += hitOrigs[i]
+                ''' subtract these from the finds to compute misses'''
+                finds -= hitOrigs[i]
+                
+    ''' The number of misses is the number of finds that are not hits '''
+    tres.fp += finds
+    return tres
+
+'''
+The default callback used to count the positive and/or negative hits when building 
+the confusion table.
+'''
+def defaultHitStrategy(origpur, orig, results, foundMap, tres, option = None):
+    foundLabels = results.foundLabels
+    resPath = getRelativePath(results.original)
+    '''Keep track of last path we counted.  If the path did not change
+       then don't add these results since they are the same.
+    '''
+    if tres.lastPath == resPath:
+        return tres;
+    else:
+        tres.lastPath = resPath
+    numfound = len(foundLabels)
+    if numfound==0:
+        if origpur.ptype==cvac.PurposeType.POSITIVE:
+            tres.fn += 1
+        else:
+            tres.tn += 1
+        return tres
+    foundPurposes = []
+    '''
+    Get one count each of each purpose found.  We use this to make sure that we
+    only return a result for each purpose and no more.  If more than one result for each
+    purpose is in the foundLabels, then only the first one is counted.
+    '''
+    for lbl in foundLabels:
+        labelText = easy.getLabelText( lbl.lab, guess=False )
+        if labelText in foundMap:
+            foundPurpose = foundMap[labelText]
+            if foundPurpose not in foundPurposes:
+                foundPurposes.append(foundPurpose)
+        else:
+            print("warning: Label " + labelText + " not in foundMap can't compute evaluation.")
+    for lbl in foundLabels:
+        labelText = easy.getLabelText( lbl.lab, guess=False )
+        
+        if labelText in foundMap:
+            foundPurpose = foundMap[labelText]
+            '''We only want to count a purpose once
+               so remove it from the foundPurposes list '''
+            if foundPurpose in foundPurposes:
+                foundPurposes.remove(foundPurpose)
+                if origpur.ptype == cvac.PurposeType.POSITIVE:
+                    if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
+                        tres.tp += 1
+                    else:
+                        tres.fn += 1
+                else:
+                    if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
+                        # This defaultHitStrategy counts every false positive
+                        tres.fp += 1
+                    else:
+                        tres.tn += 1
+    return tres
+                            
+                            
+                   
+    
 class TestResult:
     def __init__(self, tp=0, fp=0, tn=0, fn=0):
         self.tp = tp;
         self.fp = fp;
         self.tn = tn;
         self.fn = fn;
+        self.lastPath = None;
         
     def __str__(self):
         desc = "{0} tp, {1} fp, {2} tn, {3} fn"\
            .format(self.tp, self.fp, self.tn, self.fn)
         return desc
-    
-class MultipleHitStrategy:
-    CountEveryFalsePositive, CountAsOneFalsPositive = range(2)
-    
-    def __init__(self, value):
-        self.value = value;
+   
 
 def getRelativePath( label ):
-    return label.sub.path.directory.relativePath + "/" + label.sub.path.filename
+    fspath = misc.getLabelableFilePath(label)
+    return fspath.directory.relativePath + "/" + fspath.filename
 
 def verifyFoundMap(foundMap):
     ''' Verify that the all the purposes in the found map are pos or neg '''
@@ -42,29 +281,37 @@ def verifyFoundMap(foundMap):
     return True
 
 def getConfusionTable( results, foundMap, origMap=None, origSet=None, 
-                       multipleHitStrategy=MultipleHitStrategy.CountEveryFalsePositive ):
+                       HitStrategy=defaultHitStrategy, HitOption=None):
     '''Determine true and false positives and negatives based on
     the purpose of original and found labels.
     origMap maps the relative file path of every label to the assigned purpose.
     The origMap can be constructed from the original RunSet if it
     contained purposes.
     Returns TestResult, nores'''
-
+    if HitStrategy == overlapHitStrategy:
+        if not origSet:
+            raise RuntimeError("Need origSet for overlapHitStrategy!")    
     if not origMap and not origSet:
         raise RuntimeError("need either origMap or origSet")
     if not foundMap:
         raise RuntimeError("need a foundMap")
     if not verifyFoundMap(foundMap):
         raise RuntimeError("Invalid found map")
-    if not origMap:
+    if not origMap or HitStrategy == overlapHitStrategy:
         origMap = {}
+        origLabelMap = {}
         for plist in origSet.purposedLists:
             assert( isinstance(plist, cvac.PurposedLabelableSeq) )
             for sample in plist.labeledArtifacts:
                 if plist.pur.ptype != cvac.PurposeType.POSITIVE \
                      and plist.pur.ptype != cvac.PurposeType.NEGATIVE:
                     raise RuntimeError("Non pos or neg purpose in runset")
-                origMap[ getRelativePath(sample) ] = plist.pur
+                opath = getRelativePath(sample)
+                origMap[ opath ] = plist.pur
+                if opath in origLabelMap:
+                    origLabelMap[opath].append(sample)
+                else:
+                    origLabelMap[getRelativePath(sample)] = [sample]
     # compute the number of samples in the origSet that was not evaluated
     nores = 0
     if origSet:
@@ -74,50 +321,18 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None,
         print("warning: Not able to determine samples not evaluated")
     tres = TestResult()
     for res in results:
-        foundPurposes = []
-        for lbl in res.foundLabels:
-            labelText = easy.getLabelText( lbl.lab, guess=False )
-            if labelText in foundMap:
-                foundPurpose = foundMap[labelText]
-                foundPurposes.append(foundPurpose)
-            else:
-                print("warning: Label " + labelText + " not in foundMap can't compute evaluation.")
-        numfound = len(res.foundLabels)
         origpur = origMap[ getRelativePath(res.original) ]
+        if origLabelMap:
+            origlist = origLabelMap[getRelativePath(res.original)];
+        '''
+        We can define our strategy on how to count hits.  The default
+        strategy provided is to count all the false positives and a true positive
+        only for each purpose found.  So if the same object is found 3 times it is only
+        counted once, but if 2 different objects are found, they both are counted.
+        '''
        
-        if numfound==0:
-            if origpur.ptype==cvac.PurposeType.POSITIVE:
-                tres.fn += 1
-            else:
-                tres.tn += 1
-        else:
-            # We found multiple things so look at multiple hit strategy to see how to count
-            foundFalsePos = False 
-            for lbl in res.foundLabels:
-                labelText = easy.getLabelText( lbl.lab, guess=False )
-                if labelText in foundMap:
-                    foundPurpose = foundMap[labelText]
-                    '''We only want to count a purpose once
-                       so remove it from the foundPurposes list '''
-                    if foundPurpose in foundPurposes:
-                        foundPurposes.remove(foundPurpose)
-                        if origpur.ptype == cvac.PurposeType.POSITIVE:
-                            if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
-                                tres.tp += 1
-                            else:
-                                tres.fn += 1
-                        else:
-                            if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
-                                if multipleHitStrategy == MultipleHitStrategy.CountEveryFalsePositive:
-                                    tres.fp += 1
-                                elif foundFalsePos == False:
-                                    tres.fp += 1
-                                    foundFalsePos = True
-                            else:
-                                tres.tn += 1
-                            
-                            
-                   
+        tres = HitStrategy(origpur, origlist, res, foundMap, tres, option=HitOption)
+            
     print('{0}, nores: {1}'.format(tres, nores))
        
     return tres, nores
@@ -181,18 +396,28 @@ class EvaluationResult:
         self.nores = nores
         self.detail = detail
         self.name = name
-        num_pos = self.res.tp+self.res.fn
-        if num_pos!=0:
-            self.recall = self.res.tp/float(num_pos)
+        '''
+        recall is sensitivity or True positive rate (TP/(TP + FN).    
+        trueNegRate is specificity or True negative rate (TN/FP + TN).  
+        '''
+        numpos = self.res.tp + self.res.fn
+        numneg = self.res.fp + self.res.tn
+    
+        if numpos != 0:
+            self.recall = self.res.tp/float(numpos)
         else:
             self.recall = 0
-        num_det = self.res.tp+self.res.fp
-        if num_det!=0:
-            self.precision = self.res.tp/float(self.res.tp+self.res.fp)
+        if numneg != 0:
+            self.trueNegRate = self.res.tn/float(numneg)
         else:
-            self.precision = 0
-        # calculate combined recall/precision score:
-        self.score = (self.recall + self.precision)/2.0
+            self.trueNegRate = 0
+        if self.res.tp > 0 and self.res.tn > 0:
+            # calculate combined recall/trueNegRate score:
+            self.score = (self.recall + self.trueNegRate)/2.0
+        elif self.res.tp > 0:
+            self.score = self.recall
+        else:
+            self.score = self.trueNegRate
         # add in to the score no result counts
         allSam = self.res.tp + self.res.tn + \
                   self.res.fp + self.res.fn + self.nores;
@@ -200,18 +425,34 @@ class EvaluationResult:
         self.score = self.score * resfactor;
 
     def __str__(self):
-        desc = "{0:5.2f}% score, {1:5.2f}% recall, {2:5.2f}% precision " \
-            "({3} tp, {4} fp, {5} tn, {6} fn, {7} nores)" \
-            .format( self.score*100.0, self.recall*100.0, self.precision*100.0,
-                     self.res.tp, self.res.fp, 
-                     self.res.tn, self.res.fn, self.nores )
+        
+        if self.res.tp != 0  and self.res.tn != 0:
+            desc = "{0:5.2f}  score, {1:5.2f}% recall, {2:5.2f}% 1-FPR " \
+                "({3} tp, {4} fp, {5} tn, {6} fn, {7} nores)" \
+                .format( self.score*100.0, self.recall*100.0, self.trueNegRate*100.0,
+                         self.res.tp, self.res.fp, 
+                         self.res.tn, self.res.fn, self.nores )
+        elif self.res.tp == 0:
+            # Don't show recall since its not valid with no tp
+            desc = "{0:5.2f}  score,   -   recall, {1:5.2f}% 1-FPR " \
+                "({2} tp, {3} fp, {4} tn, {5} fn, {6} nores)" \
+                .format( self.score*100.0, self.trueNegRate*100.0,
+                         self.res.tp, self.res.fp, 
+                         self.res.tn, self.res.fn, self.nores )
+        else:
+            # Don't show specificity since its not valid with no tn
+            desc = "{0:5.2f}  score, {1:5.2f}% recall,   -   1 - FPR  " \
+                "({2} tp, {3} fp, {4} tn, {5} fn, {6} nores)" \
+                .format( self.score*100.0, self.recall*100.0, 
+                         self.res.tp, self.res.fp, 
+                         self.res.tn, self.res.fn, self.nores )
         if self.name:
             return self.name + ": " + desc
         return desc
 
         
 def crossValidate( contender, runset, folds=10, printVerbose=False ):
-    '''Returns summary statistics tp, fp, tn, fn, recall, precision,
+    '''Returns summary statistics tp, fp, tn, fn, recall, trueNegRate,
     and a detailed matrix of results with one row for
     each fold, and one column each for true positive, false
     positive, true negative, and false negative counts'''
@@ -385,7 +626,7 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     for c in contenders:
         if verbose:
             print("======== evaluating contender '{0}' ========".format( c.name ) )
-        try:
+        #try:
             if c.hasTrainer():
                 evalres = crossValidate( c, runset, folds )
             else:
@@ -395,8 +636,8 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
             if verbose:
                 print evalres
                 print evalres.detail
-        except Exception as exc:
-            print("error encountered, evaluation aborted: " + str(exc))
+       # except Exception as exc:
+           # print("error encountered, evaluation aborted: " + str(exc))
 
     if verbose:
         print("======== done! ========")
@@ -406,14 +647,25 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
     return sortedResults,originalResults
 
 def printEvaluationResults(results):
-    print('name        ||  score |  recall | precis. ||  tp  |  fp  |  tn  |  fn  | nores')
+    print('name        ||  score |  recall | 1 - FPR ||  tp  |  fp  |  tn  |  fn  | nores')
     print('-------------------------------------------------------------------')
     for result in results:
         # need 6.2 instead of 5.2 to allow for 100.0%
-        desc = "{0:6.2f}% | {1:6.2f}% | {2:6.2f}% || " \
-            "{3:4d} | {4:4d} | {5:4d} | {6:4d} | {7:4d}" \
-            .format( result.score*100.0, result.recall*100.0, result.precision*100.0,
-                     result.res.tp, result.res.fp, result.res.tn, result.res.fn, result.nores )
+        if result.res.tp != 0 and result.res.tn != 0:
+            desc = "{0:6.2f}  | {1:6.2f}% | {2:6.2f}% || " \
+                "{3:4d} | {4:4d} | {5:4d} | {6:4d} | {7:4d}" \
+                .format( result.score*100.0, result.recall*100.0, result.trueNegRate*100.0,
+                         result.res.tp, result.res.fp, result.res.tn, result.res.fn, result.nores )
+        elif result.res.tp == 0:
+            desc = "{0:6.2f}  |    -    | {1:6.2f}% || " \
+                "{2:4d} | {3:4d} | {4:4d} | {5:4d} | {6:4d}" \
+                .format( result.score*100.0,  result.trueNegRate*100.0,
+                         result.res.tp, result.res.fp, result.res.tn, result.res.fn, result.nores )
+        else:
+            desc = "{0:6.2f}  | {1:6.2f}% |    -    || " \
+                "{2:4d} | {3:4d} | {4:4d} | {5:4d} | {6:4d}" \
+                .format( result.score*100.0, result.recall*100.0, 
+                         result.res.tp, result.res.fp, result.res.tn, result.res.fn, result.nores )
         if result.name:
             if len(result.name) > 12:
                 print (result.name[0:11] + '.' + '||'+ desc)  

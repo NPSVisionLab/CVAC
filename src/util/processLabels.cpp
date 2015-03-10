@@ -49,8 +49,15 @@ static std::string processLabelable(string CVAC_DataDir,
                                     GetImageSizeFunction sfunc)
 {    
   
-        Substrate sub = lptr->sub;
-        FilePath  filePath = sub.path;
+        ImageSubstratePtr sub = ImageSubstratePtr::dynamicCast( lptr->sub );
+        if (!sub)
+        {
+          // must be VideoSubstrate which we cannot handle at this point
+          // VideoSubstratePtr vidsub = VideoSubstratePtr::dynamicCast( lptr->sub );
+          localAndClientMsg(VLogger::WARN, NULL,
+                            "not processing a VideoSubstrate\n");
+        }
+        FilePath  filePath = sub->path;
         std::string fname = CVAC_DataDir + "/" + filePath.directory.relativePath;
         fname += std::string("/");
         fname += filePath.filename;

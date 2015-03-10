@@ -37,6 +37,7 @@ CONFIGURE_FILE(gui.py "${SLICE_OUTPUT_PYTHONDIR}/easy/gui.py" COPYONLY)
 CONFIGURE_FILE(__init__.py "${SLICE_OUTPUT_PYTHONDIR}/easy/__init__.py" COPYONLY)
 CONFIGURE_FILE(util/ArchiveHandler.py "${SLICE_OUTPUT_PYTHONDIR}/easy/util/ArchiveHandler.py" COPYONLY)
 CONFIGURE_FILE(util/misc.py "${SLICE_OUTPUT_PYTHONDIR}/easy/util/misc.py" COPYONLY)
+CONFIGURE_FILE(util/GuiThread.py "${SLICE_OUTPUT_PYTHONDIR}/easy/util/GuiThread.py" COPYONLY)
 CONFIGURE_FILE(util/__init__.py "${SLICE_OUTPUT_PYTHONDIR}/easy/util/__init__.py" COPYONLY)
 
 add_custom_target( easy ALL DEPENDS ${SLICE_FILES} )

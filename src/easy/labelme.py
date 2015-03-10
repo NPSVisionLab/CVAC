@@ -33,7 +33,7 @@ def parsePolygon( etelem ):
         polygon.points = polygon.points + [cvac.Point2D((tx-1), (ty-1))]
     return polygon
 
-def parseLabeledObjects( root, substrate ):
+def parseLabeledObjects( root, imageSubstrate ):
     ''' for each labeled object in the annotation tree
     that does not have the <deleted> tag set,
     collect the name, attributes and the polygon and create the
@@ -42,12 +42,12 @@ def parseLabeledObjects( root, substrate ):
     objImgSize = root.find('imagesize')
     if objImgSize != None:
         objH = objImgSize.find('nrows')
-        if objH != None:            
-            substrate.height = int(objH.text.encode('utf-8').strip())
+        if objH != None and objH.text != None:            
+            imageSubstrate.height = int(objH.text.encode('utf-8').strip())
             
         objW = objImgSize.find('ncols')
-        if objW != None:
-            substrate.width = int(objW.text.encode('utf-8').strip())
+        if objW != None and objW.text != None:
+            imageSubstrate.width = int(objW.text.encode('utf-8').strip())
     
     labels = []
     for lmobj in root.findall('object'):
@@ -56,7 +56,7 @@ def parseLabeledObjects( root, substrate ):
             continue
         label = cvac.LabeledLocation()
         label.confidence = 1.0
-        label.sub = substrate
+        label.sub = imageSubstrate
         nameobj = lmobj.find('name')
         if nameobj.text is None:
             continue
@@ -144,7 +144,7 @@ def parseFolder( localDir, lmAnnotations, lmImages, lmFolder, CVAC_DataDir ):
             imgFname = felem.text.encode('utf-8').strip() # strip any leading or trailing white space
             
         cvacFp = cvac.FilePath( cvacDir, imgFname )
-        substrate = cvac.Substrate( True, False, cvacFp, -1, -1 )
+        substrate = cvac.ImageSubstrate( -1, -1, cvacFp)
         labels = labels + parseLabeledObjects( root, substrate )
     return labels
 
