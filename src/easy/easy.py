@@ -872,22 +872,44 @@ def collectSubstrates( runset ):
     '''obtain a set (a list without duplicates) of all
     substrates that occur in this runset or result set'''
     if not runset:
-        return set()
+        return collections.OrderedDict()
     if type(runset) is list and isinstance(runset[0], cvac.Result):
         return _collectSubstratesFromResults( runset )
     elif type(runset) is dict:
         runset = runset['runset']
-    substrates = set()
+    substrates = collections.OrderedDict()
     for plist in runset.purposedLists:
         if isinstance(plist, cvac.PurposedDirectory):
             raise RuntimeError("cannot deal with PurposedDirectory yet")
         elif isinstance(plist, cvac.PurposedLabelableSeq):
             for lab in plist.labeledArtifacts:
-                if not lab.sub in substrates:
-                    substrates.add( lab.sub )
+                substrates = _addLabelToSubstrates(substrates, lab)
         else:
             raise RuntimeError("unexpected subclass of PurposedList: "+type(plist))
     return substrates
+
+def _addLabelToSubstrates(substrates, lbl, orig = None):
+    if lbl.sub is None:
+        if orig is None:
+            return substrates # Cant' add if no file name
+        else:
+            fpath = misc.getLabelableFilePath(orig)
+    else:
+        fpath = misc.getLabelableFilePath(lbl)
+   
+    if not fpath.filename:
+        if orig is None:
+            return substrates
+        else:
+            subpath = getFSPath( orig )
+    else:
+        subpath = getFSPath( fpath )
+    if subpath in substrates:
+        substrates[subpath].append( lbl )
+    else:
+        substrates[subpath] = [lbl]
+    return substrates
+                
 
 def _collectSubstratesFromResults( results ):
     '''
@@ -898,19 +920,7 @@ def _collectSubstratesFromResults( results ):
     substrates = collections.OrderedDict()
     for res in results:
         for lbl in res.foundLabels:
-            if lbl.sub is None:
-                fpath = misc.getLabelableFilePath(res.original)
-            else:
-                fpath = misc.getLabelableFilePath(lbl)
-           
-            if not fpath.filename:
-                subpath = getFSPath( res.original )
-            else:
-                subpath = getFSPath( fpath )
-            if subpath in substrates:
-                substrates[subpath].append( lbl )
-            else:
-                substrates[subpath] = [lbl]
+            _addLabelToSubstrates(substrates, lbl, orig=res.original)
                 
     return substrates
 
