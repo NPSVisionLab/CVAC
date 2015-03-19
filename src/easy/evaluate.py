@@ -15,6 +15,167 @@ import util.clipper as clipper
 from operator import attrgetter, itemgetter
 
 '''
+This hit strategy keeps track of the pixel areas instead of individual counts.  This allows for 
+the calculations to be based on pixel sizes
+'''
+
+def pixelHitStrategy(origpur, origList, result, foundMap, tres, option = None):
+    if option != None: 
+        print("Warning: option parameter ignored in pixelHitStrategy")
+        
+    foundLabels = result.foundLabels
+    numfound = len(foundLabels)
+    '''Keep track of last path we counted.  If the path did not change
+       then don't add these results since they are the same.  Here we assume that
+       the detector will return the same results if the image is the same.
+    '''
+    resPath = getRelativePath(result.original)
+    if tres.lastPath == resPath:
+        return tres
+    else:
+        tres.lastPath = resPath
+    
+    imageArea = 0  
+    origPosArea = 0
+    origPolyList = []    
+    for orig in origList:
+        origPoly = []
+        # Only need to compute the imageArea once since
+        # all the files should be the same in origList
+        if imageArea == 0:
+            total_area = orig.sub.width * orig.sub.height
+            if total_area == 0 or orig.sub.width == -1 or orig.sub.height == -1:
+                ''' Label does not provide the image width and height so go get it '''
+                fname = misc.getLabelableFilePath(orig)
+                fspath = easy.getFSPath(fname)
+                width, height = misc.getImageSize(fspath)
+                total_area = width * height;
+            imageArea = total_area
+        if isinstance(orig, cvac.LabeledLocation) == False:
+            print("Original Label does not include location information!")
+            print("Assuming whole image.")
+            lname = easy.getLabelText( orig.lab, guess=False )
+            continue
+        origloc = orig.loc
+        if isinstance(origloc, cvac.Silhouette):
+            for pt in origloc.points:
+                origPoly.append(clipper.Point(pt.x, pt.y))  
+        
+        elif isinstance(origloc, cvac.BBox):
+            ''' Normally we would do width-1 and height-1 but since we are using
+                the clipper lets add one to the box.
+            '''
+            pt = clipper.Point(origloc.x, origloc.y)
+            origPoly.add_point(pt)
+            pt = clipper.Point(origloc.x + origloc.width, origloc.y)
+            origPoly.add_point(pt)
+            pt = clipper.Point(origloc.x + origloc.width, origloc.y + origloc.height)
+            origPoly.add_point(pt)
+            pt = clipper.Point(origloc.x, origloc.y + origloc.height)
+            origPoly.add_point(pt)
+    
+        else:
+            print("Error: Original Label location type not supported!")
+            return tres
+        area = abs(clipper.Area(origPoly))
+        origPolyList.append((origPoly,easy.getLabelText( orig.lab, guess=False )))
+        tres.gtp += area
+        origPosArea += area
+    # TODO handle overlapping areas
+    if imageArea > origPosArea:
+        tres.gtn += imageArea - origPosArea
+    '''
+    We can't comput the fp and fn until we do a pass of all the
+    originals by all the found labels.  After that we can compute these.
+    So for now save results in labres
+    '''  
+    origNotHitArea = origPosArea
+    labres = []  # tuple of lab, pixels hit
+    for lbl in foundLabels:
+        labres.append([lbl,0,0]) # list containing label, hit_area, total_area
+        foundlabelText = easy.getLabelText( lbl.lab, guess=False )
+        if foundlabelText in foundMap:
+            foundPurpose = foundMap[foundlabelText]
+        else:
+            print("Warning: Found label not found in foundMap!")
+            foundPurpose = easy.getPurpose('pos')
+        foundPoly = [];
+        if isinstance(lbl, cvac.LabeledLocation) == False:
+            print("Warning: Found Label does not include location information!")
+            continue
+        foundloc = lbl.loc
+        if isinstance(foundloc, cvac.Silhouette): 
+            for pt in foundloc.points:
+                foundPoly.append((pt.x, pt.y))  
+            
+        elif isinstance(foundloc, cvac.BBox):
+            pt = clipper.Point(foundloc.x, foundloc.y)
+            foundPoly.append(pt)
+            pt = clipper.Point(foundloc.x + foundloc.width, foundloc.y)
+            foundPoly.append(pt)
+            pt = clipper.Point(foundloc.x + foundloc.width, foundloc.y + foundloc.height)
+            foundPoly.append(pt)
+            pt = clipper.Point(foundloc.x, foundloc.y + foundloc.height)
+            foundPoly.append(pt)
+            
+        else:
+            print("Warning: found Label location type not supported!")
+            continue
+        ''' Save the area of the found polygon '''
+        labres[-1][2] = abs(clipper.Area(foundPoly))
+        ''' Record all the originals that are foundPoly hits '''
+        for i,(origPoly, origLabelText) in enumerate(origPolyList):
+            if origLabelText in foundMap:
+                origFoundPurpose = foundMap[origLabelText]
+            else:
+                ''' We assume a positive purpose unless we don't have label data then its negative'''
+                if not origPoly:
+                    origFoundPurpose = easy.getPurpose('neg')
+                else:
+                    origFoundPurpose = easy.getPurpose('pos')
+            if not origPoly:
+                continue
+            else:
+                clip = clipper.Clipper()
+                clip.AddPolygon(foundPoly, clipper.PolyType.Clip)
+                clip.AddPolygon(origPoly, clipper.PolyType.Subject)
+                polyInter = []
+                resultInter = clip.Execute(clipper.ClipType.Intersection, polyInter)
+                if not resultInter:
+                    print("Warning: In overlap HitStrategy intersection failed!") 
+                if resultInter and polyInter:
+                    ''' We have an overlap'''
+                    parea = abs(clipper.Area(polyInter[0]))
+                    if foundPurpose.ptype == cvac.PurposeType.POSITIVE and \
+                       origFoundPurpose.ptype == cvac.PurposeType.POSITIVE:
+                        tres.tp += parea
+                        ''' add to hit area '''
+                        labres[-1][1] += parea 
+                    
+                    origNotHitArea -= parea
+  
+    ''' We now compute the false negatives based upon what we hit.
+        We have to wait until we have looked at all the original label data
+    '''
+    tn = imageArea
+    for lab, hitArea, totalArea in labres:
+        foundlabelText = easy.getLabelText( lab.lab, guess=False )
+        if foundlabelText in foundMap:
+            foundPurpose = foundMap[foundlabelText]
+        else:
+            print("Warning: Found label not found in foundMap!")
+            foundPurpose = easy.getPurpose('pos')
+        if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
+            tn -= totalArea
+            if hitArea < totalArea:
+                tres.fp += totalArea - hitArea
+        
+            
+    tres.tn += tn
+    tres.fn += origNotHitArea
+    return tres
+
+'''
 This assumes that the original labels are available and that
 the foundLabels are rectangles or polygons. The option parameter is
 the amount of overlap before its considered a hit.  If not defined or 
@@ -65,6 +226,7 @@ def overlapHitStrategy(origpur, origList, result, foundMap, tres, option = None)
             print("Error: Original Label location type not supported!")
             return tres
         origPolyList.append((origPoly,easy.getLabelText( orig.lab, guess=False )))
+        
     ''' hitOrigs is a recording of which originals got hit in this result '''
     hitOrigs = []
     cnt = len(origPolyList)
@@ -148,10 +310,10 @@ def overlapHitStrategy(origpur, origList, result, foundMap, tres, option = None)
                     if (resultInter and resultUnion and polyInter and polyUnion):
                         union_area = 0;
                         for poly in polyUnion:
-                            union_area += clipper.Area(poly)
+                            union_area += abs(clipper.Area(poly))
                         inter_area = 0;
                         for poly in polyInter:
-                            inter_area += clipper.Area(poly)
+                            inter_area += abs(clipper.Area(poly))
                         if union_area != 0:
                             overlap = inter_area / union_area
                             if overlap >= option:
@@ -265,7 +427,18 @@ class TestResult:
         desc = "{0} tp, {1} fp, {2} tn, {3} fn"\
            .format(self.tp, self.fp, self.tn, self.fn)
         return desc
-   
+    
+class PixelTestResult(TestResult):
+    def __init__(self, tp=0, fp=0, tn=0, fn=0, gtp=0, gtn=0):
+        TestResult.__init__(self, tp, fp, tn, fn)
+        self.gtp = gtp
+        self.gtn = gtn
+        
+    def __str__(self):
+        desc = "{0} tp pixels, {1} fp pixels, {2} tn pixels, {3} fn pixels, {4} ground truth pos pixels, {5} ground truth neg pixels"\
+           .format(self.tp, self.fp, self.tn, self.fn, self.gtp, self.gtn)
+        return desc
+        
 
 def getRelativePath( label ):
     fspath = misc.getLabelableFilePath(label)
@@ -297,9 +470,8 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None,
         raise RuntimeError("need a foundMap")
     if not verifyFoundMap(foundMap):
         raise RuntimeError("Invalid found map")
-    if not origMap or HitStrategy == overlapHitStrategy:
+    if not origMap :
         origMap = {}
-        origLabelMap = {}
         for plist in origSet.purposedLists:
             assert( isinstance(plist, cvac.PurposedLabelableSeq) )
             for sample in plist.labeledArtifacts:
@@ -308,10 +480,22 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None,
                     raise RuntimeError("Non pos or neg purpose in runset")
                 opath = getRelativePath(sample)
                 origMap[ opath ] = plist.pur
-                if opath in origLabelMap:
-                    origLabelMap[opath].append(sample)
-                else:
-                    origLabelMap[getRelativePath(sample)] = [sample]
+
+    ''' Lets map all the labeledArtifacts that have
+        the same sample file name
+    '''              
+    origLabelMap = {}
+    for plist in origSet.purposedLists:
+        assert( isinstance(plist, cvac.PurposedLabelableSeq) )
+        for sample in plist.labeledArtifacts:
+            if plist.pur.ptype != cvac.PurposeType.POSITIVE \
+                 and plist.pur.ptype != cvac.PurposeType.NEGATIVE:
+                raise RuntimeError("Non pos or neg purpose in runset")
+            opath = getRelativePath(sample)
+            if opath in origLabelMap:
+                origLabelMap[opath].append(sample)
+            else:
+                origLabelMap[getRelativePath(sample)] = [sample]
     # compute the number of samples in the origSet that was not evaluated
     nores = 0
     if origSet:
@@ -319,9 +503,15 @@ def getConfusionTable( results, foundMap, origMap=None, origSet=None,
         nores = origSize - len(results)
     else:
         print("warning: Not able to determine samples not evaluated")
-    tres = TestResult()
+    if HitStrategy == pixelHitStrategy:
+        tres = PixelTestResult()
+    else:
+        tres = TestResult()
     for res in results:
         origpur = origMap[ getRelativePath(res.original) ]
+        ''' orig list is all the labeled artifacts that map to the same
+            sample name.
+        '''
         if origLabelMap:
             origlist = origLabelMap[getRelativePath(res.original)];
         '''
@@ -402,52 +592,116 @@ class EvaluationResult:
         '''
         numpos = self.res.tp + self.res.fn
         numneg = self.res.fp + self.res.tn
-    
-        if numpos != 0:
-            self.recall = self.res.tp/float(numpos)
+        if isinstance(testResult, PixelTestResult):
+            area = self.res.tp + self.res.fp
+            if area != 0:
+                self.recall = self.res.tp/float(area)
+            else:
+                self.recall = 0
+            if self.res.gtn != 0:
+                self.trueNegRate = self.res.tn/float(self.res.gtn)
+            else:
+                self.trueNegRate = 0
+            if self.res.tp > 0 and self.res.tn > 0:
+                # calculate combined recall/trueNegRate score:
+                self.score = (self.recall + self.trueNegRate)/2.0
+            elif self.res.tp > 0:
+                self.score = self.recall
+            else:
+                self.score = self.trueNegRate
+            # add in to the score no result counts
+            allSam = self.res.tp + self.res.tn + \
+                      self.res.fp + self.res.fn + self.nores;
+            resfactor = (allSam - nores) / float(allSam)
+            self.score = self.score * resfactor;
+        elif isinstance(testResult, TestResult):
+            if numpos != 0:
+                self.recall = self.res.tp/float(numpos)
+            else:
+                self.recall = 0
+            if numneg != 0:
+                self.trueNegRate = self.res.tn/float(numneg)
+            else:
+                self.trueNegRate = 0
+            if self.res.tp > 0 and self.res.tn > 0:
+                # calculate combined recall/trueNegRate score:
+                self.score = (self.recall + self.trueNegRate)/2.0
+            elif self.res.tp > 0:
+                self.score = self.recall
+            else:
+                self.score = self.trueNegRate
+            # add in to the score no result counts
+            allSam = self.res.tp + self.res.tn + \
+                      self.res.fp + self.res.fn + self.nores;
+            resfactor = (allSam - nores) / float(allSam)
+            self.score = self.score * resfactor;
+       
         else:
-            self.recall = 0
-        if numneg != 0:
-            self.trueNegRate = self.res.tn/float(numneg)
-        else:
-            self.trueNegRate = 0
-        if self.res.tp > 0 and self.res.tn > 0:
-            # calculate combined recall/trueNegRate score:
-            self.score = (self.recall + self.trueNegRate)/2.0
-        elif self.res.tp > 0:
-            self.score = self.recall
-        else:
-            self.score = self.trueNegRate
-        # add in to the score no result counts
-        allSam = self.res.tp + self.res.tn + \
-                  self.res.fp + self.res.fn + self.nores;
-        resfactor = (allSam - nores) / float(allSam)
-        self.score = self.score * resfactor;
+            raise RuntimeError("Not a valid testResult.")
 
     def __str__(self):
-        
-        if self.res.tp != 0  and self.res.tn != 0:
-            desc = "{0:5.2f}  score, {1:5.2f}% recall, {2:5.2f}% 1-FPR " \
-                "({3} tp, {4} fp, {5} tn, {6} fn, {7} nores)" \
-                .format( self.score*100.0, self.recall*100.0, self.trueNegRate*100.0,
-                         self.res.tp, self.res.fp, 
-                         self.res.tn, self.res.fn, self.nores )
-        elif self.res.tp == 0:
-            # Don't show recall since its not valid with no tp
-            desc = "{0:5.2f}  score,   -   recall, {1:5.2f}% 1-FPR " \
-                "({2} tp, {3} fp, {4} tn, {5} fn, {6} nores)" \
-                .format( self.score*100.0, self.trueNegRate*100.0,
-                         self.res.tp, self.res.fp, 
-                         self.res.tn, self.res.fn, self.nores )
+        if isinstance(self.res, PixelTestResult):   #PixelTestResult
+            ''' The values of tp, tn, fp, fn in res are pixel areas that
+                are not very interesting so lets convert them to rates:
+                tp = tp/gtp, tn = tn/gtn, fp = fp/gtp, fn = fn/gtn
+            '''
+            if self.res.gtn == 0:
+                raise RuntimeError("Can't display results since there are no negative ground truth pixels")
+            if self.res.gtn == 0:
+                raise RuntimeError("Can't display results since there are no positive ground truth pixels")
+            
+            tpr = self.res.tp/float(self.res.gtp)
+            tpr *= 100.0
+            fpr  = self.res.fp/float(self.res.gtp)
+            fpr *= 100.0
+            tnr = self.res.tn/float(self.res.gtn)
+            tnr *= 100.0
+            fnr = self.res.fn/float(self.res.gtn)
+            fnr *= 100.0
+            
+            if self.res.tp != 0  and self.res.tn != 0:
+                desc = "{0:5.2f}  score, {1:5.2f}% recall, {2:5.2f}% 1-FPR " \
+                    "({3:5.2f}% tp, {4:5.2f}% fp, {5:5.2f}% tn, {6:5.2f}% fn, {7} nores)" \
+                    .format( self.score*100.0, self.recall*100.0, self.trueNegRate*100.0,
+                             tpr, fpr, tnr, fnr, self.nores )
+            elif self.res.tp == 0:
+                # Don't show recall since its not valid with no tp
+                desc = "{0:5.2f}  score,   -   recall, {1:5.2f}% 1-FPR " \
+                    "({2:5.2f}% tp, {3:5.2f}% fp, {4:5.2f}% tn, {5:5.2f}% fn, {6} nores)" \
+                    .format( self.score*100.0, self.trueNegRate*100.0,
+                             tpr, fpr, tnr, fnr, self.nores )
+            else:
+                # Don't show specificity since its not valid with no tn
+                desc = "{0:5.2f}  score, {1:5.2f}% recall,   -   1 - FPR  " \
+                    "({2:5.2f}% tp, {3:5.2%} fp, {4:5.2f}% tn, {5:5.2f}% fn, {6} nores)" \
+                    .format( self.score*100.0, self.recall*100.0, 
+                             tpr, fpr, tnr, fnr, self.nores )
         else:
-            # Don't show specificity since its not valid with no tn
-            desc = "{0:5.2f}  score, {1:5.2f}% recall,   -   1 - FPR  " \
-                "({2} tp, {3} fp, {4} tn, {5} fn, {6} nores)" \
-                .format( self.score*100.0, self.recall*100.0, 
-                         self.res.tp, self.res.fp, 
-                         self.res.tn, self.res.fn, self.nores )
+            if self.res.tp != 0  and self.res.tn != 0:
+                desc = "{0:5.2f}  score, {1:5.2f}% recall, {2:5.2f}% 1-FPR " \
+                    "({3} tp, {4} fp, {5} tn, {6} fn, {7} nores)" \
+                    .format( self.score*100.0, self.recall*100.0, self.trueNegRate*100.0,
+                             self.res.tp, self.res.fp, 
+                             self.res.tn, self.res.fn, self.nores )
+            elif self.res.tp == 0:
+            # Don't show recall since its not valid with no tp
+                desc = "{0:5.2f}  score,   -   recall, {1:5.2f}% 1-FPR " \
+                    "({2} tp, {3} fp, {4} tn, {5} fn, {6} nores)" \
+                    .format( self.score*100.0, self.trueNegRate*100.0,
+                             self.res.tp, self.res.fp, 
+                             self.res.tn, self.res.fn, self.nores )
+            else:
+                # Don't show specificity since its not valid with no tn
+                desc = "{0:5.2f}  score, {1:5.2f}% recall,   -   1 - FPR  " \
+                    "({2} tp, {3} fp, {4} tn, {5} fn, {6} nores)" \
+                    .format( self.score*100.0, self.recall*100.0, 
+                             self.res.tp, self.res.fp, 
+                             self.res.tn, self.res.fn, self.nores )
+                    
+           
         if self.name:
             return self.name + ": " + desc
+            
         return desc
 
         
