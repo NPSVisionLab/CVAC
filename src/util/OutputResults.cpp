@@ -47,7 +47,7 @@ OutputResults::OutputResults(
     if (callbackFreq.empty())
        mCallbackFreq = "labelable";
     else
-        mCallbackFreq = callbackFreq;
+       mCallbackFreq = callbackFreq;
     mCallback = callback;
 }
 

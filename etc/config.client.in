@@ -15,6 +15,7 @@ OpenCVCascadeDetector.Proxy=OpenCVCascadeDetector:tcp -p ${OPENCV_CASCADE_DETECT
 OpenCVCascadeTrainer.Proxy=OpenCVCascadeTrainer:tcp -p  ${OPENCV_CASCADE_TRAINER_PORT}
 BOW_Trainer.Proxy=BOW_Trainer:tcp -p          ${BOW_TRAINER_PORT}
 BOW_Detector.Proxy=BOW_Detector:tcp -p         ${BOW_DETECTOR_PORT}
+Caffe_Detector.Proxy=Caffe_Detector:tcp -p         ${CAFFE_DETECTOR_PORT}
 CorpusServer.Proxy=CorpusServer:tcp ${HOST} -p  ${CORPUS_PORT}      
 PythonCorpusService.Proxy=PythonCorpusService:tcp -p ${PYTHON_CORPUS_PORT}
 FileService.Proxy=FileService:tcp ${HOST} -p ${FILE_SERVER_PORT}
@@ -22,7 +23,6 @@ PythonFileService.Proxy=PythonFileService:tcp ${HOST} -p ${PYTHON_FILE_SERVER_PO
 RSItrTest_Detector.Proxy=RSItrTest_Detector:tcp ${HOST} -p ${RSITR_TEST_PORT}
 
 VideoValidatorForOpenCVClient.Proxy = VideoValidatorForOpenCV:tcp -p 10108
-
 # CVPerf Detector CvFaces
 CvFaces.Proxy = OpenCVCascadeDetector:tcp -p ${OPENCV_CASCADE_DETECTOR_PORT}
 CvFaces.DetectorFilename = OpencvFaces.zip

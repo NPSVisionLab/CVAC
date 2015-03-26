@@ -50,6 +50,9 @@
 #define RESID "RESFILE"
 #define VOCID "VOCFILE"
 #define SVMID "SVMFILE"
+#define MODELID "MODELFILE"
+#define WEIGHTID "WEIGHTFILE"
+#define LOOKUPID "LOOKUPFILE"
 
 
 namespace cvac
