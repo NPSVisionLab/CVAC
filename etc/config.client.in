@@ -16,6 +16,7 @@ OpenCVCascadeTrainer.Proxy=OpenCVCascadeTrainer:tcp -p  ${OPENCV_CASCADE_TRAINER
 BOW_Trainer.Proxy=BOW_Trainer:tcp -p          ${BOW_TRAINER_PORT}
 BOW_Detector.Proxy=BOW_Detector:tcp -p         ${BOW_DETECTOR_PORT}
 Caffe_Detector.Proxy=Caffe_Detector:tcp -p         ${CAFFE_DETECTOR_PORT}
+Caffe_Trainer.Proxy=Caffe_Trainer:tcp -p         ${CAFFE_TRAINER_PORT}
 CorpusServer.Proxy=CorpusServer:tcp ${HOST} -p  ${CORPUS_PORT}      
 PythonCorpusService.Proxy=PythonCorpusService:tcp -p ${PYTHON_CORPUS_PORT}
 FileService.Proxy=FileService:tcp ${HOST} -p ${FILE_SERVER_PORT}

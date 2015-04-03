@@ -53,6 +53,7 @@
 #define MODELID "MODELFILE"
 #define WEIGHTID "WEIGHTFILE"
 #define LOOKUPID "LOOKUPFILE"
+#define MEANID "MEANFILE"
 
 
 namespace cvac

@@ -47,6 +47,8 @@
 #include <windows.h>
 #endif 
 
+#include <sys/wait.h>
+
 using namespace cvac;
 using namespace Ice;
 
@@ -362,7 +364,7 @@ bool servicesStarted()
 
 #ifdef WIN32
 
-bool runProgram(const string &runString)
+bool runProgram(const string &runString, boolean wait)
 {
     STARTUPINFO startinfo;
     PROCESS_INFORMATION procinfo;
@@ -377,7 +379,12 @@ bool runProgram(const string &runString)
     
     if (CreateProcess(NULL, (LPSTR)cmdptr, NULL, NULL, FALSE, cflags,
                       NULL, NULL, &startinfo, &procinfo))
-        return true;
+	if (wait)
+	{
+	    WaitForSingleObject(procinfo.hProcess, INFINITE);
+	    return true;
+        }else
+          return true;
     else
     {
         return false;
@@ -385,7 +392,7 @@ bool runProgram(const string &runString)
 }
 #else
 
-bool runProgram(const string &runString)
+bool runProgram(const string &runString, bool wait)
 {
   pid_t fork_ret = fork();
   if (fork_ret == -1)
@@ -395,11 +402,24 @@ bool runProgram(const string &runString)
   else if (fork_ret == 0)
   { // we are in the child process
     // Close all the non standard file descriptors
-    int res = execl("/bin/sh", "-c", runString.c_str(), (char *)0 );
+    int res = execl("/bin/sh", "/bin/sh", "-c", runString.c_str(), (char *)0 );
     if (res == -1)
     {	
       // could not start the new program
       return false;
+    }else
+      return true;
+  }else
+  { // We are in the parent process
+    if (wait)
+    {
+	int status;
+        if (waitpid(fork_ret, &status, 0) != fork_ret)
+	  return false;
+        if (status == 0)
+	  return true;
+        else
+	  return false;
     }
   }
   return true;
@@ -414,9 +434,9 @@ void doStartServices()
     // We assume we are in cvac root directory
 
 #ifdef WIN32
-    runProgram("bin\\startServices.bat");
+    runProgram("bin\\startServices.bat", false);
 #else
-    runProgram("bin/startServices.sh");
+    runProgram("bin/startServices.sh", false);
 #endif
     sleep(3000);
     

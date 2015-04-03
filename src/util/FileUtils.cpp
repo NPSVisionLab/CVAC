@@ -334,9 +334,36 @@ std::string cvac::getFileExtension(const std::string& _path)
     return tRes;
 }
 
+#if !defined(WIN32)
+// Function to recurisvely walk a directory and delete
+#include <ftw.h>
 
-// TODO: please add documentation.
+// Call unlink or remdir on the path as required
+static int do_rm(const char *path, const struct stat *s, int flag,
+                 struct FTW *f)
+{
+    int status;
+
+    switch(flag)
+    {
+	case FTW_DP:
+	    status = rmdir(path);
+	    break;
+        default: 
+	    status = unlink(path);
+	    break;
+    }
+    if (status != 0)
+        perror(path);
+    return status;
+}
+#endif //!defined(WIN32)
+            
 // TODO: I am a bit afraid of this - a recursive delete is dangerous.  has anybody checked if this follows symbolic links???
+
+/**
+ * Recursively delete the directory and all of it contents.
+ */
 bool cvac::deleteDirectory(const std::string& path) 
 #if defined(WIN32)
 {
@@ -375,7 +402,8 @@ bool cvac::deleteDirectory(const std::string& path)
 }
 #else // not windows
 {
-    int res = rmdir( path.c_str() );
+    // kept open at most 100 directories.
+    int res = nftw(path.c_str(), do_rm, 100, FTW_DEPTH);
     return (res==0);  // success --> return true
 }
 #endif // defined(WIN32)
