@@ -55,7 +55,7 @@ CVAC.DataDir = ${CVAC_DATA_DIR}
 #IceSSL.KeyFile=s_rsa1024_priv.pem
 
 # Set maximum message size (not packet size, units in KBs)
-Ice.MessageSizeMax=100000
+Ice.MessageSizeMax=1000000
 
 #The services
 

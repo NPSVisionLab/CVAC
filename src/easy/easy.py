@@ -107,7 +107,7 @@ except Exception as exc:
 # one-time initialization code, upon loading the module
 #
 args = sys.argv
-args.append('--Ice.MessageSizeMax=100000')
+args.append('--Ice.MessageSizeMax=1000000')
 args.append('--Ice.ACM.Client=0')
 # try to find the config.client that specifies what services
 # might be running, their names, etc.
