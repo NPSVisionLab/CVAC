@@ -37,8 +37,9 @@
  *****************************************************************************/
 
 # include <util/MediaConverter.h>
-
+#include <opencv2/highgui/highgui.hpp>
 using namespace cvac;
+using namespace cv;
 
 MediaConverter::MediaConverter(ServiceManager *_sman)
 : mServiceMan(_sman)
@@ -192,6 +193,8 @@ bool MediaConverter_openCV_v2i::convert(const string& _srcAbsPath,
       _srcAbsPath.c_str(),tDesAbsPath.c_str());
     return false;
   }
+  
+
   int tnDigit = (tnFrame>0)?(int)log10((double)tnFrame)+1:5;
   tnDigit += 1;
   //////////////////////////////////////////////////////////////////////////

@@ -58,4 +58,9 @@ namespace cvac
    * Get The value of the CVAC_DataDir from the config file
    */
   std::string getCVACDataDir(const std::string& algorithm);
+
+  /**
+   * See if that detector is running
+   */
+  bool checkServiceRunning(const std::string& detectorNameStr);
 }
