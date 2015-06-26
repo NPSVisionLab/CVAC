@@ -39,6 +39,7 @@
 #include <util/ServiceManI.h>
 #include <util/Timing.h>
 #include <util/FileUtils.h>
+#include <util/ServiceInvocation.h>
 #include <Services.h>
 #include <Ice/Ice.h>
 #include <IceBox/IceBox.h>
@@ -352,9 +353,10 @@ std::string SandboxManager::createClientDir(const std::string &clientName)
 
 /** test if .services_started.lock file exists
  */
-bool servicesStarted()
+bool serviceStarted(const std::string &dstr)
 {
-  if (fileExists(ServiceManager::SERVICELOCKFILE))
+  if (checkServiceRunning(dstr))
+  //if (fileExists(ServiceManager::SERVICELOCKFILE))
       return true;
   else
       return false;
@@ -412,13 +414,17 @@ bool runProgram(const string &runString)
 void doStartServices()
 {
     // We assume we are in cvac root directory
-
+    // Assume the services were not stopped properly
 #ifdef WIN32
+    runProgram("bin\\stopServices.bat");
+    sleep(5000);
     runProgram("bin\\startServices.bat");
 #else
+    runProgram("bin/stopServices.sh");
+    sleep(5000);
     runProgram("bin/startServices.sh");
 #endif
-    sleep(3000);
+    sleep(10000);
     
 }
 
@@ -438,26 +444,22 @@ void parseConfigServices( StringSet& configured )
   //       configured.push_back( serviceName )
 }
 
+
+
 // see documentation in .h file
-StringSet cvac::startServices()
+StringSet cvac::startService(const std::string &name)
 {
-  // for now, we don't test individual services but only whether
-  // bin/startIcebox has been run, based on a "touched" lock file.
-  if (!servicesStarted())
+  StringSet running;
+  
+  if (!serviceStarted(name))
   {
     doStartServices();
   }
-
-  // if still no lock file, report no services
-  StringSet running;
-  if (servicesStarted())
-  {
-    // otherwise, parse config.services for which services MIGHT
-    // have been successfully started because they're configured
-    // in config.services.  Note that this does not take the icebox
-    // configuration or even startup success into account at all.
-    parseConfigServices( running );
-  }
+  // otherwise, parse config.services for which services MIGHT
+  // have been successfully started because they're configured
+  // in config.services.  Note that this does not take the icebox
+  // configuration or even startup success into account at all.
+  parseConfigServices( running );
   
   return running;
 }

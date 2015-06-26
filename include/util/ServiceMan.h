@@ -233,7 +233,7 @@ namespace cvac
      * several times.
      * It returns the names of running services.
      */
-    StringSet startServices();
+    StringSet startService(const std::string &sname);
 }
 
 

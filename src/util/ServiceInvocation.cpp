@@ -100,6 +100,25 @@ string cvac::getCVACDataDir(const string &detectorNameStr)
   return dataDir;
 }
 
+bool cvac::checkServiceRunning(const std::string& detectorNameStr)
+{ 
+  initIce(detectorNameStr);
+  Ice::PropertiesPtr props = iceComm->getProperties();
+  std::string proxStr = detectorNameStr + ".Proxy";
+  try
+  {
+        DetectorPrx detector = DetectorPrx::checkedCast(
+                        iceComm->propertyToProxy(proxStr)->ice_twoway());
+        // Do a roundtrip call to verify its running
+        DetectorProperties props = detector->getDetectorProperties();
+        return true;
+  }
+  catch (const Ice::Exception&)
+  {
+        return false;
+  }
+}
+
 /** Connect to the Ice Service
  */
                               
