@@ -46,6 +46,7 @@
 
 #ifdef WIN32
 #include <windows.h>
+#include <direct.h>
 #endif 
 
 using namespace cvac;
@@ -414,7 +415,6 @@ bool runProgram(const string &runString)
   return true;
 }
 #endif
-#include <direct.h>
 
 
 /** "exec" startIcebox.sh/bat and wait for completion (a few seconds)
