@@ -37,6 +37,8 @@
  *****************************************************************************/
 #include <util/FileUtils.h>
 #include <util/VLogger.h>
+#include <Ice/Communicator.h>
+
 using namespace cvac;
 
 VLogger::VLogger(Levels baseLevel) {
@@ -108,6 +110,16 @@ VLogger::Levels VLogger::getIntLevel(int intLevel) {
       localAndClientMsg(VLogger::ERROR, NULL, "Unable to map integer level: %d to VLogger::Levels.\n", intLevel);
       return(DEBUG_3);
   }
+}
+
+void VLogger::setLogFile(const string logfile)
+{
+    g_ostream = fopen(logfile.c_str(), "w+");
+    if (g_ostream == NULL)
+    {
+        g_ostream = stderr;
+        localAndClientMsg(VLogger::ERROR, NULL, "Unable to create log file %s.\n", logfile.c_str());
+    }
 }
 
 // Print-prefixes for message levels

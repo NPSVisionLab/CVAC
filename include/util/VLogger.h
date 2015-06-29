@@ -60,6 +60,7 @@ public:
 
   VLogger();
   VLogger(Levels baseLevel);
+  void setLogFile(std::string logfile);
 
   void printv(Levels msgLevel, const char* fmt, ...);
   void printv(Levels msgLevel, const char* fmt, va_list args);

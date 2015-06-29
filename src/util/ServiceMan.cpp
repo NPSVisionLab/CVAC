@@ -46,6 +46,7 @@
 
 #ifdef WIN32
 #include <windows.h>
+#include <direct.h>
 #endif 
 
 using namespace cvac;
@@ -128,6 +129,12 @@ std::string ServiceManagerI::getDataDir()
 	PropertiesPtr props =
             mAdapter->getCommunicator()->getProperties();
 	getVLogger().setLocalVerbosityLevel(props->getProperty("CVAC.ServicesVerbosity"));
+    string logfile = props->getProperty("CVAC.Log");
+    if (logfile.size() > 0)
+    {
+        localAndClientMsg(VLogger::INFO, NULL, "Using log file: %s\n", logfile.c_str());
+        getVLogger().setLogFile(logfile);
+    }
 
 	// Load the CVAC property: 'CVAC.DataDir'.  Used for the xml filename path,
         // and to provide a prefix to Runset paths
@@ -368,15 +375,15 @@ bool runProgram(const string &runString)
 {
     STARTUPINFO startinfo;
     PROCESS_INFORMATION procinfo;
-    DWORD cflags = 0;
+    //DWORD cflags = 0;
+    DWORD cflags = CREATE_NO_WINDOW;
     const char *cmdptr = runString.c_str();
-
     memset(&startinfo, 0, sizeof(STARTUPINFO));
+    memset(&procinfo, 0, sizeof(PROCESS_INFORMATION));
+    
     startinfo.cb = sizeof(STARTUPINFO);
-    startinfo.dwFlags = 0;
     startinfo.dwFlags = STARTF_USESHOWWINDOW;
     startinfo.wShowWindow = SW_HIDE;
-    
     if (CreateProcess(NULL, (LPSTR)cmdptr, NULL, NULL, FALSE, cflags,
                       NULL, NULL, &startinfo, &procinfo))
         return true;
@@ -397,6 +404,7 @@ bool runProgram(const string &runString)
   else if (fork_ret == 0)
   { // we are in the child process
     // Close all the non standard file descriptors
+    
     int res = execl("/bin/sh", "-c", runString.c_str(), (char *)0 );
     if (res == -1)
     {	
@@ -415,6 +423,7 @@ void doStartServices()
 {
     // We assume we are in cvac root directory
     // Assume the services were not stopped properly
+
 #ifdef WIN32
     runProgram("bin\\stopServices.bat");
     sleep(5000);
