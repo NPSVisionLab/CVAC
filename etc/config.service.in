@@ -10,6 +10,8 @@ Ice.ACM.Server=0
 ##############################################################################
 # 0: silent, 1: error, 2: warnings, 3: info, 4: debug, 5: debug_1, 6: debug_2 7: debug_3
 CVAC.ServicesVerbosity = 3
+# Set the log file name: default is STDERR
+# CVAC.Log = log.out
 
 #Directory to prepend file names with if the file names are not absolute
 CVAC.DataDir = ${CVAC_DATA_DIR}
