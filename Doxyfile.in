@@ -109,6 +109,7 @@ EXTERNAL_SEARCH        = NO
 GENERATE_HTML          = YES
 HAVE_DOT	       = @DOXYGEN_DOT_FOUND@
 DOT_PATH	       = @DOXYGEN_DOT_PATH@
+COLLABORATION_GRAPH    = YES
 
 #---------------------------------------------------------------------------
 # configuration options related to the LaTeX output
