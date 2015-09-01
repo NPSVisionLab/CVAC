@@ -29,7 +29,7 @@ OPTION(BUILD_FILESERVER_PYTHON "Configure a Python File Server (generally for se
 OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" OFF) 
 OPTION(BUILD_CORPUS_SERVICE_PYTHON "Configure a Python Corpus Server" ON) 
 OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
-OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" ON)
+OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" OFF)
 OPTION(BUILD_CPP_TRAINER_CLIENT "Build a C++ client for trainers" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
 OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" OFF)
