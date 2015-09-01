@@ -45,6 +45,7 @@ FIND_PATH (ICE_PYTHON_DIR Ice.py
            )
 
 FIND_PATH (ICE_SLICE_INCLUDE Ice/Identity.ice
+           PATH_SUFFIXES slice
            HINTS
            $ENV{ICE_ROOT}
            ${CVAC_ROOT_DIR}/3rdparty/ICE
