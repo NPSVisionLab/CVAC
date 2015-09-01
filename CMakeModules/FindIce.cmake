@@ -29,6 +29,7 @@ FIND_PATH (ICE_INCLUDE Slice/Util.h
            $ENV{ICE_ROOT}
            /opt/Ice-3.5
            /Library/Developer/Ice-3.5
+           DOC "The ICE C/C++ header include path"
            )
 
 FIND_PATH (ICE_PYTHON_DIR Ice.py
@@ -40,6 +41,21 @@ FIND_PATH (ICE_PYTHON_DIR Ice.py
            $ENV{ICE_ROOT}
            /opt/Ice-3.4
            /usr/lib/pymodules/python2.7
+           DOC "The ICE Python path"
+           )
+
+FIND_PATH (ICE_SLICE_INCLUDE Ice/Idenity.ice
+           HINTS
+           $ENV{ICE_ROOT}
+           ${CVAC_ROOT_DIR}/3rdparty/ICE
+           PATHS
+           ${ICE_INSTALLDIR}
+           /opt/Ice-3.5
+           /usr/include
+           /usr/share/Ice-3.5
+           /usr/share/Ice-3.4.2
+           /Library/Developer/Ice-3.5
+           DOC "The ICE slice-definition include path"
            )
 
 SET(CDIR "")

@@ -122,10 +122,11 @@ SET (PYTHON_PACK_ICE_NAME "EasyCVIce")
 FILE (GLOB ICE_FILES ${ICE_PYTHON_DIR}/*)
 FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/icePkg)
 # Copy over the opencv files required by easy to the easy package.
-# One day these should be in there own package?  Even those these are
-# only required to python trainer/detectors its easier to always include them
-FILE (COPY ${OPENCV_PY_PY} DESTINATION ${PYTHON_BUILD_DIR}/easyPkg)
-FILE (COPY ${OPENCV_PY_LIB} DESTINATION ${PYTHON_BUILD_DIR}/easyPkg)
+# One day these should be in there own package?
+IF (OPENCV_REQUIRED)
+  FILE (COPY ${OPENCV_PY_PY} DESTINATION ${PYTHON_BUILD_DIR}/easyPkg)
+  FILE (COPY ${OPENCV_PY_LIB} DESTINATION ${PYTHON_BUILD_DIR}/easyPkg)
+ENDIF ()
 
 CONFIGURE_FILE(setup.easy.py.in "${PYTHON_BUILD_DIR}/easyPkg/setup.py")
 CONFIGURE_FILE(setup.ice.py.in "${PYTHON_BUILD_DIR}/icePkg/setup.py")
