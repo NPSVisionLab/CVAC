@@ -162,21 +162,22 @@ IF (NOT BUILD_3RDPARTY_PACKAGE)
 ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
 
 # 3rdparty dependencies for building CVAC
-INSTALL(DIRECTORY   ${ICE_ROOT}/include  ${ICE_ROOT}/slice
+IF (BUILD_3RDPARTY_PACKAGE)
+    INSTALL(DIRECTORY   ${ICE_ROOT}/include  ${ICE_ROOT}/slice
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT IceExt
         PATTERN *.pdb EXCLUDE
        )
-INSTALL(DIRECTORY   ${ICE_ROOT}/python
+    INSTALL(DIRECTORY   ${ICE_ROOT}/python
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT IceExt
         PATTERN *.pyc EXCLUDE
        )
-#Windows needs all the dll files
-IF(WIN32)
-    INSTALL(DIRECTORY   ${ICE_ROOT}/bin
+    #Windows needs all the dll files
+    IF(WIN32)
+      INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         DESTINATION 3rdparty/ICE
         USE_SOURCE_PERMISSIONS
         COMPONENT IceExt
@@ -185,8 +186,8 @@ IF(WIN32)
         PATTERN vc120 EXCLUDE
         PATTERN x64 EXCLUDE
        )
-ELSE(WIN32)
-    IF (APPLE)
+    ELSE(WIN32)
+      IF (APPLE)
         INSTALL(DIRECTORY  ${ICE_ROOT}/lib
             DESTINATION 3rdparty/ICE
             USE_SOURCE_PERMISSIONS
@@ -194,18 +195,18 @@ ELSE(WIN32)
             FILES_MATCHING
             PATTERN "*.dylib"
            )
-    ELSE (APPLE)
+      ELSE (APPLE)
         INSTALL(DIRECTORY  ${ICE_ROOT}/lib
             DESTINATION 3rdparty/ICE
             USE_SOURCE_PERMISSIONS
             COMPONENT IceExt
             FILES_MATCHING PATTERN "*.so"
            )
-    ENDIF (APPLE)
-ENDIF(WIN32)
+      ENDIF (APPLE)
+    ENDIF(WIN32)
 
-SET (SVM_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libsvm")
-IF(APPLE)
+  SET (SVM_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libsvm")
+  IF(APPLE)
     INSTALL(DIRECTORY  ${ICE_ROOT}/bin
         DESTINATION 3rdparty/ICE
         COMPONENT IceExt
@@ -241,7 +242,7 @@ IF(APPLE)
         COMPONENT LibSVMExt
        )
 
-ELSE(APPLE)
+  ELSE(APPLE)
 
     INSTALL(PROGRAMS ${ICE_SLICE_EXECUTABLE}
                  ${ICE_SLICE2JAVA_EXECUTABLE} 
@@ -287,11 +288,11 @@ ELSE(APPLE)
 
     ENDIF( WIN32 )
 
-ENDIF(APPLE)
+  ENDIF(APPLE)
 
 
 
-IF (NOT PYTHON_ONLY_CLIENT)
+  IF (NOT PYTHON_ONLY_CLIENT)
     INSTALL(PROGRAMS ${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin/icebox${CMAKE_EXECUTABLE_SUFFIX}
                  ${ICE_BOX_ADMIN}
         DESTINATION 3rdparty/ICE/bin
@@ -320,7 +321,8 @@ IF (NOT PYTHON_ONLY_CLIENT)
 
     ENDIF(WIN32)
 
-ENDIF (NOT PYTHON_ONLY_CLIENT)
+  ENDIF (NOT PYTHON_ONLY_CLIENT)
+ENDIF( BUILD_3RDPARTY_PACKAGE )
 
 INSTALL(SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/PostInstall.cmake")
 
