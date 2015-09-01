@@ -14,6 +14,7 @@ SET (CMAKE_CONFIGURATION_TYPES "Release;DEBUG" CACHE STRING "")
 PROJECT(CVAC)
 
 SET (PYTHON_ONLY_CLIENT true)
+SET (OPENCV_REQUIRED OPTIONAL)
 SET(CVAC_FIRST_SERVICE_PORT "10000" CACHE STRING "First socket port to use")
 
 # where the Find*.cmake files are
@@ -43,6 +44,7 @@ ENDIF (APPLE)
 IF (PYTHON_ONLY_CLIENT)
     IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
         SET (PYTHON_ONLY_CLIENT false)
+        SET (OPENCV_REQUIRED REQUIRED)
     ENDIF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
 ENDIF (PYTHON_ONLY_CLIENT)
 
@@ -317,11 +319,11 @@ FIND_PACKAGE( PythonInterp 2.7)
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
-FIND_PACKAGE( OpenCV 2.4 REQUIRED
-                            core imgproc highgui ml features2d nonfree objdetect calib3d
-             HINTS
-                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
-                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
+FIND_PACKAGE( OpenCV 2.4 ${OPENCV_REQUIRED}
+  COMPONENTS core imgproc highgui ml features2d nonfree objdetect calib3d
+  HINTS
+    ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
+    ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
 )
 #If the find package did not set these lib dirs, then set ourselfs
 IF ("${OpenCV_LIB_DIR_OPT}" STREQUAL "")
@@ -364,7 +366,7 @@ IF( PYTHONINTERP_FOUND )
   GET_FILENAME_COMPONENT( OPENCV_PY_DIR ${OPENCV_PY_LIB} PATH )
   FIND_FILE( OPENCV_PY_PY cv.py HINTS ${OPENCV_PY_DIR} )
   IF( NOT OPENCV_PY_LIB OR NOT OPENCV_PY_PY )
-      MESSAGE( SEND_ERROR "Need cv2.pyd or cv2.so and cv.py from OpenCV" )
+      MESSAGE( WARNING "Did not find cv2.pyd or cv2.so and cv.py from OpenCV" )
   ENDIF()
 ENDIF()
 
