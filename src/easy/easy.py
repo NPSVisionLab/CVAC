@@ -936,13 +936,9 @@ def putAllFiles( fileserver, runset ):
     # upload if not present
     uploadedFiles = []
     existingFiles = []
-    for sub in substrates:
-        if isinstance(sub, cvac.ImageSubstrate):
-            path = sub.path
-        elif isinstance(sub, cvac.VideoSubstrate):
-            path = sub.videopath
-        else:
-            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
+    for path in substrates:
+        if not isinstance(path, str):
+            raise RuntimeError("Unexpected type found instead of str:", type(sub))
         if not fileserver.exists( path ):
             putFile( fileserver, path, testExistence=False )
             uploadedFiles.append( path )
