@@ -70,3 +70,14 @@ except ImportError as ex:
     print("  Detailed error message: {0}".format( ex ));
     success=False
 
+print("Trying to import GUI (this is optional)... ")
+try:
+    import Tkinter as tk
+    from PIL import Image, ImageTk, ImageDraw
+    from util.GuiThread import GuiThread
+    print("  succeeded.")
+except ImportError as ex:
+    print("  failed:")
+    print("  No GUI will be available. To display images, install:")
+    print("  Tkinter and PIL.")
+    print("  Detailed error message: {0}".format( ex ));

@@ -10,7 +10,6 @@ then
 fi
 export PYTHONEXE=/usr/bin/python@PYTHON_VERSION_MAJOR@.@PYTHON_VERSION_MINOR@
 export PATH=$PATH:${INSTALLDIR}/bin
-export ICEDIR=${INSTALLDIR}/3rdparty/ICE
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${INSTALLDIR}/lib"
 cd ${INSTALLDIR}
 LOCKFILE=.services_started.lock
@@ -23,11 +22,11 @@ fi
 # C/C++ and Java services, via icebox admin
 if [ "@START_ICE_SERVICES@" == "1" ]
 then
-    ${ICEDIR}/bin/iceboxadmin --Ice.Config=config.admin shutdown
+    @ICE_BOX_ADMIN@ --Ice.Config=config.admin shutdown
 fi
 if [ "@START_JAVA_SERVICES@" == "1" ]
 then
-    ${ICEDIR}/bin/iceboxadmin --Ice.Config=config.java_admin shutdown
+    @ICE_BOX_ADMIN@ --Ice.Config=config.java_admin shutdown
 fi
 
 # Python services that are listed in python.config

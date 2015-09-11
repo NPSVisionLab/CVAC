@@ -100,7 +100,6 @@ try:
     guiqueue = GuiQueue()
 except Exception as exc:
     # don't raise an error now
-    print("No gui available " + str(exc))
     quiqueue = None
 
 #
@@ -939,7 +938,7 @@ def putAllFiles( fileserver, runset ):
     for path in substrates:
         if not isinstance(path, str):
             raise RuntimeError("Unexpected type found instead of str:", type(sub))
-        if not fileserver.exists( path ):
+        if not fileserver.exists( getCvacPath(path) ):
             putFile( fileserver, path, testExistence=False )
             uploadedFiles.append( path )
         else:
