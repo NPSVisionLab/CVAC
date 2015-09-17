@@ -1,14 +1,11 @@
+.vagrant
+Berksfile.lock
 *~
 *#
 .#*
 \#*#
 .*.sw[a-z]
 *.un~
-pkg/
-
-# Berkshelf
-.vagrant
-Berksfile.lock
 
 # Bundler
 Gemfile.lock

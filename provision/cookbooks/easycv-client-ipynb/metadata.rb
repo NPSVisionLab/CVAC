@@ -1,0 +1,10 @@
+name 'easycv-client-ipynb'
+maintainer 'The Authors'
+maintainer_email 'you@example.com'
+license 'all_rights'
+description 'Installs/Configures easycv-client-ipynb'
+long_description 'Installs/Configures easycv-client-ipynb'
+version '0.1.0'
+
+depends 'apt'
+depends 'firewall', '~> 1.5.0'
