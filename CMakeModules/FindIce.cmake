@@ -53,6 +53,7 @@ FIND_PATH (ICE_SLICE_INCLUDE Ice/Identity.ice
            ${ICE_INSTALLDIR}
            /opt/Ice-3.5
            /usr/include
+           /usr/share/Ice
            /usr/share/Ice-3.5
            /usr/share/Ice-3.4.2
            /Library/Developer/Ice-3.5
