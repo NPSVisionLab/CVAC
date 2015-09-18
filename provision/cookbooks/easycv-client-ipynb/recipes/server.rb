@@ -17,7 +17,6 @@ bash 'install_easycv_server' do
     make >> out_make.txt 2>&1
     make install >> out_install.txt 2>&1
   EOH
-  # environment 'PREFIX' => '/usr/local'
 end
 
 easycv_install_dir = "#{Chef::Config[:file_cache_path]}/easycv/build_server/installed"
@@ -27,14 +26,14 @@ bash 'test_easycv_prerequisites' do
   ENV['PYTHONPATH'] = '/var/chef/cache/easycv/build_server/installed/python/easyPkg'
   ENV['LD_LIBRARY_PATH'] = '/usr/local/lib'
   code <<-EOH
-    /usr/bin/python2.7 demo/prerequisites.py >> out_prerequisites.txt 2>&1
+    /usr/bin/python2.7 demo/prerequisites.py >> build_server/out_prerequisites.txt 2>&1
   EOH
 end
 
 bash 'start_easycv_server' do
-  cwd "#{Chef::Config[:file_cache_path]}/easycv"
+  cwd "#{Chef::Config[:file_cache_path]}/easycv/build_server"
   code <<-EOH
-    /var/chef/cache/easycv/build_server/installed/EasyCV/bin/startServices.sh >> out_startServices.txt 2>&1
+    /var/chef/cache/easycv/build_server/installed/bin/startServices.sh >> out_startServices.txt 2>&1
   EOH
 end
 

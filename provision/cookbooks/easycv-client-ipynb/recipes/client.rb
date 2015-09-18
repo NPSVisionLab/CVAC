@@ -18,7 +18,7 @@ bash 'install_easycv_client' do
   # environment 'PREFIX' => '/usr/local'
 end
 
-easycv_install_dir = "#{Chef::Config[:file_cache_path]}/easycv/build/installed"
+easycv_install_dir = "#{Chef::Config[:file_cache_path]}/easycv/build_client/installed"
 
 
 #
@@ -45,7 +45,7 @@ end
 bash 'ipython_notebook' do
   cwd easycv_install_dir
   code <<-EOH
-    export PYTHONPATH=/usr/lib/pymodules/python2.7:/var/chef/cache/easycv/build/installed/EasyCV/python/easyPkg
+    export PYTHONPATH=/usr/lib/pymodules/python2.7:/var/chef/cache/easycv/build_client/installed/EasyCV/python/easyPkg
     export CVAC_DATADIR=/var/chef/cache/easycv/data
     /usr/bin/ipython notebook --ip=0.0.0.0 &
     EOH
