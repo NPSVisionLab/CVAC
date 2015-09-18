@@ -27,7 +27,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # the path on the host to the actual folder. The second argument is
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
-  # config.vm.synced_folder "/host/user/EasyCV", "/guest/vagrant/EasyCV"
+  # config.vm.synced_folder "/host/user/EasyCV", "/home/vagrant/EasyCV"
 
   # The path to the Berksfile to use with Vagrant Berkshelf
   config.berkshelf.berksfile_path = "./cookbooks/easycv-client-ipynb/Berksfile"
@@ -44,31 +44,50 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # to skip installing and copying to Vagrant's shelf.
   # config.berkshelf.except = []
 
-  config.vm.provision :chef_solo do |chef|
-    chef.cookbooks_path = ["site-cookbooks", "cookbooks"]
-    chef.json = {
-      mysql: {
-        server_root_password: 'rootpass',
-        server_debian_password: 'debpass',
-        server_repl_password: 'replpass'
-      }
-    }
-
-    chef.run_list = [
-      'recipe[easycv-client-ipynb::default]'
-    ]
-  end
-
   config.vm.define "client" do |client|
     client.vm.hostname = 'easycv-client'
 
     client.vm.network :forwarded_port, guest: 8888, host: 8989, auto_correct: true
     client.vm.network "private_network", ip: "192.168.9.3"
     # export PYTHONPATH=/home/vagrant/EasyCV/build_client/installed/EasyCV/python/easyPkg
+
+    config.vm.provision :chef_solo do |chef|
+      chef.cookbooks_path = ["site-cookbooks", "cookbooks"]
+      chef.json = {
+        mysql: {
+          server_root_password: 'rootpass',
+          server_debian_password: 'debpass',
+          server_repl_password: 'replpass'
+        }
+      }
+
+      chef.run_list = [
+        'recipe[easycv-client-ipynb::default]'
+      ]
+    end
+
   end
 
   config.vm.define "server" do |server|
     server.vm.hostname = 'easycv-server'
     server.vm.network "private_network", ip: "192.168.9.4"
+
+    config.vm.provision :chef_solo do |chef|
+      chef.cookbooks_path = ["site-cookbooks", "cookbooks"]
+      chef.json = {
+        mysql: {
+          server_root_password: 'rootpass',
+          server_debian_password: 'debpass',
+          server_repl_password: 'replpass'
+        }
+      }
+
+      chef.run_list = [
+        'recipe[easycv-client-ipynb::default]',
+        'recipe[easycv-client-ipynb::opencv]',
+        'recipe[easycv-client-ipynb::server]'
+      ]
+    end
+
   end
 end

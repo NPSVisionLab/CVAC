@@ -7,11 +7,12 @@ for both client-only installations and those combined with servers.
 ## Overview
 
 You need Vagrant and a VM provider, currently tested only with
-VirtualBox. You might also need Ruby, the ChefDK, and Berkshelf,
-although that will likely be installed automatically.  Note that
-bringing up the VM for the first time will download a large VM image
-from the web, and that provisioning the VM will also download further
-packages (apt-get).
+VirtualBox.  You also need the ChefDK and the Vagrant-Berkshelf plugin
+from [https://github.com/berkshelf/vagrant-berkshelf].  You might also
+need Ruby, Berkshelf, and Omnibus, although that will likely be
+installed automatically.  Note that bringing up the VM for the first
+time will download a large VM image from the web, and that
+provisioning the VM will also download further packages (apt-get).
 
 The Chef cookbook is currently embedded in the source code
 repository. That might not be the best way to do things in the long run.
@@ -22,7 +23,7 @@ Get the EasyCV branch that currently contains the code to provision. You
 will be working on this working copy both from your host and the guest VM
 if you are debugging the VM provisioning.
 
-`git clone https://github.com/NPSVisionLab/CVAC.git /host/user/CVAC`
+`git clone https://github.com/NPSVisionLab/CVAC.git /host/user/EasyCV`
 `git checkout feature-clientbuild`
 `cd provision/cookbooks/easycv-client-ipynb`
 
@@ -48,7 +49,7 @@ You can also ssh into the machine with
 
 Create a ~/Vagrantfile with the following contents (adjust for your host):
 
-`config.vm.synced_folder "/host/user/EasyCV", "/guest/vagrant/EasyCV"`
+`config.vm.synced_folder "/host/user/EasyCV", "/home/vagrant/EasyCV"`
 
 Then reload your VM and ssh into it:
 
