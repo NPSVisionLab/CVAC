@@ -63,3 +63,12 @@ guest. Note that the existance of the 3rdparty subfolder will cause
 issues on Ubuntu - you might want to work in a different working copy
 than an installation on OSX or Windows (which have the 3rdparty
 folder).
+
+
+## Q & A
+
+### What should be a cookbook versus a recipe?
+
+### What is the proper directory structure for Vagrant and Chef?
+    Nested or separate hierarchies?
+

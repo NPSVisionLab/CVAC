@@ -62,7 +62,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       }
 
       chef.run_list = [
-        'recipe[easycv-client-ipynb::default]'
+        'recipe[easycv-client-ipynb::default]',
+        'recipe[easycv-client-ipynb::client]'
       ]
     end
 

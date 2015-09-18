@@ -10,6 +10,13 @@
 package ['python-dev', 'python-numpy']
 package 'unzip'
 
+directory "#{Chef::Config[:file_cache_path]}/opencv" do
+  owner 'root'
+  group 'root'
+  mode '0755'
+  action :create
+end
+
 remote_file "#{Chef::Config[:file_cache_path]}/opencv/opencv-2.4.9.zip" do
   source 'http://downloads.sourceforge.net/project/opencvlibrary/opencv-unix/2.4.9/opencv-2.4.9.zip'
   action :create_if_missing
@@ -21,7 +28,7 @@ bash 'install_opencv' do
     unzip opencv-2.4.9
     cd opencv-2.4.9
     mkdir -p build && cd build
-    cmake ..
+    cmake -DBUILD_PERF_TESTS=NO ..
     make
     sudo make install
   EOH
