@@ -17,7 +17,7 @@ export OPENCVDIR=${INSTALLDIR}/3rdparty/opencv_stdc
 export PATH=$PATH:${INSTALLDIR}/bin
 export XAPPLRESDIR=/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/X11/app-defaults
 export DYLD_LIBRARY_PATH="${INSTALLDIR}/lib:${OPENCVDIR}/lib:@ICELIBS@:$DYLD_LIBRARY_PATH"
-export LD_LIBRARY_PATH="${INSTALLDIR}/lib:${OPENCV_LIB_DIR}:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="${INSTALLDIR}/lib:@OpenCV_LIB_DIR_OPT@:${LD_LIBRARY_PATH}"
 
 # C/C++ services, via IceBox
 cd ${INSTALLDIR}
