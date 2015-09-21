@@ -64,6 +64,26 @@ issues on Ubuntu - you might want to work in a different working copy
 than an installation on OSX or Windows (which have the 3rdparty
 folder).
 
+Note that this works well only for local VM debugging. This works only
+in limited fashion with the AWS provider because: "There is minimal
+support for synced folders. Upon vagrant up, vagrant reload, and
+vagrant provision, the AWS provider will use rsync (if available) to
+uni-directionally sync the folder to the remote machine over SSH."
+
+
+## AWS Provider
+
+You need the [https://github.com/mitchellh/vagrant-aws](vagrant-aws plugin).
+
+On the AWS console, create IAM credentials and attach a policy that
+permits the relevant EC2 actions (full control is the easiest).
+
+Create a security group the permits SSH and iPython Notebook (TCP
+8888) access from at least your computer. 
+
+Enter this information into your _personal_ Vagrantfile. Do *not*
+commit this to the version control.
+
 
 ## Q & A
 
