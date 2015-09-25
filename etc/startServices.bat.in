@@ -33,20 +33,20 @@ if exist %LOCKFILE% (
 if "@START_ICE_SERVICES@" == "1" goto starticebox
 goto noice
 :starticebox
-start "CVAC Services (C++)" "cmd /K ""%ICEDIR%/bin/icebox.exe" --Ice.Config=config.icebox"
+start "CVAC Services (C++)" /B "cmd /K ""%ICEDIR%/bin/icebox.exe" --Ice.Config=config.icebox"
 :noice
 
 if "@START_JAVA_SERVICES@" == "1" goto startjava
 goto next
 :startjava
-    start "CVAC Services (Java)" "cmd /K ""%JAVAEXE%" -cp "%ICEDIR%/lib/Ice.jar;%ICEBOXJAR%;%JARDIR%/FileServer.jar;%JARDIR%/Corpus.jar;%THRDPARTYLIBDIR%/labelme.jar;%THRDPARTYLIBDIR%/javabuilder.jar;%THRDPARTYLIBDIR%/commons-io-2.4.jar;%THRDPARTYLIBDIR%/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox"
+    start "CVAC Services (Java)" /B "cmd /K ""%JAVAEXE%" -cp "%ICEDIR%/lib/Ice.jar;%ICEBOXJAR%;%JARDIR%/FileServer.jar;%JARDIR%/Corpus.jar;%THRDPARTYLIBDIR%/labelme.jar;%THRDPARTYLIBDIR%/javabuilder.jar;%THRDPARTYLIBDIR%/commons-io-2.4.jar;%THRDPARTYLIBDIR%/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox"
 :next
 REM Python services that are listed in python.config
 if "%PYTHONEXE%" neq "" (if exist "%INSTALLDIR%/python.config" goto startpython)
 goto next2
 :startpython
     set PYTHONPATH=%INSTALLDIR%/python/easyPkg;%INSTALLDIR%/python/easyPkg/easy;%INSTALLDIR%/python/icePkg;%INSTALLDIR%/python
-    for /F "usebackq eol=# tokens=*" %%A in ("%INSTALLDIR%/python.config") do start "CVAC Service (Python)" "cmd /K ""%PYTHONEXE%" %%A"
+    for /F "usebackq eol=# tokens=*" %%A in ("%INSTALLDIR%/python.config") do start "CVAC Service (Python)" /B "cmd /K ""%PYTHONEXE%" %%A"
 :next2
 echo CVAC services launched
 REM Lets do a window equivalent of touch

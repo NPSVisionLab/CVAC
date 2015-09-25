@@ -17,20 +17,20 @@ if exist %LOCKFILE% (
 if "${START_ICE_SERVICES}" == "1" goto starticebox
 goto noice
 :starticebox
-start "CVAC Services (C++)" "cmd /K ""${ICE_BOX_EXECUTABLE}" --Ice.Config=config.icebox"
+start "CVAC Services (C++)" /B "cmd /K ""${ICE_BOX_EXECUTABLE}" --Ice.Config=config.icebox"
 :noice
 
 if "${START_JAVA_SERVICES}" == "1" goto startjava
 goto next
 :startjava
-    start "CVAC Services (Java)" "cmd /K ""${Java_JAVA_EXECUTABLE}" -cp "${Ice.jar};%ICEBOXJAR%;%JARDIR%/FileServer.jar;%JARDIR%/Corpus.jar;%_3rdPARTYDIR%/labelme.jar;%_3rdPARTYDIR%/javabuilder.jar;%_3rdPARTYDIR%/commons-io-2.4.jar;%_3rdPARTYDIR%/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox"
+    start "CVAC Services (Java)" /B "cmd /K ""${Java_JAVA_EXECUTABLE}" -cp "${Ice.jar};%ICEBOXJAR%;%JARDIR%/FileServer.jar;%JARDIR%/Corpus.jar;%_3rdPARTYDIR%/labelme.jar;%_3rdPARTYDIR%/javabuilder.jar;%_3rdPARTYDIR%/commons-io-2.4.jar;%_3rdPARTYDIR%/javatar-2.5.jar" IceBox.Server --Ice.Config=config.java_icebox"
 :next
 REM Python services that are listed in python.config
 if "${PYTHON_EXECUTABLE}" neq "" (if exist "${CMAKE_SOURCE_DIR}/python.config" goto startpython)
 goto next2
 :startpython
     set PYTHONPATH=${CMAKE_BINARY_DIR}/etc/python/easyPkg;${CMAKE_BINARY_DIR}/etc/python/icePkg;${CMAKE_SOURCE_DIR}/3rdparty/libsvm
-    for /F "usebackq eol=# tokens=*" %%A in ("${CMAKE_BINARY_DIR}/python.config") do start "CVAC Service (Python)" "cmd /K ""${PYTHON_EXECUTABLE}" ${CMAKE_SOURCE_DIR}/%%A"
+    for /F "usebackq eol=# tokens=*" %%A in ("${CMAKE_BINARY_DIR}/python.config") do start "CVAC Service (Python)" /B "cmd /K ""${PYTHON_EXECUTABLE}" ${CMAKE_SOURCE_DIR}/%%A"
 :next2
 echo CVAC services launched
 REM Lets do a window equivalent of touch
