@@ -47,7 +47,7 @@ MACRO(WRAP_SLICE2PY outfiles)
         GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
         SET(py_src ${SLICE_OUTPUT_PYTHONDIR}/${outfile}_ice.py)
         ADD_CUSTOM_COMMAND(OUTPUT ${py_src}
-          COMMAND ${ICE_SLICE2PY_EXECUTABLE}
+          COMMAND ${ICE_SLICE2PY_EXECUTABLE} 
           ARGS --output-dir ${SLICE_OUTPUT_PYTHONDIR} -I${ICE_ROOT}/slice ${infile}
           MAIN_DEPENDENCY ${infile})
 

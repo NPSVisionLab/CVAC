@@ -23,7 +23,7 @@ sys.path.append('''.''')
 import Ice
 import IcePy
 import cvac
-import Queue
+import queue
 import util.misc as misc
 from util.ArchiveHandler import * 
 
@@ -691,8 +691,8 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
 
         if len(samples) is 1:
             # single category - assume "unpurposed"
-            purpose = _determineDefaultPurpose( samples.keys()[0], purpose, classmap )
-            addPurposedLabelablesToRunSet( rnst, purpose, samples.values()[0] )
+            purpose = _determineDefaultPurpose( list(samples.keys())[0], purpose, classmap )
+            addPurposedLabelablesToRunSet( rnst, purpose, list(samples.values())[0] )
             return
         
         # if it's two classes, maybe one is called "pos" and the other "neg"?

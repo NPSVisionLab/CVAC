@@ -32,7 +32,7 @@ execute_process(
 # Display a message that details what the user has to do in order
 # to start services and run clients.
 #
-GET_FILENAME_COMPONENT(ICE_LIB_DIR @ICE_LIBRARY@ PATH)
+GET_FILENAME_COMPONENT(ICE_LIB_DIR "@ICE_LIBRARY@" PATH)
 SET(LIBSVM_DIR "@CMAKE_SOURCE_DIR@/3rdparty/libsvm")
 
 IF (WIN32)

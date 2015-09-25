@@ -17,6 +17,7 @@ SET(INCLUDE_DIRS
     .
     ${CMAKE_CURRENT_SOURCE_DIR}/../lib
     ${CVAC_INCLUDE_DIR}
+    ${OpenCV_INCLUDE_DIRS}
     ${ICE_INCLUDE}
     ${CMAKE_CURRENT_BINARY_DIR}#for the generated slice files
 )

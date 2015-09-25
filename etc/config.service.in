@@ -5,7 +5,7 @@
 
 ${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
 
-Ice.ACM.Server=0
+#Ice.ACM.Server=0 depreciated for 3.6.1
 
 ##############################################################################
 # 0: silent, 1: error, 2: warnings, 3: info, 4: debug, 5: debug_1, 6: debug_2 7: debug_3

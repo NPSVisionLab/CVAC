@@ -6,11 +6,11 @@ import subprocess
 import threading
 import time
 from subprocess import PIPE
-from StringIO import StringIO
-import ConfigParser
+from io import StringIO
+import configparser
 import easy
 import contextlib
-import Queue
+import queue
 
 import Tkinter as tk
 

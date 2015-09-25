@@ -317,8 +317,8 @@ FIND_PACKAGE( PythonInterp 2.7)
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
-FIND_PACKAGE( OpenCV 2.4 REQUIRED
-                            core imgproc highgui ml features2d nonfree objdetect calib3d
+FIND_PACKAGE( OpenCV 3.0 REQUIRED
+                            core imgproc highgui ml features2d objdetect calib3d xfeatures2d
              HINTS
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
                             ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
@@ -338,11 +338,11 @@ IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 ENDIF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
 
 # Make sure packages are compatible
-# ICE 3.5.1 is pre-built against Python 2.7
+# ICE 3.6.1 is pre-built against Python 3.4
 IF( PYTHONINTERP_FOUND )
-  # make sure it's version 2.7 or else error
-  IF( NOT PYTHON_VERSION_MAJOR EQUAL 2 OR NOT PYTHON_VERSION_MINOR EQUAL 7 )
-    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 2.6" )
+  # make sure it's version 3.4 or else error
+  IF( NOT PYTHON_VERSION_MAJOR EQUAL 3 OR NOT PYTHON_VERSION_MINOR EQUAL 4 )
+    MESSAGE( WARNING "Found Python version ${PYTHON_VERSION_STRING} but need 3.4" )
     MESSAGE( WARNING "Please specify PYTHON_EXECUTABLE manually." )
   ENDIF()
 

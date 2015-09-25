@@ -41,6 +41,8 @@ ELSE (WIN32)
     ENDIF (APPLE)
 ENDIF (WIN32)
 
+# Uncomment this out for test coverage info
+
 # Test whether a Python client can connect and talk to the Corpus service
 # Note: this currently needs the Java Corpus server started manually
 # Note: quite likely we'll need this on Windows, and ; instead of :

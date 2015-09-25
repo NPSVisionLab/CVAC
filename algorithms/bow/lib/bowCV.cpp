@@ -47,6 +47,8 @@
 
 using namespace std;
 using namespace cvac;
+using namespace cv;
+using namespace cv::ml;
 
 const string bowCV::BOW_VOC_FILE = "VOC_FILE";
 const string bowCV::BOW_SVM_FILE = "SVM_FILE";
@@ -75,7 +77,7 @@ bowCV::bowCV(MsgLogger* _msgLog)
     mInclassIDforOneClass = 1;
     mOutclassIDforOneClass = 0;
     dda = NULL;
-    cv::initModule_nonfree();	//it should be for using SIFT or SURF. 	
+    //initModule_xfeatures2d;	//it should be for using SIFT or SURF. 	
 
     filenameVocabulary = "logTrain_Vocabulary.xml.gz";
     filenameSVM = "logTrain_svm.xml.gz";
@@ -107,7 +109,7 @@ bool bowCV::train_initialize(const string& _detectorName,
 {
     //_detectorName;	//SURF, SIFT, FAST, STAR, MSER, GFTT, HARRIS
     //_extractorName;	//SURF, SIFT, OpponentSIFT, OpponentSURF
-    //_matcherName;	//BruteForce-L1, BruteForce, FlannBased  
+    //_matcherName;	//BruteForce-L1, BruteForce, FlannBased, BruteForce-Hamming, BruteForce-Hamming(2)  
 
     flagClassWeight = _flagClassWeight;
     flagName = false;
@@ -123,14 +125,19 @@ bool bowCV::train_initialize(const string& _detectorName,
       + ", nWords: " + val2str.str() + ".\n";
     message(msgout,MsgLogger::DEBUG);
 
-    fDetector = FeatureDetector::create(_detectorName);    
+    fDetector = createFeatureDetector(_detectorName);
+    
+    //fDetector = FeatureDetector::create(_detectorName);    
 // When SIFT feature is used, you may adjust its performence with the following options
 //     fDetector->set("nOctaveLayers",1); //smaller -> smaller features
 //     fDetector->set("contrastThreshold",0.1); //larger -> smaller features
 //     fDetector->set("edgeThreshold",18.0); //larger -> smaller features
 //     fDetector->set("sigma",1.9);//larger -> smaller features
 
-    dExtractor = DescriptorExtractor::create(_extractorName);
+    //dExtractor = DescriptorExtractor::create(_extractorName);
+
+    dExtractor = createDescriptorExtractor(_extractorName);
+    
     if( fDetector.empty() || dExtractor.empty() )
     {
       msgout = "Error: featureDetector or descExtractor was not created.\n";
@@ -175,14 +182,69 @@ bool bowCV::detect_initialize( const DetectorDataArchive* _dda )
   return detect_readTrainResult();
 }
 
+Ptr<FeatureDetector> bowCV::createFeatureDetector(const string& _detectorName)
+{
+    Ptr<FeatureDetector>  fDetector = Ptr<FeatureDetector>();
+    if (_detectorName.compare("SURF") == 0)
+    {
+        fDetector = xfeatures2d::SURF::create();
+    } else if (_detectorName.compare("SIFT") == 0)
+    {
+        fDetector = xfeatures2d::SIFT::create();
+    } else if (_detectorName.compare("FAST") == 0)
+    {
+        fDetector = FastFeatureDetector::create();
+    } else if (_detectorName.compare("STAR") == 0)
+    {
+        string msgout = "Error: STAR featureDetector not supported.\n";
+        message(msgout,MsgLogger::WARN);
+    } else if (_detectorName.compare("MSER") == 0)
+    {
+        fDetector = MSER::create();
+    } else if (_detectorName.compare("GFTT") == 0)
+    {
+        fDetector = GFTTDetector::create();
+    } else if (_detectorName.compare("HARRIS") == 0)
+    {
+        // Default GTFTDetector values plus Harris detector
+        fDetector = GFTTDetector::create(10000, 0.01, 1.0, 3, true);
+    } else if (_detectorName.compare("ORB") == 0)
+    {
+        fDetector = ORB::create();
+    } else
+    {
+        string msgout = "Error: featureDetector not supported.\n";
+        message(msgout,MsgLogger::WARN);
+    }
+    return fDetector;
+}
+
+Ptr<DescriptorExtractor> bowCV::createDescriptorExtractor(const string& _extractorName)
+{
+    	
+    Ptr<DescriptorExtractor>  dExtractor = Ptr<DescriptorExtractor>();
+    if (_extractorName.compare("SURF") == 0)
+    {
+        dExtractor = xfeatures2d::SURF::create();
+    } else if (_extractorName.compare("SIFT") == 0)
+    {
+        dExtractor = xfeatures2d::SIFT::create();
+    } else
+    {
+        string msgout = "Error: featureExtractor not supported.\n";
+        message(msgout,MsgLogger::WARN);
+    }
+    return dExtractor;
+}
+
 bool bowCV::detect_setParameter(const string& _detectorName,const string& _extractorName,const string& _matcherName)
 {
     flagName = false;
 
     std::string msgout;    
 
-    fDetector = FeatureDetector::create(_detectorName);
-    dExtractor = DescriptorExtractor::create(_extractorName);
+    fDetector = createFeatureDetector(_detectorName);
+    dExtractor = createDescriptorExtractor(_extractorName);
     if( fDetector.empty() || dExtractor.empty() )
     {
       msgout = "Error: featureDetector or descExtractor was not created.\n";
@@ -567,7 +629,8 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
 
     //////////////////////////////////////////////////////
     // Way #2
-    CvSVMParams param;    
+    classifierSVM = SVM::create();
+
     if(_listClassUnique.size()==1)	//Just for one class
     {
         flagOneClass = true;
@@ -580,10 +643,12 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         msgout = "BoW - One Class Classification. \n";
         message(msgout,MsgLogger::DEBUG);
 
-        param.svm_type = CvSVM::ONE_CLASS;
-        param.nu = _oneclassNu;	//empirically, this value doesn't have the effect on performance.        
+        classifierSVM->setType(SVM::ONE_CLASS);
+        classifierSVM->setNu(_oneclassNu);	//empirically, this value doesn't have the effect on performance.        
         //param.kernel_type = CvSVM::LINEAR;	//empirically, it should NOT be linear for a better performance.
-        classifierSVM.train(trainDescriptors,trainClass,cv::Mat(),cv::Mat(),param);	
+        //classifierSVM->train(trainDescriptors,trainClass,cv::Mat(),cv::Mat(),param);	
+        Ptr<TrainData> tdata = TrainData::create(trainDescriptors, SampleTypes::ROW_SAMPLE, trainClass);
+        classifierSVM->train(tdata);
     }
     else
     {
@@ -610,22 +675,27 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         //param.kernel_type = CvSVM::LINEAR;	//empirically, it should NOT be linear for a better performance.        
         if(flagClassWeight)
         {
-          param.class_weights = new CvMat();	
-          cvInitMatHeader(param.class_weights,1,_listClassUnique.size(),CV_32FC1,_classWeight);
+          // TODO fixure out how to do this directly to the cv::Mat structure without using CvMat
+          CvMat cw;
+          cvInitMatHeader(&cw, 1, _listClassUnique.size(), CV_32FC1, _classWeight); 
+          cv::Mat weights(cw.rows, cw.cols, CV_64FC1, cw.data.fl);
+          classifierSVM->setClassWeights(weights);
         }
         dda->setProperty(BOW_CLASS_WEIGHT,flagClassWeight?"True":"False");
-        classifierSVM.train(trainDescriptors,trainClass,cv::Mat(),cv::Mat(),param);
+        Ptr<TrainData> tdata = TrainData::create(trainDescriptors, SampleTypes::ROW_SAMPLE, trainClass);
+        classifierSVM->train(tdata);
         delete [] _classWeight;
     }
 
     string tSVMPath = _filepathForSavingResult + "/" + filenameSVM;
-    classifierSVM.save(tSVMPath.c_str());    
+    classifierSVM->save(tSVMPath.c_str());    
     ///////////////////////////////////////////////////////////////////////////
     // END - Train Classifier (SVM)
     //////////////////////////////////////////////////////////////////////////
     dda->setProperty(BOW_OPENCV_VERSION,CV_VERSION);    
 
     flagTrain = true;
+    delete classifierSVM;
 
     return true;
 }
@@ -723,7 +793,7 @@ std::string bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _
     // or estimated function value (regression)."
     // Since we're using it as a multi-class classification tool,
     // we can safely cast to int.
-    float predicted = classifierSVM.predict(_descriptors);
+    float predicted = classifierSVM->predict(_descriptors);
     assert( fabs( predicted-((int)predicted) ) < 0.000001 );
     _bestClass = (int) predicted;
 
@@ -783,7 +853,8 @@ bool bowCV::detect_readTrainResult()
 
     // Read SVM file
     _fullpath = dda->getFile(BOW_SVM_FILE);		
-    classifierSVM.load(_fullpath.c_str());
+    classifierSVM = SVM::create();
+    classifierSVM->load<SVM>(_fullpath.c_str());
 
     // Read OpenCV Version    
     _inputString = dda->getProperty(BOW_OPENCV_VERSION);
@@ -796,8 +867,8 @@ bool bowCV::detect_readTrainResult()
         //return false;
     }
 
-    CvSVMParams tParam = classifierSVM.get_params();
-    if(tParam.svm_type == CvSVM::ONE_CLASS)
+  
+    if(classifierSVM->getType() == SVM::ONE_CLASS)
     {
         flagOneClass = true;
         msgout = "BoW - One Class Classification. \n";

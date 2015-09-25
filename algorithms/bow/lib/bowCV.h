@@ -53,7 +53,9 @@
 // #include <opencv2/opencv.hpp>
 // #include <opencv2/highgui/highgui.hpp>
 // #include <opencv2/features2d/features2d.hpp>
-#include <opencv2/nonfree/nonfree.hpp>	//this should be included for using SIFT or SURF
+#include <opencv2/xfeatures2d.hpp>	//this should be included for using SIFT or SURF in 3.0
+#include <opencv2/xfeatures2d/nonfree.hpp>
+//#include <opencv2/nonfree/nonfree.hpp>	//this should be included for using SIFT or SURF
 // #include <opencv2/ml/ml.hpp>
 
 // #ifdef _DEBUG
@@ -134,7 +136,7 @@ public:
   cvac::DetectorDataArchive* dda;
 
 protected:
-  Mat                    _img;
+  cv::Mat                    _img;
   Mat                    _descriptors;
   vector<KeyPoint>       _keypoints;
   std::string            _tfileName;
@@ -143,6 +145,9 @@ protected:
   std::string            _fullFilePathList;
   Mat                    mVocabulary;
   std::string            filenameTrainResult;
+
+  Ptr<FeatureDetector> bowCV::createFeatureDetector(const string& _detectorName);
+  Ptr<DescriptorExtractor> bowCV::createDescriptorExtractor(const string& _extractorName);
   
 private:
   int   cntCluster;
@@ -156,7 +161,7 @@ private:
   Ptr<DescriptorExtractor>  dExtractor;
   Ptr<DescriptorMatcher>    dMatcher;  
   Ptr<BOWImgDescriptorExtractor>  bowExtractor;
-  CvSVM  classifierSVM;
+  Ptr<cv::ml::SVM>  classifierSVM;
   std::vector<std::string>  vFilenameTrain;
   std::vector<int>          vClassIDTrain;
   std::vector<int>          vBoundX,vBoundY;

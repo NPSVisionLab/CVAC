@@ -5,8 +5,8 @@
 
 import os, sys
 import threading, string
-import ConfigParser
-import StringIO
+import configparser
+from io import StringIO
 import Ice, IcePy
 import cvac
 import labelme, vatic, videosegment
@@ -195,7 +195,7 @@ class VaticCorpusI(CorpusI):
                 labels += vatic.parse(self.CVAC_DataDir, localDir,
                                       vidfile, framefolder, annotfile)
             except IOError as exc:
-                print exc
+                print (exc)
         return labels
     
 '''
@@ -226,12 +226,25 @@ class VideosegmentCorpusI(CorpusI):
         return labels
     
 
+'''
+Class required from unbuffered text output in python 3.0 because
+text is now unicode and not chars.
+'''
+class Unbuffered(object):
+    def __init__(self, stream):
+        self.stream = stream
+    def write(self, data):
+        self.stream.write(data)
+        self.stream.flush() # Must flush after every write
+    def __getattr__(self, attr):
+        return getattr(self.stream, attr)
+        
 class CorpusServiceI(cvac.CorpusService, threading.Thread):   
 
     def __init__(self, communicator):
         threading.Thread.__init__(self)
         # Change stdout to automaticly flush output
-        sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+        sys.stdout = Unbuffered(sys.stdout)
         #print("debug: starting service: CorpusService (Python)")
         self._communicator = communicator
         self._destroy = False

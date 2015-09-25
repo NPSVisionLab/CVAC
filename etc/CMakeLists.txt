@@ -119,8 +119,9 @@ SET (PYTHON_PACK_EASY_NAME "EasyCV")
 SET (PYTHON_PACK_ICE_NAME "EasyCVIce")
 # Next copy over ice. Since we need to change directory name
 # from python to icePkg, copy over the files.  Not sliced so do it now
-FILE (GLOB ICE_FILES ${ICE_PYTHON_DIR}/*)
-FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/icePkg)
+# TODO Fix this.  ICE_PYTHON_DIR is currently site-packages (too big)
+#FILE (GLOB ICE_FILES ${ICE_PYTHON_DIR}/*)
+#FILE (COPY ${ICE_FILES} DESTINATION ${PYTHON_BUILD_DIR}/icePkg)
 # Copy over the opencv files required by easy to the easy package.
 # One day these should be in there own package?  Even those these are
 # only required to python trainer/detectors its easier to always include them
@@ -167,12 +168,13 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/include  ${ICE_ROOT}/slice
         COMPONENT IceExt
         PATTERN *.pdb EXCLUDE
        )
-INSTALL(DIRECTORY   ${ICE_ROOT}/python
-        DESTINATION 3rdparty/ICE
-        USE_SOURCE_PERMISSIONS
-        COMPONENT IceExt
-        PATTERN *.pyc EXCLUDE
-       )
+#TODO fix this
+#INSTALL(DIRECTORY   ${ICE_PYTHON_DIR}
+#        DESTINATION 3rdparty/ICE
+#        USE_SOURCE_PERMISSIONS
+#        COMPONENT IceExt
+#        PATTERN *.pyc EXCLUDE
+#       )
 #Windows needs all the dll files
 IF(WIN32)
     INSTALL(DIRECTORY   ${ICE_ROOT}/bin
@@ -308,14 +310,15 @@ IF (NOT PYTHON_ONLY_CLIENT)
     MESSAGE( STATUS "OpenCV will be 3rd-party archived from this path: ${OpenCV_INSTALL_PATH}" )
 
     IF (WIN32)
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/x86
-      DESTINATION 3rdparty/opencv
-       COMPONENT ThirdParty
-      )
-    INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/python
-          DESTINATION 3rdparty/opencv
-           COMPONENT ThirdParty
-          ) 
+    #TODO fix this
+    #INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/x86
+    #  DESTINATION 3rdparty/opencv
+    #   COMPONENT ThirdParty
+    #  )
+    #INSTALL(DIRECTORY ${OpenCV_INSTALL_PATH}/python
+    #      DESTINATION 3rdparty/opencv
+    #       COMPONENT ThirdParty
+    #      ) 
 
     ENDIF(WIN32)
 
