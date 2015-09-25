@@ -7,6 +7,7 @@ ENDIF (APPLE)
 
 cmake_policy( SET CMP0012 NEW)
 
+
 #Define the configuration types.  If this is not done OpenCV cmake
 #find_package fails!
 SET (CMAKE_CONFIGURATION_TYPES "Release;DEBUG" CACHE STRING "")
