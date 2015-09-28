@@ -1,5 +1,6 @@
 @echo off
 @setlocal
+title CVAC Services
 set _3rdPARTYDIR=${CMAKE_SOURCE_DIR}/3rdparty/lib
 set JARDIR=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
 set ICEBOXJAR=${IceBox.jar} 

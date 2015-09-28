@@ -1,5 +1,6 @@
 @echo off
 @setlocal
+title CVAC Services
 REM Edit the the INSTALLDIR line below with where the distribution was installed
 set INSTALLDIR=@INSTALL_PATH@
 if "%INSTALLDIR%" neq "" goto continue
