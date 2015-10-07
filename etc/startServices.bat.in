@@ -19,7 +19,7 @@ set JARDIR=%INSTALLDIR%/bin
 set ICEDIR=%THRDPARTYDIR%/ICE
 set ICEBOXJAR=%ICEDIR%/lib/IceBox.jar
 set OPENCVDIR=%THRDPARTYDIR%/opencv/x86/vc10
-set PATH=bin;%ICEDIR%/bin;%OPENCVDIR%/bin;%THRDPARTYDIR%/libarchive\bin;%PATH%
+set PATH=bin;%THRDPARTYDIR/imagemagick:%ICEDIR%/bin;%OPENCVDIR%/bin;%THRDPARTYDIR%/libarchive\bin;%PATH%
 chdir "%INSTALLDIR%"
 
 set LOCKFILE=.services_started.lock
