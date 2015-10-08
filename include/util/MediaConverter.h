@@ -76,6 +76,18 @@ namespace cvac
                  vector<string>& _resAuxInfo);
   };
 
+  class ImageMagickConverter_i2i : public MediaConverter
+  {
+  public:
+    ImageMagickConverter_i2i::ImageMagickConverter_i2i(ServiceManager *_sman = NULL);
+    ~ImageMagickConverter_i2i(){};
+    bool convert(const string& _srcAbsPath,
+                 const string& _desAbsDir,
+                 const string& _desFilename,
+                 vector<string>& _resFilename,
+                 vector<string>& _resAuxInfo);
+  };
+
   class MediaConverter_openCV_v2i : public MediaConverter
   {
   public:

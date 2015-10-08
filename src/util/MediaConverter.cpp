@@ -105,6 +105,39 @@ bool MediaConverter_openCV_i2i::convert(const string& _srcAbsPath,
     
 }
 
+
+ImageMagickConverter_i2i::ImageMagickConverter_i2i(ServiceManager *_sman)
+: MediaConverter(_sman)
+{
+}
+
+// convert an image to another image
+bool ImageMagickConverter_i2i::convert(const string& _srcAbsPath,
+                                        const string& _desAbsDir,
+                                        const string& _desFilename,
+                                        vector<string>& _resFilename,
+                                        vector<string>& _resAuxInfo)
+{
+    _resAuxInfo.clear();
+    _resFilename.clear();
+    string tDesPath = _desAbsDir + "/" + _desFilename;
+#ifdef WIN32
+    string convProg = "iconvert";
+#else
+    string convProg = "convert";
+#endif
+    string cmd = convProg + " " + _srcAbsPath + " " + tDesPath;
+    int res = system(cmd.c_str());
+    if (res != 0)
+    {
+        localAndClientMsg(VLogger::ERROR, NULL,"Conversion exception from %s to %s - %s.\n",
+	      _srcAbsPath.c_str(),tDesPath.c_str());
+        return false;
+    }
+    return true;
+    
+}
+
 MediaConverter_openCV_v2i::MediaConverter_openCV_v2i(ServiceManager *_sman,
                                                      int _perFrame)
 : MediaConverter(_sman), PerFrame(_perFrame)
