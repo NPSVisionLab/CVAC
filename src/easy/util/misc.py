@@ -123,13 +123,6 @@ def searchDir(lset, ldir, recursive=True, video=True, image=True):
         else:
             addFileToLabelableSet(lset, ldir, f, video, image)
 
-def getLabelableFilePath(lab):
-    #if lab.sub.ice_isA('::cvac::ImageSubstrate'):
-    if isinstance(lab.sub, cvac.ImageSubstrate):
-        path = lab.sub.path
-    else:
-        path = lab.sub.videopath
-    return path
         
 '''
 Return the size of the image in pixels as a tuple

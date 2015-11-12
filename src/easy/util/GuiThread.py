@@ -24,7 +24,7 @@ class GuiThread(threading.Thread):
         return self.canvas
     
     def getQueue(self):
-        return self.qui_queue;
+        return self.qui_queue
     
     def processQueue(self):
         #import pydevd

@@ -11,7 +11,7 @@ import util.misc as misc
 import cvac
 import math
 import util.clipper as clipper
-
+import servsup.files
 from operator import attrgetter, itemgetter
 
 '''
@@ -46,7 +46,7 @@ def pixelHitStrategy(origpur, origList, result, foundMap, tres, option = None):
             total_area = orig.sub.width * orig.sub.height
             if total_area == 0 or orig.sub.width == -1 or orig.sub.height == -1:
                 ''' Label does not provide the image width and height so go get it '''
-                fname = misc.getLabelableFilePath(orig)
+                fname = servsup.files.getLabelableFilePath(orig)
                 fspath = easy.getFSPath(fname)
                 width, height = misc.getImageSize(fspath)
                 total_area = width * height;
@@ -441,7 +441,7 @@ class PixelTestResult(TestResult):
         
 
 def getRelativePath( label ):
-    fspath = misc.getLabelableFilePath(label)
+    fspath = servsup.files.getLabelableFilePath(label)
     return fspath.directory.relativePath + "/" + fspath.filename
 
 def verifyFoundMap(foundMap):
