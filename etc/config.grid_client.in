@@ -11,11 +11,12 @@ Ice.ACM.Client=0
 ## CVAC Services Config:
 CVAC.DataDir = ${CVAC_DATA_DIR}
 
+Ice.Default.Locator=CVACService/Locator:default -t 30000 -h localhost -p 4061
 
-OpenCVCascadeDetector.Proxy=OpenCVCascadeDetector:tcp -p ${OPENCV_CASCADE_DETECTOR_PORT}
-OpenCVCascadeTrainer.Proxy=OpenCVCascadeTrainer:tcp -p  ${OPENCV_CASCADE_TRAINER_PORT}
-BOW_Trainer.Proxy=BOW_Trainer:tcp -p          ${BOW_TRAINER_PORT}
-BOW_Detector.Proxy=BOW_Detector:tcp -p         ${BOW_DETECTOR_PORT}
+OpenCVCascadeDetector.Proxy=OpenCVCascadeDetector
+OpenCVCascadeTrainer.Proxy=OpenCVCascadeTrainer
+BOW_Trainer.Proxy=BOW_Trainer
+BOW_Detector.Proxy=BOW_Detector
 
 
 CorpusServer.Proxy=CorpusServer:tcp ${HOST} -p  ${CORPUS_PORT}      

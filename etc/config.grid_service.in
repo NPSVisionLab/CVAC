@@ -1,0 +1,63 @@
+#
+# The service creates one single object adapter with the name of the
+# service. The following line sets the endpoints for this adapter.
+#
+
+${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
+
+Ice.ACM.Server=0
+
+##############################################################################
+# 0: silent, 1: error, 2: warnings, 3: info, 4: debug, 5: debug_1, 6: debug_2 7: debug_3
+CVAC.ServicesVerbosity = 3
+# Set the log file name: default is STDERR
+# CVAC.Log = log.out
+
+#Directory to prepend file names with if the file names are not absolute
+CVAC.DataDir = ${CVAC_DATA_DIR}
+
+#
+# Warn about connection exceptions
+#
+#Ice.Warn.Connections=1
+#Ice.Trace.Slicing=1
+#
+# Network Tracing
+#
+# 0 = no network tracing
+# 1 = trace connection establishment and closure
+# 2 = like 1, but more detailed
+# 3 = like 2, but also trace data transfer
+#
+#Ice.Trace.Network=3
+
+#
+# Protocol Tracing
+#
+# 0 = no protocol tracing
+# 1 = trace protocol messages
+#
+#Ice.Trace.Protocol=1
+
+#
+# Security Tracing
+#
+# 0 = no security tracing
+# 1 = trace messages
+#
+#IceSSL.Trace.Security=1
+
+#
+# SSL Configuration
+#
+#Ice.Plugin.IceSSL=IceSSL:createIceSSL
+#IceSSL.DefaultDir=../../../certs
+#IceSSL.CertAuthFile=cacert.pem
+#IceSSL.CertFile=s_rsa1024_pub.pem
+#IceSSL.KeyFile=s_rsa1024_priv.pem
+
+# Set maximum message size (not packet size, units in KBs)
+Ice.MessageSizeMax=100000
+
+#The services
+

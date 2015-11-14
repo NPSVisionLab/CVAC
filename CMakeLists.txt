@@ -35,7 +35,7 @@ OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use '
 OPTION(DOWNLOAD_3RDPARTY_PACKAGE "Attempt to download a platform-specific 3rd-party software package" OFF)
 OPTION(BUILD_3RDPARTY_PACKAGE "Build the 3rd-Party development distribution package" OFF)
 OPTION(BUILD_BINARY_PACKAGE "Build the binary distribution package" OFF)
-OPTION(BUILD_WITH_RSI "Build a test for the runset iterator" OFF)
+OPTION(BUILD_ICEGRID "Build to run with IceGrid" OFF)
 IF (APPLE)
 OPTION(USE_LEGACY_STDC++LIB "Don't use the new c++11 stdc++lib" ON)
 ENDIF (APPLE)
@@ -430,6 +430,7 @@ IF ( BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_HOG OR BUILD_W
    ADD_SUBDIRECTORY(src/util)
 ENDIF ()
 ADD_SUBDIRECTORY(src/easy) 
+ADD_SUBDIRECTORY(src/servsup) 
 ADD_SUBDIRECTORY(src/clients) 
 ADD_SUBDIRECTORY(algorithms)
 ADD_SUBDIRECTORY(demo)
@@ -456,22 +457,45 @@ ENDIF (BUILD_BINARY_PACKAGE)
 # the configuration of config.{icebox,service} must come after including the
 # etc directory, because that's where the user.config.{..} get configured.
 CONFIGURE_FILE("etc/config.icebox.in" "${CMAKE_CURRENT_BINARY_DIR}/config.icebox")
+CONFIGURE_FILE("etc/config.admin.in" "${CMAKE_CURRENT_BINARY_DIR}/config.admin")
+
+IF (BUILD_ICEGRID)
+
+CONFIGURE_FILE("etc/config.grid.in" "${CMAKE_CURRENT_BINARY_DIR}/config.grid")
+CONFIGURE_FILE("etc/config.grid_service.in" "${CMAKE_CURRENT_BINARY_DIR}/config.service")
+CONFIGURE_FILE("etc/config.grid_client.in" "${CMAKE_SOURCE_DIR}/config.client")
+CONFIGURE_FILE("etc/config.grid_client.in" "${CMAKE_CURRENT_BINARY_DIR}/config.client")
+# We don't want config.service to get the user.config.service stuff since
+# the user_cvac.xml file will have those detectors. But we still need
+# the config.client to have those for the proxies.
+IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.grid_client")
+    FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.grid_client" FILE_DATA )
+    FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.client" ${FILE_DATA} )
+    FILE( APPEND "${CMAKE_SOURCE_DIR}/config.client" ${FILE_DATA} )
+ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.grid_client")
+
+ELSE (BUILD_ICEGRID)
+
 CONFIGURE_FILE("etc/config.service.in" "${CMAKE_CURRENT_BINARY_DIR}/config.service")
 # We need  config.client in the source directory for
 # the ctests to work and for demos to find it.  Also tests need it in
 # the binary directory so put it in both
 CONFIGURE_FILE("etc/config.client.in" "${CMAKE_SOURCE_DIR}/config.client")
 CONFIGURE_FILE("etc/config.client.in" "${CMAKE_CURRENT_BINARY_DIR}/config.client")
-CONFIGURE_FILE("etc/config.admin.in" "${CMAKE_CURRENT_BINARY_DIR}/config.admin")
 IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.service")
     FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.service" FILE_DATA )
     FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.service" ${FILE_DATA} )
 ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.service")
+
+ENDIF (BUILD_ICEGRID)
+
 IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.client")
     FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.client" FILE_DATA )
     FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.client" ${FILE_DATA} )
     FILE( APPEND "${CMAKE_SOURCE_DIR}/config.client" ${FILE_DATA} )
 ENDIF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.client")
+
+
 IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/user.config.icebox")
     FILE( READ "${CMAKE_CURRENT_BINARY_DIR}/user.config.icebox" FILE_DATA )
     FILE( APPEND "${CMAKE_CURRENT_BINARY_DIR}/config.icebox" ${FILE_DATA} )
