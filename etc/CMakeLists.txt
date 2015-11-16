@@ -149,7 +149,7 @@ CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/PostInstall.cmak
 
 IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
     IF (NOT BUILD_3RDPARTY_PACKAGE)
-        INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.client ${CMAKE_BINARY_DIR}/config.grid 
+        INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.client
            DESTINATION .
            COMPONENT Runtime
           )
@@ -157,6 +157,12 @@ IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
            DESTINATION bin
            COMPONENT Runtime
           )
+        IF (BUILD_ICEGRID)
+          INSTALL(FILES ${CMAKE_BINARY_DIR}/config.grid 
+           DESTINATION .
+           COMPONENT Runtime
+          )
+        ENDIF (BUILD_ICEGRID)
     ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
 ENDIF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
 
