@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#
+# stopIcegrid.sh script generated for CVAC version ${CVAC_VERSION}
+#
+
+export PATH=$PATH:/opt/local/bin:${CMAKE_SOURCE_DIR}/3rdparty/ICE/bin
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${CVAC_BINARY_DIR}/lib:${OpenCV_LIB_DIR_OPT}"
+export XAPPLRESDIR=/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/X11/app-defaults
+export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${OpenCV_LIB_DIR_OPT}:$MATLAB_MCR_DYLD_PATH"
+export PYTHONPATH="${ICE_PYTHON_DIR}:${CMAKE_BINARY_DIR}/etc/python/easyPkg:${CMAKE_BINARY_DIR}/etc/python/icePkg:${CMAKE_BINARY_DIR}/etc/python:${PYTHONPATH}"
+
+# C/C++ services, via Icegrid
+cd ${CVAC_BINARY_DIR}
+icegridadmin --Ice.Config=config.grid -e "application add cvac_icegrid.xml"

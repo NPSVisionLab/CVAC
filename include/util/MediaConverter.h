@@ -79,7 +79,7 @@ namespace cvac
   class ImageMagickConverter_i2i : public MediaConverter
   {
   public:
-    ImageMagickConverter_i2i::ImageMagickConverter_i2i(ServiceManager *_sman = NULL);
+    ImageMagickConverter_i2i(ServiceManager *_sman = NULL);
     ~ImageMagickConverter_i2i(){};
     bool convert(const string& _srcAbsPath,
                  const string& _desAbsDir,
