@@ -7,7 +7,7 @@ setup (name = '${PYTHON_PACK_NAME}',
        author = 'NPS Vision Lab',
        py_modules = ['cv', ${GOOGLE_MODULE}
                     ],
-       packages = ['cvac', 'easy', 'easy/util', 'ice', ${GOOGLE_PACKAGE}
+       packages = ['cvac', 'easy', 'servsup', 'easy/util', 'ice', ${GOOGLE_PACKAGE}
                   ],
        data_files=[('Lib/site-packages/Ice',['Ice/IcePy.${PYTHON_EXT}']),
                    ('Lib/site-packages',['ice.pth']),

@@ -114,11 +114,15 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/icePkg")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg/cvac")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg/easy")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg/servsup")
 
 
 
 # Next copy over easy. Since these files are not sliced then do it now
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}/easyPkg
+      PATTERN *.py)
+# Next copy over servsup. Since these files are not sliced then do it now
+FILE (COPY ${SLICE_OUTPUT_PATH}/servsup DESTINATION ${PYTHON_BUILD_DIR}/easyPkg
       PATTERN *.py)
 
 SET (PYTHON_PACK_NAME "CVAC")

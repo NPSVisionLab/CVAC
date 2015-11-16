@@ -8,7 +8,7 @@ setup (name = '${PYTHON_PACK_EASY_NAME}',
        package_dir = {'':'.'},
        py_modules = ['cv', ${GOOGLE_MODULE}
                     ],
-       packages = ['', 'cvac', 'easy', 'easy.util', ${GOOGLE_PACKAGE}
+       packages = ['', 'cvac', 'easy', 'servsup', 'easy.util', ${GOOGLE_PACKAGE}
                   ],
        package_data = { '':['cv2.${PYTHON_EXT}']},
        include_package_data = True,
