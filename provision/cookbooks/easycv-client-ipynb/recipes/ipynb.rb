@@ -10,8 +10,16 @@
 #
 # iPython Notebook installation and start
 #
+# This might be a better way to start a notebook server:
+# https://github.com/rgbkrk/ipython-notebook-cookbook
+#
 
 package 'ipython-notebook'
+
+# WARNING
+# this recipe hangs the VM, no ssh connection ability.
+# probably it's the firewall_rule; maybe because it
+# removes port 22?
 
 include_recipe 'firewall::default'
 # Open port 8888 to incoming traffic.
@@ -30,11 +38,12 @@ ENV['CVAC_DATADIR'] = '/var/chef/cache/easycv/data'
 # by default, "restart" is not supported but calls stop then start.
 # Specifying start_command and stop_command means that the default
 # service mechanism (init.d, upstart etc) will not be used.
+
 service 'ipython-notebook' do
   start_command              "/usr/bin/ipython notebook --ip=0.0.0.0 --notebook-dir=#{:easycv_install_dir}"
   stop_command               "killall /usr/bin/ipython"
   action :start
 end
 
-# on host, browse to 127.0.0.1:8989
+# on host, browse to 127.0.0.1:9001
 # (see Vagrantfile for port forwarding rules)
