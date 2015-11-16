@@ -60,6 +60,8 @@ CONFIGURE_FILE( stopIcegrid.${SCRIPT_EXT}.in  ${CMAKE_BINARY_DIR}/bin/stopIcegri
 CONFIGURE_FILE( initIcegrid.${SCRIPT_EXT}.in  ${CMAKE_BINARY_DIR}/bin/initIcegrid.${SCRIPT_EXT} )
 CONFIGURE_FILE( runGridAdmin.${SCRIPT_EXT}.in  ${CMAKE_BINARY_DIR}/bin/runGridAdmin.${SCRIPT_EXT} )
 CONFIGURE_FILE( cvac_icegrid.xml.in  ${CMAKE_BINARY_DIR}/cvac_icegrid.xml @ONLY )
+# copy entry include incase option user code does not copy one
+CONFIGURE_FILE( user_empty.xml.in  ${CMAKE_BINARY_DIR}/user_cvac.xml )
 
 
 IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
