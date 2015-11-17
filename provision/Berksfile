@@ -2,8 +2,8 @@ source 'https://supermarket.chef.io'
 
 metadata
 
-cookbook 'easycv-client-ipynb', path: '/Users/matz/PROJECTS/CVAC/provision/cookbooks/easycv-client-ipynb'
-cookbook 'easycv-ipynb', path: '/Users/matz/PROJECTS/CVAC/provision/cookbooks/easycv-ipynb'
+cookbook 'easycv-client-ipynb', path: 'cookbooks/easycv-client-ipynb'
+cookbook 'easycv-ipynb', path: 'cookbooks/easycv-ipynb'
 
 cookbook 'ipynb',
   :git => 'https://github.com/rgbkrk/ipython-notebook-cookbook'
