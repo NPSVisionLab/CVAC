@@ -6,93 +6,121 @@ Vagrant.require_version '>= 1.5.0'
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
-  # Set the version of chef to install using the vagrant-omnibus plugin
-  # NOTE: You will need to install the vagrant-omnibus plugin:
-  #
-  #   $ vagrant plugin install vagrant-omnibus
-  #
-  if Vagrant.has_plugin?("vagrant-omnibus")
-    config.omnibus.chef_version = 'latest'
-  end
-
   config.vm.box = "ubuntu/trusty64"
   # config.vm.box = "bento/centos-6.7"
 
-  # Assign this VM to a host-only network IP, allowing you to access it
-  # via the IP. Host-only networks can talk to the host machine as well as
-  # any other machines on the same network, but cannot be accessed (through this
-  # network interface) by any external networks.
-  config.vm.network :private_network, type: 'dhcp'
-
-  # Share an additional folder to the guest VM. The first argument is
-  # the path on the host to the actual folder. The second argument is
-  # the path on the guest to mount the folder. And the optional third
-  # argument is a set of non-required options.
-  # config.vm.synced_folder "/host/user/EasyCV", "/home/vagrant/EasyCV"
-
-  # The path to the Berksfile to use with Vagrant Berkshelf
-  config.berkshelf.berksfile_path = "./Berksfile"
-
-  # Enabling the Berkshelf plugin. To enable this globally, add this configuration
-  # option to your ~/.vagrant.d/Vagrantfile file
-  config.berkshelf.enabled = true
-
-  # An array of symbols representing groups of cookbook described in the Vagrantfile
-  # to exclusively install and copy to Vagrant's shelf.
-  # config.berkshelf.only = []
-
-  # An array of symbols representing groups of cookbook described in the Vagrantfile
-  # to skip installing and copying to Vagrant's shelf.
-  # config.berkshelf.except = []
+  # synchronize VM time with an NTP server, but ignore failure
+  config.vm.provision "shell", run: "always", inline: <<-SHELL
+    sudo sh -c 'ntpdate ntp.ubuntu.com pool.ntp.org stargate.nps.edu ; true'
+  SHELL
+  
+  # EasyCV prerequisites for both client and server
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update
+    apt-get install -y cmake build-essential git
+    apt-get install -y libarchive-dev zeroc-ice35
+  SHELL
 
   config.vm.define "client" do |client|
     client.vm.hostname = 'easycv-client'
 
+    # forward the iPython Notebook port,
+    # access it on the host at http://127.0.0.1:8001
     client.vm.network :forwarded_port, guest: 8888, host: 9001, auto_correct: true
     client.vm.network "private_network", ip: "192.168.9.3"
     # export PYTHONPATH=/home/vagrant/EasyCV/build_client/installed/EasyCV/python/easyPkg
 
-    config.vm.provision :chef_solo do |chef|
-      chef.cookbooks_path = ["site-cookbooks", "cookbooks"]
-      chef.json = {
-        mysql: {
-          server_root_password: 'rootpass',
-          server_debian_password: 'debpass',
-          server_repl_password: 'replpass'
-        }
-      }
+    # iPython installation:
+    # update the package manager and install python3 packages
+    config.vm.provision "shell", inline: <<-SHELL
+      apt-get update
+      apt-get install -y ipython3-notebook python3-dev python3-numpy
+      apt-get install -y python3-matplotlib python3-scipy
+    SHELL
 
-      # chef.add_recipe "easycv-client-ipynb"
-      chef.run_list = [
-        'recipe[easycv-client-ipynb::default]',
-        'recipe[easycv-client-ipynb::client]',
-        'recipe[easycv-ipynb]'
-      ]
-    end
-
+    # EasyCV git clone, build and install
+    config.vm.provision "shell", privileged: false, inline: <<-SHELL
+      if [ ! -d "/home/vagrant/easycv" ]; then
+        git clone --branch feature-clientbuild git://github.com/NPSVisionLab/CVAC.git /home/vagrant/easycv
+      fi
+      cd /home/vagrant/easycv
+      mkdir -p build_client && cd build_client
+      cmake -DBUILD_WITH_BOW=OFF -DBUILD_WITH_OPENCVPERFORMANCE=OFF .. >> out_cmake.txt 2>&1
+      make >> out_make.txt 2>&1
+      make install >> out_install.txt 2>&1
+    SHELL
+    
+    # Run the ipython notebook
+    config.vm.provision "shell", privileged: false, run: "always", inline: <<-SHELL
+      mkdir -p /home/vagrant/easycv/demo
+      export PYTHONPATH=/home/vagrant/easycv/3rdparty/libsvm:/home/vagrant/easycv/build_client/installed/python/easyPkg:/home/vagrant/easycv/build_client/installed/python/icePkg
+      ipython3 notebook --notebook-dir=/home/vagrant/easycv/demo --no-browser --ip=0.0.0.0 &
+    SHELL
   end
 
   config.vm.define "server" do |server|
     server.vm.hostname = 'easycv-server'
     server.vm.network "private_network", ip: "192.168.9.4"
 
-    config.vm.provision :chef_solo do |chef|
-      chef.cookbooks_path = ["site-cookbooks", "cookbooks"]
-      chef.json = {
-        mysql: {
-          server_root_password: 'rootpass',
-          server_debian_password: 'debpass',
-          server_repl_password: 'replpass'
-        }
-      }
+    # EasyCV service-specific prerequisites
+    config.vm.provision "shell", inline: <<-SHELL
+      apt-get install -y unzip
+      apt-get install -y libarchive-dev zeroc-ice35
+      apt-get install -y libavcodec-dev libavformat-dev libswscale-dev
+    SHELL
 
-      # chef.add_recipe "easycv-server"
-      chef.run_list = [
-        'recipe[easycv-client-ipynb::default]',
-        'recipe[easycv-client-ipynb::opencv]',
-        'recipe[easycv-client-ipynb::server]'
-      ]
-    end
+    # OpenCV:
+    # If the folder /home/vagrant/opencv-3.0.0 doesn't exist, unpack the
+    # OpenCV archive. If the zip file is not in place in the shared folder,
+    # wget it from here: https://github.com/Itseez/opencv/archive/3.0.0.zip
+    # Alternatively, we could git clone https://github.com/Itseez/opencv.git
+    config.vm.provision "shell", privileged: false, inline: <<-SHELL
+      if [ ! -d "/home/vagrant/opencv-3.0.0" ]; then
+        if [ ! -f "/home/vagrant/opencv-3.0.0/opencv-3.0.0.zip" ]; then
+          wget https://github.com/Itseez/opencv/archive/3.0.0.zip
+          mv 3.0.0.zip opencv-3.0.0.zip
+        fi
+        unzip opencv-3.0.0.zip
+      fi
+    SHELL
+  
+    # build OpenCV 3.0;
+    # if opencv-3.0.0/build exists, assume it has been built
+    config.vm.provision "shell", privileged: false, inline: <<-SHELL
+    if [ ! -d "/home/vagrant/opencv-3.0.0/build" ]; then
+      mkdir -p opencv-3.0.0/build && cd opencv-3.0.0/build
+      cmake -D PYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.4m.so -D PYTHON_INCLUDE_DIR=/usr/include/python3.4m -D PYTHON_INCLUDE_DIR2=/usr/include/x86_64-linux-gnu/python3.4m -D PYTHON_NUMPY_INCLUDE_DIRS=/usr/lib/python3/dist-packages/numpy/core/include/ -D FFMPEG_INCLUDE_DIR=/home/vagrant/opencv-3.0.0/3rdparty/include/ffmpeg_ -D FFMPEG_LIB_DIR=/home/vagrant/opencv-3.0.0/3rdparty/lib -D CMAKE_INSTALL_PREFIX=/home/vagrant/opencv-3.0.0/installed ..
 
+      NUMPROCS=`cat /proc/cpuinfo | grep processor | wc -l`
+      make -j${NUMPROCS}
+    fi
+    SHELL
+
+    # install OpenCV 3.0;
+    config.vm.provision "shell", privileged: false, inline: <<-SHELL
+    if [ ! -d "/home/vagrant/opencv-3.0.0/installed" ]; then
+      cd opencv-3.0.0/build
+      make install
+      cd .. # opencv-3.0.0
+      cp build/lib/python3/* installed/lib/.
+    fi
+    SHELL
+
+    # EasyCV git clone, build and install
+    config.vm.provision "shell", privileged: false, inline: <<-SHELL
+      git clone --branch feature-clientbuild git://github.com/NPSVisionLab/CVAC.git /home/vagrant/easycv 
+      cd /home/vagrant/easycv
+      mkdir -p build_server && cd build_server
+      cmake .. >> out_cmake.txt 2>&1
+      make >> out_make.txt 2>&1
+      make install >> out_install.txt 2>&1
+    SHELL
+
+    # EasyCV service start
+    config.vm.provision "shell", privileged: false, inline: <<-SHELL
+      cd /home/vagrant/easycv/build_server"
+      /home/vagrant/easycv/build_server/installed/bin/startServices.sh >> out_startServices.txt 2>&1
+    SHELL
+    
   end
 end

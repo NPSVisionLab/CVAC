@@ -23,7 +23,7 @@ sys.path.append('''.''')
 import Ice
 import IcePy
 import cvac
-import Queue
+import queue
 import util.misc as misc
 from util.ArchiveHandler import * 
 
@@ -45,7 +45,7 @@ class GuiQueue:
     def __init__(self):
         self.queue = None
         self.guiThread = None
-        self.queue = Queue.Queue()
+        self.queue = queue.Queue()
         self.windows = {}
 
     def startThread(self):
