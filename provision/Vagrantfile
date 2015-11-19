@@ -67,51 +67,53 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       apt-get install -y unzip
       apt-get install -y libarchive-dev zeroc-ice35
       apt-get install -y libavcodec-dev libavformat-dev libswscale-dev
+      apt-get install -y python-dev python-numpy
     SHELL
 
     # OpenCV:
-    # If the folder /home/vagrant/opencv-3.0.0 doesn't exist, unpack the
+    # If the folder /home/vagrant/opencv-2.4.9 doesn't exist, unpack the
     # OpenCV archive. If the zip file is not in place in the shared folder,
     # wget it from here: https://github.com/Itseez/opencv/archive/3.0.0.zip
     # Alternatively, we could git clone https://github.com/Itseez/opencv.git
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
-      if [ ! -d "/home/vagrant/opencv-3.0.0" ]; then
-        if [ ! -f "/home/vagrant/opencv-3.0.0/opencv-3.0.0.zip" ]; then
-          wget https://github.com/Itseez/opencv/archive/3.0.0.zip
-          mv 3.0.0.zip opencv-3.0.0.zip
+      if [ ! -d "/home/vagrant/opencv-2.4.9" ]; then
+        if [ ! -f "/home/vagrant/opencv-2.4.9/opencv-2.4.9.zip" ]; then
+          wget http://downloads.sourceforge.net/project/opencvlibrary/opencv-unix/2.4.9/opencv-2.4.9.zip
         fi
-        unzip opencv-3.0.0.zip
+        unzip opencv-2.4.9.zip
       fi
     SHELL
   
-    # build OpenCV 3.0;
-    # if opencv-3.0.0/build exists, assume it has been built
+    # build opencv-2.4.9;
+    # if opencv-2.4.9/build exists, assume it has been built
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
-    if [ ! -d "/home/vagrant/opencv-3.0.0/build" ]; then
-      mkdir -p opencv-3.0.0/build && cd opencv-3.0.0/build
-      cmake -D PYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.4m.so -D PYTHON_INCLUDE_DIR=/usr/include/python3.4m -D PYTHON_INCLUDE_DIR2=/usr/include/x86_64-linux-gnu/python3.4m -D PYTHON_NUMPY_INCLUDE_DIRS=/usr/lib/python3/dist-packages/numpy/core/include/ -D FFMPEG_INCLUDE_DIR=/home/vagrant/opencv-3.0.0/3rdparty/include/ffmpeg_ -D FFMPEG_LIB_DIR=/home/vagrant/opencv-3.0.0/3rdparty/lib -D CMAKE_INSTALL_PREFIX=/home/vagrant/opencv-3.0.0/installed ..
+    if [ ! -d "/home/vagrant/opencv-2.4.9/build" ]; then
+      mkdir -p opencv-2.4.9/build && cd opencv-2.4.9/build
+      cmake -D CMAKE_INSTALL_PREFIX=/home/vagrant/opencv-2.4.9/build/installed ..
 
       NUMPROCS=`cat /proc/cpuinfo | grep processor | wc -l`
       make -j${NUMPROCS}
     fi
     SHELL
 
-    # install OpenCV 3.0;
+    # install OpenCV;
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
-    if [ ! -d "/home/vagrant/opencv-3.0.0/installed" ]; then
-      cd opencv-3.0.0/build
+    if [ ! -d "/home/vagrant/opencv-2.4.9/build/installed" ]; then
+      cd opencv-2.4.9/build
       make install
-      cd .. # opencv-3.0.0
-      cp build/lib/python3/* installed/lib/.
+      cd .. # opencv-2.4.9
+      cp build/lib/python/* build/installed/lib/.
     fi
     SHELL
 
     # EasyCV git clone, build and install
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
-      git clone --branch feature-clientbuild git://github.com/NPSVisionLab/CVAC.git /home/vagrant/easycv 
+      if [ ! -d "/home/vagrant/easycv" ]; then
+        git clone --branch feature-clientbuild git://github.com/NPSVisionLab/CVAC.git /home/vagrant/easycv
+      fi
       cd /home/vagrant/easycv
       mkdir -p build_server && cd build_server
-      cmake .. >> out_cmake.txt 2>&1
+      cmake -D OpenCV_DIR=/home/vagrant/opencv-2.4.9/build/installed/share/OpenCV -D CMAKE_INSTALL_PREFIX=/home/vagrant/easycv/build_server/installed .. >> out_cmake.txt 2>&1
       make >> out_make.txt 2>&1
       make install >> out_install.txt 2>&1
     SHELL
@@ -119,7 +121,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # EasyCV service start
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
       cd /home/vagrant/easycv/build_server"
-      /home/vagrant/easycv/build_server/installed/bin/startServices.sh >> out_startServices.txt 2>&1
+      /home/vagrant/easycv/build_server/installed/EasyCV/bin/startServices.sh >> out_startServices.txt 2>&1
     SHELL
     
   end
