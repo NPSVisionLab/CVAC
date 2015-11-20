@@ -45,7 +45,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       fi
       cd /home/vagrant/easycv
       mkdir -p build_client && cd build_client
-      cmake -DBUILD_WITH_BOW=OFF -DBUILD_WITH_OPENCVPERFORMANCE=OFF .. >> out_cmake.txt 2>&1
+      cmake -DBUILD_WITH_BOW=OFF -DBUILD_WITH_OPENCVPERFORMANCE=OFF -D CMAKE_INSTALL_PREFIX=/home/vagrant/easycv/build_client/installed .. >> out_cmake.txt 2>&1
       make >> out_make.txt 2>&1
       make install >> out_install.txt 2>&1
     SHELL
