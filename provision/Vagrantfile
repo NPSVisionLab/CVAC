@@ -53,7 +53,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # Run the ipython notebook
     config.vm.provision "shell", privileged: false, run: "always", inline: <<-SHELL
       mkdir -p /home/vagrant/easycv/demo
-      export PYTHONPATH=/home/vagrant/easycv/3rdparty/libsvm:/home/vagrant/easycv/build_client/installed/python/easyPkg:/home/vagrant/easycv/build_client/installed/python/icePkg
+      export PYTHONPATH=/home/vagrant/easycv/3rdparty/libsvm:/home/vagrant/easycv/build_client/installed/EasyCV/python/easyPkg:/home/vagrant/easycv/build_client/installed/EasyCV/python/icePkg
       ipython notebook --notebook-dir=/home/vagrant/easycv/demo --no-browser --ip=0.0.0.0 &
     SHELL
   end
@@ -61,6 +61,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.define "server" do |server|
     server.vm.hostname = 'easycv-server'
     server.vm.network "private_network", ip: "192.168.9.4"
+
+    # The OpenCV build requires at least 1GB of memory, and
+    # some algorithms are happier with more.
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = 2048
+      vb.cpus = 2
+    end
 
     # EasyCV service-specific prerequisites
     config.vm.provision "shell", inline: <<-SHELL
@@ -102,7 +109,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       cd opencv-2.4.9/build
       make install
       cd .. # opencv-2.4.9
-      cp build/lib/python/* build/installed/lib/.
     fi
     SHELL
 
@@ -120,7 +126,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     # EasyCV service start
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
-      cd /home/vagrant/easycv/build_server"
+      cd /home/vagrant/easycv/build_server
       /home/vagrant/easycv/build_server/installed/EasyCV/bin/startServices.sh >> out_startServices.txt 2>&1
     SHELL
     
