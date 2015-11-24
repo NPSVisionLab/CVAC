@@ -26,35 +26,39 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     # forward the iPython Notebook port,
     # access it on the host at http://127.0.0.1:8001
-    client.vm.network :forwarded_port, guest: 8888, host: 9001, auto_correct: true
+    client.vm.network :forwarded_port, guest: 8000, host: 9001, auto_correct: true
     client.vm.network "private_network", ip: "192.168.9.3"
-    # export PYTHONPATH=/home/vagrant/EasyCV/build_client/installed/EasyCV/python/easyPkg
+    # export PYTHONPATH=$HOME/EasyCV/build_client/installed/EasyCV/python/easyPkg
 
     # iPython installation:
     # update the package manager and install python packages
     config.vm.provision "shell", inline: <<-SHELL
       apt-get update
-      apt-get install -y ipython-notebook python-dev python-numpy
-      apt-get install -y python-matplotlib python-scipy
+      apt-get install -y ipython-notebook python-dev 
+      apt-get install -y python-numpy python-matplotlib python-scipy
+      apt-get install -y python-pip
+      sudo pip install jupyter
     SHELL
 
     # EasyCV git clone, build and install
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
-      if [ ! -d "/home/vagrant/easycv" ]; then
-        git clone --branch feature-clientbuild git://github.com/NPSVisionLab/CVAC.git /home/vagrant/easycv
+      if [ ! -d "$HOME/easycv" ]; then
+        git clone --branch feature-clientbuild git://github.com/NPSVisionLab/CVAC.git $HOME/easycv
       fi
-      cd /home/vagrant/easycv
+      cd $HOME/easycv
       mkdir -p build_client && cd build_client
-      cmake -DBUILD_WITH_BOW=OFF -DBUILD_WITH_OPENCVPERFORMANCE=OFF -D CMAKE_INSTALL_PREFIX=/home/vagrant/easycv/build_client/installed .. >> out_cmake.txt 2>&1
+      cmake -DBUILD_WITH_BOW=OFF -DBUILD_WITH_OPENCVPERFORMANCE=OFF -D CMAKE_INSTALL_PREFIX=$HOME/easycv/build_client/installed .. >> out_cmake.txt 2>&1
       make >> out_make.txt 2>&1
       make install >> out_install.txt 2>&1
     SHELL
     
     # Run the ipython notebook
+    # password: EasyCV4cloud
+    # 'sha1:1363df2d76b9:6eeeb4bc328e808a97704102d090d841b668d194'
     config.vm.provision "shell", privileged: false, run: "always", inline: <<-SHELL
-      mkdir -p /home/vagrant/easycv/demo
-      export PYTHONPATH=/home/vagrant/easycv/3rdparty/libsvm:/home/vagrant/easycv/build_client/installed/EasyCV/python/easyPkg:/home/vagrant/easycv/build_client/installed/EasyCV/python/icePkg
-      ipython notebook --notebook-dir=/home/vagrant/easycv/demo --no-browser --ip=0.0.0.0 &
+      mkdir -p $HOME/easycv/demo
+      export PYTHONPATH=$HOME/easycv/3rdparty/libsvm:$HOME/easycv/build_client/installed/EasyCV/python/easyPkg:$HOME/easycv/build_client/installed/EasyCV/python/icePkg
+      ipython notebook --notebook-dir=$HOME/easycv --no-browser --ip=0.0.0.0 --port 8000 --NotebookApp.password='sha1:1363df2d76b9:6eeeb4bc328e808a97704102d090d841b668d194' &
     SHELL
   end
 
@@ -78,13 +82,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     SHELL
 
     # OpenCV:
-    # If the folder /home/vagrant/opencv-2.4.9 doesn't exist, unpack the
+    # If the folder $HOME/opencv-2.4.9 doesn't exist, unpack the
     # OpenCV archive. If the zip file is not in place in the shared folder,
     # wget it from here: https://github.com/Itseez/opencv/archive/3.0.0.zip
     # Alternatively, we could git clone https://github.com/Itseez/opencv.git
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
-      if [ ! -d "/home/vagrant/opencv-2.4.9" ]; then
-        if [ ! -f "/home/vagrant/opencv-2.4.9/opencv-2.4.9.zip" ]; then
+      if [ ! -d "$HOME/opencv-2.4.9" ]; then
+        if [ ! -f "$HOME/opencv-2.4.9/opencv-2.4.9.zip" ]; then
           wget http://downloads.sourceforge.net/project/opencvlibrary/opencv-unix/2.4.9/opencv-2.4.9.zip
         fi
         unzip opencv-2.4.9.zip
@@ -94,9 +98,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # build opencv-2.4.9;
     # if opencv-2.4.9/build exists, assume it has been built
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
-    if [ ! -d "/home/vagrant/opencv-2.4.9/build" ]; then
+    if [ ! -d "$HOME/opencv-2.4.9/build" ]; then
       mkdir -p opencv-2.4.9/build && cd opencv-2.4.9/build
-      cmake -D CMAKE_INSTALL_PREFIX=/home/vagrant/opencv-2.4.9/build/installed ..
+      cmake -D CMAKE_INSTALL_PREFIX=$HOME/opencv-2.4.9/build/installed ..
 
       NUMPROCS=`cat /proc/cpuinfo | grep processor | wc -l`
       make -j${NUMPROCS}
@@ -105,7 +109,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     # install OpenCV;
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
-    if [ ! -d "/home/vagrant/opencv-2.4.9/build/installed" ]; then
+    if [ ! -d "$HOME/opencv-2.4.9/build/installed" ]; then
       cd opencv-2.4.9/build
       make install
       cd .. # opencv-2.4.9
@@ -114,20 +118,20 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     # EasyCV git clone, build and install
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
-      if [ ! -d "/home/vagrant/easycv" ]; then
-        git clone --branch feature-clientbuild git://github.com/NPSVisionLab/CVAC.git /home/vagrant/easycv
+      if [ ! -d "$HOME/easycv" ]; then
+        git clone --branch feature-clientbuild git://github.com/NPSVisionLab/CVAC.git $HOME/easycv
       fi
-      cd /home/vagrant/easycv
+      cd $HOME/easycv
       mkdir -p build_server && cd build_server
-      cmake -D OpenCV_DIR=/home/vagrant/opencv-2.4.9/build/installed/share/OpenCV -D CMAKE_INSTALL_PREFIX=/home/vagrant/easycv/build_server/installed .. >> out_cmake.txt 2>&1
+      cmake -D OpenCV_DIR=$HOME/opencv-2.4.9/build/installed/share/OpenCV -D CMAKE_INSTALL_PREFIX=$HOME/easycv/build_server/installed .. >> out_cmake.txt 2>&1
       make >> out_make.txt 2>&1
       make install >> out_install.txt 2>&1
     SHELL
 
     # EasyCV service start
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
-      cd /home/vagrant/easycv/build_server
-      /home/vagrant/easycv/build_server/installed/EasyCV/bin/startServices.sh >> out_startServices.txt 2>&1
+      cd $HOME/easycv/build_server
+      $HOME/easycv/build_server/installed/EasyCV/bin/startServices.sh >> out_startServices.txt 2>&1
     SHELL
     
   end
