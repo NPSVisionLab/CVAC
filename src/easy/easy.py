@@ -938,18 +938,14 @@ def putAllFiles( fileserver, runset ):
     # upload if not present
     uploadedFiles = []
     existingFiles = []
-    for sub in substrates:
-        if isinstance(sub, cvac.ImageSubstrate):
-            path = sub.path
-        elif isinstance(sub, cvac.VideoSubstrate):
-            path = sub.videopath
+    # iterate over the substrates keys which are file paths
+    for fpath in substrates:
+        cvacpath = getCvacPath(fpath)
+        if not fileserver.exists( cvacpath):
+            putFile( fileserver, cvacpath, testExistence=False )
+            uploadedFiles.append( cvacpath )
         else:
-            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
-        if not fileserver.exists( path ):
-            putFile( fileserver, path, testExistence=False )
-            uploadedFiles.append( path )
-        else:
-            existingFiles.append( path )
+            existingFiles.append( cvacpath )
 
     return {'uploaded':uploadedFiles, 'existing':existingFiles}
 
@@ -966,19 +962,15 @@ def getAllFiles( fileserver, runset ):
     # upload if not present
     downloadedFiles = []
     existingFiles = []
-    for sub in substrates:
-        if isinstance(sub, cvac.ImageSubstrate):
-            path = sub.path
-        elif isinstance(sub, cvac.VideoSubstrate):
-            path = sub.videopath
-        else:
-            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
-        filepath = getFSPath(path)
+    # iterate over the substrates keys which are file paths
+    for fpath in substrates:
+        cvacpath = getCvacPath(fpath)
+        filepath = getFSPath(cvacpath)
         if not os.path.exists( filepath ):
-            getFile( fileserver, path)
-            downloadedFiles.append( path )
+            getFile( fileserver, cvacpath)
+            downloadedFiles.append( cvacpath )
         else:
-            existingFiles.append( path )
+            existingFiles.append( cvacpath )
 
     return {'downloaded':downloadedFiles, 'existing':existingFiles}
 
