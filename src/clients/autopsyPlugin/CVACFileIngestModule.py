@@ -53,13 +53,21 @@ import cvac.Labelable
 import cvac.PurposedLabelableSeq
 import cvac.DetectorProperties
 import java.util.logging.Level
+import DetectorCallbackHandlerI;
 
 def myenum(*sequential, **named):
     enums = dict(zip(sequential, range(len(sequential))), **named)
     return type('Enum', (), enums)
 
+# The list of detectors/algorithms  we will support.
+# TODO: read this from a config file.
 Detectors = myenum('BOW_FLAG', 'BOW_LOGO', 'CV_FACE', 'WIRE', 'SS')
-
+DetectorNames = ["BOW Flag Detector",
+                 "BOW LOGO Detector",
+                 "CV Face Detector",
+                 "WireDiagram Detector",
+                 "ScreenShot Detector"
+                ]
 _logger = Logger.getLogger("EASYCV Logger")
 
 def dolog(mess):
@@ -67,13 +75,14 @@ def dolog(mess):
 
 dolog("init cvac")
 
-
+# We want to do this only once.  Startup gets called for each thread
 args = sys.argv
 args.append('--Ice.Config=config.client')
 ic = Ice.Util.initialize(args)
 CVAC_DataDir = ic.getProperties().getProperty("CVAC.DataDir")
 dolog("init complete")
 
+# This class keeps track of which detector/algorithms the user selected
 class CVACIngestModuleSettings(IngestModuleIngestJobSettings):
     serialVersionUID = 1L
 
@@ -82,34 +91,35 @@ class CVACIngestModuleSettings(IngestModuleIngestJobSettings):
         self.flags = []
         for i in range(5):
             self.flags.append(False)
+        # Default we will turn on the first detector so something gets ran
         self.flags[0] = True
 
     def getVersionNumber(self):
         return self.serialVersionUID
 
     def getFlags(self):
-        dolog("getting flags")
-        if not self.flags:
-            dolog("no flags")
         return self.flags
 
     def setFlags(self,  flags):
         self.flags = flags
 
 # UI shown for the user for each ingest job.
+# Note!!!! Python Errors in this module do not get reported!
+# If an error occurs the Ingest Modules panel is just not shown
+# This includes python syntax errors so use dolog to isolate the problem
+# This displays a checkbox for each detector.  When a new detector/algorithm
+# has been added above then add it here.
 class CVACIngestModuleSettingsPanel(IngestModuleIngestJobSettingsPanel):
     # Note settings is used by base class
     def __init__(self, settings):
-        dolog("init panel")
+
         self.local_settings = settings
         # Add JPanel components here
         self.initComponents()
-        dolog("panel complete")
         self.customizeComponents()
 
     def checkBoxBOW_FLAG(self, event):
-        dolog("event")
-        if self.checkbox.isSelected():
+        if self.checkbox_BOW_FLAG.isSelected():
             flags = self.local_settings.getFlags()
             flags[Detectors.BOW_FLAG] = True
             self.local_settings.setFlags(flags)
@@ -118,7 +128,7 @@ class CVACIngestModuleSettingsPanel(IngestModuleIngestJobSettingsPanel):
             flags[Detectors.BOW_FLAG] = False
             self.local_settings.setFlag(flags)
     def checkBoxBOW_LOGO(self, event):
-        if self.checkbox.isSelected():
+        if self.checkbox_BOW_LOGO.isSelected():
             flags = self.local_settings.getFlags()
             flags[Detectors.BOW_LOGO] = True
             self.local_settings.setFlags(flags)
@@ -127,7 +137,7 @@ class CVACIngestModuleSettingsPanel(IngestModuleIngestJobSettingsPanel):
             flags[Detectors.BOW_LOGO] = False
             self.local_settings.setFlag(flags)
     def checkBoxCV_FACE(self, event):
-        if self.checkbox.isSelected():
+        if self.checkbox_CV_FACE.isSelected():
             flags = self.local_settings.getFlags()
             flags[Detectors.CV_FACE] = True
             self.local_settings.setFlags(flags)
@@ -136,8 +146,10 @@ class CVACIngestModuleSettingsPanel(IngestModuleIngestJobSettingsPanel):
             flags[Detectors.CV_FACE] = False
             self.local_settings.setFlag(flags)
     def checkBoxWIRE(self, event):
-        if self.checkbox.isSelected():
+        dolog("in check wire")
+        if self.checkbox_WIRE.isSelected():
             flags = self.local_settings.getFlags()
+            dolog("setting wire to true")
             flags[Detectors.WIRE] = True
             self.local_settings.setFlags(flags)
         else:
@@ -145,7 +157,7 @@ class CVACIngestModuleSettingsPanel(IngestModuleIngestJobSettingsPanel):
             flags[Detectors.WIRE] = False
             self.local_settings.setFlag(flags)
     def checkBoxSS(self, event):
-        if self.checkbox.isSelected():
+        if self.checkbox_SS.isSelected():
             flags = self.local_settings.getFlags()
             flags[Detectors.SS] = True
             self.local_settings.setFlags(flags)
@@ -155,33 +167,28 @@ class CVACIngestModuleSettingsPanel(IngestModuleIngestJobSettingsPanel):
             self.local_settings.setFlag(flags)
 
     def initComponents(self):
-        dolog("init components")
-        self.setLayout(BoxLayout(self, BoxLayout.Y_AXIS))
-        dolog("layoutY")
-        self.checkbox_BOW_FLAG = JCheckBox("BOW Flag Detector", actionPerformed=self.checkBoxBOW_FLAG)
-        dolog("checkbox")
-        self.add(self.checkbox_BOW_FLAG)
-        dolog("add")
 
-        self.checkbox_BOW_LOGO = JCheckBox("BOW Logo Detector", actionPerformed=self.checkBoxBOW_LOGO)
+        self.setLayout(BoxLayout(self, BoxLayout.Y_AXIS))
+
+        self.checkbox_BOW_FLAG = JCheckBox(DetectorNames[Detectors.BOW_FLAG], actionPerformed=self.checkBoxBOW_FLAG)
+        self.add(self.checkbox_BOW_FLAG)
+
+        self.checkbox_BOW_LOGO = JCheckBox(DetectorNames[Detectors.BOW_LOGO], actionPerformed=self.checkBoxBOW_LOGO)
         self.add(self.checkbox_BOW_LOGO)
 
-        self.checkbox_CV_FACE = JCheckBox("CV Face Detector", actionPerformed=self.checkBoxCV_FACE)
+        self.checkbox_CV_FACE = JCheckBox(DetectorNames[Detectors.CV_FACE], actionPerformed=self.checkBoxCV_FACE)
         self.add(self.checkbox_CV_FACE)
-        self.checkbox_WIRE = JCheckBox("BOW Logo Detector", actionPerformed=self.checkBoxWIRE)
+
+        self.checkbox_WIRE = JCheckBox(DetectorNames[Detectors.WIRE], actionPerformed=self.checkBoxWIRE)
         self.add(self.checkbox_WIRE)
-        self.checkbox_SS = JCheckBox("BOW Logo Detector", actionPerformed=self.checkBoxSS)
+
+        self.checkbox_SS = JCheckBox(DetectorNames[Detectors.SS], actionPerformed=self.checkBoxSS)
         self.add(self.checkbox_SS)
-
-        dolog("init components complete")
-
 
 
 
     def customizeComponents(self):
-        dolog("customizing")
         flags = self.local_settings.getFlags()
-        dolog("get flags")
         self.checkbox_BOW_FLAG.setSelected(flags[Detectors.BOW_FLAG])
         self.checkbox_BOW_LOGO.setSelected(flags[Detectors.BOW_LOGO])
         self.checkbox_CV_FACE.setSelected(flags[Detectors.CV_FACE])
@@ -191,7 +198,7 @@ class CVACIngestModuleSettingsPanel(IngestModuleIngestJobSettingsPanel):
     def getSettings(self):
         return self.local_settings
 
-
+# This is the Factory class that creates our ingest class
 class CVACIngestModuleFactory(IngestModuleFactoryAdapter):
 
     moduleName = "EasyCV Ingest Module"
@@ -212,9 +219,7 @@ class CVACIngestModuleFactory(IngestModuleFactoryAdapter):
         return True
 
     def createFileIngestModule(self, ingestOptions):
-        dolog("Creating ingest")
         res = CVACFileIngestModule(self.settings)
-        dolog("created ingest")
         return res
 
     def hasIngestJobSettingsPanel(self):
@@ -224,36 +229,19 @@ class CVACIngestModuleFactory(IngestModuleFactoryAdapter):
         return CVACIngestModuleSettings()
 
     def getIngestJobSettingsPanel(self, settings):
-        dolog("getting panel")
         #if not isinstance(settings, CVACIngestModuleSettings):
         #   raise IllegalArgumentException("Expected CVACIngestModuleSettings")
+        dolog("wire set {0}".format(settings.flags[Detectors.WIRE]))
         self.settings = settings
-        dolog("creating settings panel")
         panel = CVACIngestModuleSettingsPanel(self.settings)
-        dolog("created settings panel")
         return panel
-
-
-class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
-    def __init__(self):
-        self.allResults = []
-        self.detectionFinished = False
-
-    def message(self, level, messageString, current=None):
-        print("Message (level {0}) from detector: {1}"
-              .format(str(level), messageString))
-
-    def foundNewResults(self, r2, current=None):
-        self.allResults.extend(r2.results)
 
 # File-level ingest module.  One gets created per thread.
 class CVACFileIngestModule(FileIngestModule):
 
     def __init__(self, settings):
-        dolog("init")
         self.localSettings = settings
         self.detectors = [] # this a list of tuplies (detector, modelfile)
-        dolog("init done")
 
     def log(self, level, msg):
          _logger.logp(level, self.__class__.__name__, inspect.stack()[1][3], msg)
@@ -264,53 +252,57 @@ class CVACFileIngestModule(FileIngestModule):
     # TODO: Add any setup code that you need here.
 
     def startUp(self, context):
-        dolog("startup")
         self.log(java.util.logging.Level.WARNING, "in startup")
 
         flags = self.localSettings.getFlags()
 
-        if len(flags) == 0:
-            dolog("No Flags")
-            raise IngestModuleException("No detectors specified")
-
-
         try:
             self.log(java.util.logging.Level.WARNING, "creating detectors")
-
+            det = None
             for i in range(len(flags)):
                 if i == Detectors.BOW_FLAG and flags[i] == True:
                     det = ic.stringToProxy("BOW_Detector:default -p 10104")
                     det = cvac.DetectorPrxHelper.checkedCast(det)
                     if not det:
                         raise IngestModuleException("Invalid Detector service proxy for BOW Flags")
+                    self.log(java.util.logging.Level.INFO, "Using detector " + DetectorNames[i])
                     self.detectors.append ((det,"bowUSKOCA.zip"))
                 elif i == Detectors.BOW_LOGO and flags[i] == True:
                     det = ic.stringToProxy("BOW_Detector:default -p 10104")
                     det = cvac.DetectorPrxHelper.checkedCast(det)
                     if not det:
                         raise IngestModuleException("Invalid Detector service proxy for BOW Icons")
+                    self.log(java.util.logging.Level.INFO, "Using detector " + DetectorNames[i])
                     self.detectors.append((det,"bowCorporateLogoModel.zip"))
                 elif i == Detectors.CV_FACE and flags[i] == True:
                     det = ic.stringToProxy("OpenCVCascadeDetector:default -p 10102")
                     det = cvac.DetectorPrxHelper.checkedCast(det)
                     if not det:
                         raise IngestModuleException("Invalid Detector service proxy for CV Face")
+                    self.log(java.util.logging.Level.INFO, "Using detector " + DetectorNames[i])
                     self.detectors.append((det, "OpencvFaces.zip"))
                 elif i == Detectors.WIRE and flags[i] == True:
                     det = ic.stringToProxy("WireDiagram_Detector:default -p 10114")
                     det = cvac.DetectorPrxHelper.checkedCast(det)
                     if not det:
                         raise IngestModuleException("Invalid Detector service proxy for Wire Diagrams")
+                    self.log(java.util.logging.Level.INFO, "Using detector " + DetectorNames[i])
                     self.detectors.append((det, "wirediagramTrainedData_opencv249.zip"))
                 elif i == Detectors.SS and flags[i] == True:
                     det = ic.stringToProxy("ScreenShot_Detector:default -p 10112")
                     det = cvac.DetectorPrxHelper.checkedCast(det)
                     if not det:
                         raise IngestModuleException("Invalid Detector service proxy for Screen Shots")
+                    self.log(java.util.logging.Level.INFO, "Using detector " + DetectorNames[i])
                     self.detectors.append((det, "ssTrainedData_opencv249_libSVM318.zip"))
+                else:
+                    self.detectors.append((None, "Invalid"))
 
-
-            self.log(java.util.logging.Level.WARNING, "created detectors")
+            if det:
+                self.log(java.util.logging.Level.INFO, "created detectors")
+            else:
+                self.log(java.util.logging.Level.ERROR, "No Detectors selected")
+                raise IngestModuleException("No Detectors selected!")
         except Ice.ConnectionRefusedException:
             raise IngestModuleException("Cannot connect one of the detectors")
 
@@ -345,11 +337,16 @@ class CVACFileIngestModule(FileIngestModule):
 
         detectorRoot = cvac.DirectoryPath("detectors")
 
+        adapter = ic.createObjectAdapter("")
         cbID = Ice.Identity()
         cbID.name = randomUUID().toString()
+
         cbID.category = ""
-        callback = DetectorCallbackReceiverI()
-        adapter = ic.createObjectAdapter("")
+        # DetectorCallbackHanderI is a java callback.  This is required to get ICE
+        # callback despatcher to find the callback since it will not find a
+        # python one.
+        callback = DetectorCallbackHandlerI()
+
         adapter.add(callback, cbID)
         adapter.activate()
 
@@ -365,24 +362,45 @@ class CVACFileIngestModule(FileIngestModule):
                 if not model:
                     continue
                 detectorProps = det.getDetectorProperties()
+                if not detectorProps:
+                    dolog("detector props returned None")
                 modelPath = cvac.FilePath(detectorRoot, model)
+                det.ice_getConnection().setAdapter(adapter)
+                self.log(java.util.logging.Level.INFO, DetectorNames[i])
                 det.process(cbID, runset, modelPath, detectorProps )
+                '''
+                dolog("calling begin")
+                asyncRes = det.begin_process(cbID, runset, modelPath, detectorProps)
+                dolog("called begin")
+                asyncRes.waitForCompleted()
+                dolog("wait completed")
+                '''
                 labelText = None
-                for res in callback.allResults:
-                    foundLabels = res.foundLabels
-                    if len(foundLabels) > 0:
-                        for lbl in foundLabels:
-                            labelText = lbl.name
-                            break
+                # The java callback returns an array of resultSets.
+                # It seems to work better to access these java arrays via indexes
+                # instead of normal python syntax.
+                resultSetArray = callback.getResults()
+
+                for x in range(len(resultSetArray)):
+                    resList = resultSetArray[x]
+                    for j in range(len(resList.results)):
+                        res = resList.results[j]
+                        for k in range(len(res.foundLabels)):
+                            labelable = res.foundLabels[k]
+                            if labelable.lab.hasLabel:
+                                labelText = labelable.lab.name
+                                self.log(java.util.logging.Level.INFO, "Found label " + labelText)
+                                # Lets just use the first label we get
+                                break
                 if labelText:
                     artifact = True
                     art = file.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT)
                     att = BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD.getTypeID(),
-                                  self.moduleName, "Detector {0}".format(i), labelText)
+                                  CVACIngestModuleFactory.moduleName, DetectorNames[i], labelText)
                     art.addAttribute(att)
-                    art = file.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.GEN_INFO)
+                    art = file.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO)
                     att = BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID(),
-                                  self.moduleName, "Detector {0}".format(i), labelText)
+                                  CVACIngestModuleFactory.moduleName, DetectorNames[i], labelText)
                     art.addAttribute(att)
 
         if artifact:
@@ -392,7 +410,7 @@ class CVACFileIngestModule(FileIngestModule):
                                 BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT, None))
             IngestServices.getInstance().fireModuleDataEvent(
                 ModuleDataEvent(CVACIngestModuleFactory.moduleName,
-                                BlackboardArtifact.ARTIFACT_TYPE.GEN_INFO, None))
+                                BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO, None))
 
 
         return IngestModule.ProcessResult.OK
