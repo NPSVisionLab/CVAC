@@ -61,12 +61,10 @@ def myenum(*sequential, **named):
 
 # The list of detectors/algorithms  we will support.
 # TODO: read this from a config file.
-Detectors = myenum('BOW_FLAG', 'BOW_LOGO', 'CV_FACE', 'WIRE', 'SS')
+Detectors = myenum('BOW_FLAG', 'BOW_LOGO', 'CV_FACE')
 DetectorNames = ["BOW Flag Detector",
                  "BOW LOGO Detector",
-                 "CV Face Detector",
-                 "WireDiagram Detector",
-                 "ScreenShot Detector"
+                 "CV Face Detector"
                 ]
 _logger = Logger.getLogger("EASYCV Logger")
 
@@ -145,26 +143,6 @@ class CVACIngestModuleSettingsPanel(IngestModuleIngestJobSettingsPanel):
             flags = self.local_settings.getFlags()
             flags[Detectors.CV_FACE] = False
             self.local_settings.setFlag(flags)
-    def checkBoxWIRE(self, event):
-        dolog("in check wire")
-        if self.checkbox_WIRE.isSelected():
-            flags = self.local_settings.getFlags()
-            dolog("setting wire to true")
-            flags[Detectors.WIRE] = True
-            self.local_settings.setFlags(flags)
-        else:
-            flags = self.local_settings.getFlags()
-            flags[Detectors.WIRE] = False
-            self.local_settings.setFlag(flags)
-    def checkBoxSS(self, event):
-        if self.checkbox_SS.isSelected():
-            flags = self.local_settings.getFlags()
-            flags[Detectors.SS] = True
-            self.local_settings.setFlags(flags)
-        else:
-            flags = self.local_settings.getFlags()
-            flags[Detectors.SS] = False
-            self.local_settings.setFlag(flags)
 
     def initComponents(self):
 
@@ -179,12 +157,6 @@ class CVACIngestModuleSettingsPanel(IngestModuleIngestJobSettingsPanel):
         self.checkbox_CV_FACE = JCheckBox(DetectorNames[Detectors.CV_FACE], actionPerformed=self.checkBoxCV_FACE)
         self.add(self.checkbox_CV_FACE)
 
-        self.checkbox_WIRE = JCheckBox(DetectorNames[Detectors.WIRE], actionPerformed=self.checkBoxWIRE)
-        self.add(self.checkbox_WIRE)
-
-        self.checkbox_SS = JCheckBox(DetectorNames[Detectors.SS], actionPerformed=self.checkBoxSS)
-        self.add(self.checkbox_SS)
-
 
 
     def customizeComponents(self):
@@ -192,8 +164,6 @@ class CVACIngestModuleSettingsPanel(IngestModuleIngestJobSettingsPanel):
         self.checkbox_BOW_FLAG.setSelected(flags[Detectors.BOW_FLAG])
         self.checkbox_BOW_LOGO.setSelected(flags[Detectors.BOW_LOGO])
         self.checkbox_CV_FACE.setSelected(flags[Detectors.CV_FACE])
-        self.checkbox_WIRE.setSelected(flags[Detectors.WIRE])
-        self.checkbox_SS.setSelected(flags[Detectors.SS])
 
     def getSettings(self):
         return self.local_settings
@@ -231,7 +201,6 @@ class CVACIngestModuleFactory(IngestModuleFactoryAdapter):
     def getIngestJobSettingsPanel(self, settings):
         #if not isinstance(settings, CVACIngestModuleSettings):
         #   raise IllegalArgumentException("Expected CVACIngestModuleSettings")
-        dolog("wire set {0}".format(settings.flags[Detectors.WIRE]))
         self.settings = settings
         panel = CVACIngestModuleSettingsPanel(self.settings)
         return panel
@@ -281,20 +250,6 @@ class CVACFileIngestModule(FileIngestModule):
                         raise IngestModuleException("Invalid Detector service proxy for CV Face")
                     self.log(java.util.logging.Level.INFO, "Using detector " + DetectorNames[i])
                     self.detectors.append((det, "OpencvFaces.zip"))
-                elif i == Detectors.WIRE and flags[i] == True:
-                    det = ic.stringToProxy("WireDiagram_Detector:default -p 10114")
-                    det = cvac.DetectorPrxHelper.checkedCast(det)
-                    if not det:
-                        raise IngestModuleException("Invalid Detector service proxy for Wire Diagrams")
-                    self.log(java.util.logging.Level.INFO, "Using detector " + DetectorNames[i])
-                    self.detectors.append((det, "wirediagramTrainedData_opencv249.zip"))
-                elif i == Detectors.SS and flags[i] == True:
-                    det = ic.stringToProxy("ScreenShot_Detector:default -p 10112")
-                    det = cvac.DetectorPrxHelper.checkedCast(det)
-                    if not det:
-                        raise IngestModuleException("Invalid Detector service proxy for Screen Shots")
-                    self.log(java.util.logging.Level.INFO, "Using detector " + DetectorNames[i])
-                    self.detectors.append((det, "ssTrainedData_opencv249_libSVM318.zip"))
                 else:
                     self.detectors.append((None, "Invalid"))
 
