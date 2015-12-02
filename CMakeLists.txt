@@ -117,8 +117,6 @@ IF (WIN32)
    ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
    ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
    ADD_DEFINITIONS(-DNOMINMAX)
-   # The java services need local host specified to run on windows 8
-   SET(HOST "-h localhost")
    #If windows 8 (ie ice 3.5) then uncomment the use ice 1.0 encoding (vs 1.1)
    IF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
        SET (ICE_ENCODE "")
