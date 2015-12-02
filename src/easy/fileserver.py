@@ -93,7 +93,7 @@ class FileServiceI(cvac.FileService, threading.Thread):
     '''
     def putFile( self, cvacPath, byteSeq, communicator ):
         endpoint = self.getOwnerName(communicator)
-        if not cvacPath.relativePath:
+        if not cvacPath.directory.relativePath:
             putFileName = os.path.join(self.CVAC_DataDir, 
                                 cvacPath.filename) 
         else:
