@@ -23,15 +23,12 @@ sys.path.append('''.''')
 import Ice
 import IcePy
 import cvac
-import Queue
+if sys.version_info[0]==3:
+    import queue
+else:
+    import Queue
 import util.misc as misc
 from util.ArchiveHandler import * 
-
-import unittest
-import stat
-import threading
-
-import os
 
 
 '''
@@ -45,7 +42,7 @@ class GuiQueue:
     def __init__(self):
         self.queue = None
         self.guiThread = None
-        self.queue = Queue.Queue()
+        self.queue = queue.Queue()
         self.windows = {}
 
     def startThread(self):
