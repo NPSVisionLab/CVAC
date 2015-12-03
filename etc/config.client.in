@@ -28,15 +28,14 @@ VideoValidatorForOpenCVClient.Proxy = VideoValidatorForOpenCV:tcp -p 10108
 
 # CVPerf Detector CvFaces
 CvFaces.Proxy = OpenCVCascadeDetector:tcp -p ${OPENCV_CASCADE_DETECTOR_PORT}
-CvFaces.DetectorFilename = OpencvFaces.zip
+CvFaces.DetectorFilename = haarcascade_frontalface_alt.xml
 
 # BOW Detector flags
-BagOfWordsUSKOCA.Proxy=BOW_Detector:tcp -p ${BOW_DETECTOR_PORT}
-BagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
+BagOfWordsFlags.Proxy=BOW_Detector:tcp -p ${BOW_DETECTOR_PORT}
+BagOfWordsFlags.DetectorFilename = bowUSKOCA.zip
 
-# same on vision.nps.edu:
-NpsBagOfWordsUSKOCA.Proxy=BOW_Detector:tcp -h vision.nps.edu -p ${BOW_DETECTOR_PORT}
-NpsBagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
+BagOfWordsLogo.Proxy=BOW_Detector:tcp -p ${BOW_DETECTOR_PORT}
+BagOfWordsLogo..DetectorFilename = bowCorporateLogoModel.zip
 
 #Trainers
 BOWTrainer.Proxy = BOW_Trainer:tcp -p ${BOW_TRAINER_PORT}
