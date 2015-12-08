@@ -17,6 +17,13 @@ set(cvhaartraining_lib_src
   mergevec.cpp
   )
 
+SET(INCLUDE_DIRS
+    .
+    ${OpenCV_INCLUDE_DIRS}
+)
+
+INCLUDE_DIRECTORIES(${INCLUDE_DIRS})
+
 add_library(opencv_haartraining_engine STATIC ${cvhaartraining_lib_src})
 set_target_properties(opencv_haartraining_engine PROPERTIES
                       DEBUG_POSTFIX "${OPENCV_DEBUG_POSTFIX}"

@@ -45,6 +45,8 @@
 
 #include "bowCV.h"
 
+#include "opencv2/core/types_c.h"
+
 using namespace std;
 using namespace cvac;
 using namespace cv;
@@ -542,7 +544,8 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     message(msgout,MsgLogger::DEBUG);
 
     Mat trainDescriptors;	trainDescriptors.create(0,bowExtractor->descriptorSize(),bowExtractor->descriptorType());
-    Mat trainClass;	trainClass.create(0,1,CV_32FC1);
+    //Mat trainClass;	trainClass.create(0,1,CV_32FC1);
+    Mat trainClass;	trainClass.create(0,1,CV_32SC1);
     int _classID;	
 
     std::list<int> _listClassAll;
@@ -629,7 +632,7 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
 
     //////////////////////////////////////////////////////
     // Way #2
-    classifierSVM = SVM::create();
+    Ptr<SVM> classifierSVM = SVM::create();
 
     if(_listClassUnique.size()==1)	//Just for one class
     {
@@ -678,7 +681,9 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
           // TODO fixure out how to do this directly to the cv::Mat structure without using CvMat
           CvMat cw;
           cvInitMatHeader(&cw, 1, _listClassUnique.size(), CV_32FC1, _classWeight); 
+          //cv::Mat cw(1, _listClassUnique.size(), CV_32FC1, _classWeight);
           cv::Mat weights(cw.rows, cw.cols, CV_64FC1, cw.data.fl);
+          //cv::Mat weights(cw.rows, cw.cols, CV_64FC1, cw.data);
           classifierSVM->setClassWeights(weights);
         }
         dda->setProperty(BOW_CLASS_WEIGHT,flagClassWeight?"True":"False");
@@ -853,7 +858,7 @@ bool bowCV::detect_readTrainResult()
 
     // Read SVM file
     _fullpath = dda->getFile(BOW_SVM_FILE);		
-    classifierSVM = SVM::create();
+    Ptr<SVM> classifierSVM = SVM::create();
     classifierSVM->load<SVM>(_fullpath.c_str());
 
     // Read OpenCV Version    

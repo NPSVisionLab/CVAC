@@ -8,6 +8,12 @@ set(traincascade_files
   HOGfeatures.cpp HOGfeatures.h
   imagestorage.cpp imagestorage.h)
 
+
+SET(INCLUDE_DIRS
+    .
+    ${OpenCV_INCLUDE_DIRS}
+)
+
 set(the_target opencv_traincascade)    
 add_library(${the_target} ${traincascade_files})
 target_link_libraries(${the_target} ${OPENCV_TRAINCASCADE_DEPS} opencv_haartraining_engine)

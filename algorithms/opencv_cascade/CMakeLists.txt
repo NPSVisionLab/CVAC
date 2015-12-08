@@ -1,4 +1,3 @@
-ADD_SUBDIRECTORY(haartraining)
-ADD_SUBDIRECTORY(traincascade)
+ADD_SUBDIRECTORY(traincascade3.0)
 ADD_SUBDIRECTORY(detectorService)
 ADD_SUBDIRECTORY(trainerService)

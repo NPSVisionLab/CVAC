@@ -50,7 +50,7 @@
 #include <util/DetectorDataArchive.h>
 
 #include "opencv2/core/core.hpp"
-#include "opencv2/core/internal.hpp"
+//#include "opencv2/core/internal.hpp"
 #include "cv.h"
 #include "cascadeclassifier.h"
 #include "cvhaartraining.h"

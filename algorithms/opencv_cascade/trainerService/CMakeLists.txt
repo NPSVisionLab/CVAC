@@ -17,11 +17,11 @@ SET(HEADER_FILES
 
 SET(INCLUDE_DIRS
     .
-    ${CMAKE_CURRENT_SOURCE_DIR}/../traincascade
-    ${CMAKE_CURRENT_SOURCE_DIR}/../haartraining
+    ${CMAKE_CURRENT_SOURCE_DIR}/../traincascade3.0
     ${CVAC_INCLUDE_DIR}
     ${ICE_INCLUDE}
     ${CMAKE_CURRENT_BINARY_DIR}#for the generated slice files
+    ${OpenCV_INCLUDE_DIRS}
 )
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRS})

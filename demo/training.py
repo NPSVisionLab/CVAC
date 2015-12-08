@@ -27,7 +27,8 @@ easy.printRunSetInfo( trainset, printLabels=True )
 #
 print("starting training, this might take a few minutes...")
 trainer = easy.getTrainer( "BOW_Trainer")
-trainedModel = easy.train( trainer, trainset )
+props = trainer.getTrainerProperties()
+trainedModel = easy.train( trainer, trainset, trainerProperties=props )
 
 #
 # Display information about the file in which the model is stored;
