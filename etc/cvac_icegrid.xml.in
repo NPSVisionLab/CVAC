@@ -11,7 +11,7 @@
       </properties>
       <properties id="cvac">
         <property name="CVAC.DataDir" value="${datadir}" />
-        <property name="CVAC.ServicesVerbosity" value="9" />
+        <property name="CVAC.ServicesVerbosity" value="3" />
         <property name="Ice.ACM.Server" value="0" />
         <property name="Ice.MessageSizeMax" value="100000" />
       </properties>
