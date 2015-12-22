@@ -175,8 +175,9 @@ std::string cvac::getCurrentWorkingDirectory()
    {
       currentDir = "";
    }
-
-   return currentDir;
+   // Return string without the max full of zeros
+   string res = currentDir.c_str();
+   return res;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
