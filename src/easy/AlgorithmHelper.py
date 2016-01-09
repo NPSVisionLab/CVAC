@@ -16,12 +16,14 @@ class AlgorithmHelper:
     class TrainerImageType: (Simple, Complex, MultiObject) = range(3)
     class DetectionSpeed: (Fast, Medium, Slow, VerySlow) = range(4)
 
-    TrainerDescription = namedtuple('TrainerDescription', 'data, imageType, speed')
+    #TrainerDescription = namedtuple('TrainerDescription', 'data, imageType, speed')
+    TrainerDescription = namedtuple('TrainerDescription', 'data')
     def __init__(self):
         '''
         Constructor.  Build the attribute dictionary of the different trainers.
         '''
         self.trainers = {}
+        '''
         self.trainers["BOW_Trainer"] =  self.TrainerDescription(self.TrainerDataSize.Small, 
                                                         self.TrainerImageType.MultiObject,
                                                         self.DetectionSpeed.Medium       
@@ -30,13 +32,18 @@ class AlgorithmHelper:
                                                                  self.TrainerImageType.Simple,
                                                                  self.DetectionSpeed.Fast
                                                                  )
+        '''
+        self.trainers["BOW_Trainer"] =  self.TrainerDescription(self.TrainerDataSize.Small
+                                                                   )
+        self.trainers["OpenCVCascadeTrainer"] = self.TrainerDescription(self.TrainerDataSize.Large
+                                                                 )
         
     def recommendTrainer(self, dataSize = None, imageType = None, detectionSpeed = None):
         for k, v in self.trainers.iteritems():
             if v.data == dataSize or not dataSize:
-                if v.imageType == imageType or not imageType:
-                    if v.speed == detectionSpeed or not detectionSpeed:
-                        return k
+                #if v.imageType == imageType or not imageType:
+                #   if v.speed == detectionSpeed or not detectionSpeed:
+                return k
         return None
     
     def getTrainerDescription(self, trainer):
@@ -60,9 +67,10 @@ if __name__ == '__main__':
         td = ah.getTrainerDescription(t)
         print("Trainer " + t)
         print("trainer data {0}".format(td.data))
-        print("trainer imageType {0}".format(td.imageType))
-        print("trainer speed {0}".format(td.speed))
-        rec = ah.recommendTrainer(td.data, td.imageType, td.speed)
+        #print("trainer imageType {0}".format(td.imageType))
+        #print("trainer speed {0}".format(td.speed))
+        #rec = ah.recommendTrainer(td.data, td.imageType, td.speed)
+        rec = ah.recommendTrainer(td.data)
         print("Recommended trainer " + rec)
     
     
