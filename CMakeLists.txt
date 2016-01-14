@@ -178,7 +178,7 @@ ENDIF()
 # The build process increases the PATCH number found in the
 # version.h file by one before building, and it commits it back into
 # the repository.
-SET( INCREASE_VERSION_PATCH "ON")
+#SET( INCREASE_VERSION_PATCH "ON")
 if( INCREASE_VERSION_PATCH )
   if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" )
     MESSAGE( SEND_ERROR "Cannot INCREASE_VERSION_PATCH without git repository" )
