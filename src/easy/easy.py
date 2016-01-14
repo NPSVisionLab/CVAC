@@ -23,17 +23,14 @@ sys.path.append('''.''')
 import Ice
 import IcePy
 import cvac
-import Queue
+if sys.version_info[0]==3:
+    import queue
+else:
+    import Queue
 import util.misc as misc
 import servsup.files
 from servsup.ArchiveHandler import ArchiveHandler as ArchiveHandler
 from servsup.ArchiveHandler import DetectorDataArchive as DetectorDataArchive
-
-import unittest
-import stat
-import threading
-
-import os
 
 
 '''
@@ -47,7 +44,7 @@ class GuiQueue:
     def __init__(self):
         self.queue = None
         self.guiThread = None
-        self.queue = Queue.Queue()
+        self.queue = queue.Queue()
         self.windows = {}
 
     def startThread(self):
@@ -102,7 +99,6 @@ try:
     guiqueue = GuiQueue()
 except Exception as exc:
     # don't raise an error now
-    print("No gui available " + str(exc))
     quiqueue = None
 
 #

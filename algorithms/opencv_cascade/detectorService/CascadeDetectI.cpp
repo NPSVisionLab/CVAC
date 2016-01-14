@@ -256,10 +256,16 @@ void CascadeDetectI::process( const Identity &client,
   callback = DetectorCallbackHandlerPrx::uncheckedCast(
             current.con->createProxy(client)->ice_oneway());
 
+  localAndClientMsg(VLogger::DEBUG_2, callback,
+                    "process called\n");
   bool initRes = initialize( detprops, model, current );
   if (initRes == false)
       return;
+  localAndClientMsg(VLogger::DEBUG_2, callback,
+                    "loading detector properties\n");
   mDetectorProps->load(detprops);
+  localAndClientMsg(VLogger::DEBUG_2, callback,
+                    "detector properties loaded\n");
   //////////////////////////////////////////////////////////////////////////
   // Setup - RunsetConstraints
   cvac::RunSetConstraint mRunsetConstraint;  

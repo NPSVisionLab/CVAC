@@ -13,11 +13,11 @@ export JAVAEXE=/usr/bin/java
 # Please set PYTHONEXE to python @PYTHON_VERSION_MAJOR@.@PYTHON_VERSION_MINOR@ executable
 export PYTHONEXE=/usr/bin/python@PYTHON_VERSION_MAJOR@.@PYTHON_VERSION_MINOR@
 
-export ICEDIR=${INSTALLDIR}/3rdparty/ICE
 export OPENCVDIR=${INSTALLDIR}/3rdparty/opencv_stdc
 export PATH=$PATH:${INSTALLDIR}/bin
 export XAPPLRESDIR=/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/X11/app-defaults
 export DYLD_LIBRARY_PATH="${INSTALLDIR}/lib:${OPENCVDIR}/lib:@ICELIBS@:$DYLD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="${INSTALLDIR}/lib:@OpenCV_LIB_DIR_OPT@:${LD_LIBRARY_PATH}"
 
 # C/C++ services, via IceBox
 cd ${INSTALLDIR}
@@ -33,12 +33,12 @@ fi
 
 if [ "@START_ICE_SERVICES@" == "1" ]
 then
-    ${ICEDIR}@ICE_BIN_DIR@/icebox --Ice.Config=config.icebox &
+    @ICE_BOX_EXECUTABLE@ --Ice.Config=config.icebox &
 fi
 # Java services, via Java IceBox
 if [ "@START_JAVA_SERVICES@" == "1" ]
 then
-    ${JAVAEXE} -cp "${ICEDIR}/lib/Ice.jar:${INSTALLDIR}/bin/FileServer.jar:${INSTALLDIR}/bin/Corpus.jar:${INSTALLDIR}/3rdparty/lib/labelme.jar:${INSTALLDIR}/3rdparty/lib/javabuilder.jar:${INSTALLDIR}/3rdparty/lib/commons-io-2.4.jar:${INSTALLDIR}/3rdparty/lib/javatar-2.5.jar" \
+    ${JAVAEXE} -cp "${INSTALLDIR}/3rdparty/ICE/lib/Ice.jar:${INSTALLDIR}/bin/FileServer.jar:${INSTALLDIR}/bin/Corpus.jar:${INSTALLDIR}/3rdparty/lib/labelme.jar:${INSTALLDIR}/3rdparty/lib/javabuilder.jar:${INSTALLDIR}/3rdparty/lib/commons-io-2.4.jar:${INSTALLDIR}/3rdparty/lib/javatar-2.5.jar" \
         IceBox.Server --Ice.Config=config.java_icebox &
 fi
 
@@ -47,7 +47,7 @@ if [ "${PYTHONEXE}" != "" ] && [ -f "${INSTALLDIR}/python.config" ]
 then
     # add in ice's python library path for osx
     export DYLD_LIBRARY_PATH="${INSTALLDIR}/3rdparty/opencv/lib:@ICEPLIBS@:$DYLD_LIBRARY_PATH"
-    export PYTHONPATH=${INSTALLDIR}/python/easyPkg:${INSTALLDIR}/python/easyPkg/easy:${INSTALLDIR}/python:${INSTALLDIR}/python/icePkg:${INSTALLDIR}/3rdparty/libsvm
+    export PYTHONPATH=${INSTALLDIR}/python/easyPkg:${INSTALLDIR}/python/easyPkg/easy:${INSTALLDIR}/python:@ICE_PY_PKG@:${INSTALLDIR}/3rdparty/libsvm
     grep -v -e ^# ${INSTALLDIR}/python.config | while read LINE
     do
         ${PYTHONEXE} $LINE &

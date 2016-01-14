@@ -32,7 +32,7 @@ MACRO(WRAP_SLICE outfiles)
         SET(_src ${CMAKE_CURRENT_BINARY_DIR}/${outfile}.cpp)
         ADD_CUSTOM_COMMAND(OUTPUT ${_header} ${_src}
           COMMAND ${ICE_SLICE_EXECUTABLE}
-          ARGS --output-dir ${CMAKE_CURRENT_BINARY_DIR} -I${ICE_ROOT}/slice ${infile}
+          ARGS --output-dir ${CMAKE_CURRENT_BINARY_DIR} -I${ICE_SLICE_INCLUDE} ${infile}
           MAIN_DEPENDENCY ${infile})
 
         SET(${outfiles} ${${outfiles}} ${_header} ${_src})
@@ -48,7 +48,7 @@ MACRO(WRAP_SLICE2PY outfiles)
         SET(py_src ${SLICE_OUTPUT_PYTHONDIR}/${outfile}_ice.py)
         ADD_CUSTOM_COMMAND(OUTPUT ${py_src}
           COMMAND ${ICE_SLICE2PY_EXECUTABLE}
-          ARGS --output-dir ${SLICE_OUTPUT_PYTHONDIR} -I${ICE_ROOT}/slice ${infile}
+          ARGS --output-dir ${SLICE_OUTPUT_PYTHONDIR} -I${ICE_SLICE_INCLUDE} ${infile}
           MAIN_DEPENDENCY ${infile})
 
         SET(${outfiles} ${${outfiles}} ${py_src})
@@ -67,7 +67,7 @@ MACRO(WRAP_SLICE2JAVA outfiles cpout package)
         SET(_java ${CMAKE_CURRENT_BINARY_DIR}/${cpout}/${package}/${outfile}.java)
         ADD_CUSTOM_COMMAND(OUTPUT ${_java}
           COMMAND ${ICE_SLICE2JAVA_EXECUTABLE}
-          ARGS --output-dir ${CMAKE_CURRENT_BINARY_DIR}/${cpout} -I${ICE_ROOT}/slice ${infile}
+          ARGS --output-dir ${CMAKE_CURRENT_BINARY_DIR}/${cpout} -I${ICE_SLICE_INCLUDE} ${infile}
           MAIN_DEPENDENCY ${infile})
 
         SET(${outfiles} ${${outfiles}} ${_java})

@@ -7,6 +7,7 @@ ENDIF (APPLE)
 
 cmake_policy( SET CMP0012 NEW)
 
+
 #Define the configuration types.  If this is not done OpenCV cmake
 #find_package fails!
 SET (CMAKE_CONFIGURATION_TYPES "Release;DEBUG" CACHE STRING "")
@@ -14,6 +15,7 @@ SET (CMAKE_CONFIGURATION_TYPES "Release;DEBUG" CACHE STRING "")
 PROJECT(CVAC)
 
 SET (PYTHON_ONLY_CLIENT true)
+SET (OPENCV_REQUIRED 0)
 SET(CVAC_FIRST_SERVICE_PORT "10000" CACHE STRING "First socket port to use")
 
 # where the Find*.cmake files are
@@ -28,7 +30,7 @@ OPTION(BUILD_FILESERVER_PYTHON "Configure a Python File Server (generally for se
 OPTION(BUILD_CORPUS_SERVER "Build a Corpus server (generally for clients), requires Java" OFF) 
 OPTION(BUILD_CORPUS_SERVICE_PYTHON "Configure a Python Corpus Server" ON) 
 OPTION(BUILD_CORPUS_LABELME "Build an interface to LabelMe, requires Java and Matlab Compiler Runtime" OFF)
-OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" ON)
+OPTION(BUILD_CPP_DETECTOR_CLIENT "Build a C++ client for detectors" OFF)
 OPTION(BUILD_CPP_TRAINER_CLIENT "Build a C++ client for trainers" OFF)
 OPTION(BUILD_WITH_TESTS "Build the tests, which depend on UnitTest++" OFF)
 OPTION(BUILD_DOCUMENTATION "Build the CVAC API documentation with Doxygen (use 'make doc')" OFF)
@@ -43,6 +45,7 @@ ENDIF (APPLE)
 IF (PYTHON_ONLY_CLIENT)
     IF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
         SET (PYTHON_ONLY_CLIENT false)
+        SET (OPENCV_REQUIRED 1)
     ENDIF (BUILD_WITH_BOW OR BUILD_WITH_OPENCVPERFORMANCE)
 ENDIF (PYTHON_ONLY_CLIENT)
 
@@ -114,8 +117,6 @@ IF (WIN32)
    ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
    ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
    ADD_DEFINITIONS(-DNOMINMAX)
-   # The java services need local host specified to run on windows 8
-   SET(HOST "-h localhost")
    #If windows 8 (ie ice 3.5) then uncomment the use ice 1.0 encoding (vs 1.1)
    IF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
        SET (ICE_ENCODE "")
@@ -177,7 +178,7 @@ ENDIF()
 # The build process increases the PATCH number found in the
 # version.h file by one before building, and it commits it back into
 # the repository.
-SET( INCREASE_VERSION_PATCH "ON")
+#SET( INCREASE_VERSION_PATCH "ON")
 if( INCREASE_VERSION_PATCH )
   if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" )
     MESSAGE( SEND_ERROR "Cannot INCREASE_VERSION_PATCH without git repository" )
@@ -317,11 +318,16 @@ FIND_PACKAGE( PythonInterp 2.7)
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
+IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
+  SET(OPENCV_REQUIRED 1)
+ENDIF()
+
+IF (OPENCV_REQUIRED)
 FIND_PACKAGE( OpenCV 2.4 REQUIRED
-                            core imgproc highgui ml features2d nonfree objdetect calib3d
-             HINTS
-                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
-                            ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
+  COMPONENTS core imgproc highgui ml features2d nonfree objdetect calib3d
+  HINTS
+    ${CMAKE_SOURCE_DIR}/3rdparty/opencv${OPENCV_DIR_EXT}
+    ${CMAKE_SOURCE_DIR}/3rdparty/opencv/x86/vc10
 )
 #If the find package did not set these lib dirs, then set ourselfs
 IF ("${OpenCV_LIB_DIR_OPT}" STREQUAL "")
@@ -330,6 +336,7 @@ ENDIF ()
 IF ("${OpenCV_LIB_DIR_DBG}" STREQUAL "")
     SET(OpenCV_LIB_DIR_DBG "${OpenCV_DIR}/../../lib")
 ENDIF ()
+ENDIF (OPENCV_REQUIRED)
 
 IF( BUILD_WITH_OPENCVPERFORMANCE OR BUILD_WITH_BOW )
   IF( OpenCV_DIR )
@@ -358,13 +365,14 @@ IF( PYTHONINTERP_FOUND )
   ELSE ()
     FIND_LIBRARY(OPENCV_PY_LIB cv2.so
       HINTS ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
-            ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+            ${OpenCV_LIB_DIR_OPT}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages
+      PATHS /usr/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
 
   ENDIF (WIN32)
   GET_FILENAME_COMPONENT( OPENCV_PY_DIR ${OPENCV_PY_LIB} PATH )
   FIND_FILE( OPENCV_PY_PY cv.py HINTS ${OPENCV_PY_DIR} )
-  IF( NOT OPENCV_PY_LIB OR NOT OPENCV_PY_PY )
-      MESSAGE( SEND_ERROR "Need cv2.pyd or cv2.so and cv.py from OpenCV" )
+  IF( OPENCV_REQUIRED AND (NOT OPENCV_PY_LIB OR NOT OPENCV_PY_PY ))
+      MESSAGE( WARNING "Did not find cv2.pyd or cv2.so and cv.py from OpenCV" )
   ENDIF()
 ENDIF()
 

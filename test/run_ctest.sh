@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# command arguments must be:
+# command arguments must be absolute paths:
 # $1: super-dir to bin/startIcebox.sh
 # $2: dir where tests are located
 # $3: ctest arguments, such as "-R File --verbose"

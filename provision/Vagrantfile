@@ -1,0 +1,139 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = '2'
+Vagrant.require_version '>= 1.5.0'
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.box = "ubuntu/trusty64"
+  # config.vm.box = "bento/centos-6.7"
+
+  # synchronize VM time with an NTP server, but ignore failure
+  config.vm.provision "shell", run: "always", inline: <<-SHELL
+    sudo sh -c 'ntpdate ntp.ubuntu.com pool.ntp.org stargate.nps.edu ; true'
+  SHELL
+  
+  # EasyCV prerequisites for both client and server
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update
+    apt-get install -y cmake build-essential git
+    apt-get install -y libarchive-dev zeroc-ice35
+  SHELL
+
+  config.vm.define "client" do |client|
+    client.vm.hostname = 'easycv-client'
+
+    # forward the iPython Notebook port,
+    # access it on the host at http://127.0.0.1:8001
+    client.vm.network :forwarded_port, guest: 8000, host: 9001, auto_correct: true
+    client.vm.network "private_network", ip: "192.168.9.3"
+    # export PYTHONPATH=$HOME/EasyCV/build_client/installed/EasyCV/python/easyPkg
+
+    # iPython installation:
+    # update the package manager and install python packages
+    client.vm.provision "shell", inline: <<-SHELL
+      apt-get update
+      apt-get install -y ipython-notebook python-dev 
+      apt-get install -y python-numpy python-matplotlib python-scipy
+      apt-get install -y python-pip
+      pip install jupyter
+    SHELL
+
+    # EasyCV git clone, build and install
+    client.vm.provision "shell", privileged: false, inline: <<-SHELL
+      if [ ! -d "$HOME/easycv" ]; then
+        git clone --branch feature-clientbuild git://github.com/NPSVisionLab/CVAC.git $HOME/easycv
+      fi
+      cd $HOME/easycv
+      mkdir -p build_client && cd build_client
+      cmake -DBUILD_WITH_BOW=OFF -DBUILD_WITH_OPENCVPERFORMANCE=OFF -D CMAKE_INSTALL_PREFIX=$HOME/easycv/build_client/installed .. >> out_cmake.txt 2>&1
+      make >> out_make.txt 2>&1
+      make install >> out_install.txt 2>&1
+    SHELL
+    
+    # Run the ipython notebook
+    # password: EasyCV4cloud
+    # 'sha1:1363df2d76b9:6eeeb4bc328e808a97704102d090d841b668d194'
+    client.vm.provision "shell", privileged: false, run: "always", inline: <<-SHELL
+      mkdir -p $HOME/easycv/demo
+      export PYTHONPATH=$HOME/easycv/3rdparty/libsvm:$HOME/easycv/build_client/installed/EasyCV/python/easyPkg:$HOME/easycv/build_client/installed/EasyCV/python/icePkg
+      jupyter notebook --notebook-dir=$HOME/easycv --no-browser --ip=0.0.0.0 --port 8000 --NotebookApp.password='sha1:1363df2d76b9:6eeeb4bc328e808a97704102d090d841b668d194' &
+    SHELL
+  end
+
+  config.vm.define "server" do |server|
+    server.vm.hostname = 'easycv-server'
+    server.vm.network "private_network", ip: "192.168.9.4"
+
+    # The OpenCV build requires at least 1GB of memory, and
+    # some algorithms are happier with more.
+    server.vm.provider "virtualbox" do |vb|
+      vb.memory = 2048
+      vb.cpus = 2
+    end
+
+    # EasyCV service-specific prerequisites
+    server.vm.provision "shell", inline: <<-SHELL
+      apt-get install -y unzip
+      apt-get install -y libarchive-dev zeroc-ice35
+      apt-get install -y libavcodec-dev libavformat-dev libswscale-dev
+      apt-get install -y python-dev python-numpy
+    SHELL
+
+    # OpenCV:
+    # If the folder $HOME/opencv-2.4.9 doesn't exist, unpack the
+    # OpenCV archive. If the zip file is not in place in the shared folder,
+    # wget it from here: https://github.com/Itseez/opencv/archive/3.0.0.zip
+    # Alternatively, we could git clone https://github.com/Itseez/opencv.git
+    server.vm.provision "shell", privileged: false, inline: <<-SHELL
+      if [ ! -d "$HOME/opencv-2.4.9" ]; then
+        if [ ! -f "$HOME/opencv-2.4.9/opencv-2.4.9.zip" ]; then
+          wget http://downloads.sourceforge.net/project/opencvlibrary/opencv-unix/2.4.9/opencv-2.4.9.zip
+        fi
+        unzip opencv-2.4.9.zip
+      fi
+    SHELL
+  
+    # build opencv-2.4.9;
+    # if opencv-2.4.9/build exists, assume it has been built
+    server.vm.provision "shell", privileged: false, inline: <<-SHELL
+    if [ ! -d "$HOME/opencv-2.4.9/build" ]; then
+      mkdir -p opencv-2.4.9/build && cd opencv-2.4.9/build
+      cmake -D CMAKE_INSTALL_PREFIX=$HOME/opencv-2.4.9/build/installed ..
+
+      NUMPROCS=`cat /proc/cpuinfo | grep processor | wc -l`
+      make -j${NUMPROCS}
+    fi
+    SHELL
+
+    # install OpenCV;
+    server.vm.provision "shell", privileged: false, inline: <<-SHELL
+    if [ ! -d "$HOME/opencv-2.4.9/build/installed" ]; then
+      cd opencv-2.4.9/build
+      make install
+      cd .. # opencv-2.4.9
+    fi
+    SHELL
+
+    # EasyCV git clone, build and install
+    server.vm.provision "shell", privileged: false, inline: <<-SHELL
+      if [ ! -d "$HOME/easycv" ]; then
+        git clone --branch feature-clientbuild git://github.com/NPSVisionLab/CVAC.git $HOME/easycv
+      fi
+      cd $HOME/easycv
+      mkdir -p build_server && cd build_server
+      cmake -D OpenCV_DIR=$HOME/opencv-2.4.9/build/installed/share/OpenCV -D CMAKE_INSTALL_PREFIX=$HOME/easycv/build_server/installed .. >> out_cmake.txt 2>&1
+      make >> out_make.txt 2>&1
+      make install >> out_install.txt 2>&1
+    SHELL
+
+    # EasyCV service start
+    server.vm.provision "shell", privileged: false, inline: <<-SHELL
+      cd $HOME/easycv/build_server
+      rm installed/EasyCV/.services_started.lock
+      $HOME/easycv/build_server/installed/EasyCV/bin/startServices.sh >> out_startServices.txt 2>&1
+    SHELL
+    
+  end
+end
