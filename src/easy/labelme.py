@@ -9,11 +9,14 @@ lmFolder = 'example_folder'
 labels = labelme.parseFolder( lmAnnotations, lmFolder )
 print 'found a total of ' + str(len(labels)) + ' labels'
 '''
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 import cvac
 import xml.etree.ElementTree as et
 import glob
 import os
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 def parsePolygon( etelem ):
     polygon = cvac.Silhouette()
@@ -155,7 +158,7 @@ def downloadImages( lmImages, lmFolder, CVAC_DataDir, toLocalDir ):
     # print("debug: fetching directory listing from " + remoteDirName)
     if not os.path.isdir( toLocalDir ):
         os.makedirs( toLocalDir )
-    urlfile = urllib.URLopener()
+    urlfile = urllib.request.URLopener()
     localfname = urlfile.retrieve( remoteDirName, localDirFilename )
 
     # parse for images: look for a link to a jpg with the same name

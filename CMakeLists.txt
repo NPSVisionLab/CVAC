@@ -1,11 +1,13 @@
 #CPACK_PACKAGE_FILE_NAME requires this
 IF (APPLE)
-    cmake_minimum_required(VERSION 2.8.12)
+    cmake_minimum_required(VERSION 3.0.0)
 ELSE (APPLE)
-    cmake_minimum_required(VERSION 2.8.6)
+    cmake_minimum_required(VERSION 3.0.0)
 ENDIF (APPLE)
 
 cmake_policy( SET CMP0012 NEW)
+cmake_policy( SET CMP0054 OLD)
+cmake_policy( SET CMP0046 OLD)
 
 #Define the configuration types.  If this is not done OpenCV cmake
 #find_package fails!
@@ -122,6 +124,13 @@ IF (WIN32)
    ELSE ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
        SET (ICE_ENCODE "#")
    ENDIF ( ${CMAKE_SYSTEM} STREQUAL "Windows-6.2" )
+
+   #We now need Visual Studio 2012 to run and 64 bit mode
+    IF (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        IF (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "17.0.61030.0")
+            message(FATAL_ERROR "Visual Studio 2012 required")
+        ENDIF (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "17.0.61030.0")
+    ENDIF (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 ENDIF (WIN32)
 
 IF (APPLE)
@@ -182,6 +191,7 @@ if( INCREASE_VERSION_PATCH )
   if( NOT EXISTS "${CMAKE_SOURCE_DIR}/.git" )
     MESSAGE( SEND_ERROR "Cannot INCREASE_VERSION_PATCH without git repository" )
   endif()
+
   EXECUTE_PROCESS( COMMAND git describe --long --match "v[0-9]*.[0-9]*"
     OUTPUT_VARIABLE CVAC_VERSION_GIT
     OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -313,7 +323,7 @@ IF( BUILD_DOCUMENTATION )
   ENDIF()
 ENDIF( BUILD_DOCUMENTATION )
 
-FIND_PACKAGE( PythonInterp 2.7)
+FIND_PACKAGE( PythonInterp 3.4)
 FIND_PACKAGE(Ice REQUIRED)
 FIND_PACKAGE(LibArchive REQUIRED)
 
@@ -350,7 +360,8 @@ IF( PYTHONINTERP_FOUND )
   #
   IF (WIN32)
     FIND_FILE(OPENCV_PY_LIB cv2.pyd 
-             HINTS "${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
+             HINTS "${OpenCV_DIR}/python"
+             )
   ELSEIF (APPLE)
     FIND_LIBRARY(OPENCV_PY_LIB cv2.so
       HINTS ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages

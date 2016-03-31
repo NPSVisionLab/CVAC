@@ -6,12 +6,14 @@ Parse XML catalog files,
 then all xml files indicated by catalog files are parsed, 
 then video information including segments will be collected
 '''
+from __future__ import print_function
+from builtins import object
 import cvac
 import xml.etree.ElementTree as et
 import os
 from xml.dom import minidom
 
-class TRECVIDAnnotaitonParser():
+class TRECVIDAnnotaitonParser(object):
     ''' for each annotation file, 
     collect frame information of both hart cuts and soft cuts    
     '''
@@ -94,11 +96,11 @@ def parseSamples( root, CVAC_DataDir ):
             label = cvac.LabeledVideoSegment()
             label.confidence = 1.0
             label.lab = cvac.Label(True,os.path.join(mediaDir,mediaName))        
-            label.sub = cvac.Substrate(False,True,mediaFilepath,long(-1),long(-1))
-            label.start = cvac.VideoSeekTime(long(frm[0]),long(-1))
-            label.last = cvac.VideoSeekTime(long(frm[1]),long(-1))
-            label.startAfterTx = cvac.VideoSeekTime(long(-1),long(-1))
-            label.lastBeforeTx = cvac.VideoSeekTime(long(-1),long(-1))
+            label.sub = cvac.Substrate(False,True,mediaFilepath,int(-1),int(-1))
+            label.start = cvac.VideoSeekTime(int(frm[0]),int(-1))
+            label.last = cvac.VideoSeekTime(int(frm[1]),int(-1))
+            label.startAfterTx = cvac.VideoSeekTime(int(-1),int(-1))
+            label.lastBeforeTx = cvac.VideoSeekTime(int(-1),int(-1))
             label.loc = cvac.Location()
             labels = labels + [label]
             

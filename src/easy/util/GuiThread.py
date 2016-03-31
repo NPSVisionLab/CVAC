@@ -2,10 +2,18 @@
 This thead class outputs the commands stdout and stderr to our display.
 This is used to get the output from the servers.
 '''
-
-import Tkinter as tk
+from future import standard_library
+standard_library.install_aliases()
+try:
+    #lets try python 2.x style
+    import tkinter as tk
+except Exception as exc:
+    #lets try python 3.x style
+    import tkinter as tk
 import threading
-import Queue
+import sys
+import time
+import queue
 import sys
 from PIL import Image, ImageTk, ImageDraw
 
@@ -43,7 +51,7 @@ class GuiThread(threading.Thread):
                     else:
                         self.updateWindow(img, wid)
                 else:
-                    if wid in self.windows.keys():
+                    if wid in list(self.windows.keys()):
                         self.updateWindow(img, wid)
                     else:
                         self.newWindow(img, wid)
@@ -117,7 +125,7 @@ class GuiThread(threading.Thread):
             self.windows.pop(wid)
             win.destroy()
 
-  
+
     def run(self):
         #import pydevd
         #pydevd.connected = True
@@ -127,12 +135,13 @@ class GuiThread(threading.Thread):
         self.canvas.iconify()
         self.canvas.after(self.pollTime, self.processQueue)
         self.canvas.mainloop()
+
         
 
 #Use main for test
 if __name__ == '__main__':
     import time
-    queue = Queue.Queue()
+    queue = queue.Queue()
     guithread = GuiThread(queue);
     img = Image.new("RGB", (300,300), "white")
     draw = ImageDraw.Draw(img)
@@ -144,7 +153,4 @@ if __name__ == '__main__':
     queue.put(("ImageWindow", img2, 1))
     # For OSX the guithread must be the main one
     guithread = GuiThread(queue);
-    if sys.platform == 'darwin':
-        guithread.run()
-    else:
-        guithread.start()
+    guithread.run()

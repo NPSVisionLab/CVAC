@@ -2,6 +2,8 @@ PROJECT (opencv_traincascade_service)
 
 set(the_target OpenCVCascadeTrainer)
 
+set(BUILD_opencv_apps 1)
+
 WRAP_SLICE(SLICE_FILES
            ${CVAC_ROOT_DIR}/src/Data.ice
            ${CVAC_ROOT_DIR}/src/Services.ice
@@ -18,6 +20,7 @@ SET(HEADER_FILES
 SET(INCLUDE_DIRS
     .
     ${CMAKE_CURRENT_SOURCE_DIR}/../traincascade3.0
+    ${CMAKE_CURRENT_SOURCE_DIR}/../createSamples
     ${CVAC_INCLUDE_DIR}
     ${ICE_INCLUDE}
     ${CMAKE_CURRENT_BINARY_DIR}#for the generated slice files
@@ -33,7 +36,8 @@ ADD_LIBRARY(${the_target} SHARED
             )
 
 TARGET_LINK_LIBRARIES(${the_target}
-    opencv_traincascade
+    traincascade
+    createsamples
     ${ICE_LIBRARIES} ${ICE_BOX_LIBRARY}
     ${OpenCV_LIBS}
     utils

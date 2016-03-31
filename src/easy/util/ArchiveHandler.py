@@ -1,5 +1,7 @@
 
 from __future__ import print_function
+from builtins import str
+from builtins import object
 # paths should setup the PYTHONPATH.  If you special requirements
 # then use the following to set it up prior to running.
 # export PYTHONPATH="/opt/Ice-3.4.2/python:./src/easy"
@@ -119,7 +121,7 @@ class DetectorDataArchive(object):
     def createArchive(self,_dirForSrcfile):
         filepath = _dirForSrcfile + "/" + self.mPropertyFilename
         f = open(filepath,"w")
-        for tkey in self.mProperty.keys():
+        for tkey in list(self.mProperty.keys()):
             tvalue = self.mProperty[tkey]               
             f.write(str(tkey)+"="+str(tvalue)+"\n")
         f.close()

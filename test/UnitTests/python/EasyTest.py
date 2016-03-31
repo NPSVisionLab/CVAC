@@ -1,11 +1,13 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 # test the Python Tutorials
 # paths sets up the PYTHONPATH so this is not needed to be setup by the user
 # to run just this test, use "ctest -R PythonFileServerTest --verbose"
 import sys
 import unittest
 import os
-import thread
+import _thread
 import time
 
 '''Since we need to setup this env variable before
@@ -158,7 +160,7 @@ class EasyTest(unittest.TestCase):
 
     def xtest_gui(self):
         print("Testing gui")
-        import Tkinter as tk
+        import tkinter as tk
         import time
         from PIL import Image, ImageTk, ImageDraw
 
@@ -173,13 +175,13 @@ class EasyTest(unittest.TestCase):
         # Create a bunch of theads to update the windows a latter times.
         # This is required since on OSX the first imgWindow will block.
         # We also test threading as well!
-        thread.start_new_thread(updateThread, (2, img2, 0)) 
-        thread.start_new_thread(updateThread, (4, img3, 0)) 
-        thread.start_new_thread(updateThread, (6, img, w1)) 
-        thread.start_new_thread(updateThread, (8, img3, w1)) 
-        thread.start_new_thread(updateThread, (6, img2, w2)) 
-        thread.start_new_thread(updateThread, (8, img3, w2)) 
-        thread.start_new_thread(closeWindows, (10,)) 
+        _thread.start_new_thread(updateThread, (2, img2, 0)) 
+        _thread.start_new_thread(updateThread, (4, img3, 0)) 
+        _thread.start_new_thread(updateThread, (6, img, w1)) 
+        _thread.start_new_thread(updateThread, (8, img3, w1)) 
+        _thread.start_new_thread(updateThread, (6, img2, w2)) 
+        _thread.start_new_thread(updateThread, (8, img3, w2)) 
+        _thread.start_new_thread(closeWindows, (10,)) 
         # On OSX this blocks until the window is closed.  On other
         # platforms that don't require the gui thread to be the main thread
         # this call does not block.  In both cases, once the main window (0)

@@ -1,3 +1,11 @@
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from past.builtins import execfile
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
+from past.utils import old_div
 
 import sys
 import os
@@ -8,11 +16,11 @@ import time
 from subprocess import PIPE
 from io import StringIO
 import configparser
-import easy
+from . import easy
 import contextlib
 import queue
 
-import Tkinter as tk
+import tkinter as tk
 
 # Save stdout since redirecting to text widget
 oldstdout = sys.stdout
@@ -76,9 +84,9 @@ create_contents() : creates the contents of the tooltip window (by default a Tki
 '''
 # Ideas gleaned from PySol
 
-import Tkinter
+import tkinter
 
-class ToolTip:
+class ToolTip(object):
     def __init__(self, master, text='Your text here', delay=1500, **opts):
         self.master = master
         self._opts = {'anchor':'center', 'bd':1, 'bg':'lightyellow', 'delay':delay, 'fg':'black',\
@@ -98,7 +106,7 @@ class ToolTip:
     
     def configure(self, **opts):
         for key in opts:
-            if self._opts.has_key(key):
+            if key in self._opts:
                 self._opts[key] = opts[key]
             else:
                 KeyError = 'KeyError: Unknown option: "%s"' %key
@@ -138,7 +146,7 @@ class ToolTip:
             self._unschedule()
             return
         if not self._tipwindow:
-            self._tipwindow = tw = Tkinter.Toplevel(self.master)
+            self._tipwindow = tw = tkinter.Toplevel(self.master)
             # hide the window until we know the geometry
             tw.withdraw()
             tw.wm_overrideredirect(1)
@@ -180,7 +188,7 @@ class ToolTip:
             if y + twy > h:
                 y = self.master.winfo_rooty() - twy - 3
         # we can use the same x coord in both cases:
-        x = tw.winfo_pointerx() - twx / 2
+        x = tw.winfo_pointerx() - old_div(twx, 2)
         if x < 0:
             x = 0
         elif x + twx > w:
@@ -191,7 +199,7 @@ class ToolTip:
         opts = self._opts.copy()
         for opt in ('delay', 'follow_mouse', 'state'):
             del opts[opt]
-        label = Tkinter.Label(self._tipwindow, **opts)
+        label = tkinter.Label(self._tipwindow, **opts)
         label.pack()
 
 
@@ -238,7 +246,7 @@ class ThreadWait(threading.Thread):
                 # so we put it in a queue to be read later
                 #print line
                 gui_stdout_queue.put(line)
-        except Exception, err:
+        except Exception as err:
             print("Could not run: {0}".format(self.command))
             print(err)
 
@@ -273,7 +281,7 @@ class Application(tk.Frame):
                     outstr, errstr = pipe.communicate()
                     print(outstr)
                     print(errstr)
-            except Exception, err:
+            except Exception as err:
                 print("Could not run: {0}".format(command))
                 print(err)
         else:
@@ -288,7 +296,7 @@ class Application(tk.Frame):
                         outstr, errstr = pipe.communicate()
                         print(outstr)
                         print(errstr)
-                except Exception, err:
+                except Exception as err:
                     print("Could not run: {0}".format(command))
                     print(err)
       
@@ -443,23 +451,23 @@ class Application(tk.Frame):
                 try:
                     self.doExec("/bin/bash", args=installpath + "/bin/startServices.sh", dothread = setdothread, env=self.ccenv) 
                     #self.doExec(installpath+'/bin/startServices.sh', shell=False)
-                except Exception, err:
+                except Exception as err:
                     print ("Could not start/stop services")
-                    print err
+                    print(err)
                 #os.system(os.getcwd()+'/bin/startServices.sh')
             else:
                 try:
                     self.doExec("/bin/bash", args=installpath + "/bin/stopServices.sh") 
-                except Exception, err:
+                except Exception as err:
                     print ("Could not start/stop services")
-                    print err
+                    print(err)
         elif sys.platform=='win32':
             if start:
                 os.system(installpath+'/bin/startServices.bat')
             else:
                 os.system(installpath+'/bin/stopServices.bat')
         else:
-            print "please define start/stop commands for this OS: "+sys.platform
+            print("please define start/stop commands for this OS: "+sys.platform)
         #give the services a chance to delete or create the lock file
         time.sleep(2)
         self.updateServerStatus()
@@ -471,7 +479,7 @@ class Application(tk.Frame):
             shellcmd = 'start cmd /K type {0}\\python_env.txt'.format(os.getcwd())
             os.system( shellcmd )
         else:
-            print "please define openEnv for this OS: "+sys.platform
+            print("please define openEnv for this OS: "+sys.platform)
 
     def openDoc(self):
         if sys.platform=='darwin':
@@ -480,7 +488,7 @@ class Application(tk.Frame):
             shellcmd = 'start {0}\\doc\\index.html'.format(os.getcwd())
             os.system( shellcmd )
         else:
-            print "please define openDoc for this OS: "+sys.platform
+            print("please define openDoc for this OS: "+sys.platform)
             
     def openTerminal(self):
         if sys.platform=='darwin':
@@ -491,7 +499,7 @@ class Application(tk.Frame):
             shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/virt/Scripts;{0}/3rdparty/opencv/x86/vc10/bin;{0}/3rdparty/ICE/bin;%PATH%"'.format(installpath)
             os.system( shellcmd )
         else:
-            print "please define openTerminal command for this OS: "+sys.platform
+            print("please define openTerminal command for this OS: "+sys.platform)
     
     def runDemo(self, demo):
         if sys.platform=='darwin':
@@ -501,7 +509,7 @@ class Application(tk.Frame):
             shellcmd = 'start cmd /K "set PATH={0}/bin;{0}/3rdparty/opencv/x86/vc10/bin;{0}/3rdparty/ICE/bin;%PATH% && {2} {1}"'.format(installpath, demo, pythonExec)
             os.system( shellcmd )
         else:
-            print "please define openTerminal command for this OS: "+sys.platform
+            print("please define openTerminal command for this OS: "+sys.platform)
         
     def getProxies(self):
         ''' Fetch all the proxies in the config.client file and return dictionary of
@@ -522,18 +530,18 @@ class Application(tk.Frame):
             for entry in items:
                 if entry[0].endswith('.Proxy'):
                     name = entry[0].split('.Proxy',1)
-                    if not res.has_key(name[0]):
+                    if name[0] not in res:
                         res[name[0]] = entry[1]
             # Remove duplicate values
             inv = {}
-            for k, v in res.iteritems():
-                if not inv.has_key(k):
+            for k, v in res.items():
+                if k not in inv:
                     inv[v] = k
             res = {}
-            for k, v in inv.iteritems():
+            for k, v in inv.items():
                 res[v] = k
                    
-        except Exception, err:
+        except Exception as err:
             print("Could not get proxies from config.client")
             print(err)
          
@@ -547,7 +555,7 @@ class Application(tk.Frame):
             sees output.
         '''
         res = {}
-        for key, value in proxies.iteritems():
+        for key, value in proxies.items():
             # add short timeout
             value = value + ' -t 100'
             try:
@@ -593,7 +601,7 @@ class Application(tk.Frame):
             
        
 
-root = Tkinter.Tk()
+root = tkinter.Tk()
 root.geometry('420x755+10+10')
 root.tk_setPalette(background='light grey')
 gui_stdout_queue = Queue.Queue()

@@ -250,7 +250,6 @@ void BowICEI::process(const Ice::Identity &client,
 
   DetectorDataArchive dda;
   initialize(&dda, trainedModelFile, current);
-
   if (!isInitialized() || NULL==pBowCV || !pBowCV->isInitialized())
   {
     localAndClientMsg(VLogger::ERROR, callbackPtr,
@@ -277,7 +276,6 @@ void BowICEI::process(const Ice::Identity &client,
     return;
   }
   // End - RunsetWrapper
-
   //////////////////////////////////////////////////////////////////////////
   // Start - RunsetIterator
   int nSkipFrames = 150;  //the number of skip frames

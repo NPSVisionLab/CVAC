@@ -1,3 +1,10 @@
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 #
 # high-level functionality to evaluate trainers and detectors
 # Matz, July 2013
@@ -6,11 +13,11 @@
 import random
 random.seed()
 import numpy
-import easy
-import util.misc as misc 
+from . import easy
+from . import util.misc as misc 
 import cvac
 import math
-import util.clipper as clipper
+from . import util.clipper as clipper
 
 from operator import attrgetter, itemgetter
 
@@ -315,7 +322,7 @@ def overlapHitStrategy(origpur, origList, result, foundMap, tres, option = None)
                         for poly in polyInter:
                             inter_area += abs(clipper.Area(poly))
                         if union_area != 0:
-                            overlap = inter_area / union_area
+                            overlap = old_div(inter_area, union_area)
                             if overlap >= option:
                                 if foundPurpose.ptype == cvac.PurposeType.POSITIVE:
                                     hitOrigs[i] +=  1
@@ -415,7 +422,7 @@ def defaultHitStrategy(origpur, orig, results, foundMap, tres, option = None):
                             
                    
     
-class TestResult:
+class TestResult(object):
     def __init__(self, tp=0, fp=0, tn=0, fn=0):
         self.tp = tp;
         self.fp = fp;
@@ -446,7 +453,7 @@ def getRelativePath( label ):
 
 def verifyFoundMap(foundMap):
     ''' Verify that the all the purposes in the found map are pos or neg '''
-    for purpose in foundMap.itervalues():
+    for purpose in foundMap.values():
         if purpose.ptype != cvac.PurposeType.POSITIVE \
            and purpose.ptype != cvac.PurposeType.NEGATIVE:
             print ("Not a negative or positive purpose found")
@@ -532,10 +539,10 @@ def splitRunSet( runset_pos, runset_neg, fold, chunksize, evalsize, rndidx ):
     a training set and an evaluation set.  For use by crossValidate().
     '''
     num_items = ( len(runset_pos), len(runset_neg) )
-    evalidx_pos  = range( fold*chunksize[0], fold*chunksize[0]+evalsize[0] )
-    evalidx_neg  = range( fold*chunksize[1], fold*chunksize[1]+evalsize[1] )
-    trainidx_pos = range( 0, fold*chunksize[0] ) + range( fold*chunksize[0]+evalsize[0], num_items[0] )
-    trainidx_neg = range( 0, fold*chunksize[1] ) + range( fold*chunksize[1]+evalsize[1], num_items[1] )
+    evalidx_pos  = list(range( fold*chunksize[0], fold*chunksize[0]+evalsize[0]))
+    evalidx_neg  = list(range( fold*chunksize[1], fold*chunksize[1]+evalsize[1]))
+    trainidx_pos = list(range( 0, fold*chunksize[0])) + list(range( fold*chunksize[0]+evalsize[0], num_items[0]))
+    trainidx_neg = list(range( 0, fold*chunksize[1])) + list(range( fold*chunksize[1]+evalsize[1], num_items[1]))
     # The following line selects those elements from runset_pos
     # that correspond to the randomized indices for the current
     # evaluation chunk.  Think of this, conceptually:
@@ -579,7 +586,7 @@ def asList( runset, purpose=None ):
             raise RuntimeError("unexpected plist type "+type(plist))
     return rsList
 
-class EvaluationResult:
+class EvaluationResult(object):
     def __init__( self, folds, testResult, nores, detail=None, name=None ):
         self.folds = folds
         self.res = testResult
@@ -595,16 +602,16 @@ class EvaluationResult:
         if isinstance(testResult, PixelTestResult):
             area = self.res.tp + self.res.fp
             if area != 0:
-                self.recall = self.res.tp/float(area)
+                self.recall = old_div(self.res.tp,float(area))
             else:
                 self.recall = 0
             if self.res.gtn != 0:
-                self.trueNegRate = self.res.tn/float(self.res.gtn)
+                self.trueNegRate = old_div(self.res.tn,float(self.res.gtn))
             else:
                 self.trueNegRate = 0
             if self.res.tp > 0 and self.res.tn > 0:
                 # calculate combined recall/trueNegRate score:
-                self.score = (self.recall + self.trueNegRate)/2.0
+                self.score = old_div((self.recall + self.trueNegRate),2.0)
             elif self.res.tp > 0:
                 self.score = self.recall
             else:
@@ -612,20 +619,20 @@ class EvaluationResult:
             # add in to the score no result counts
             allSam = self.res.tp + self.res.tn + \
                       self.res.fp + self.res.fn + self.nores;
-            resfactor = (allSam - nores) / float(allSam)
+            resfactor = old_div((allSam - nores), float(allSam))
             self.score = self.score * resfactor;
         elif isinstance(testResult, TestResult):
             if numpos != 0:
-                self.recall = self.res.tp/float(numpos)
+                self.recall = old_div(self.res.tp,float(numpos))
             else:
                 self.recall = 0
             if numneg != 0:
-                self.trueNegRate = self.res.tn/float(numneg)
+                self.trueNegRate = old_div(self.res.tn,float(numneg))
             else:
                 self.trueNegRate = 0
             if self.res.tp > 0 and self.res.tn > 0:
                 # calculate combined recall/trueNegRate score:
-                self.score = (self.recall + self.trueNegRate)/2.0
+                self.score = old_div((self.recall + self.trueNegRate),2.0)
             elif self.res.tp > 0:
                 self.score = self.recall
             else:
@@ -633,7 +640,7 @@ class EvaluationResult:
             # add in to the score no result counts
             allSam = self.res.tp + self.res.tn + \
                       self.res.fp + self.res.fn + self.nores;
-            resfactor = (allSam - nores) / float(allSam)
+            resfactor = old_div((allSam - nores), float(allSam))
             self.score = self.score * resfactor;
        
         else:
@@ -650,13 +657,13 @@ class EvaluationResult:
             if self.res.gtn == 0:
                 raise RuntimeError("Can't display results since there are no positive ground truth pixels")
             
-            tpr = self.res.tp/float(self.res.gtp)
+            tpr = old_div(self.res.tp,float(self.res.gtp))
             tpr *= 100.0
-            fpr  = self.res.fp/float(self.res.gtp)
+            fpr  = old_div(self.res.fp,float(self.res.gtp))
             fpr *= 100.0
-            tnr = self.res.tn/float(self.res.gtn)
+            tnr = old_div(self.res.tn,float(self.res.gtn))
             tnr *= 100.0
-            fnr = self.res.fn/float(self.res.gtn)
+            fnr = old_div(self.res.fn,float(self.res.gtn))
             fnr *= 100.0
             
             if self.res.tp != 0  and self.res.tn != 0:
@@ -733,14 +740,14 @@ def crossValidate( contender, runset, folds=10, printVerbose=False ):
     # if the number of labeled items in the runset divided
     # by the number of folds isn't an even
     # division, use more items for the evaluation
-    chunksize = (int(math.floor( num_items[0]/folds )), int(math.floor( num_items[1]/folds )))
+    chunksize = (int(math.floor( old_div(num_items[0],folds) )), int(math.floor( old_div(num_items[1],folds) )))
     trainsize = (chunksize[0] * (folds-1), chunksize[1] * (folds-1))
     evalsize  = (num_items[0]-trainsize[0], num_items[1]-trainsize[1])
     print( "Will perform a {0}-fold cross-validation with {1} training samples and "
            "{2} evaluation samples".format( folds, trainsize, evalsize ) )
 
     # randomize the order of the elements in the runset, once and for all folds
-    rndidx = ( range( num_items[0] ), range( num_items[1] ) )
+    rndidx = ( list(range( num_items[0])), list(range( num_items[1])) )
     random.shuffle( rndidx[0] ) # shuffles items in place
     random.shuffle( rndidx[1] ) # shuffles items in place
 
@@ -803,7 +810,7 @@ def evaluate( contender, runset, printVerbose=False ):
     return r
 
 
-class Contender:
+class Contender(object):
     '''Ultimately a detector, this product can be built from
     a trainer or be a pre-defined detector.  Any combination that
     that can be trained into a detector is valid.
@@ -888,8 +895,8 @@ def joust( contenders, runset, method='crossvalidate', folds=10, verbose=True ):
             results.append( evalres )
 
             if verbose:
-                print evalres
-                print evalres.detail
+                print(evalres)
+                print(evalres.detail)
        # except Exception as exc:
            # print("error encountered, evaluation aborted: " + str(exc))
 

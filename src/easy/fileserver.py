@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import object
 #
 # Python implementation of a CVAC FileServer
 # matz, April 2014

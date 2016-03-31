@@ -40,6 +40,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "opencv2/core.hpp"
+#include "cascadeclassifier.h"
+#include "traincascade_features.h"
+
 #include <Ice/Communicator.h>
 #include <Ice/Initialize.h>
 #include <Ice/ObjectAdapter.h>
@@ -49,17 +53,13 @@
 #include <util/processLabels.h>
 #include <util/DetectorDataArchive.h>
 
-#include "opencv2/core/core.hpp"
-//#include "opencv2/core/internal.hpp"
-#include "cv.h"
-#include "cascadeclassifier.h"
-#include "cvhaartraining.h"
-
 #include "CascadeTrainI.h"
+#include "utility.hpp"
 
 using namespace std;
 using namespace cvac;
 using namespace Ice;
+using namespace cv;
 
 ///////////////////////////////////////////////////////////////////////////////
 // This is called by IceBox to get the service to communicate with.
@@ -430,11 +430,11 @@ bool CascadeTrainI::createClassifier( const string& tempDir,
   cascadeParams.winSize.width = trainProps->windowSize.width;
   cascadeParams.winSize.height = trainProps->windowSize.height;
   CvCascadeBoostParams stageParams;
-  Ptr<CvFeatureParams> featureParams[] = 
-  { Ptr<CvFeatureParams>(new CvHaarFeatureParams),
-    Ptr<CvFeatureParams>(new CvLBPFeatureParams),
-    Ptr<CvFeatureParams>(new CvHOGFeatureParams)
-  };
+  Ptr<CvFeatureParams> featureParams[] = { makePtr<CvHaarFeatureParams>(),
+                                             makePtr<CvLBPFeatureParams>(),
+                                             makePtr<CvHOGFeatureParams>()
+                                           };
+ 
   cascadeParams.featureType = trainProps->featureType;
   stageParams.boost_type = trainProps->boost_type;
 

@@ -1,4 +1,5 @@
 from __future__ import print_function
+from past.builtins import execfile
 # test the Python Tutorials
 # paths sets up the PYTHONPATH so this is not needed to be setup by the user
 # to run just this test, use "ctest -R PythonFileServerTest --verbose"

@@ -1,3 +1,10 @@
+from __future__ import print_function
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import str
+from builtins import object
 #
 # Python implementation of a CVAC CorpusServer
 # matz, Nov 2013
@@ -12,7 +19,7 @@ import cvac
 import labelme, vatic, videosegment
 import easy
 
-class LabelableListI:
+class LabelableListI(object):
     def _init__(self, name):
         self.name = name
         self.subdir = None
@@ -86,9 +93,9 @@ class CorpusI(cvac.Corpus):
         # todo: this is a very preliminary implementation that
         # doesn't do any error checking or create proper temp directories;
         # it mainly just works with a remote tar.gz type corpus file
-        import urllib
+        import urllib.request, urllib.parse, urllib.error
         import tarfile
-        urlfile = urllib.URLopener()
+        urlfile = urllib.request.URLopener()
         urlfile.retrieve( self.main_location, "deleteme.tar.gz" )
         # extract the tar into a hardcoded dir path
         self.dataSetFolder = self.getFSPath( "deleteme_tmpdir" )

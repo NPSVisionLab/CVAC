@@ -8,6 +8,14 @@ and to provide, uhm, easy access functions to its functionality.
 '''
 
 from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from past.utils import old_div
+from builtins import object
 import os
 import re
 import sys, traceback
@@ -23,7 +31,11 @@ sys.path.append('''.''')
 import Ice
 import IcePy
 import cvac
-import queue
+try:
+    import queue
+except Exception as ex:
+    import queue as Queue
+
 import util.misc as misc
 from util.ArchiveHandler import * 
 
@@ -41,21 +53,24 @@ import os
   the GueQueue puts in a queue messages for the
   GuiThread to draw.
 '''
-class GuiQueue:
+class GuiQueue(object):
     def __init__(self):
         self.queue = None
         self.guiThread = None
-        self.queue = Queue.Queue()
+        self.queue = queue.Queue()
         self.windows = {}
 
     def startThread(self):
         if self.guiThread == None:
-            self.guiThread = GuiThread(self.queue)  
+            self.guiThread = GuiThread(self.queue)
+            # Python 3.0 requires the guithread to
+            # be the main thread or we an intermittent crash on window close.
+            self.guiThread.run()
             # For OSX use this thread for the guiThread
-            if sys.platform == 'darwin':
-                self.guiThread.run()
-            else:
-                self.guiThread.start() 
+            #if sys.platform == 'darwin':
+            #   self.guiThread.run()
+            #else:
+            #    self.guiThread.start()
     
     '''
      Render and Image into a window.  If its the first
@@ -80,21 +95,23 @@ class GuiQueue:
     '''
     def startWindow(self, img):
         wid = 1
-        while wid in self.windows.keys():
+        while wid in list(self.windows.keys()):
             wid = wid + 1
         self.windows[wid] = wid
         self.queue.put(("ImageWindow", img, wid))
         return wid                                   
         
     def closeAllWindows(self):
-        for wid in self.windows.keys():
+        for wid in list(self.windows.keys()):
             self.queue.put(("CloseWindow", wid))
         self.queue.put(("CloseWindow", 0))
 
 guiqueue = None
 # for drawing only:
 try:
-    import Tkinter as tk
+
+    import tkinter as tk
+
     from PIL import Image, ImageTk, ImageDraw
     from util.GuiThread import GuiThread
     guiqueue = GuiQueue()
@@ -103,12 +120,16 @@ except Exception as exc:
     print("No gui available " + str(exc))
     quiqueue = None
 
+def cleanup():
+    print("Cleanup called")
+    ic.destroy()
+
+
 #
 # one-time initialization code, upon loading the module
 #
 args = sys.argv
 args.append('--Ice.MessageSizeMax=100000')
-args.append('--Ice.ACM.Client=0')
 # try to find the config.client that specifies what services
 # might be running, their names, etc.
 if os.path.isfile('config.client'):
@@ -127,7 +148,11 @@ else:
                 break
             else:
                 config_client_path = nextdir
+
 ic = Ice.initialize(args)
+import atexit
+atexit.register(cleanup)
+
 defaultCS = None
 # Parse the client.config for CVAC_DataDir
 CVAC_DataDir = ic.getProperties().getProperty("CVAC.DataDir")
@@ -420,8 +445,8 @@ def isInBounds( labelable ):
     '''
     minX = 0
     minY = 0
-    maxX = sys.maxint 
-    maxY = sys.maxint                
+    maxX = sys.maxsize 
+    maxY = sys.maxsize                
     if labelable.sub.width>0:
         maxX = labelable.sub.width
     if labelable.sub.height>0:
@@ -483,7 +508,7 @@ def isProperRunSet(runset, deleteInvalid=False):
             return False
         else:
             # process list backwards since we might be removing entries
-            for i in xrange(len(plist.labeledArtifacts)-1, -1, -1):
+            for i in range(len(plist.labeledArtifacts)-1, -1, -1):
                 lb = plist.labeledArtifacts[i]               
                 labelname  = 'nolabel'
                 fpath = misc.getLabelableFilePath(lb)
@@ -671,7 +696,7 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         purpose = getPurpose( purpose )
        
     
-    if type(samples) is dict and 'runset' in samples.keys() and not samples['runset'] is None\
+    if type(samples) is dict and 'runset' in list(samples.keys()) and not samples['runset'] is None\
                 and isinstance(samples['runset'], cvac.RunSet)\
                 and not purpose is None:
             for item in samples['runset'].purposedLists:
@@ -679,7 +704,7 @@ def addToRunSet( runset, samples, purpose=None, classmap=None ):
         
     elif type(samples) is dict and not purpose is None:
         # all categories get identical purposes      
-        for key in samples.keys():
+        for key in list(samples.keys()):
             addToClassmap( classmap, key, purpose )
             addPurposedLabelablesToRunSet( rnst, purpose, samples[key] )
 
@@ -1186,13 +1211,13 @@ def discardSuboptimal(perfdata,saveRelativeDir = None):
         fn = float(data.res.fn)
         xaxis = 1.0
         if (tp+fp)!=0:
-            xaxis = fp/(tp+fp)
+            xaxis = old_div(fp,(tp+fp))
         else:
             print("Warning: " + "Invalid RoC data: (tp+fp) = 0")
             #raise RuntimeError("Invalid RoC data: (tp+fp) = 0")        
         yaxis = 0.0
         if (tp+fn)!=0:
-            yaxis = tp/(tp+fn)
+            yaxis = old_div(tp,(tp+fn))
         else:
             print("Warning: " + "Invalid RoC data: (tp+fn) = 0")
             #raise RuntimeError("Invalid RoC data: (tp+fn) = 0")
@@ -1574,7 +1599,7 @@ def printResults( results, foundMap=None, origMap=None, inverseMap=False ):
     purposeLabelMap = {}
     if inverseMap:
         if foundMap:
-            for key in foundMap.keys():
+            for key in list(foundMap.keys()):
                 pur = foundMap[key]
                 if not type(pur) is cvac.Purpose:
                     break
@@ -1693,7 +1718,7 @@ def showROCPlot(ptList):
         if poscnt == 0:
             precision = 0
         else:
-            precision = pt.res.tp / float(poscnt)
+            precision = old_div(pt.res.tp, float(poscnt))
         x = int(precision*(width - (2 * xoffset)))
         y = int(pt.recall*(height - (2 * yoffset)))
         x = x + xoffset
@@ -1727,7 +1752,7 @@ def drawResults( results, origSet=None, multiWindow=True ):
     # print out some summary information
     sys.stdout.softspace=False
 
-    for subpath in substrates.iterkeys():
+    for subpath in iter(list(substrates.keys())):
         numlabels = len( substrates[subpath] )
         print("{0} ({1} label{2})".format( subpath, numlabels, ("s","")[numlabels==1] ))
         
@@ -1772,10 +1797,10 @@ def drawLabelables( lablist, maxsize=None, multWindow=True ):
     
 def showLocation(loc, img, scale, color=255):
     if isinstance( loc, cvac.BBox):
-        a = loc.x/scale
-        b = loc.y/scale
-        c = a+loc.width/scale
-        d = b+loc.height/scale
+        a = old_div(loc.x,scale)
+        b = old_div(loc.y,scale)
+        c = a+old_div(loc.width,scale)
+        d = b+old_div(loc.height,scale)
         draw = ImageDraw.Draw( img )
         draw.line([(a,b), (c,b), (c,d), (a,d), (a,b)], fill=color, width=0)
         del draw
@@ -1786,7 +1811,7 @@ def showLocation(loc, img, scale, color=255):
             raise RuntimeError("Incorrect Labelable: a single point should not be a silhouette")
         cpts = []
         for point in loc.points:
-            cpts.append( (point.x/scale, point.y/scale) )
+            cpts.append( (old_div(point.x,scale), old_div(point.y,scale)) )
         cpts.append( cpts[0] )  # close the loop
         draw = ImageDraw.Draw( img )
         draw.line( cpts, fill=color, width=0 )
@@ -1808,15 +1833,15 @@ def showImagesWithLabels( substrates, origSubs = None, maxsize=None, multiWindow
     # now draw
     keycnt = len(substrates)
     cnt = 0
-    for subpath in substrates.iterkeys():
+    for subpath in iter(list(substrates.keys())):
     #for subpath in sorted( substrates.keys() ):
         img = Image.open( subpath )
         scale = 1.0
         if not maxsize is None:
-            scalex = float(img.size[0])/float(maxsize[0])
-            scaley = float(img.size[1])/float(maxsize[1])
+            scalex = old_div(float(img.size[0]),float(maxsize[0]))
+            scaley = old_div(float(img.size[1]),float(maxsize[1]))
             scale = max( scalex, scaley )
-            maxsize = int(img.size[0]/scale), int(img.size[1]/scale)
+            maxsize = int(old_div(img.size[0],scale)), int(old_div(img.size[1],scale))
             img = img.resize( maxsize, Image.NEAREST ) # favor speed over quality
         ''' If we have the original labels draw them first so they are on the buttom. '''
         if origSubs:
@@ -1884,11 +1909,14 @@ def sortIntoFolders( results, outfolder, multi="highest", symlink=False ):
     # one output folder;
     # First collect substrates and their labels
     substrates = collectSubstrates( results )
-    for sub in substrates.keys():
+    for sub in list(substrates.keys()):
         lbl = getHighestConfidenceLabel( substrates[sub] )
         if lbl:
             # create directory and symlink according to found label
-            assert( lbl.lab.hasLabel )
+
+            if not lbl.lab.hasLabel:
+                print("No Label for " + sub)
+                continue
             dirname = outfolder + "/" + lbl.lab.name
             if not os.path.isdir( dirname ):
                 os.makedirs( dirname )

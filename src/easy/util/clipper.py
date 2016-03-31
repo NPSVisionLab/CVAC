@@ -1,3 +1,7 @@
+from __future__ import division
+from builtins import range
+from past.utils import old_div
+from builtins import object
 #===============================================================================
 #                                                                              #
 # Author    :  Angus Johnson                                                   #
@@ -36,14 +40,14 @@ from collections import namedtuple
 
 horizontal = float('-inf')
 
-class ClipType: (Intersection, Union, Difference, Xor) = range(4)
-class PolyType:    (Subject, Clip) = range(2)
-class PolyFillType: (EvenOdd, NonZero, Positive, Negative) = range(4)
-class JoinType: (Square, Round, Miter) = range(3)
-class EndType: (Closed, Butt, Square, Round) = range(4)
-class EdgeSide: (Left, Right) = range(2)
-class Protects: (Neither, Left, Right, Both) = range(4)
-class Direction: (LeftToRight, RightToLeft) = range(2)
+class ClipType(object): (Intersection, Union, Difference, Xor) = list(range(4))
+class PolyType(object):    (Subject, Clip) = list(range(2))
+class PolyFillType(object): (EvenOdd, NonZero, Positive, Negative) = list(range(4))
+class JoinType(object): (Square, Round, Miter) = list(range(3))
+class EndType(object): (Closed, Butt, Square, Round) = list(range(4))
+class EdgeSide(object): (Left, Right) = list(range(2))
+class Protects(object): (Neither, Left, Right, Both) = list(range(4))
+class Direction(object): (LeftToRight, RightToLeft) = list(range(2))
 
 Point = namedtuple('Point', 'x y')
 FloatPoint = namedtuple('FloatPoint', 'x y')
@@ -119,7 +123,7 @@ def Area(polygon):
     A = (polygon[highI].x + polygon[0].x) * (polygon[0].y - polygon[highI].y)
     for i in range(highI):
         A += (polygon[i].x + polygon[i+1].x) * (polygon[i+1].y - polygon[i].y)
-    return float(A) / 2
+    return old_div(float(A), 2)
 
 def Orientation(polygon):
     return Area(polygon) > 0.0
@@ -239,7 +243,7 @@ def _SlopesEqual2(e1, e2):
 def _SetDx(e):
     e.Delta = Point(e.Top.x - e.Bot.x, e.Top.y - e.Bot.y)
     if e.Delta.y == 0: e.dx = horizontal
-    else: e.dx = float(e.Delta.x)/float(e.Delta.y)
+    else: e.dx = old_div(float(e.Delta.x),float(e.Delta.y))
 
 def _SwapSides(e1, e2):
     side    = e1.side
@@ -421,19 +425,19 @@ def _IntersectPoint(edge1, edge2):
         if edge2.dx == horizontal:
             y = edge2.Bot.y
         else:
-            b2 = edge2.Bot.y - float(edge2.Bot.x)/edge2.dx
-            y = round(float(x)/edge2.dx + b2)
+            b2 = edge2.Bot.y - old_div(float(edge2.Bot.x),edge2.dx)
+            y = round(old_div(float(x),edge2.dx) + b2)
     elif edge2.dx == 0:
         x = edge2.Bot.x
         if edge1.dx == horizontal:
             y = edge1.Bot.y
         else:
-            b1 = edge1.Bot.y - float(edge1.Bot.x)/edge1.dx
-            y = round(float(x)/edge1.dx + b1)
+            b1 = edge1.Bot.y - old_div(float(edge1.Bot.x),edge1.dx)
+            y = round(old_div(float(x),edge1.dx) + b1)
     else:
         b1 = float(edge1.Bot.x) - float(edge1.Bot.y) * edge1.dx
         b2 = float(edge2.Bot.x) - float(edge2.Bot.y) * edge2.dx
-        m    = (b2-b1)/(edge1.dx - edge2.dx)
+        m    = old_div((b2-b1),(edge1.dx - edge2.dx))
         y    = round(m)
         if math.fabs(edge1.dx) < math.fabs(edge2.dx):
             x = round(edge1.dx * m + b1)
@@ -489,7 +493,7 @@ def _ProtectRight(val):
 
 def _GetDx(pt1, pt2):
     if (pt1.y == pt2.y): return horizontal
-    else: return float(pt2.x - pt1.x)/float(pt2.y - pt1.y)
+    else: return old_div(float(pt2.x - pt1.x),float(pt2.y - pt1.y))
 
 def _Param1RightOfParam2(outRec1, outRec2):
     while outRec1 is not None:
@@ -1587,7 +1591,7 @@ class Clipper(ClipperBase):
             result += (p.pt.x + p.prevOp.pt.x) * (p.prevOp.pt.y - p.pt.y)
             p = p.nextOp
             if p == pts: break
-        return result / 2
+        return old_div(result, 2)
         
     def _JoinPoints(self, jr):
         p1, p2 = None, None
@@ -1904,7 +1908,7 @@ def _GetUnitNormal(pt1, pt2):
         return FloatPoint(0.0, 0.0)
     dx = float(pt2.x - pt1.x)
     dy = float(pt2.y - pt1.y)
-    f = 1.0 / math.hypot(dx, dy)
+    f = old_div(1.0, math.hypot(dx, dy))
     dx = float(dx) * f
     dy = float(dy) * f
     return FloatPoint(dy, -dx)
@@ -1951,8 +1955,8 @@ def _OffsetInternal(polys, isPolygon, delta, jointype = JoinType.Square, endtype
     
     def _DoSquare(pt):
         # see offset_triginometry.svg in the documentation folder ...
-        dx = math.tan(math.atan2(sinA, 
-            Normals[k].x * Normals[j].x + Normals[k].y * Normals[j].y)/4)
+        dx = math.tan(old_div(math.atan2(sinA, 
+            Normals[k].x * Normals[j].x + Normals[k].y * Normals[j].y),4))
         result.append(Point(
             round(pt.x + delta * (Normals[k].x - Normals[k].y *dx)),
             round(pt.y + delta * (Normals[k].y + Normals[k].x *dx))))
@@ -1962,7 +1966,7 @@ def _OffsetInternal(polys, isPolygon, delta, jointype = JoinType.Square, endtype
         return
 
     def _DoMiter(pt, r):
-        q = delta / r
+        q = old_div(delta, r)
         result.append(Point(
             round(pt.x + (Normals[k].x + Normals[j].x) * q),
             round(pt.y + (Normals[k].y + Normals[j].y) * q)))
@@ -2010,7 +2014,7 @@ def _OffsetInternal(polys, isPolygon, delta, jointype = JoinType.Square, endtype
 
     if jointype == JoinType.Miter:  
         # miterLim: see offset_triginometry3.svg in the documentation folder ...
-        if limit > 2: miterLim = 2 / (limit * limit)
+        if limit > 2: miterLim = old_div(2, (limit * limit))
         else: miterLim = 0.5
         if endtype == EndType.Round: limit = 0.25
         
@@ -2018,7 +2022,7 @@ def _OffsetInternal(polys, isPolygon, delta, jointype = JoinType.Square, endtype
         if limit <= 0: limit = 0.25
         elif limit > abs(delta)*0.25: limit = abs(delta)*0.25
         # step360: see offset_triginometry2.svg in the documentation folder ...
-        step360 = math.pi / math.acos(1 - limit / abs(delta))
+        step360 = old_div(math.pi, math.acos(1 - old_div(limit, abs(delta))))
         msin = math.sin(2 * math.pi / step360)
         mcos = math.cos(2 * math.pi / step360)
         step360 /= math.pi * 2
@@ -2193,7 +2197,7 @@ def _ClosestPointOnLine(pt, linePt1, linePt2):
     dy = linePt2.y - linePt1.y
     if (dx == 0 and dy == 0): 
         return FloatPoint(linePt1.x, linePt1.y)
-    q = ((pt.x-linePt1.x)*dx + (pt.Y-linePt1.Y)*dy) / (dx*dx + dy*dy)
+    q = old_div(((pt.x-linePt1.x)*dx + (pt.Y-linePt1.Y)*dy), (dx*dx + dy*dy))
     return FloatPoint(
       (1-q)*linePt1.X + q*linePt2.X,
       (1-q)*linePt1.Y + q*linePt2.Y)

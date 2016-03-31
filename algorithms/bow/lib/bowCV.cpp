@@ -659,31 +659,27 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
         msgout = "BoW - Multiple Classes Classification. \n";
         message(msgout,MsgLogger::DEBUG);
 
-        float* _classWeight = new float[_listClassUnique.size()];
+        double* _classWeight = new double[_listClassUnique.size()];
         int _idx = 0;
         int _maxCount = -1;	
         for(std::list<int>::iterator _itr=_listClassUnique.begin();_itr!= _listClassUnique.end();++_itr)		
         {	
             int _count = std::count(_listClassAll.begin(),_listClassAll.end(),(*_itr));
             _maxCount = (_maxCount<_count)?_count:_maxCount;
-            _classWeight[_idx++] = (float)_count;
+            _classWeight[_idx++] = (double)_count;
         }
         for(unsigned int k=0;k<_listClassUnique.size();k++)
-            _classWeight[k] = (float)_maxCount/_classWeight[k];
+            _classWeight[k] = (double)_maxCount/_classWeight[k];
         
         // The order of classWeight is the same with the order of classID. 
         // If there is a list of classID = {-1,2,1}. 
         // Then, the order of classWeights becomes {-1,1,2}. 
 
-        //param.kernel_type = CvSVM::LINEAR;	//empirically, it should NOT be linear for a better performance.        
+        //param.kernel_type = CvSVM::LINEAR;	//empirically, it should NOT be linear for a better performance.   
+        cv::Mat weights;     
         if(flagClassWeight)
         {
-          // TODO fixure out how to do this directly to the cv::Mat structure without using CvMat
-          CvMat cw;
-          cvInitMatHeader(&cw, 1, _listClassUnique.size(), CV_32FC1, _classWeight); 
-          //cv::Mat cw(1, _listClassUnique.size(), CV_32FC1, _classWeight);
-          cv::Mat weights(cw.rows, cw.cols, CV_64FC1, cw.data.fl);
-          //cv::Mat weights(cw.rows, cw.cols, CV_64FC1, cw.data);
+          weights = cv::Mat(1, _listClassUnique.size(), CV_64FC1, _classWeight);
           classifierSVM->setClassWeights(weights);
         }
         dda->setProperty(BOW_CLASS_WEIGHT,flagClassWeight?"True":"False");
@@ -700,7 +696,8 @@ bool bowCV::train_run(const string& _filepathForSavingResult,
     dda->setProperty(BOW_OPENCV_VERSION,CV_VERSION);    
 
     flagTrain = true;
-    delete classifierSVM;
+    // classifierSVM now a smart pointer that gets cleaned up so don't delete
+    //delete classifierSVM;
 
     return true;
 }
@@ -777,7 +774,6 @@ std::string bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _
       msgReturn = "Error: opencv error";
       return msgReturn;
     }
-    
     if(_keypoints.size()<1) //According to the version of openCV, it may cause an exceptional error.
     {
       msgout = "The file \"" + _fullfilename + 
@@ -787,7 +783,6 @@ std::string bowCV::detect_run(const string& _fullfilename, int& _bestClass,int _
       msgReturn = "Error: no feature";
       return msgReturn;
     }
-
     bowExtractor->compute(_img, _keypoints, _descriptors);
 
     // In the manual from OpenCV, it is written as follows:
@@ -858,8 +853,7 @@ bool bowCV::detect_readTrainResult()
 
     // Read SVM file
     _fullpath = dda->getFile(BOW_SVM_FILE);		
-    Ptr<SVM> classifierSVM = SVM::create();
-    classifierSVM->load<SVM>(_fullpath.c_str());
+    classifierSVM = SVM::create()->load<SVM>(_fullpath.c_str());
 
     // Read OpenCV Version    
     _inputString = dda->getProperty(BOW_OPENCV_VERSION);
