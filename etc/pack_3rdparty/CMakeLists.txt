@@ -38,19 +38,19 @@ INSTALL(DIRECTORY   ${ICE_ROOT}/bin
         PATTERN *.dll
        )
 #Windows also needs numpy install exe
-INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-win32-superpack-python2.7.exe
-        DESTINATION 3rdparty
-        COMPONENT NumpyExt
-       )
+#INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-win32-superpack-python2.7.exe
+#        DESTINATION 3rdparty
+#        COMPONENT NumpyExt
+#       )
 #Windows also needs python install exe
-INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/python-2.7.8.msi
-        DESTINATION 3rdparty
-        COMPONENT NumpyExt
-       )
-INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-win32.zip
-        DESTINATION 3rdparty
-        COMPONENT PillowExt
-       )
+#INSTALL(FILES    ${CMAKE_SOURCE_DIR}/3rdparty/python-2.7.8.msi
+#        DESTINATION 3rdparty
+#        COMPONENT NumpyExt
+#       )
+#INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/Pillow-2.6.0-cp27-none-win32.zip
+#        DESTINATION 3rdparty
+#        COMPONENT PillowExt
+#       )
 ENDIF(WIN32)
 
 SET (SVM_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libsvm")
@@ -159,15 +159,15 @@ INSTALL(DIRECTORY ${LIBARCHIVE_BIN_DIR}
        COMPONENT LibArchiveExt
       )
 #Windows also needs python virtual env package so we don't need root access
-INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/virtualenv-1.11.6
-        DESTINATION 3rdparty
-        COMPONENT NumpyExt
-        USE_SOURCE_PERMISSIONS
-       )
-INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-sse3.exe
-       DESTINATION 3rdparty
-       COMPONENT  NumpyExt
-      )
+#INSTALL(DIRECTORY    ${CMAKE_SOURCE_DIR}/3rdparty/virtualenv-1.11.6
+#        DESTINATION 3rdparty
+#        COMPONENT NumpyExt
+#        USE_SOURCE_PERMISSIONS
+#       )
+#INSTALL(FILES ${CMAKE_SOURCE_DIR}/3rdparty/numpy-1.8.1-sse3.exe
+#       DESTINATION 3rdparty
+#       COMPONENT  NumpyExt
+#      )
 INSTALL(FILES ${SVM_DIR}/libsvm${CMAKE_SHARED_LIBRARY_SUFFIX}
               ${SVM_DIR}/setup.py
               ${SVM_DIR}/svm.py
