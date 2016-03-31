@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- This is the IceGrid configuration for the CVACServers -->
+<icegrid>
+   <application name="CVACServers">
+
+      <properties id="mx">
+        <property name="IceMX.Metrics.Debug.GroupBy" value="id"/>
+        <property name="IceMX.Metrics.Debug.Disabled" value="1"/>
+        <property name="IceMX.Metrics.ByParent.GroupBy" value="parent"/>
+        <property name="IceMX.Metrics.ByParent.Disabled" value="1"/>
+      </properties>
+      <properties id="cvac">
+        <property name="CVAC.DataDir" value="${datadir}" />
+        <property name="CVAC.ServicesVerbosity" value="3" />
+        <property name="Ice.ACM.Server" value="0" />
+        <property name="Ice.MessageSizeMax" value="100000" />
+      </properties>
+      <!-- Uncomment out these properties as required for debugging 
+      -->
+      <properties id="debug">
+        <!--
+        <property name="Ice.Trace.Protocol" value="2" />
+        <property name="Ice.Trace.Network" value="3" />
+        <property name="Ice.Trace.Slicing" value="3" />
+        <property name="IceGrid.Node.Trace.Server" value="3" />
+        <property name="IceGrid.Node.Trace.Adapter" value="3" />
+        -->
+      </properties>
+
+      <!-- basedir is the root directory -->
+      <variable name="basedir" value="@CVAC_ROOT_DIR@" />
+      <!-- datadir is the data directory -->
+      <variable name="datadir" value="${basedir}/data" />
+
+      <service-template id="CVAC_SERVICE">
+         <parameter name="sname"/>
+         <parameter name="entry"/>
+         <parameter name="group"/>
+         <parameter name="index"/>
+         <service name="${sname}" entry="${entry}">
+            <description>A CVAC service: ${sname}</description>
+            <properties>
+               <properties refid="mx"/>
+               <properties refid="cvac"/>
+            </properties>
+            <adapter name="${sname}" endpoints="tcp -h localhost" 
+                     id="${sname}-${index}"
+                     replica-group="${group}" />
+         </service>
+      </service-template>
+
+      <!--
+         Add a replica-group for each detector and trainer that you want
+         to support.  The replica-group is responsible for spawning
+         a new item of that group each time one is needed.  It provides
+         a proxy from the detector/trainer identity to the real detector/trainer
+      -->
+      <replica-group id="BOW_DetectorGroup">
+         <load-balancing type="round-robin"/>
+         <object identity="BOW_Detector" type="::cvac::Detector"/>
+      </replica-group>
+
+      <replica-group id="BOW_TrainerGroup">
+         <load-balancing type="round-robin"/>
+         <object identity="BOW_Trainer" type="::cvac::Trainer"/>
+      </replica-group>
+
+      <replica-group id="OpenCVCascade_DetectorGroup">
+         <load-balancing type="round-robin"/>
+         <object identity="OpenCVCascadeDetector" type="::cvac::Detector"/>
+      </replica-group>
+
+      <replica-group id="OpenCVCascade_TrainerGroup">
+         <load-balancing type="round-robin"/>
+         <object identity="OpenCVCascadeTrainer" type="::cvac::Trainer"/>
+      </replica-group>
+
+      <!-- The IceBoxTemplate should list all the services that
+           should be run from an icebox instance. Add as many services
+           that an icebox instance should support.
+       -->
+      <server-template id="IceBoxTemplate">
+         <parameter name="index"/>
+         <icebox id="IceBox${index}" activation="on-demand" exe="icebox">
+            <description>A CVAC IceBox server</description>
+            <properties>
+               <properties refid="mx"/>
+               <property name="IceBox.Trace.ServiceObserver" value="1"/>
+            </properties>
+            <service-instance template="CVAC_SERVICE" sname="BOW_Detector" entry="bowICEServer:create" group= "BOW_DetectorGroup" index="${index}"/>
+            <service-instance template="CVAC_SERVICE" sname="BOW_Trainer" entry="bowICEServerTrain:create" group= "BOW_TrainerGroup" index="${index}"/>
+            <service-instance template="CVAC_SERVICE" sname="OpenCVCascadeDetector" entry="OpenCVCascadeDetector:create" group= "OpenCVCascade_DetectorGroup" index="${index}"/>
+            <service-instance template="CVAC_SERVICE" sname="OpenCVCascadeTrainer" entry="OpenCVCascadeTrainer:create" group= "OpenCVCascade_TrainerGroup" index="${index}"/>
+         </icebox>
+      </server-template>
+
+      <!--  This is the template for a stand along python server -->
+      <server-template id="PythonTemplate">
+         <parameter name="sname"/>
+         <parameter name="index"/>
+         <parameter name="script"/>
+         <parameter name="group"/>
+         <server id="${sname}-${index}"  exe="@PYTHON_EXECUTABLE@"
+                 activation="on-demand">
+            <option>${script}</option>
+            <description>A CVAC Python server</description>
+            <properties>
+               <properties refid="cvac"/>
+            </properties>
+            <adapter name="${sname}" endpoints="tcp -h localhost"
+                replica-group="${group}"
+                      />
+         </server>
+      </server-template>
+
+      <!-- This is the definition of an icebox node.  If you define
+         a new node then you must add entries into the config.grid file
+         that defines information about this node.  Add more server-instance
+         entries as required.  Each server-instance can run in parallel so
+         a good rule of thumb is to have one for each cpu core.
+      -->
+      <node name="node1">
+         <server-instance template="IceBoxTemplate" index="1"/>
+         <server-instance template="IceBoxTemplate" index="2"/>
+         <server-instance template="IceBoxTemplate" index="3"/>
+         <server-instance template="IceBoxTemplate" index="4"/>
+      </node>
+      <include file="user_cvac.xml"/>
+   </application>
+</icegrid>

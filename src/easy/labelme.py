@@ -111,7 +111,7 @@ def parseLabeledObjects( root, imageSubstrate ):
            # we got a name from imageattributes
             label = cvac.LabeledLocation()
             label.confidence = 1.0
-            label.sub = substrate             
+            label.sub = cvac.Substrate()             
             label.lab = cvac.Label( True, labelName, properties, cvac.Semantics() )  
             labels = labels + [label]   
             

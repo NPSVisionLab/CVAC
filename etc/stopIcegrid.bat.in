@@ -1,0 +1,8 @@
+@echo off
+@setlocal
+title CVAC IceGrid Services
+set _3rdPARTYDIR=${CMAKE_SOURCE_DIR}/3rdparty
+set PATH=%_3rdPARTYDIR%/imagemagick;${CMAKE_BINARY_DIR}/bin;${ICE_ROOT}/bin;${OpenCV_LIB_DIR_OPT}/../bin;${LIBARCHIVE_BIN_DIR};${LIBZIP_BIN_DIR};${OpenCV_DIR}/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}
+set PYTHONPATH=${CMAKE_BINARY_DIR}/etc/python/easyPkg;${CMAKE_BINARY_DIR}/etc/python/icePkg;${CMAKE_SOURCE_DIR}/3rdparty/libsvm
+chdir "${CVAC_BINARY_DIR}"
+icegridadmin --Ice.Config=config.grid -e "node shutdown node1"

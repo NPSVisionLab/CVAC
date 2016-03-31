@@ -6,16 +6,17 @@
 ${ICE_ENCODE}Ice.Default.EncodingVersion=1.0
 
 ## Disable ACM on the client for bi-directional behavior
-#Ice.ACM.Client=0
+Ice.ACM.Client=0
 
 ## CVAC Services Config:
 CVAC.DataDir = ${CVAC_DATA_DIR}
 
+Ice.Default.Locator=CVACService/Locator:default -t 30000 -h localhost -p 4061
 
-OpenCVCascadeDetector.Proxy=OpenCVCascadeDetector:tcp -p ${OPENCV_CASCADE_DETECTOR_PORT}
-OpenCVCascadeTrainer.Proxy=OpenCVCascadeTrainer:tcp -p  ${OPENCV_CASCADE_TRAINER_PORT}
-BOW_Trainer.Proxy=BOW_Trainer:tcp -p          ${BOW_TRAINER_PORT}
-BOW_Detector.Proxy=BOW_Detector:tcp -p         ${BOW_DETECTOR_PORT}
+OpenCVCascadeDetector.Proxy=OpenCVCascadeDetector
+OpenCVCascadeTrainer.Proxy=OpenCVCascadeTrainer
+BOW_Trainer.Proxy=BOW_Trainer
+BOW_Detector.Proxy=BOW_Detector
 
 
 CorpusServer.Proxy=CorpusServer:tcp ${HOST} -p  ${CORPUS_PORT}      
@@ -28,14 +29,15 @@ VideoValidatorForOpenCVClient.Proxy = VideoValidatorForOpenCV:tcp -p 10108
 
 # CVPerf Detector CvFaces
 CvFaces.Proxy = OpenCVCascadeDetector:tcp -p ${OPENCV_CASCADE_DETECTOR_PORT}
-CvFaces.DetectorFilename = haarcascade_frontalface_alt.xml
+CvFaces.DetectorFilename = OpencvFaces.zip
 
 # BOW Detector flags
-BagOfWordsFlags.Proxy=BOW_Detector:tcp -p ${BOW_DETECTOR_PORT}
-BagOfWordsFlags.DetectorFilename = bowUSKOCA.zip
+BagOfWordsUSKOCA.Proxy=BOW_Detector:tcp -p ${BOW_DETECTOR_PORT}
+BagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
 
-BagOfWordsLogo.Proxy=BOW_Detector:tcp -p ${BOW_DETECTOR_PORT}
-BagOfWordsLogo..DetectorFilename = bowCorporateLogoModel.zip
+# same on vision.nps.edu:
+NpsBagOfWordsUSKOCA.Proxy=BOW_Detector:tcp -h vision.nps.edu -p ${BOW_DETECTOR_PORT}
+NpsBagOfWordsUSKOCA.DetectorFilename = bowUSKOCA.zip
 
 #Trainers
 BOWTrainer.Proxy = BOW_Trainer:tcp -p ${BOW_TRAINER_PORT}

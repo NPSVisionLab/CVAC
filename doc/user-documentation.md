@@ -6,6 +6,7 @@ title: User Documentation
 * [Quickstart](#quickstart)
 * [Architecture](#architecture)
 * [Service scripts](#scripts)
+* [IceGrid](#icegrid)
 * [C/C++ Interfaces](#cpp)
 
 Documentation version: if you are reading this online but you have
@@ -141,6 +142,24 @@ On Windows:
 <br>`C:\EasyCV\CVAC_binary-0.X.XX-Win7\bin\startServices.bat`
 <br>`C:\EasyCV\CVAC_binary-0.X.XX-Win7\bin\stopServices.bat`
 
+# <a name="icegrid"></a> IceGrid
+
+IceGrid allows the CVAC services to be started via Ice's IceGrid node.  
+An IceGrid node can then start the CVAC services multiple times on multiple 
+nodes depending on how the IceGrid node is configured. A client can then be 
+configured to make use of this and run multiple detections or training 
+simultaneously on the same or different machines. The demo 
+"demo/async_bow.py" shows an example of how to setup a client to make use 
+of the IceGrid.  To start an IceGrid node run 'bin/startIcegrid' script. 
+If this is the first time the IceGrid has been run then the script 
+'bin/initIcegrid' must be run next.  This configures the IceGrid based 
+upon the 'cvac_icegrid.xml' file.  The IceGrid also uses the 'config.grid' 
+configuration file. The script 'bin/stopIcegrid' will shut the node down 
+when run.  This will also shutdown any CVAC service processes that the node 
+started.  You can examine and manage the IceGrid node interactively while 
+its running by running the script 'bin/icegridAdmin'.  This will startup an 
+interactive command prompt.  To see what commands are available type in 
+'help'. Type 'quit' to exit.
 
 # <a name="cpp"></a> C/C++ Interfaces
 

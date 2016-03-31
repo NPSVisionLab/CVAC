@@ -1,0 +1,50 @@
+To use the Ice Grid for the multi-threading, load balancing, and multiple
+server nodes of EasyCV services please follow the below instructions:
+
+1. Rebuild EasyCV starting from cmake by checking the "BUILD_ICEGRID"
+   option and doing a configure and generate, followed by remaking the
+   sources.
+
+2. This puts two files called "cvac_icegrid.xml"  and "user_cvac.xml" in the 
+   root binary directory of EasyCV.  These files control the Ice Grid 
+   configuration.
+   Here is a brief overview.  For more details on what can be done with
+   Ice Grid configuration files the the ZeroC Ice Grid documentation.
+   The first part configures some Ice parameters. Note the values of
+   the basedir and the datadir.  The default values are the EasyCV root
+   directory and its data directory.  Change these as required.
+   There are two different templates defined.  One for IceBox services
+   and one for Python Services.  These templates are configured based 
+   upon what detectors where selected in the cmake options. So an IceBox 
+   template can define an IceBox instance that will start all the services
+   selected in the cmake options for IceBox.  A Python service template
+   will define a python service instance that will start a python service.
+   The cvac_icegrid.xml and the user_cvac.xml which gets include by
+   the cvac_icegrid.xml file currently starts 4 instances of each service
+   configured. Also the default load balancing is using a "round-robin"
+   technique where each server instances are called in sequence.  See the
+   Zeroc Ice Grid documentation for configuring other load balancing.
+
+3. The other Ice Grid config file in the root binary directory is the
+   "config.grid" file.  This file defines the Ice Grid registry and the
+   Ice Grid nodes.  The Ice Grid provides a locator service for clients.
+   This service starts up nodes on different machines and these nodes then
+   startup and distributes work to various services defined for that node.
+   The default configuration is one node running on the local machine.
+   
+4. To initialize the Ice Grid, first run bin/startIcegrid in the root 
+   binary directory.  This will start the Ice Grid nodes without any services
+   since they have not been defined.  Next run bin/initIcegrid.  This will
+   have the Ice Grid read the xml config files and configure the nodes.
+   The bin/initIcegrid script only needs to be run once to initially configure
+   the Ice Grid.  After running the init script, startIcegrid will start
+   the icegrid node as well as the configured services.
+
+5. To stop the Ice Grid services and nodes, run the bin\stopIcegrid script.
+
+6. When the .xml files have been changed, to update the Ice Grid run the
+   bin\runGridAdmin script.  You will get a prompt.  Enter 
+   "application update cvac_icegrid.xml" to have Ice Grid re-read the
+   xml files.  The Ice Grid Admin program has many helpful commands for
+   managing the Ice Grid.  Enter "help" at the command prompt for more 
+   information.

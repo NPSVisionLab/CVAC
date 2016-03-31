@@ -18,6 +18,7 @@ import Ice, IcePy
 import cvac
 import labelme, vatic, videosegment
 import easy
+import servsup.files
 
 class LabelableListI(object):
     def _init__(self, name):
@@ -34,20 +35,19 @@ class LabelableListI(object):
         self.llist.append(sample)
         
         
-    def addAllSamplesInDir(self, directory, label, confidence, relativePath, 
-                           recursive):
+    def addAllSamplesInDir(self, directory, label, confidence, relativePath, recursive):
         if recursive == False:
             for filename in os.listdir(directory):
                 if os.path.isfile(os.path.join(directory, filename)) \
                   and (filename != ".meta"):
-                    self.addImageSample(self, directory, label, confidence,
+                    self.addImageSample(directory, label, confidence,
                                         filename)
         else:
             for folder, subdirs, files in os.walk(directory):
                 for filename in files:
                     path, nameOnly = os.path.split(filename)
                     if nameOnly != ".meta":
-                        self.addImageSample(self, path, label, confidence,
+                        self.addImageSample(path, label, confidence,
                                             nameOnly)
                                                 
 ''' 
@@ -63,7 +63,7 @@ class CorpusI(cvac.Corpus):
         
     def getFSPath(self, cvacPath ):
         if isinstance(cvacPath, cvac.Labelable):
-            cvacPath = easy.util.misc.getLabelableFilePath(cvacPath)
+            cvacPath = servsup.files.getLabelableFilePath(cvacPath)
         elif isinstance(cvacPath, cvac.ImageSubstrate):
             cvacPath = cvacPath.path
         elif isinstance(cvacPath, cvac.VideoSubstrate):

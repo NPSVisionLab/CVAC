@@ -21,8 +21,8 @@ if not exist "%LOCKFILE%" (
 if "@START_JAVA_SERVICES@" == "1" (
     "%ICEDIR%/bin/iceboxadmin.exe" --Ice.Config=config.java_admin shutdown
 )
-c:\windows\system32\taskkill.exe /FI "WINDOWTITLE eq CVAC Service*"
-c:\windows\system32\taskkill.exe /FI "WINDOWTITLE eq Administrator: CVAC Service*"
+c:\windows\system32\taskkill.exe /T /F /FI "WINDOWTITLE eq CVAC Service*"
+c:\windows\system32\taskkill.exe /T /F /FI "WINDOWTITLE eq Administrator: CVAC Service*"
 echo CVAC services stopped
 if exist "%LOCKFILE%" (
     del /q /f %LOCKFILE%

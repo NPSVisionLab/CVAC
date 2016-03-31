@@ -16,7 +16,7 @@ cd "%BUILD_DIR%"
 REM in case it crashed and left the services running stop them
 call bin\stopIcebox.bat
 waitfor DUMMY /T 2 2> NUL
-start "test" "cmd /k bin\startIcebox.bat"
+start "test" "cmd /K bin\startIcebox.bat"
 waitfor DUMMY /T 5 2> NUL
 REM run the tests, capture exit status
 cd "%BUILD_DIR%"

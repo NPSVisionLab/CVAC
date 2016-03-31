@@ -81,6 +81,7 @@ RunSetIterator::RunSetIterator(RunSetWrapper* _rsw,RunSetConstraint& _cons,
 
   //////////////////////////////////////////////////////////////////////////    
   mConv_openCV_i2i = new MediaConverter_openCV_i2i(_sman);
+  mConv_imagemagick_i2i = new ImageMagickConverter_i2i(_sman);
   mConv_openCV_v2i = new MediaConverter_openCV_v2i(_sman,_nSkipFrames);
   makeConversionList();  
   //////////////////////////////////////////////////////////////////////////    
@@ -91,6 +92,7 @@ RunSetIterator::RunSetIterator(RunSetWrapper* _rsw,RunSetConstraint& _cons,
 RunSetIterator::~RunSetIterator()
 {	
   delete mConv_openCV_i2i;
+  delete mConv_imagemagick_i2i;
   
   clear();
   if (!mTempDir.empty())
@@ -566,6 +568,8 @@ void RunSetIterator::makeConversionList()
 		mConvertible[msg.c_str()] = mConv_openCV_i2i;
 	  }
     }
+
+    mConvertible["gif2bmp"] = mConv_imagemagick_i2i;
     
     for(j=0;j<typeVideo.size();j++)
     {

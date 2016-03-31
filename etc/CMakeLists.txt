@@ -55,6 +55,13 @@ CONFIGURE_FILE( startIcebox.${SCRIPT_EXT}.in  ${CMAKE_BINARY_DIR}/bin/startIcebo
 CONFIGURE_FILE( stopIcebox.${SCRIPT_EXT}.in  ${CMAKE_BINARY_DIR}/bin/stopIcebox.${SCRIPT_EXT} )
 CONFIGURE_FILE( startServices.${SCRIPT_EXT}.in  ${CMAKE_BINARY_DIR}/bin/startServices.${SCRIPT_EXT} @ONLY )
 CONFIGURE_FILE( stopServices.${SCRIPT_EXT}.in  ${CMAKE_BINARY_DIR}/bin/stopServices.${SCRIPT_EXT} @ONLY )
+CONFIGURE_FILE( startIcegrid.${SCRIPT_EXT}.in  ${CMAKE_BINARY_DIR}/bin/startIcegrid.${SCRIPT_EXT} )
+CONFIGURE_FILE( stopIcegrid.${SCRIPT_EXT}.in  ${CMAKE_BINARY_DIR}/bin/stopIcegrid.${SCRIPT_EXT} )
+CONFIGURE_FILE( initIcegrid.${SCRIPT_EXT}.in  ${CMAKE_BINARY_DIR}/bin/initIcegrid.${SCRIPT_EXT} )
+CONFIGURE_FILE( runGridAdmin.${SCRIPT_EXT}.in  ${CMAKE_BINARY_DIR}/bin/runGridAdmin.${SCRIPT_EXT} )
+CONFIGURE_FILE( cvac_icegrid.xml.in  ${CMAKE_BINARY_DIR}/cvac_icegrid.xml @ONLY )
+# copy entry include incase option user code does not copy one
+CONFIGURE_FILE( user_empty.xml.in  ${CMAKE_BINARY_DIR}/user_cvac.xml )
 
 
 IF( NOT BUILD_3RDPARTY_PACKAGE AND NOT BUILD_BINARY_PACKAGE)
@@ -107,11 +114,15 @@ FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/icePkg")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg/cvac")
 FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg/easy")
+FILE (MAKE_DIRECTORY "${PYTHON_BUILD_DIR}/easyPkg/servsup")
 
 
 
 # Next copy over easy. Since these files are not sliced then do it now
 FILE (COPY ${SLICE_OUTPUT_PATH}/easy DESTINATION ${PYTHON_BUILD_DIR}/easyPkg
+      PATTERN *.py)
+# Next copy over servsup. Since these files are not sliced then do it now
+FILE (COPY ${SLICE_OUTPUT_PATH}/servsup DESTINATION ${PYTHON_BUILD_DIR}/easyPkg
       PATTERN *.py)
 
 SET (PYTHON_PACK_NAME "CVAC")
@@ -143,7 +154,7 @@ CONFIGURE_FILE(PostInstall.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/PostInstall.cmak
 
 IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
     IF (NOT BUILD_3RDPARTY_PACKAGE)
-        INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.client 
+        INSTALL(FILES ${CMAKE_BINARY_DIR}/config.admin ${CMAKE_BINARY_DIR}/config.icebox ${CMAKE_BINARY_DIR}/config.service ${CMAKE_SOURCE_DIR}/config.client
            DESTINATION .
            COMPONENT Runtime
           )
@@ -151,6 +162,12 @@ IF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
            DESTINATION bin
            COMPONENT Runtime
           )
+        IF (BUILD_ICEGRID)
+          INSTALL(FILES ${CMAKE_BINARY_DIR}/config.grid 
+           DESTINATION .
+           COMPONENT Runtime
+          )
+        ENDIF (BUILD_ICEGRID)
     ENDIF (NOT BUILD_3RDPARTY_PACKAGE)
 ENDIF (NOT PYTHON_ONLY_CLIENT OR BUILD_CORPUS_SERVICE_PYTHON)
 

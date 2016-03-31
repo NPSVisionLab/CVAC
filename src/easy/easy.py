@@ -37,7 +37,9 @@ except Exception as ex:
     import queue as Queue
 
 import util.misc as misc
-from util.ArchiveHandler import * 
+import servsup.files
+from servsup.ArchiveHandler import ArchiveHandler as ArchiveHandler
+from servsup.ArchiveHandler import DetectorDataArchive as DetectorDataArchive
 
 import unittest
 import stat
@@ -168,7 +170,7 @@ CVAC_ClientVerbosity = os.getenv("CVAC_CLIENT_VERBOSITY", "info") # info is verb
 def getFSPath( cvacPath, abspath=False ):
     '''Turn a CVAC path into a file system path'''
     if isinstance(cvacPath, cvac.Labelable):
-        cvacPath = misc.getLabelableFilePath(cvacPath)
+        cvacPath = servsup.files.getLabelableFilePath(cvacPath)
     elif isinstance(cvacPath, cvac.ImageSubstrate):
         cvacPath = cvacPath.path
     elif isinstance(cvacPath, cvac.VideoSubstrate):
@@ -451,7 +453,7 @@ def isInBounds( labelable ):
         maxX = labelable.sub.width
     if labelable.sub.height>0:
         maxY = labelable.sub.height
-    fpath = misc.getLabelableFilePath(labelable)
+    fpath = servsup.files.getLabelableFilePath(labelable)
     if isinstance(labelable, cvac.LabeledLocation):
         for pt in labelable.loc.points:
             if (pt.x < minX) or (pt.y < minY) \
@@ -511,7 +513,7 @@ def isProperRunSet(runset, deleteInvalid=False):
             for i in range(len(plist.labeledArtifacts)-1, -1, -1):
                 lb = plist.labeledArtifacts[i]               
                 labelname  = 'nolabel'
-                fpath = misc.getLabelableFilePath(lb)
+                fpath = servsup.files.getLabelableFilePath(lb)
                 if lb.lab.hasLabel != True:
                     print("Warning: " + fpath.path.filename + " has no label.")
                 else:
@@ -918,9 +920,9 @@ def _addLabelToSubstrates(substrates, lbl, orig = None):
         if orig is None:
             return substrates # Cant' add if no file name
         else:
-            fpath = misc.getLabelableFilePath(orig)
+            fpath = servsup.files.getLabelableFilePath(orig)
     else:
-        fpath = misc.getLabelableFilePath(lbl)
+        fpath = servsup.files.getLabelableFilePath(lbl)
    
     if not fpath.filename:
         if orig is None:
@@ -961,18 +963,14 @@ def putAllFiles( fileserver, runset ):
     # upload if not present
     uploadedFiles = []
     existingFiles = []
-    for sub in substrates:
-        if isinstance(sub, cvac.ImageSubstrate):
-            path = sub.path
-        elif isinstance(sub, cvac.VideoSubstrate):
-            path = sub.videopath
+    # iterate over the substrates keys which are file paths
+    for fpath in substrates:
+        cvacpath = getCvacPath(fpath)
+        if not fileserver.exists( cvacpath):
+            putFile( fileserver, cvacpath, testExistence=False )
+            uploadedFiles.append( cvacpath )
         else:
-            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
-        if not fileserver.exists( path ):
-            putFile( fileserver, path, testExistence=False )
-            uploadedFiles.append( path )
-        else:
-            existingFiles.append( path )
+            existingFiles.append( cvacpath )
 
     return {'uploaded':uploadedFiles, 'existing':existingFiles}
 
@@ -989,19 +987,15 @@ def getAllFiles( fileserver, runset ):
     # upload if not present
     downloadedFiles = []
     existingFiles = []
-    for sub in substrates:
-        if isinstance(sub, cvac.ImageSubstrate):
-            path = sub.path
-        elif isinstance(sub, cvac.VideoSubstrate):
-            path = sub.videopath
-        else:
-            raise RuntimeError("Unexpected type found instead of cvac.Substrate:", type(sub))
-        filepath = getFSPath(path)
+    # iterate over the substrates keys which are file paths
+    for fpath in substrates:
+        cvacpath = getCvacPath(fpath)
+        filepath = getFSPath(cvacpath)
         if not os.path.exists( filepath ):
-            getFile( fileserver, path)
-            downloadedFiles.append( path )
+            getFile( fileserver, cvacpath)
+            downloadedFiles.append( cvacpath )
         else:
-            existingFiles.append( path )
+            existingFiles.append( cvacpath )
 
     return {'downloaded':downloadedFiles, 'existing':existingFiles}
 
@@ -1180,6 +1174,8 @@ class DetectorCallbackReceiverI(cvac.DetectorCallbackHandler):
     def __init__(self):
         self.allResults = []
         self.detectionFinished = False
+        self.id = 0
+        self.adapter = None
         
     def message( self, level, messageString, current=None ):
         global CVAC_ClientVerbosity
@@ -1435,9 +1431,9 @@ def getSensitivityOptions(detectorData):
         return rockList
     
 
-def detect( detector, detectorData, runset, detectorProperties=None, callbackRecv=None ):
+def detect( detector, detectorData, runset, detectorProperties=None, callbackRecv=None, async=False):
     '''
-    Synchronously run detection with the specified detector,
+    Run detection with the specified detector,
     trained model, and optional callback receiver.
     The detectorData has to be a filename of a pre-trained model, or
      empty if the detector is pre-configured with a model, or if it does
@@ -1449,6 +1445,8 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
     otherwise, the obtained results are returned.
     '''
 
+    if async == True and callbackRecv == None:
+        raise RuntimeError("async parameter requires callbackRecv to be provided")
     # create a cvac.DetectorData object out of a filename
     tempDir = None
     if not detectorData:
@@ -1490,18 +1488,26 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
         runset = res['runset']
 
     # ICE functionality to enable bidirectional connection for callback
-    adapter = ic.createObjectAdapter("")
-    cbID = Ice.Identity()
-    cbID.name = Ice.generateUUID()
-    cbID.category = ""
-    ourRecv = False  # will we use our own simple callback receiver?
-    if not callbackRecv:
-        ourRecv = True
-        callbackRecv = DetectorCallbackReceiverI()
-        callbackRecv.allResults = []
-    adapter.add( callbackRecv, cbID )
-    adapter.activate()
-    detector.ice_getConnection().setAdapter(adapter)
+    if not callbackRecv or callbackRecv.id == 0:
+        adapter = ic.createObjectAdapter("")
+        cbID = Ice.Identity()
+        cbID.name = Ice.generateUUID()
+        cbID.category = ""
+        ourRecv = False  # will we use our own simple callback receiver?
+        if not callbackRecv:
+            ourRecv = True
+            callbackRecv = DetectorCallbackReceiverI()
+            callbackRecv.allResults = []
+        else:
+            callbackRecv.id = cbID
+            callbackRecv.adapter = adapter
+        adapter.add( callbackRecv, cbID )
+        adapter.activate()
+        detector.ice_getConnection().setAdapter(adapter)
+    else:
+        cbID = callbackRecv.id
+        ourRecv = False  # will we use our own simple callback receiver?
+         
 
     # connect to detector, initialize with a verbosity value
     # and the trained model, and run the detection on the runset
@@ -1509,13 +1515,24 @@ def detect( detector, detectorData, runset, detectorProperties=None, callbackRec
         detectorProperties = cvac.DetectorProperties()
         detectorProperties.verbosity = getVerbosityNumber( CVAC_ClientVerbosity )
     misc.stripCVAC_DataDir_from_FilePath(detectorData)
-    detector.process( cbID, runset, detectorData, detectorProperties )
+    results = None
+    if async == False:
+        detector.process( cbID, runset, detectorData, detectorProperties )
+        if ourRecv:
+            results = callbackRecv.allResults
+    else:
+        asyncRes = detector.begin_process( cbID, runset, detectorData, 
+                            detectorProperties)
+        # Wait to make sure that the request is sent, otherwise we queue
+        # might overflow.
+        asyncRes.waitForSent()
+        results = asyncRes
+
     
     if tempDir != None:
         shutil.rmtree(tempDir)    
 
-    if ourRecv:
-        return callbackRecv.allResults
+    return results
 
 def getPurposeName( purpose ):
     '''Returns a string to identify the purpose or an
@@ -1772,7 +1789,7 @@ def drawResults( results, origSet=None, multiWindow=True ):
     else:
         showImagesWithLabels( substrates, multiWindow=multiWindow )
         
-def drawLabelables( lablist, maxsize=None, multWindow=True ):
+def drawLabelables( lablist, maxsize=None, multiWindow=True ):
     # first, collect all image substrates of the labels
     substrates = {}
     num_videos = 0

@@ -110,6 +110,7 @@ namespace cvac
   private:  //list converter
     void makeConversionList();
     MediaConverter_openCV_i2i* mConv_openCV_i2i;
+    ImageMagickConverter_i2i*  mConv_imagemagick_i2i;
     MediaConverter_openCV_v2i* mConv_openCV_v2i;
 
   private:
