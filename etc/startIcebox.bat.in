@@ -21,7 +21,6 @@ goto noice
 :starticebox
 start "CVAC Services (C++)" /B "cmd /K ""${ICE_BOX_EXECUTABLE}" --Ice.Config=config.icebox"
 :noice
-MAKE_BINARY_DIR}/etc/python/easyPkg/cvac
 if "${START_JAVA_SERVICES}" == "1" goto startjava
 goto next
 :startjava

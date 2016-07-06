@@ -12,10 +12,16 @@ import shutil
 import os
 
 def loadImage(filepath):
+    import pdb
+    pdb.set_trace()
+    #make sure all the backslashes are gone
+    filepath = filepath.replace("\\", '/')
+    print(filepath)
+    img_src_rgb = None
     try:
-        img_src_rgb = cv2.imread(filepath, cv2.CV_LOAD_IMAGE_COLOR)
-    except:    
-        print("Error: " + filepath + " is not readable.") 
+        img_src_rgb = cv2.imread(filepath, cv2.IMREAD_COLOR)
+    except Exception as e:
+        print("Error: " + filepath + " is not readable. ")
     if img_src_rgb == None:
         ''' OpenCV can't read the file so try and convert it to png
         '''
